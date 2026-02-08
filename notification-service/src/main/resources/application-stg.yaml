@@ -29,12 +29,3 @@ minio:
   secretKey: eWWs9gq3Z644dlCrXtQHTXaYlN2kZ9GEzuSAouEd
 
 
-sms:
-  aliyun:
-    accessKey: xxx
-    accessSecret: xxx
-    endpoint: dypnsapi.aliyuncs.com
-    signature: 速通互联验证码
-    timeout: 10
-    templates:
-      login: 100001

@@ -1,0 +1,40 @@
+
+spring:
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding.yaml
+  data:
+    redis:
+      host: 10.245.3.193
+      port: 6379
+      lettuce:
+        pool:
+          min-idle: 10
+          max-idle: 20
+          max-active: 100
+          max-wait: 5000
+
+redisson:
+  enabled: true
+  config:
+    singleServerConfig:
+      address: redis://10.245.3.193:6379
+      database: 0
+
+
+minio:
+  endpoint: http://10.245.3.193:9000
+  bucketName: vr-bucket
+  accessKey: r8vudaJERvNKmdHsK0fe
+  secretKey: eWWs9gq3Z644dlCrXtQHTXaYlN2kZ9GEzuSAouEd
+
+
+sms:
+  aliyun:
+    accessKey: LTAI5tMhGEgEaMskxfcdv9z7
+    accessSecret: GXkmuuxz0WibWy8SZZ8sXPfQfLmu7d
+    endpoint: dypnsapi.aliyuncs.com
+    signature: 速通互联验证码
+    timeout: 10
+    templates:
+      login: 100001

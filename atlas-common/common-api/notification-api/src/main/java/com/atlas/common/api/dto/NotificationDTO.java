@@ -1,0 +1,45 @@
+package com.atlas.common.api.dto;
+
+import com.atlas.common.api.enums.ChannelType;
+import com.atlas.common.api.enums.TargetType;
+import lombok.*;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2026/2/6 15:42
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class NotificationDTO {
+
+    // 模板编码
+    private String templateCode;
+
+    // 可选标题
+    private String title;
+
+    // 直接发送的原始文本
+    private String text;
+
+    // 接收目标
+    private List<String> targets;
+
+    private TargetType targetType;
+
+    // 发送渠道
+    private List<ChannelType> channels;
+
+    // 占位符变量
+    private Map<String, Object> params;
+
+    // 扩展参数
+    private Map<String, Object> ext;
+
+}

@@ -1,0 +1,56 @@
+package com.atlas.common.mybatis.methods;
+
+import com.atlas.common.core.utils.ReflectUtils;
+import com.atlas.common.mybatis.mapper.TreeRelation;
+import com.baomidou.mybatisplus.core.injector.AbstractMethod;
+import com.baomidou.mybatisplus.core.metadata.TableInfo;
+import com.baomidou.mybatisplus.core.toolkit.sql.SqlScriptUtils;
+import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlSource;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2023/8/1 16:29
+ */
+public class SelectParentByIds extends AbstractMethod {
+
+    private final static String METHOD_NAME = "selectParentByIds";
+
+    private final static String METHOD_SQL =
+            "<script>" +
+                "WITH RECURSIVE tmp as (" +
+                " SELECT t.* FROM %s t WHERE t.%s IN (%s)\n" +
+                " UNION \n" +
+                " SELECT f.* FROM %s f INNER JOIN tmp on f.%s = tmp.%s\n" +
+                ") select * from tmp %s" +
+            "</script>";
+
+    public SelectParentByIds() {
+        this(METHOD_NAME);
+    }
+
+    public SelectParentByIds(String name) {
+        super(name);
+    }
+
+    public MappedStatement injectMappedStatement(Class<?> mapperClass, Class<?> modelClass, TableInfo tableInfo) {
+        //只有具有树关系的实体类类才能使用
+        if (!TreeRelation.class.isAssignableFrom(modelClass)){
+            return null;
+        }
+        Object parentFieldName = ReflectUtils.invokeMethodByName(modelClass, "parentFieldName", null);
+        Object childFieldName = ReflectUtils.invokeMethodByName(modelClass, "childFieldName", null);
+        String sql = String.format(METHOD_SQL,
+                tableInfo.getTableName(),
+                tableInfo.getKeyColumn(),
+                SqlScriptUtils.convertForeach("#{item}", "coll", (String)null, "item", ","),
+                tableInfo.getTableName(),
+                childFieldName,
+                parentFieldName,
+                tableInfo.getLogicDeleteSql(true, true));
+        SqlSource sqlSource = this.languageDriver.createSqlSource(this.configuration,sql,modelClass);
+        return this.addSelectMappedStatementForTable(mapperClass, METHOD_NAME, sqlSource, tableInfo);
+    }
+
+}

@@ -31,8 +31,8 @@ minio:
 
 sms:
   aliyun:
-    accessKey: LTAI5tMhGEgEaMskxfcdv9z7
-    accessSecret: GXkmuuxz0WibWy8SZZ8sXPfQfLmu7d
+    accessKey: xxx
+    accessSecret: xxx
     endpoint: dypnsapi.aliyuncs.com
     signature: 速通互联验证码
     timeout: 10

@@ -19,7 +19,7 @@ import lombok.experimental.Tolerate;
 
 @Getter
 @Setter
-@TableName(value = "role",autoResultMap = true)
+@TableName(value = "im_role",autoResultMap = true)
 @Builder
 public class Role extends BaseEntity {
 

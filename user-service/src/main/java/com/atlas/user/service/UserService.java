@@ -1,5 +1,6 @@
 package com.atlas.user.service;
 
+import com.atlas.common.api.dto.UserDTO;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
@@ -23,16 +24,13 @@ public interface UserService extends IService<User> {
 
     User findByUserId(Serializable userId);
 
-    List<UserVO> findByUserId(Collection<Long> userIds);
+    List<UserDTO> findByUserId(Collection<Long> userIds);
 
-    List<UserVO> findByEmail(Collection<String> emails);
+    List<UserDTO> findByEmail(Collection<String> emails);
 
-    List<UserVO> findByPhone(Collection<String> phones);
+    List<UserDTO> findByPhone(Collection<String> phones);
 
     List<UserVO> findByRoleId(Long roleId);
-
-    <R> List<UserVO> findListBy(SFunction<User, R> column, Object... value);
-
 
     UserCreateVO createUser(UserCreateDTO userCreateDTO);
 

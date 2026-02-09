@@ -20,7 +20,7 @@ import lombok.experimental.Tolerate;
  */
 @Getter
 @Setter
-@TableName(value = "message_template", autoResultMap = true)
+@TableName(value = "im_message_template", autoResultMap = true)
 @Builder
 public class MessageTemplate extends BaseEntity {
 

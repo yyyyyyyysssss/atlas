@@ -1,6 +1,7 @@
 package com.atlas.user.mapping;
 
 
+import com.atlas.common.api.dto.UserDTO;
 import com.atlas.common.core.mapping.LocalDateMapper;
 import com.atlas.common.core.mapping.LocalDateTimeMapper;
 
@@ -31,7 +32,12 @@ public interface UserMapping {
 
     UserVO toUserVO(User user);
 
+    UserDTO toUserDTO(User user);
+
     @IterableMapping(elementTargetType = UserVO.class)
     List<UserVO> toUserVO(List<User> users);
+
+    @IterableMapping(elementTargetType = UserDTO.class)
+    List<UserDTO> toUserDTO(List<User> users);
 
 }

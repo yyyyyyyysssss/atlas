@@ -5,6 +5,7 @@ import com.atlas.common.api.dto.UserDTO;
 import com.atlas.common.api.enums.ChannelType;
 import com.atlas.common.api.enums.TargetType;
 import com.atlas.common.api.exception.NotificationException;
+import com.atlas.common.core.response.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -55,9 +56,9 @@ public class AccountResolver {
         }
 
         List<UserDTO> users = switch (targetType) {
-            case USER_ID -> userApi.findByUserId(targets.stream().map(Long::valueOf).toList());
-            case EMAIL   -> userApi.findByEmail(targets);
-            case PHONE   -> userApi.findByPhone(targets);
+            case USER_ID -> Optional.ofNullable(userApi.findByIds(targets.stream().map(Long::valueOf).toList())).filter(Result::isSucceed).orElseThrow().getData();
+            case EMAIL   -> Optional.ofNullable(userApi.findByEmails(targets)).filter(Result::isSucceed).orElseThrow().getData();
+            case PHONE   -> Optional.ofNullable(userApi.findByPhones(targets)).filter(Result::isSucceed).orElseThrow().getData();
         };
         Function<UserDTO, String> getter = getGetter(requiredType);
         return users.stream()

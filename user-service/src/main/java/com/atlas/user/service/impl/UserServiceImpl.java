@@ -1,5 +1,6 @@
 package com.atlas.user.service.impl;
 
+import com.atlas.common.api.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
@@ -89,7 +90,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<UserVO> findByUserId(Collection<Long> userIds) {
+    public List<UserDTO> findByUserId(Collection<Long> userIds) {
         if (CollectionUtils.isEmpty(userIds)) {
             log.warn("findByUserId called with empty userIds");
             return Collections.emptyList();
@@ -100,18 +101,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         return users.stream()
                 .filter(Objects::nonNull)
-                .map(UserMapping.INSTANCE::toUserVO)
+                .map(UserMapping.INSTANCE::toUserDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<UserVO> findByEmail(Collection<String> emails) {
+    public List<UserDTO> findByEmail(Collection<String> emails) {
 
         return findListBy(User::getEmail,emails.toArray());
     }
 
     @Override
-    public List<UserVO> findByPhone(Collection<String> phones) {
+    public List<UserDTO> findByPhone(Collection<String> phones) {
 
         return findListBy(User::getPhone,phones);
     }
@@ -129,7 +130,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .eq(UserRole::getRoleId, roleId);
         List<UserRole> userRoles = userRoleService.list(userRoleQueryWrapper);
         Set<Long> userIds = userRoles.stream().map(UserRole::getUserId).collect(Collectors.toSet());
-        return this.findByUserId(userIds);
+        List<User> users = userMapper.selectByIds(userIds);
+        return UserMapping.INSTANCE.toUserVO(users);
     }
 
     @Override
@@ -338,8 +340,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return UserMapping.INSTANCE.toUserVO(users);
     }
 
-    @Override
-    public <R> List<UserVO> findListBy(SFunction<User, R> column, Object... values) {
+
+    public <R> List<UserDTO> findListBy(SFunction<User, R> column, Object... values) {
         if (values == null || values.length == 0) {
             return Collections.emptyList();
         }
@@ -348,6 +350,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(CollectionUtils.isEmpty(users)){
             return Collections.emptyList();
         }
-        return UserMapping.INSTANCE.toUserVO(users);
+        return UserMapping.INSTANCE.toUserDTO(users);
     }
 }

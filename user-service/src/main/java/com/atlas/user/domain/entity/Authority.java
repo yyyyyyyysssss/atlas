@@ -24,7 +24,7 @@ import java.util.Objects;
  */
 @Getter
 @Setter
-@TableName(value = "authority",autoResultMap = true)
+@TableName(value = "im_authority",autoResultMap = true)
 @Builder
 public class Authority extends BaseEntity implements TreeRelation {
 

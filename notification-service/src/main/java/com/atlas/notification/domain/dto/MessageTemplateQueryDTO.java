@@ -1,6 +1,6 @@
 package com.atlas.notification.domain.dto;
 
-import com.atlas.common.core.domain.dto.PageQueryDTO;
+import com.atlas.common.mybatis.dto.PageQueryDTO;
 import lombok.Getter;
 import lombok.Setter;
 

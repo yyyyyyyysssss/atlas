@@ -9,7 +9,7 @@
 
     <groupId>com.atlas.common.api</groupId>
     <artifactId>user-api</artifactId>
-    <name>api-user</name>
+    <name>user-api</name>
 
 
     <dependencies>

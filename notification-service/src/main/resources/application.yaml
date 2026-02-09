@@ -37,18 +37,12 @@ spring:
     from: test@mail.com
     default-encoding: utf-8
 
-logging:
-  level:
-    org.springframework.security: info
-
 mybatis-plus:
   mapper-locations: classpath:mapper/*xml
   configuration:
     map-underscore-to-camel-case: true
 
 
-api:
-  endpoint: http://localhost:9090
 
 
 

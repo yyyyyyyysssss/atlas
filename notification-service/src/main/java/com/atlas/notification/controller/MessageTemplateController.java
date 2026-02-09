@@ -14,13 +14,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * (MessageTemplate)表控制层
  *
  * @author ys
  * @since 2026-01-30 10:26:10
  */
 @RestController
-@RequestMapping("/api/messageTemplate")
+@RequestMapping("/templates")
 @Slf4j
 public class MessageTemplateController {
     /**

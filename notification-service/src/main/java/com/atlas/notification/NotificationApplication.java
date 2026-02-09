@@ -1,6 +1,5 @@
 package com.atlas.notification;
 
-import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -14,14 +13,9 @@ import java.util.TimeZone;
 public class NotificationApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(NotificationApplication.class, args);
-    }
-
-    @PostConstruct
-    public void init(){
         TimeZone timeZone = TimeZone.getTimeZone("Asia/Shanghai");
         TimeZone.setDefault(timeZone);
+        SpringApplication.run(NotificationApplication.class, args);
     }
-
 
 }

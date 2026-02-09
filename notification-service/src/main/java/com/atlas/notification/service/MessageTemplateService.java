@@ -23,6 +23,8 @@ public interface MessageTemplateService extends IService<MessageTemplate> {
 
     MessageTemplateVO findByCodeAndChannel(String code, ChannelType channelType);
 
+    MessageTemplateVO resolveTemplate(String code, ChannelType channelType);
+
     MessageTemplateVO findById(Long id);
 
     Long createMessageTemplate(MessageTemplateCreateDTO createDTO);

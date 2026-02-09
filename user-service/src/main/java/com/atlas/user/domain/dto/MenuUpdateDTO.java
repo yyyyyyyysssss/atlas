@@ -1,0 +1,37 @@
+package com.atlas.user.domain.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2025/5/19 10:45
+ */
+@Getter
+@Setter
+public class MenuUpdateDTO {
+
+    @NotBlank(message = "菜单ID不能为空")
+    private String id;
+
+    @NotBlank(message = "父菜单ID不能为空")
+    private String parentId;
+
+    private String rootId;
+
+    @NotBlank(message = "菜单名称不能为空")
+    private String name;
+
+    @NotBlank(message = "菜单编码不能为空")
+    private String code;
+
+    @NotBlank(message = "菜单路由不能为空")
+    private String routePath;
+
+    private String icon;
+
+    private Integer sort;
+
+}

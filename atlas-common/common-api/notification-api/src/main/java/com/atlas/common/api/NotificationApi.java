@@ -8,7 +8,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
 // 推荐使用 NotificationRequest 构建请求参数
-@HttpExchange(url = "/api/notification")
+@HttpExchange(url = "/v1/notifications")
 public interface NotificationApi {
 
     @PostExchange("/send")

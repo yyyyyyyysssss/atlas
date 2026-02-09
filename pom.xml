@@ -13,6 +13,7 @@
         <module>atlas-common/common-redis</module>
         <module>atlas-common/common-mybatis</module>
         <module>notification-service</module>
+        <module>user-service</module>
         <module>atlas-common/common-api</module>
     </modules>
 

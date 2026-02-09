@@ -9,7 +9,7 @@
 
     <groupId>com.atlas.common.api</groupId>
     <artifactId>notification-api</artifactId>
-    <name>api-notification</name>
+    <name>notification-api</name>
     <packaging>jar</packaging>
 
 

@@ -1,0 +1,22 @@
+
+spring:
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding.yaml
+  data:
+    redis:
+      host: 10.245.3.193
+      port: 6379
+      lettuce:
+        pool:
+          min-idle: 10
+          max-idle: 20
+          max-active: 100
+          max-wait: 5000
+
+redisson:
+  enabled: true
+  config:
+    singleServerConfig:
+      address: redis://10.245.3.193:6379
+      database: 0

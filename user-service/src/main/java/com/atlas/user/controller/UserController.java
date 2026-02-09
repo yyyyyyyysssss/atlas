@@ -1,0 +1,85 @@
+package com.atlas.user.controller;
+
+import com.atlas.common.core.response.Result;
+import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.user.domain.dto.UserBindRoleDTO;
+import com.atlas.user.domain.dto.UserCreateDTO;
+import com.atlas.user.domain.dto.UserQueryDTO;
+import com.atlas.user.domain.dto.UserUpdateDTO;
+import com.atlas.user.domain.vo.UserCreateVO;
+import com.atlas.user.domain.vo.UserVO;
+import com.atlas.user.service.UserService;
+import com.github.pagehelper.PageInfo;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2025/6/6 11:32
+ */
+@RequestMapping("/users")
+@RestController
+@Slf4j
+@RequiredArgsConstructor
+public class UserController {
+
+    private final UserService userService;
+
+    @PostMapping
+    public Result<?> createUser(@RequestBody @Validated UserCreateDTO userCreateDTO) {
+        UserCreateVO userCreateVO = userService.createUser(userCreateDTO);
+        return ResultGenerator.ok(userCreateVO);
+    }
+
+    @PutMapping
+    public Result<?> updateUser(@RequestBody @Validated(value = UserUpdateDTO.UpdateAll.class) UserUpdateDTO userUpdateDTO) {
+        Boolean b = userService.updateUser(userUpdateDTO,true);
+        return ResultGenerator.ok(b);
+    }
+
+    @PatchMapping
+    public Result<?> modifyUser(@RequestBody @Validated UserUpdateDTO userUpdateDTO) {
+        Boolean b = userService.updateUser(userUpdateDTO,false);
+        return ResultGenerator.ok(b);
+    }
+
+    @PutMapping("/{id}/password")
+    public Result<?> resetPassword(@PathVariable("id") Long id) {
+        String newPassword = userService.resetPassword(id);
+        return ResultGenerator.ok(newPassword);
+    }
+
+    @PostMapping("/{id}/roles")
+    public Result<?> bindRoles(@PathVariable Long id, @RequestBody UserBindRoleDTO userBindRoleDTO) {
+        Boolean bindRoles = userService.bindRoles(id,userBindRoleDTO.getRoleIds());
+        return ResultGenerator.ok(bindRoles);
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<?> delete(@PathVariable("id") Long id) {
+        Boolean b = userService.deleteUser(id);
+        return ResultGenerator.ok(b);
+    }
+
+    @PostMapping("/query")
+    public Result<?> query(@RequestBody UserQueryDTO userQueryDTO) throws InterruptedException {
+        PageInfo<UserVO> pageInfo = userService.queryList(userQueryDTO);
+        return ResultGenerator.ok(pageInfo);
+    }
+
+    @GetMapping("/{id}")
+    public Result<?> details(@PathVariable("id") Long id) {
+        UserVO userVO = userService.details(id);
+        return ResultGenerator.ok(userVO);
+    }
+
+    @PostMapping("/search")
+    public Result<?> search(@RequestBody UserQueryDTO userQueryDTO) {
+        PageInfo<UserVO> pageInfo = userService.search(userQueryDTO.getPageNum(), userQueryDTO.getPageSize(), userQueryDTO.getKeyword(),userQueryDTO.getIds());
+        return ResultGenerator.ok(pageInfo);
+    }
+
+}

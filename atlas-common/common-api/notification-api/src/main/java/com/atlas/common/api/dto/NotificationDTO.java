@@ -2,6 +2,8 @@ package com.atlas.common.api.dto;
 
 import com.atlas.common.api.enums.ChannelType;
 import com.atlas.common.api.enums.TargetType;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.List;
@@ -29,11 +31,14 @@ public class NotificationDTO {
     private String text;
 
     // 接收目标
+    @NotEmpty(message = "接收人列表不能为空")
     private List<String> targets;
 
+    @NotNull(message = "目标类型不能为空")
     private TargetType targetType;
 
     // 发送渠道
+    @NotEmpty(message = "发送渠道不能为空")
     private List<ChannelType> channels;
 
     // 占位符变量

@@ -27,13 +27,6 @@ redisson:
       database: 0
 
 
-minio:
-  endpoint: http://ys0921.sbs:29000
-  bucketName: y-chat-bucket
-  accessKey: L4C2Tx0MZEqkV9M6JZt6
-  secretKey: CQYZaB36pyMHPbVyIO4wjWMTNeqSBbVJlMoLPTwI
-
-
 sms:
   aliyun:
     accessKey: xxx

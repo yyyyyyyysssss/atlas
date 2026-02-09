@@ -23,7 +23,7 @@ public class RestConfig {
     @Bean
     public RestClient defaultRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory){
         return restClientFactory.create(
-                httpClientFactory.create(false),
+                httpClientFactory.create(),
                 builder -> {}
         );
     }

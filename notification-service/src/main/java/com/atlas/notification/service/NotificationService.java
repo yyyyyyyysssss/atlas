@@ -1,8 +1,8 @@
 package com.atlas.notification.service;
 
-import com.atlas.common.api.dto.NotificationDTO;
-import com.atlas.common.api.enums.ChannelType;
-import com.atlas.common.api.exception.NotificationException;
+import com.atlas.common.core.api.notification.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;

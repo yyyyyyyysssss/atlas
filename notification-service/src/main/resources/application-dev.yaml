@@ -27,9 +27,8 @@ redisson:
       database: 0
 
 atlas:
-  api:
     user:
-      base-url: http://localhost:9091
+      server-url: http://localhost:9091
 
 sms:
   aliyun:

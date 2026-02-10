@@ -1,9 +1,14 @@
 package com.atlas.common.redis.autoconfigure;
 
+import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.core.idwork.SequenceGenerator;
-import com.atlas.common.core.json.JacksonConfig;
 import com.atlas.common.redis.utils.*;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.lettuce.core.api.StatefulConnection;
 import jakarta.annotation.Resource;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -28,18 +33,14 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @Description
  * @Author ys
  * @Date 2024/7/8 16:59
  */
-@AutoConfiguration(after = {JacksonConfig.class})
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration(after = AtlasCoreAutoConfiguration.class)
 @EnableConfigurationProperties(RedisProperties.class)
 public class AtlasRedisAutoConfiguration {
 
@@ -131,11 +132,16 @@ public class AtlasRedisAutoConfiguration {
         return redisTemplate;
     }
 
+    @Bean("redisObjectMapper") // 明确指定名称，避免冲突
+    public ObjectMapper redisObjectMapper() {
+        return createRedisObjectMapper();
+    }
+
     @Bean
     @ConditionalOnMissingBean
-    public GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer(ObjectMapper objectMapper) {
+    public GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer(ObjectMapper redisObjectMapper) {
 
-        return new GenericJackson2JsonRedisSerializer(objectMapper);
+        return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
     }
 
     @Bean
@@ -150,8 +156,8 @@ public class AtlasRedisAutoConfiguration {
     }
 
     @Bean
-    public RedisHelper redisHelper(RedisTemplate<String, Object> redisTemplate, GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer, ObjectMapper objectMapper) {
-        return new RedisHelper(redisTemplate,genericJackson2JsonRedisSerializer,objectMapper);
+    public RedisHelper redisHelper(RedisTemplate<String, Object> redisTemplate, ObjectMapper redisObjectMapper) {
+        return new RedisHelper(redisTemplate,redisObjectMapper);
     }
 
     @Bean("timeSequenceGenerator")
@@ -181,5 +187,24 @@ public class AtlasRedisAutoConfiguration {
     }
 
 
+    private ObjectMapper createRedisObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        // 基础设置
+        mapper.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // 注册 Java8 时间模块
+        mapper.registerModule(new JavaTimeModule());
+        // 禁止将日期转为时间戳（保持 pattern 格式）
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+
+        // 【核心】开启类型保留：写入 JSON 时带上 @class 信息
+        mapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+        return mapper;
+    }
 
 }

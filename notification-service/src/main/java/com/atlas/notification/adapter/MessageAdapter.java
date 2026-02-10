@@ -1,7 +1,7 @@
 package com.atlas.notification.adapter;
 
 
-import com.atlas.common.api.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.notification.domain.mode.MessagePayload;
 
 import java.util.List;

@@ -21,8 +21,6 @@ import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Component;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -30,7 +28,6 @@ import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 
-@Component
 @Slf4j
 public class HttpClientFactory {
 

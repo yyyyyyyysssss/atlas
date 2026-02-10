@@ -1,7 +1,8 @@
 package com.atlas.user.controller;
 
-import com.atlas.common.api.UserApi;
-import com.atlas.common.api.dto.UserDTO;
+
+import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.service.UserService;

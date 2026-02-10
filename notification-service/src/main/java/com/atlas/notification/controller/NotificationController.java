@@ -1,6 +1,6 @@
 package com.atlas.notification.controller;
 
-import com.atlas.common.api.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.dto.NotificationDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.notification.service.NotificationService;

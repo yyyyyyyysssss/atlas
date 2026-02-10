@@ -1,6 +1,5 @@
 package com.atlas.user.controller;
 
-import com.atlas.common.api.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.domain.dto.UserBindRoleDTO;
@@ -15,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collection;
-import java.util.List;
 
 /**
  * @Description

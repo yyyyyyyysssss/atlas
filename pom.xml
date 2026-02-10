@@ -14,7 +14,6 @@
         <module>atlas-common/common-mybatis</module>
         <module>notification-service</module>
         <module>user-service</module>
-        <module>atlas-common/common-api</module>
     </modules>
 
     <properties>
@@ -81,18 +80,6 @@
             <dependency>
                 <groupId>com.atlas.common</groupId>
                 <artifactId>common-mybatis</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.atlas.common.api</groupId>
-                <artifactId>user-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.atlas.common.api</groupId>
-                <artifactId>notification-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -1,10 +1,11 @@
 package com.atlas.notification.service;
 
-import com.atlas.common.api.UserApi;
-import com.atlas.common.api.dto.UserDTO;
-import com.atlas.common.api.enums.ChannelType;
-import com.atlas.common.api.enums.TargetType;
-import com.atlas.common.api.exception.NotificationException;
+
+import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.TargetType;
+import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.common.core.response.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

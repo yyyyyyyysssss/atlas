@@ -1,7 +1,7 @@
 package com.atlas.user.mapping;
 
 
-import com.atlas.common.api.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.mapping.LocalDateMapper;
 import com.atlas.common.core.mapping.LocalDateTimeMapper;
 

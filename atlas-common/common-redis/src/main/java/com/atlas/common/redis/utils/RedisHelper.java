@@ -8,9 +8,7 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisStringCommands;
 import org.springframework.data.redis.core.*;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.lang.Nullable;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -25,12 +23,10 @@ import java.util.stream.Collectors;
 public class RedisHelper {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final GenericJackson2JsonRedisSerializer serializer;
     private final ObjectMapper objectMapper;
 
-    public RedisHelper(RedisTemplate<String, Object> redisTemplate, GenericJackson2JsonRedisSerializer serializer, ObjectMapper objectMapper) {
+    public RedisHelper(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
-        this.serializer = serializer;
         this.objectMapper = objectMapper;
     }
 
@@ -141,7 +137,7 @@ public class RedisHelper {
 
     public <T> T getValue(String key, Class<T> clazz) {
         Object obj = getValue(key);
-        return deserialize(obj, clazz);
+        return deserialize(key,clazz);
     }
 
     public <T> T getValue(String key, TypeReference<T> toValueTypeRef) {
@@ -994,37 +990,13 @@ public class RedisHelper {
 
     @SuppressWarnings("unchecked")
     private <T> T deserialize(Object obj, Class<T> clazz) {
-        if (obj == null) return null;
-        if (clazz.isInstance(obj)) {
-            return (T) obj;
-        }
-        if (obj instanceof byte[] bytes) {
-            return serializer.deserialize(bytes, clazz);
-        }
-        if (obj instanceof String str) {
-            if (str.isEmpty()) return null;
-            if (clazz == String.class) return (T) str;
-            try {
-                // 优先尝试作为 JSON 反序列化，这比转 byte[] 再反序列化快
-                return objectMapper.readValue(str, clazz);
-            } catch (Exception e) {
-                // 如果不是标准 JSON 格式，尝试 Jackson 的内部强制转换（如 "100" -> 100L）
-                try {
-                    return objectMapper.convertValue(str, clazz);
-                } catch (Exception ex) {
-                    log.warn("RedisHelper: String deserialize failed, value: {}, target: {}", str, clazz.getName());
-                    return null;
-                }
-            }
-        }
-        try {
-            // convertValue 会处理数字转换、Map转POJO 等逻辑
-            return objectMapper.convertValue(obj, clazz);
-        } catch (Exception e) {
-            log.error("RedisHelper: ConvertValue error, source: {}, target: {}, error: {}",
-                    obj.getClass().getName(), clazz.getName(), e.getMessage());
+        if (obj == null){
             return null;
         }
+        if (clazz.isInstance(obj)) {
+            return clazz.cast(obj);
+        }
+        return objectMapper.convertValue(obj, clazz);
     }
 
     private <T> T deserialize(Object obj, TypeReference<T> toValueTypeRef) {

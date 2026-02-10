@@ -1,8 +1,8 @@
 package com.atlas.notification.adapter;
 
-import com.atlas.common.api.constant.NotificationConstant;
-import com.atlas.common.api.enums.ChannelType;
-import com.atlas.common.api.exception.NotificationException;
+import com.atlas.common.core.api.notification.constant.NotificationConstant;
+import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.domain.mode.HtmlPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.TextPayload;

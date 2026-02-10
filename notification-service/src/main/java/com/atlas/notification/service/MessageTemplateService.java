@@ -1,7 +1,7 @@
 package com.atlas.notification.service;
 
 
-import com.atlas.common.api.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.notification.domain.dto.MessageTemplateCreateDTO;
 import com.atlas.notification.domain.dto.MessageTemplateQueryDTO;
 import com.atlas.notification.domain.dto.MessageTemplateUpdateDTO;

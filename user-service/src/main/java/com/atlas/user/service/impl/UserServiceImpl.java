@@ -1,12 +1,11 @@
 package com.atlas.user.service.impl;
 
-import com.atlas.common.api.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
-import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.domain.entity.UserRole;
 import com.atlas.user.domain.vo.RoleVO;
@@ -19,22 +18,17 @@ import com.atlas.user.utils.AvatarGeneratorUtils;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.context.annotation.Lazy;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;

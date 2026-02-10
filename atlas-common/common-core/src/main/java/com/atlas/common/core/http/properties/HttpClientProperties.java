@@ -5,10 +5,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties(prefix = "http.config")
-@Configuration
 @Getter
 @Setter
+@ConfigurationProperties(prefix = "http.config")
 public class HttpClientProperties {
 
     private long connectionRequestTimeout;

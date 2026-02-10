@@ -1,13 +1,12 @@
 package com.atlas.user.service;
 
-import com.atlas.common.api.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 

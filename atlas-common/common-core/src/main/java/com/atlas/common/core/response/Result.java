@@ -1,7 +1,6 @@
 package com.atlas.common.core.response;
 
 import com.atlas.common.core.constant.CommonConstant;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.MDC;
 
 /**
@@ -61,7 +60,7 @@ public class Result<T> {
         return requestId;
     }
 
-    @JsonIgnore
+
     public boolean isSucceed(){
 
         return this.code == ResultCode.SUCCEED.getCode();

@@ -1,5 +1,6 @@
 package com.atlas.common.core.api.notification.exception;
 
+import com.atlas.common.core.exception.BaseException;
 import com.atlas.common.core.response.IErrorCode;
 import com.atlas.common.core.response.ResultCode;
 import lombok.Getter;
@@ -10,7 +11,7 @@ import lombok.Getter;
  * @Date 2026/2/3 14:57
  */
 @Getter
-public class NotificationException extends RuntimeException{
+public class NotificationException extends BaseException {
 
     public final IErrorCode code;
 
@@ -33,7 +34,7 @@ public class NotificationException extends RuntimeException{
     }
 
     public NotificationException(IErrorCode code, String detail, Throwable cause) {
-        super(code.getMessage() + (detail == null ? "" : " -> " + detail),cause);
+        super(code,detail,cause);
         this.code = code;
         this.detail = detail;
     }

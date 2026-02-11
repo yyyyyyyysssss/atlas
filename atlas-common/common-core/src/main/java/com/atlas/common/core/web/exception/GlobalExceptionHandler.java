@@ -1,5 +1,6 @@
 package com.atlas.common.core.web.exception;
 
+import com.atlas.common.core.exception.BaseException;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultCode;
@@ -33,10 +34,10 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.OK)
-    @ExceptionHandler(BusinessException.class)
-    public Result<?> businessException(BusinessException e) {
-        log.error("业务异常: ", e);
-        return ResultGenerator.failed(e.getCode(), e.getMessage());
+    @ExceptionHandler(BaseException.class)
+    public Result<?> handleBaseException(BaseException e) {
+        log.warn("业务异常: [{}] {}, 详情: {}", e.getErrorCode().getCode(), e.getErrorCode().getMessage(), e.getDetail());
+        return ResultGenerator.failed(e.getErrorCode(), e.getMessage());
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -108,17 +109,20 @@ public class GlobalExceptionHandler {
     private boolean isClientAbort(Throwable e) {
         Throwable t = e;
         while (t != null) {
-            if (t instanceof org.apache.catalina.connector.ClientAbortException) {
+            String className = t.getClass().getName();
+            if ("org.apache.catalina.connector.ClientAbortException".equals(className)) {
                 return true;
             }
             if (t instanceof java.io.IOException) {
                 String msg = t.getMessage();
                 if (msg != null) {
-                    // 兼容 Windows (你的堆栈) / Linux (Broken pipe) / 标准描述
-                    if (msg.contains("中止") ||
-                            msg.contains("aborted") ||
-                            msg.contains("Broken pipe") ||
-                            msg.contains("Connection reset")) {
+                    // 转小写处理，提高兼容性
+                    String lowerMsg = msg.toLowerCase();
+                    if (lowerMsg.contains("中止") ||
+                            lowerMsg.contains("aborted") ||
+                            lowerMsg.contains("broken pipe") ||
+                            lowerMsg.contains("connection reset") ||
+                            lowerMsg.contains("established connection was aborted")) { // Windows 常见错误描述
                         return true;
                     }
                 }

@@ -2,6 +2,7 @@ package com.atlas.common.core.autoconfigure;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.aspect.ControllerLogAspect;
 import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.json.JacksonConfiguration;
@@ -41,6 +42,19 @@ public class AtlasCoreAutoConfiguration {
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @Import({GlobalExceptionHandler.class, MDCTraceFilter.class})
     public static class WebFeatureConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean
+        @ConditionalOnProperty(
+                prefix = "aspect.controller-log",
+                name = "enabled",
+                havingValue = "true",
+                matchIfMissing = true
+        )
+        public ControllerLogAspect controllerLogAspect(ObjectMapper objectMapper){
+
+            return new ControllerLogAspect(objectMapper);
+        }
 
         @Bean
         @ConditionalOnMissingBean

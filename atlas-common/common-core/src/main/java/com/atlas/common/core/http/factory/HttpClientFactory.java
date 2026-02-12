@@ -50,11 +50,19 @@ public class HttpClientFactory {
     }
 
     public ClientHttpRequestFactory create(boolean enableProxy) {
+        CloseableHttpClient client = getHttpClient(enableProxy);
+        return new HttpComponentsClientHttpRequestFactory(client);
+    }
+
+    public CloseableHttpClient getHttpClient() {
+        return getHttpClient(false);
+    }
+
+    public CloseableHttpClient getHttpClient(boolean enableProxy) {
         try {
-            CloseableHttpClient client = enableProxy ? getProxyClient() : getDefaultClient();
-            return new HttpComponentsClientHttpRequestFactory(client);
+            return enableProxy ? getProxyClient() : getDefaultClient();
         } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("初始化 HttpClient 失败", e);
         }
     }
 

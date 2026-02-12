@@ -25,3 +25,8 @@ redisson:
       address: redis://ys0921.sbs:46379
       password: Yan@136156
       database: 0
+
+
+atlas:
+  notification:
+    server-url: http://localhost:9090

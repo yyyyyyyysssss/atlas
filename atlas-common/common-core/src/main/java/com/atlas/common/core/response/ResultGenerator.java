@@ -27,6 +27,11 @@ public class ResultGenerator {
         return new Result<>(resultCode, null, resultCode.getMessage());
     }
 
+    public static <T> Result<T> failed(String message){
+
+        return new Result<>(ResultCode.UNKNOWN_ERROR, null, message);
+    }
+
     public static <T> Result<T> failed(IErrorCode resultCode,String message){
 
         return new Result<>(resultCode, null, message);

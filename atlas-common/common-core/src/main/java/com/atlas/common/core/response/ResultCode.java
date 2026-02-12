@@ -37,6 +37,7 @@ public enum ResultCode implements IErrorCode{
     INTERNAL_SERVER_ERROR(5000, "服务器内部错误"),
     REMOTE_CALL_FAILED(5002, "第三方服务通信故障"),
     SERVICE_BUSY(5003, "系统繁忙，请稍后再试"),
+    SERVICE_UNAVAILABLE(5004, "服务暂时不可用"),
 
     // 51xx: 数据库操作异常
     DATABASE_ERROR(5100, "数据库操作异常"),

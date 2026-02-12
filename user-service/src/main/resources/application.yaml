@@ -7,6 +7,13 @@ server:
 spring:
   application:
     name: user-service
+  main:
+    allow-circular-references: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 20MB
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   mvc:
@@ -20,13 +27,25 @@ spring:
   threads:
     virtual:
       enabled: true
-  main:
-    allow-circular-references: true
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 20MB
-      max-request-size: 20MB
+  cloud:
+    circuitbreaker:
+      resilience4j:
+        disable-thread-pool: true
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            loggerLevel: basic
+      httpclient:
+        hc5:
+          enabled: true
+
+
+logging:
+  level:
+    com.atlas.common.core.api.notification.feign: DEBUG
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*xml
@@ -36,6 +55,10 @@ mybatis-plus:
 
 # 使用resilience4j 熔断降级配置
 resilience4j:
+  scheduled:
+    executor:
+      context-propagators:
+        - com.atlas.common.core.resilience4j.MdcContextPropagator
   # 断路器
   circuitbreaker:
     configs:
@@ -125,6 +148,8 @@ resilience4j:
         maxThreadPoolSize: 50
         queueCapacity: 1000
         keepAliveDuration: 20ms
+        context-propagators:
+          - com.atlas.common.core.resilience4j.MdcContextPropagator
     instances:
       commonThreadPoolBulkhead:
         # 公共线程池限制器: 线程池耗尽时进行降级

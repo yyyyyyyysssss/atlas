@@ -1,6 +1,8 @@
 package com.atlas.common.core.autoconfigure;
 
+import com.atlas.common.core.api.feign.FeignConfiguration;
 import com.atlas.common.core.api.notification.NotificationApi;
+import com.atlas.common.core.api.notification.feign.NotificationFeignApi;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.aspect.ControllerLogAspect;
 import com.atlas.common.core.http.HttpClientConfiguration;
@@ -30,7 +32,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @AutoConfiguration
 @Import({
         HttpClientConfiguration.class,
-        JacksonConfiguration.class,
+        JacksonConfiguration.class
 })
 public class AtlasCoreAutoConfiguration {
 
@@ -40,7 +42,7 @@ public class AtlasCoreAutoConfiguration {
      */
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @Import({GlobalExceptionHandler.class, MDCTraceFilter.class})
+    @Import({GlobalExceptionHandler.class, FeignConfiguration.class, MDCTraceFilter.class})
     public static class WebFeatureConfiguration {
 
         @Bean
@@ -51,7 +53,7 @@ public class AtlasCoreAutoConfiguration {
                 havingValue = "true",
                 matchIfMissing = true
         )
-        public ControllerLogAspect controllerLogAspect(ObjectMapper objectMapper){
+        public ControllerLogAspect controllerLogAspect(ObjectMapper objectMapper) {
 
             return new ControllerLogAspect(objectMapper);
         }
@@ -65,7 +67,8 @@ public class AtlasCoreAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public RestClient defaultRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory) {
-            return restClientFactory.create(httpClientFactory.create(), builder -> {});
+            return restClientFactory.create(httpClientFactory.create(), builder -> {
+            });
         }
 
 
@@ -84,7 +87,8 @@ public class AtlasCoreAutoConfiguration {
         }
 
         private <T> T createProxy(Class<T> clazz, String url, RestClientFactory factory, HttpClientFactory httpFactory) {
-            RestClient restClient = factory.create(httpFactory.create(), url, builder -> {});
+            RestClient restClient = factory.create(httpFactory.create(), url, builder -> {
+            });
             return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
                     .build()
                     .createClient(clazz);

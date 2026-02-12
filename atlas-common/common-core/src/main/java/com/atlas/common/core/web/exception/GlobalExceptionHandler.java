@@ -1,14 +1,15 @@
 package com.atlas.common.core.web.exception;
 
 import com.atlas.common.core.exception.BaseException;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultCode;
 import com.atlas.common.core.response.ResultGenerator;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,21 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+
+    // Resilience4j 熔断器开启时的异常
+    @ExceptionHandler({CallNotPermittedException.class, NoFallbackAvailableException.class})
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE) // 返回 503 状态码
+    public Result<?> handleCircuitBreakerException(Exception e) {
+        String circuitBreakerName = "Unknown";
+        if (e instanceof CallNotPermittedException) {
+            circuitBreakerName = ((CallNotPermittedException) e).getCausingCircuitBreakerName();
+        }
+        log.warn("触发系统熔断自保机制，熔断器: {}", circuitBreakerName);
+        // 返回业务定义的错误结构
+        return ResultGenerator.failed(ResultCode.SERVICE_UNAVAILABLE, "系统暂时无法处理此请求，请稍后再试");
+    }
+
 
     @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(BaseException.class)
@@ -92,13 +108,6 @@ public class GlobalExceptionHandler {
         return ResultGenerator.failed(ResultCode.PARAM_ERROR, e.getMessage());
     }
 
-    private Result<?> getValidResult(BindingResult bindingResult) {
-        String message = bindingResult.getFieldErrors().stream()
-                .map(f -> f.getField() + ":" + f.getDefaultMessage())
-                .collect(Collectors.joining("; ")); // 自动处理分号
-        return ResultGenerator.failed(ResultCode.PARAM_ERROR, message);
-    }
-
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public Result<?> handleException(Exception e) {
@@ -130,6 +139,13 @@ public class GlobalExceptionHandler {
             t = t.getCause();
         }
         return false;
+    }
+
+    private Result<?> getValidResult(BindingResult bindingResult) {
+        String message = bindingResult.getFieldErrors().stream()
+                .map(f -> f.getField() + ":" + f.getDefaultMessage())
+                .collect(Collectors.joining("; ")); // 自动处理分号
+        return ResultGenerator.failed(ResultCode.PARAM_ERROR, message);
     }
 
 }

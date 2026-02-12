@@ -7,10 +7,9 @@ import com.atlas.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * (MessageTemplate)表控制层
@@ -29,6 +28,15 @@ public class NotificationController {
     @PostMapping("/send")
     public Result<?> send(@RequestBody @Validated NotificationDTO notificationDTO) {
         notificationService.send(notificationDTO);
+        return ResultGenerator.ok();
+    }
+
+    final static AtomicInteger a = new AtomicInteger(0);
+    @GetMapping("/test")
+    public Result<?> test() {
+//        if(a.incrementAndGet() % 2 == 0){
+//            throw new RuntimeException("异常");
+//        }
         return ResultGenerator.ok();
     }
 

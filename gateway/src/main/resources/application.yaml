@@ -1,0 +1,58 @@
+server:
+  port: 9000
+  tomcat:
+    threads:
+      max: 200
+
+spring:
+  application:
+    name: gateway
+  main:
+    allow-circular-references: true
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 20MB
+      max-request-size: 20MB
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  mvc:
+    async:
+      request-timeout: -1
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  output:
+    ansi:
+      enabled: always
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: user_route
+              uri: http://localhost:9091
+              predicates:
+                - Path=/api/user/** # 匹配以此路径开头的请求
+              filters:
+                - StripPrefix=2 # 转发前剥离 2 层路径
+                - AddRequestHeader=x-request-id, 123
+
+
+
+http:
+  config:
+    # 连接池中允许存在的最大 HTTP 连接总数（整个 JVM 进程共享）
+    maxConnTotal: 500
+    # 单个目标主机（同一域名 + 端口）的最大并发连接数
+    maxConnPerRoute: 100
+    # 从连接池中获取连接的最大等待时间 单位：秒
+    connectionRequestTimeout: 5
+    # 建立连接后，等待服务端返回数据的最大时间（Socket 超时） 单位：秒
+    responseTimeout: 60
+    # 是否跳过 HTTPS 证书校验（仅限 dev/test，生产必须为 false）
+    insecureSkipVerify: true
+    # HTTP 代理地址
+    proxy:

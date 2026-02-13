@@ -18,6 +18,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
 import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -98,7 +99,11 @@ public class HttpClientFactory {
                 .custom()
                 .addRequestInterceptorFirst(new HttpClientTraceIdInterceptor())
                 .setDefaultRequestConfig(requestConfig)
-                .setConnectionManager(connectionManager);
+                .setConnectionManager(connectionManager)
+                // 驱逐空闲连接 如果一个连接在池子里空闲超过 30 秒，就将其关闭并移出池子
+                .evictIdleConnections(TimeValue.ofSeconds(30))
+                // 自动清理那些已经达到 TTL（生存时间）限制的连接
+                .evictExpiredConnections();
         String proxy = httpClientProperties.getProxy();
         if (enableProxy && proxy != null && !proxy.isEmpty()) {
             httpClientBuilder.setRoutePlanner(new DefaultProxyRoutePlanner(HttpHost.create(proxy)));
@@ -147,7 +152,19 @@ public class HttpClientFactory {
     @PreDestroy
     public void shutdown() {
         log.info("Shutting down HttpClient connection pool");
-        connectionManager.close();
+        try {
+            if (defaultClient != null) {
+                defaultClient.close();
+            }
+            if (proxyClient != null) {
+                proxyClient.close();
+            }
+        }catch (Exception e){
+            log.error("Error closing HttpClient", e);
+        }
+        if (connectionManager != null) {
+            connectionManager.close();
+        }
     }
 
     private static SSLContext createSSLContext() {

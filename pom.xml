@@ -14,6 +14,7 @@
         <module>atlas-common/common-mybatis</module>
         <module>notification-service</module>
         <module>user-service</module>
+        <module>gateway</module>
     </modules>
 
     <properties>
@@ -89,6 +90,13 @@
     <build>
         <pluginManagement>
             <plugins>
+
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring.boot.version}</version>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>

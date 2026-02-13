@@ -56,8 +56,27 @@ public class UserInternalController {
 
     @GetMapping("/test")
     public Result<?> test() {
-        log.info("notificationFeignApi test");
-        return notificationFeignApi.test();
+        String verificationCode = VerificationCodeUtils.genVerificationCode();
+        Map<String, Object> variable = new HashMap<>();
+        variable.put("code", verificationCode);
+        notificationFeignApi.send(
+                NotificationRequest
+                        .template("EmailVerificationCode", "邮箱验证码", variable)
+                        .email(config -> config
+                                .cc("ysyanshuai29@gmail.com")
+                                .from("syan@gmail.com")
+                                .replyTo("1085385084@qq.com")
+                                .bcc("2622540847@qq.com")
+                                .priority(1)
+                        )
+                        .sms(config -> config
+                                .extTemplateCode("100001")
+                        )
+                        .withParam("min", 10)
+                        .toEmails("1085385084@qq.com")
+                        .build()
+        );
+        return ResultGenerator.ok();
     }
 
 }

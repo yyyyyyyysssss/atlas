@@ -39,14 +39,14 @@ spring:
   cloud:
     circuitbreaker:
       resilience4j:
-        disable-thread-pool: true
+        disable-thread-pool: false
     openfeign:
       circuitbreaker:
         enabled: true
       client:
         config:
           default:
-            loggerLevel: basic
+            loggerLevel: none
             connect-timeout: 5000
             read-timeout: 5000
       httpclient:

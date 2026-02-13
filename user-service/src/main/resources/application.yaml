@@ -30,14 +30,14 @@ spring:
   cloud:
     circuitbreaker:
       resilience4j:
-        disable-thread-pool: true
+        disable-thread-pool: false
     openfeign:
       circuitbreaker:
         enabled: true
       client:
         config:
           default:
-            loggerLevel: basic
+            loggerLevel: none
       httpclient:
         hc5:
           enabled: true

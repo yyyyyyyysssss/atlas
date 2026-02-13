@@ -1,7 +1,9 @@
 package com.atlas.common.core.api.feign;
 
+import com.atlas.common.core.api.feign.interceptor.FeignTraceIdInterceptor;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import feign.Client;
+import feign.RequestInterceptor;
 import feign.hc5.ApacheHttp5Client;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,8 +22,14 @@ public class FeignConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public Client feignClient(HttpClientFactory httpClientFactory) {
+        ApacheHttp5Client apacheHttp5Client = new ApacheHttp5Client(httpClientFactory.getHttpClient());
+        return new ContextAwareFeignClient(apacheHttp5Client);
+    }
 
-        return new ApacheHttp5Client(httpClientFactory.getHttpClient());
+    @Bean
+    public RequestInterceptor feignTraceIdInterceptor() {
+
+        return new FeignTraceIdInterceptor();
     }
 
 }

@@ -34,9 +34,7 @@ public class NotificationController {
     final static AtomicInteger a = new AtomicInteger(0);
     @GetMapping("/test")
     public Result<?> test() {
-//        if(a.incrementAndGet() % 2 == 0){
-//            throw new RuntimeException("异常");
-//        }
+
         return ResultGenerator.ok();
     }
 

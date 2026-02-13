@@ -1,6 +1,7 @@
 package com.atlas.common.core.web.filter;
 
 import com.atlas.common.core.constant.CommonConstant;
+import com.atlas.common.core.web.wrapper.HeaderEnhanceRequestWrapper;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,39 +25,12 @@ import java.util.*;
 
 public class MDCTraceFilter extends OncePerRequestFilter {
     @Override
-    protected void doFilterInternal(HttpServletRequest request, @Nonnull HttpServletResponse response,@Nonnull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response,@Nonnull FilterChain filterChain) throws ServletException, IOException {
         String traceId = resolveTraceId(request);
         // 注入响应头
         response.setHeader(CommonConstant.TRACE_ID, traceId);
-        HttpServletRequest wrappedRequest = new HttpServletRequestWrapper(request){
-            @Override
-            public String getHeader(String name) {
-                if (CommonConstant.TRACE_ID.equalsIgnoreCase(name)) {
-                    return traceId;
-                }
-                return super.getHeader(name);
-            }
-
-            @Override
-            public Enumeration<String> getHeaderNames() {
-                Set<String> names = new HashSet<>();
-                Enumeration<String> originalNames = super.getHeaderNames();
-                if (originalNames != null) {
-                    names.addAll(Collections.list(originalNames));
-                }
-                names.add(CommonConstant.TRACE_ID);
-                return Collections.enumeration(names);
-            }
-
-            @Override
-            public Enumeration<String> getHeaders(String name) {
-                if (CommonConstant.TRACE_ID.equalsIgnoreCase(name)) {
-                    return Collections.enumeration(Collections.singletonList(traceId));
-                }
-                return super.getHeaders(name);
-            }
-
-        };
+        HeaderEnhanceRequestWrapper wrappedRequest = new HeaderEnhanceRequestWrapper(request);
+        wrappedRequest.addHeader(CommonConstant.TRACE_ID, traceId);
         try {
             // 开启 RequestContextHolder 的子线程继承
             ServletRequestAttributes attributes = new ServletRequestAttributes(wrappedRequest, response);

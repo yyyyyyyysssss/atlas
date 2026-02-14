@@ -4,6 +4,7 @@ import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.lock.RedissonDistributedLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class AtlasRedissonAutoConfiguration {
 
     @Bean
+    @ConditionalOnBean(RedissonClient.class)
     public DistributedLock distributedLock(RedissonClient redissonClient) {
 
         return new RedissonDistributedLock(redissonClient);

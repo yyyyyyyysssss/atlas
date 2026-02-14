@@ -2,14 +2,13 @@ package com.atlas.common.core.autoconfigure;
 
 import com.atlas.common.core.api.feign.FeignConfiguration;
 import com.atlas.common.core.api.notification.NotificationApi;
-import com.atlas.common.core.api.notification.feign.NotificationFeignApi;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.aspect.ControllerLogAspect;
 import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.json.JacksonConfiguration;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
-import com.atlas.common.core.web.exception.GlobalExceptionHandler;
+import com.atlas.common.core.web.handler.GlobalExceptionHandler;
 import com.atlas.common.core.web.filter.MDCTraceFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;

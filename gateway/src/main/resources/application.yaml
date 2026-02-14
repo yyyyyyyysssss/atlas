@@ -38,9 +38,47 @@ spring:
                 - Path=/api/user/** # 匹配以此路径开头的请求
               filters:
                 - StripPrefix=2 # 转发前剥离 2 层路径
-                - AddRequestHeader=x-request-id, 123
 
 
+security:
+  loginPage: http://localhost:3000/login
+  authorize:
+    permit:
+      - /api/login
+      - /api/login/ott
+      - /error
+      - /assets/**
+      - /favicon.ico
+      - /oauth2/client/**
+      - /oauth2/consent
+      - /oauth2/activate
+      - /activated
+      - /api/open/**
+      - /actuator/**
+    authenticated:
+      - /api/refreshToken
+      - /api/logout
+      - /api/ott/generate
+      - /file/**
+      - /api/file/**
+      - /api/profile/**
+      - /api/authenticated/**
+      - /api/options/**
+  # 基于请求头的身份认证
+  requestHeadAuthentications:
+    - antPath: /api/internal/**
+      apikey: 26662f07703c41d2a4994b8b30b101a9
+  # jwt token配置
+  jwt:
+    secretKey: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
+    expiration: 24h
+    refreshExpiration: 30d
+
+
+logging:
+  level:
+    org.springframework.security: trace
 
 http:
   config:

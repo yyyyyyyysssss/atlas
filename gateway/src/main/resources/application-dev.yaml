@@ -1,0 +1,15 @@
+
+spring:
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ys0921.sbs
+      port: 46379
+      password: Yan@136156
+      lettuce:
+        pool:
+          min-idle: 10
+          max-idle: 20
+          max-active: 100
+          max-wait: 5000

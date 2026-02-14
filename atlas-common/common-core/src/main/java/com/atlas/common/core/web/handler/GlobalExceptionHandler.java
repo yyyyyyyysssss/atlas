@@ -1,4 +1,4 @@
-package com.atlas.common.core.web.exception;
+package com.atlas.common.core.web.handler;
 
 import com.atlas.common.core.exception.BaseException;
 import com.atlas.common.core.response.Result;

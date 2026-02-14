@@ -12,6 +12,7 @@
         <module>atlas-common/common-core</module>
         <module>atlas-common/common-redis</module>
         <module>atlas-common/common-mybatis</module>
+        <module>atlas-common/common-security</module>
         <module>notification-service</module>
         <module>user-service</module>
         <module>gateway</module>
@@ -81,6 +82,12 @@
             <dependency>
                 <groupId>com.atlas.common</groupId>
                 <artifactId>common-mybatis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.atlas.common</groupId>
+                <artifactId>common-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

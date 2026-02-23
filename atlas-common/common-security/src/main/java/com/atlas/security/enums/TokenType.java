@@ -14,4 +14,6 @@ public enum TokenType {
 
     REFRESH_TOKEN,
 
+    REMEMBER_ME_TOKEN
+
 }

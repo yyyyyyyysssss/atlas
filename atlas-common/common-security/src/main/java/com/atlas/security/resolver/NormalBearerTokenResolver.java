@@ -1,4 +1,4 @@
-package com.atlas.gateway.config.security;
+package com.atlas.security.resolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -35,9 +35,8 @@ public class NormalBearerTokenResolver {
             if (!matcher.matches()) {
 
                 throw new BadCredentialsException("Bearer token is malformed");
-            } else {
-                return matcher.group("token");
             }
+            return matcher.group("token");
         }
     }
 

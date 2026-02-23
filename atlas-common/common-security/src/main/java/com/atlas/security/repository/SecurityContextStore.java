@@ -9,4 +9,6 @@ public interface SecurityContextStore extends SecurityContextRepository {
 
     boolean clearContext(String tokenId);
 
+    boolean containsContext(String tokenId);
+
 }

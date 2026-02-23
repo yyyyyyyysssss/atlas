@@ -1,22 +1,29 @@
 package com.atlas.security.autoconfigure;
 
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.SecurityExceptionHandler;
 import com.atlas.security.jackson.AuthorityUrlMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
-import com.atlas.security.model.AuthorityUrl;
+import com.atlas.security.jackson.SecurityUserMixin;
 import com.atlas.security.model.RequestUrlAuthority;
+import com.atlas.security.model.SecurityUser;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.RedisSecurityContextRepository;
+import com.atlas.security.repository.SecurityContextStore;
+import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.DefaultTokenService;
 import com.atlas.security.service.TokenService;
+import com.atlas.security.token.EmailAuthenticationToken;
+import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.atlas.security.utils.JwtUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,6 +35,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
 
@@ -47,14 +57,34 @@ public class AtlasSecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public TokenService tokenService(JwtUtils jwtUtils, RedisHelper redisHelper){
+    public NormalBearerTokenResolver normalBearerTokenResolver() {
 
-        return new DefaultTokenService(jwtUtils,redisHelper);
+        return new NormalBearerTokenResolver();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean // 允许特定的服务覆盖加密方案
+    public PasswordEncoder passwordEncoder() {
+
+//            return new BCryptPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance();
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public RedisSecurityContextRepository securityContextRepository(
+    public TokenService tokenService(
+            JwtUtils jwtUtils,
+            RedisHelper redisHelper,
+            SecurityProperties securityProperties,
+            SecurityContextStore securityContextRepository,
+            @Autowired(required = false) UserDetailsService userService) {
+
+        return new DefaultTokenService(jwtUtils, redisHelper, securityProperties, securityContextRepository, userService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SecurityContextStore securityContextRepository(
             @Qualifier("securityRedisTemplate") RedisTemplate<String, SecurityContext> securityRedisTemplate,
             SecurityProperties securityProperties) {
 
@@ -91,8 +121,11 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.registerModule(new WebServletJackson2Module());
 
         // 2. 注册你自定义的权限模型 Mixin
+        objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
         objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
         objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
+        objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(ThirdPartyAuthenticationToken.class, ThirdPartyAuthenticationToken.ThirdPartyAuthenticationTokenMixin.class);
 
         // 3. 必须开启的配置：保留类型信息
         // 否则 Redis 反序列化时不知道要把 JSON 转成哪个具体的实现类
@@ -101,12 +134,12 @@ public class AtlasSecurityAutoConfiguration {
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
-
+        objectMapper.findAndRegisterModules();
         return objectMapper;
     }
 
     @Bean
-    public JwtUtils jwtUtils(SecurityProperties securityProperties){
+    public JwtUtils jwtUtils(SecurityProperties securityProperties) {
 
         return new JwtUtils(securityProperties);
     }

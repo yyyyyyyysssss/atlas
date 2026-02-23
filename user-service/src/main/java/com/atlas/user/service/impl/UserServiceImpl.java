@@ -1,11 +1,14 @@
 package com.atlas.user.service.impl;
 
+import com.atlas.common.core.api.user.dto.RoleAuthDTO;
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
+import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.domain.entity.UserRole;
 import com.atlas.user.domain.vo.RoleVO;
@@ -18,17 +21,20 @@ import com.atlas.user.utils.AvatarGeneratorUtils;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -56,6 +62,47 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final UserRoleService userRoleService;
 
+    private final PasswordEncoder passwordEncoder;
+
+    private final RoleAuthorityService roleAuthorityService;
+
+    private final AuthorityService authorityService;
+
+    @Override
+    public UserAuthDTO  loadUserByUsername(String username) {
+        User user = findByUsername(username);
+        return getUserAuthDTO(user);
+    }
+
+    @Override
+    public UserAuthDTO loadUserByUserId(Long id) {
+        User user = findByUserId(id);
+        return getUserAuthDTO(user);
+    }
+
+    private UserAuthDTO getUserAuthDTO(User user) {
+        UserAuthDTO userAuthDTO = UserMapping.INSTANCE.toUserAuthDTO(user);
+        List<Long> roleIds = userRoleService.findRoleIdByUserId(user.getId());
+        if (CollectionUtils.isEmpty(roleIds)) {
+            userAuthDTO.setAuthorities(Collections.emptyList());
+            return userAuthDTO;
+        }
+        List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
+        if (CollectionUtils.isEmpty(authorityIds)) {
+            userAuthDTO.setAuthorities(Collections.emptyList());
+            return userAuthDTO;
+        }
+        List<Authority> authorities = authorityService.listByIds(authorityIds);
+        if(CollectionUtils.isEmpty(authorities)){
+            return userAuthDTO;
+        }
+        List<RoleAuthDTO> list = new ArrayList<>();
+        for (Authority authority : authorities) {
+            list.add(new RoleAuthDTO(authority.getCode(),authority.getUrls()));
+        }
+        userAuthDTO.setAuthorities(list);
+        return userAuthDTO;
+    }
 
     @Override
     public boolean saveOrUpdate(User user) {
@@ -75,7 +122,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User findByUsername(String username) {
         Wrapper<User> queryWrapper = new QueryWrapper<User>().eq("username", username);
-        return userMapper.selectOne(queryWrapper);
+        User user = userMapper.selectOne(queryWrapper);
+        if (user == null) {
+            throw new BusinessException("用户不存在: " + username);
+        }
+        return user;
     }
 
     @Override
@@ -141,8 +192,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } else {
             password = user.getPassword();
         }
-//        String encryptPassword = passwordEncoder.encode(password);
-//        user.setPassword(encryptPassword);
+        String encryptPassword = passwordEncoder.encode(password);
+        user.setPassword(encryptPassword);
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
             String defaultAvatar = generateDefaultAvatar(user.getFullName());
             user.setAvatar(defaultAvatar);
@@ -202,17 +253,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public String resetPassword(Long userId) {
-//        checkAndResult(userId);
-//        String newPassword = PasswordGeneratorUtils.generate(10);
-//        String encryptPassword = passwordEncoder.encode(newPassword);
-//        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-//        userUpdateWrapper.lambda().eq(User::getId, userId).set(User::getPassword, encryptPassword);
-//        int update = userMapper.update(null, userUpdateWrapper);
-//        if (update <= 0) {
-//            throw new BusinessException("密码重置失败");
-//        }
-//        return newPassword;
-        return null;
+        checkAndResult(userId);
+        String newPassword = PasswordGeneratorUtils.generate(10);
+        String encryptPassword = passwordEncoder.encode(newPassword);
+        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
+        userUpdateWrapper.lambda().eq(User::getId, userId).set(User::getPassword, encryptPassword);
+        int update = userMapper.update(null, userUpdateWrapper);
+        if (update <= 0) {
+            throw new BusinessException("密码重置失败");
+        }
+        return newPassword;
     }
 
     @Override

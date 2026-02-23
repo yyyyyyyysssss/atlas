@@ -39,7 +39,7 @@ public class SecurityExceptionHandler {
             return ResultGenerator.failed(ResultCode.AUTH_LOGIN_FAILED);
         }
         log.error("认证异常: ",authenticationException);
-        return ResultGenerator.failed(ResultCode.UNAUTHORIZED);
+        return ResultGenerator.failed(ResultCode.UNAUTHORIZED,authenticationException.getMessage());
     }
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)

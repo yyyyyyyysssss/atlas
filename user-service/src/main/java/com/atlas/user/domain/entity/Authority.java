@@ -1,5 +1,6 @@
 package com.atlas.user.domain.entity;
 
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.common.mybatis.mapper.TreeRelation;
 import com.atlas.user.enums.AuthorityType;

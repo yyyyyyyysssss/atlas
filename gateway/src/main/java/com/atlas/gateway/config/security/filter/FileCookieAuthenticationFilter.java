@@ -47,7 +47,7 @@ public class FileCookieAuthenticationFilter extends OncePerRequestFilter {
         }
         String token = extractToken(request);
         if(token != null){
-            PayloadInfo payloadInfo = tokenService.verify(token);
+            PayloadInfo payloadInfo = tokenService.verify(token,TokenType.ACCESS_TOKEN);
             if (payloadInfo != null){
                 String tokenId = payloadInfo.getId();
                 request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);

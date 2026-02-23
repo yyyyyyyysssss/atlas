@@ -1,6 +1,7 @@
 package com.atlas.common.core.http.factory;
 
 import com.atlas.common.core.http.interceptor.HttpClientTraceIdInterceptor;
+import com.atlas.common.core.http.interceptor.HttpClientUserContextInterceptor;
 import com.atlas.common.core.http.properties.HttpClientProperties;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -98,6 +99,7 @@ public class HttpClientFactory {
         HttpClientBuilder httpClientBuilder = HttpClients
                 .custom()
                 .addRequestInterceptorFirst(new HttpClientTraceIdInterceptor())
+                .addRequestInterceptorLast(new HttpClientUserContextInterceptor())
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManager(connectionManager)
                 // 驱逐空闲连接 如果一个连接在池子里空闲超过 30 秒，就将其关闭并移出池子

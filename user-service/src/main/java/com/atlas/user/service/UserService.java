@@ -1,5 +1,6 @@
 package com.atlas.user.service;
 
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
@@ -18,6 +19,10 @@ import java.util.List;
 public interface UserService extends IService<User> {
 
     boolean saveOrUpdate(User user);
+
+    UserAuthDTO loadUserByUsername(String username);
+
+    UserAuthDTO loadUserByUserId(Long id);
 
     User findByUsername(String username);
 

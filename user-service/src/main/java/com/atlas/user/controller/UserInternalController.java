@@ -3,7 +3,7 @@ package com.atlas.user.controller;
 
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.feign.NotificationFeignApi;
-import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -11,10 +11,7 @@ import com.atlas.common.core.utils.VerificationCodeUtils;
 import com.atlas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +32,18 @@ public class UserInternalController {
     private final UserService userService;
 
     private final NotificationFeignApi notificationFeignApi;
+
+    @GetMapping("/username")
+    public Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username) {
+        UserAuthDTO userAuthDTO = userService.loadUserByUsername(username);
+        return ResultGenerator.ok(userAuthDTO);
+    }
+
+    @GetMapping("/{id}")
+    public Result<UserAuthDTO> loadUserByUserId(@PathVariable("id") Long id) {
+        UserAuthDTO userAuthDTO = userService.loadUserByUserId(id);
+        return ResultGenerator.ok(userAuthDTO);
+    }
 
     @GetMapping("/ids")
     public Result<List<UserDTO>> findByIds(@RequestParam("ids") Collection<Long> ids) {

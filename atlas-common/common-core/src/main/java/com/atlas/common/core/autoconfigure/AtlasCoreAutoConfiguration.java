@@ -8,6 +8,7 @@ import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.json.JacksonConfiguration;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
+import com.atlas.common.core.web.filter.UserContextFilter;
 import com.atlas.common.core.web.handler.GlobalExceptionHandler;
 import com.atlas.common.core.web.filter.MDCTraceFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,9 +17,14 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -41,13 +47,39 @@ public class AtlasCoreAutoConfiguration {
      */
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @Import({GlobalExceptionHandler.class, FeignConfiguration.class, MDCTraceFilter.class})
+    @Import({GlobalExceptionHandler.class, FeignConfiguration.class})
     public static class WebFeatureConfiguration {
+
+        /**
+         * 1. 日志链路追踪过滤器 (优先级最高)
+         */
+        @Bean
+        public FilterRegistrationBean<MDCTraceFilter> mdcTraceFilterRegistration() {
+            FilterRegistrationBean<MDCTraceFilter> registration = new FilterRegistrationBean<>();
+            registration.setFilter(new MDCTraceFilter());
+            registration.addUrlPatterns("/*");
+            // 设置为最高优先级，最先生成 TraceId
+            registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+            return registration;
+        }
+
+        /**
+         * 2. 用户上下文过滤器 (紧跟其后)
+         */
+        @Bean
+        public FilterRegistrationBean<UserContextFilter> userContextFilterRegistration() {
+            FilterRegistrationBean<UserContextFilter> registration = new FilterRegistrationBean<>();
+            registration.setFilter(new UserContextFilter());
+            registration.addUrlPatterns("/*");
+            // 顺序排在 MDC 之后，这样在 UserContextFilter 里的日志就能打印出 TraceId 了
+            registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+            return registration;
+        }
 
         @Bean
         @ConditionalOnMissingBean
         @ConditionalOnProperty(
-                prefix = "aspect.controller-log",
+                prefix = "atlas.aspect.controller-log",
                 name = "enabled",
                 havingValue = "true",
                 matchIfMissing = true

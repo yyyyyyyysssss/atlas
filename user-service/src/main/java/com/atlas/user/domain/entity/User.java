@@ -18,9 +18,6 @@ import lombok.*;
 @TableName("im_user")
 public class User extends BaseEntity {
 
-    @TableField(exist = false)
-    private String tokenId;
-
     @TableField("username")
     private String username;
 

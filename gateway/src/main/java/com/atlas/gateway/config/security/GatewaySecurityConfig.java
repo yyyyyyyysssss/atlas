@@ -5,10 +5,11 @@ import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathR
 import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
 import com.atlas.gateway.config.security.filter.FileCookieAuthenticationFilter;
 import com.atlas.gateway.config.security.filter.TokenAuthenticationFilter;
+import com.atlas.security.handler.ForbiddenAccessHandler;
+import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
+import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
@@ -31,7 +32,6 @@ import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Description
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  */
 @EnableWebSecurity
 @Configuration
-public class SecurityConfig {
+public class GatewaySecurityConfig {
 
     @Resource
     private SecurityProperties securityProperties;
@@ -50,6 +50,9 @@ public class SecurityConfig {
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
+
+    @Resource
+    private NormalBearerTokenResolver normalBearerTokenResolver;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -114,11 +117,11 @@ public class SecurityConfig {
     @Bean
     public TokenAuthenticationFilter tokenAuthenticationFilter() {
 
-        return new TokenAuthenticationFilter(tokenService);
+        return new TokenAuthenticationFilter(tokenService, normalBearerTokenResolver,securityProperties);
     }
 
     @Bean
-    public FileCookieAuthenticationFilter fileCookieAuthenticationFilter(){
+    public FileCookieAuthenticationFilter fileCookieAuthenticationFilter() {
 
         return new FileCookieAuthenticationFilter(tokenService);
     }
@@ -127,7 +130,7 @@ public class SecurityConfig {
     @Bean
     public RequestPathAuthorizationManager requestPathAuthorizationManager() {
 
-        return new RequestPathAuthorizationManager(permissionCache());
+        return new RequestPathAuthorizationManager();
     }
 
     //基于请求头apikey的认证过滤器
@@ -141,19 +144,11 @@ public class SecurityConfig {
         requestHeaderAuthenticationFilter.setAuthenticationManager(authenticationManager);
         return requestHeaderAuthenticationFilter;
     }
+
     @Bean
     public ApikeyAuthenticationProvider apikeyAuthenticationProvider() {
 
         return new ApikeyAuthenticationProvider(securityProperties.getRequestHeadAuthentications());
-    }
-
-    // 用于缓存权限校验的结果
-    @Bean
-    public Cache<String, Boolean> permissionCache() {
-        return Caffeine.newBuilder()
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .maximumSize(20000)
-                .build();
     }
 
 }

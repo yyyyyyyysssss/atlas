@@ -14,23 +14,17 @@ import java.time.LocalDateTime;
 
 public class BaseMetaHandler implements MetaObjectHandler {
 
-    private UserContext userContext;
-
-    public BaseMetaHandler(UserContext userContext){
-        this.userContext = userContext;
-    }
-
     @Override
     public void insertFill(MetaObject metaObject) {
 
         this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
         this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
 
-        this.strictInsertFill(metaObject, "creatorId", Long.class, userContext.getUserId());
-        this.strictInsertFill(metaObject, "creatorName", String.class, userContext.getFullName());
+        this.strictInsertFill(metaObject, "creatorId", Long.class, UserContext.getUserId());
+        this.strictInsertFill(metaObject, "creatorName", String.class, UserContext.getFullName());
 
-        this.strictInsertFill(metaObject, "updaterId", Long.class, userContext.getUserId());
-        this.strictInsertFill(metaObject, "updaterName", String.class, userContext.getFullName());
+        this.strictInsertFill(metaObject, "updaterId", Long.class, UserContext.getUserId());
+        this.strictInsertFill(metaObject, "updaterName", String.class, UserContext.getFullName());
 
     }
 
@@ -38,8 +32,8 @@ public class BaseMetaHandler implements MetaObjectHandler {
     public void updateFill(MetaObject metaObject) {
         this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
 
-        this.setFieldValByName("updaterId", userContext.getUserId(), metaObject);
-        this.setFieldValByName("updaterName", userContext.getFullName(), metaObject);
+        this.setFieldValByName("updaterId", UserContext.getUserId(), metaObject);
+        this.setFieldValByName("updaterName", UserContext.getFullName(), metaObject);
     }
 
 

@@ -1,8 +1,9 @@
-package com.atlas.gateway.config.security;
+package com.atlas.security.handler;
 
+import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultCode;
 import com.atlas.common.core.response.ResultGenerator;
-import jakarta.servlet.ServletException;
+import com.atlas.common.core.utils.JsonUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -24,8 +25,9 @@ public class UnauthorizedEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setHeader("Content-type", MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
-        response.getWriter().println(ResultGenerator.failed(ResultCode.UNAUTHORIZED));
-        response.getWriter().close();
+        Result<Object> result = ResultGenerator.failed(ResultCode.UNAUTHORIZED);
+        response.getWriter().println(JsonUtils.toJson(result));
+        response.getWriter().flush();
     }
 
 }

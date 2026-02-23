@@ -1,6 +1,6 @@
 package com.atlas.security.jackson;
 
-import com.atlas.security.model.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;

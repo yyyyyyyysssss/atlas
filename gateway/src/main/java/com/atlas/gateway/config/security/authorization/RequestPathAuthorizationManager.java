@@ -1,9 +1,8 @@
 package com.atlas.gateway.config.security.authorization;
 
 
-import com.atlas.security.model.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.security.model.RequestUrlAuthority;
-import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
@@ -35,12 +34,6 @@ public class RequestPathAuthorizationManager implements AuthorizationManager<Req
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
-    private Cache<String, Boolean> cache;
-
-    public RequestPathAuthorizationManager(Cache<String, Boolean> permissionCache){
-        this.cache = permissionCache;
-    }
-
     @Override
     public AuthorizationDecision check(Supplier<Authentication> supplier, RequestAuthorizationContext requestAuthorizationContext) {
         //当前请求路径
@@ -52,17 +45,9 @@ public class RequestPathAuthorizationManager implements AuthorizationManager<Req
             return DENY;
         }
         HttpServletRequest request = requestAuthorizationContext.getRequest();
-        String cacheKey = generateCacheKey(authentication, request.getRequestURI(), request.getMethod());
-        Boolean cachedDecision  = cache.getIfPresent(cacheKey);
-        // 缓存命中直接返回
-        if (cachedDecision != null) {
-            return cachedDecision ? AFFIRM : DENY;
-        }
         //获取已登录用户的权限信息
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         if (authorities == null || authorities.isEmpty()){
-            // 没有权限，缓存拒绝结果
-            cache.put(cacheKey,false);
             return DENY;
         }
         List<RequestUrlAuthority> requestUrlAuthorities = authorities.stream().map(m -> (RequestUrlAuthority) m).filter(f -> f.getUrls() != null && !CollectionUtils.isEmpty(f.getUrls())).toList();
@@ -84,16 +69,9 @@ public class RequestPathAuthorizationManager implements AuthorizationManager<Req
                 }
             }
             if (matched){
-                cache.put(cacheKey,true); // 缓存通过结果
                 return AFFIRM;
             }
         }
-        cache.put(cacheKey,false); // 缓存拒绝结果
         return DENY;
-    }
-
-    // 生成缓存的 key（基于用户、请求路径、请求方法）
-    private String generateCacheKey(Authentication authentication, String requestUri, String requestMethod) {
-        return authentication.getName() + ":" + requestUri + ":" + requestMethod;
     }
 }

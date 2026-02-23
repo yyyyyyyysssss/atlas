@@ -1,4 +1,4 @@
-package com.atlas.user.domain.entity;
+package com.atlas.common.core.api.user.dto;
 
 import com.atlas.common.core.validation.ValidApiUrls;
 import jakarta.validation.constraints.NotBlank;
@@ -6,16 +6,21 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
-
-
 /**
  * @Description
  * @Author ys
- * @Date 2025/5/30 9:05
+ * @Date 2026/2/14 10:01
  */
 @Getter
 @Setter
 public class AuthorityUrl {
+
+    public AuthorityUrl(){}
+
+    public AuthorityUrl(String method,String url){
+        this.method = method;
+        this.url = url;
+    }
 
     @NotBlank(message = "请求方法不能为空")
     @Pattern(regexp = "^(?i)(GET|POST|PUT|PATCH|DELETE|\\*)$", message = "请求方法仅支持 GET、POST、PUT、PATCH、DELETE 或 *")
@@ -24,6 +29,5 @@ public class AuthorityUrl {
     @NotBlank(message = "路径不能为空")
     @ValidApiUrls(message = "路径不合法")
     private String url;
-
 
 }

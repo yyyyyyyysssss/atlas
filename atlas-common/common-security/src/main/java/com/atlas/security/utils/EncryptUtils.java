@@ -2,6 +2,8 @@ package com.atlas.security.utils;
 
 import lombok.extern.slf4j.Slf4j;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,6 +23,28 @@ public class EncryptUtils {
         } catch (NoSuchAlgorithmException e) {
             log.error("getSHA256Str error: ", e);
             throw new RuntimeException(e);
+        }
+    }
+
+    public static String hmacSha256(String data, String key) {
+        try {
+            // 1. 创建 HMAC-SHA256 算法实例
+            Mac sha256Hmac = Mac.getInstance("HmacSHA256");
+
+            // 2. 创建密钥对象
+            SecretKeySpec secretKey = new SecretKeySpec(
+                    key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"
+            );
+
+            // 3. 初始化算法
+            sha256Hmac.init(secretKey);
+
+            // 4. 执行哈希运算并转换为 十六进制 (Hex)
+            byte[] hashBytes = sha256Hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+
+            return bytesToHex(hashBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("HmacSHA256 签名失败", e);
         }
     }
 
@@ -47,6 +71,14 @@ public class EncryptUtils {
             return "";
         }
         return String.join(":", data);
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
 }

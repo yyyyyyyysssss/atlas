@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %cyan(%logger) : %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <!--  开发环境只在控制台输出日志  -->
+    <springProfile name="dev">
+        <!-- 日志配置 -->
+        <root level="info">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!--  测试和生产环境日志同时输出控制台和文件  -->
+    <springProfile name="stg | prod">
+        <!-- 文件输出 -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %cyan(%logger) : %msg%replace(%ex{full}){"[\r\n]+", "|"}%nopex%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <FileNamePattern>/var/log/app-%d{yyyy-MM-dd}.log</FileNamePattern>
+                <MaxHistory>15</MaxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+        </appender>
+        <!-- 异步日志输出 -->
+        <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+            <appender-ref ref="FILE" />
+            <queueSize>1024</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <neverBlock>true</neverBlock>
+        </appender>
+        <!-- 日志配置 -->
+        <root level="info">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="ASYNC" />
+        </root>
+    </springProfile>
+
+
+</configuration>

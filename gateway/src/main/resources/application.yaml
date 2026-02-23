@@ -44,26 +44,25 @@ security:
   loginPage: http://localhost:3000/login
   authorize:
     permit:
-      - /api/login
-      - /api/login/ott
-      - /error
-      - /assets/**
-      - /favicon.ico
-      - /oauth2/client/**
-      - /oauth2/consent
-      - /oauth2/activate
-      - /activated
-      - /api/open/**
+      - /api/auth/login
+      - /api/auth/login/ott
+      - /api/auth/refreshToken
+      - /api/auth/oauth2/client/**
+      - /api/auth/oauth2/consent
+      - /api/auth/oauth2/activate
+      - /api/auth/activated
+      - /api/*/open/**
       - /actuator/**
+      - /api/*/actuator/**
+      - /error
+      - /favicon.ico
     authenticated:
-      - /api/refreshToken
-      - /api/logout
-      - /api/ott/generate
+      - /api/auth/logout
+      - /api/auth/ott/generate
       - /file/**
-      - /api/file/**
-      - /api/profile/**
-      - /api/authenticated/**
-      - /api/options/**
+      - /api/file/files/**
+      - /api/user/profile/**
+      - /api/*/authenticated/**
   # 基于请求头的身份认证
   requestHeadAuthentications:
     - antPath: /api/internal/**

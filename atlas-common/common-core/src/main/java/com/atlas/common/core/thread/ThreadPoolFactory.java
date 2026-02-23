@@ -1,7 +1,9 @@
 package com.atlas.common.core.thread;
 
+import org.springframework.core.task.support.CompositeTaskDecorator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ThreadPoolFactory {
@@ -20,8 +22,13 @@ public class ThreadPoolFactory {
             // 基础识别配置
             executor.setThreadNamePrefix(namePrefix);
 
-            // 链路追踪核心：注入 MDC 装饰器
-            executor.setTaskDecorator(new MDCTaskDecorator());
+            // 链路追踪核心：注入装饰器
+            executor.setTaskDecorator(new CompositeTaskDecorator(
+                    List.of(
+                            new MDCTaskDecorator(),
+                            new UserContextTaskDecorator()
+                    ))
+            );
 
             // 拒绝策略 当线程池满了且队列也满时，由提交任务的线程执行
             executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());

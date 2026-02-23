@@ -45,7 +45,7 @@ spring:
 
 logging:
   level:
-    com.atlas.common.core.api.notification.feign: DEBUG
+    com.atlas.common.core.api: info
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*xml

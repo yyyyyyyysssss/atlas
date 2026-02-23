@@ -1,9 +1,10 @@
 package com.atlas.gateway.config.security.filter;
 
 
-import com.atlas.gateway.config.security.NormalBearerTokenResolver;
-import com.atlas.security.repository.RedisSecurityContextRepository;
 import com.atlas.security.enums.TokenType;
+import com.atlas.security.properties.SecurityProperties;
+import com.atlas.security.resolver.NormalBearerTokenResolver;
+import com.atlas.security.repository.RedisSecurityContextRepository;
 import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.service.TokenService;
 import jakarta.servlet.FilterChain;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -23,13 +25,18 @@ import java.io.IOException;
  */
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
     private final NormalBearerTokenResolver normalBearerTokenResolver;
 
     private final TokenService tokenService;
 
-    public TokenAuthenticationFilter(TokenService tokenService){
+    private final  SecurityProperties securityProperties;
+
+    public TokenAuthenticationFilter(TokenService tokenService, NormalBearerTokenResolver normalBearerTokenResolver, SecurityProperties securityProperties){
         this.tokenService = tokenService;
-        normalBearerTokenResolver = new NormalBearerTokenResolver();
+        this.normalBearerTokenResolver = normalBearerTokenResolver;
+        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -45,12 +52,27 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        //设置请求属性  由RedisSecurityContextRepository加载SecurityContext
-        PayloadInfo payloadInfo = tokenService.verify(token);
-        if (payloadInfo != null){
-            String tokenId = payloadInfo.getId();
-            request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);
+        try {
+            //设置请求属性  由RedisSecurityContextRepository加载SecurityContext
+            PayloadInfo payloadInfo = tokenService.verify(token, TokenType.ACCESS_TOKEN);
+            if (payloadInfo != null){
+                String tokenId = payloadInfo.getId();
+                request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);
+            }
+            filterChain.doFilter(request,response);
+        }finally {
+            request.removeAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME);
         }
-        filterChain.doFilter(request,response);
+
+    }
+
+    // 忽略已配置放行的url
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return securityProperties.getAuthorize()
+                .getPermit()
+                .stream()
+                .allMatch(pattern -> pathMatcher.match(pattern, requestUri));
     }
 }

@@ -9,8 +9,10 @@ public interface CommonConstant {
 
     String TRACE_ID = "x-request-id";
 
-    String SENSITIVE_DATA_ACCESS = "x-sensitive-data-access";
-
     long ROOT_PARENT_ID = 0L;
+
+    String USER_ID = "x-user-id";
+
+    String USER_FULL_NAME = "x-full-name";
 
 }

@@ -1,6 +1,7 @@
 package com.atlas.security.model;
 
 
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.List;

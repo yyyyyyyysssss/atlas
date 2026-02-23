@@ -1,7 +1,9 @@
-package com.atlas.gateway.config.security;
+package com.atlas.security.handler;
 
+import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultCode;
 import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.common.core.utils.JsonUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,8 +26,10 @@ public class ForbiddenAccessHandler implements AccessDeniedHandler {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setHeader("Content-type", MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
-        response.getWriter().println(ResultGenerator.failed(ResultCode.FORBIDDEN));
-        response.getWriter().close();
+        response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
+        Result<Object> result = ResultGenerator.failed(ResultCode.FORBIDDEN);
+        response.getWriter().println(JsonUtils.toJson(result));
+        response.getWriter().flush();
     }
 
 }

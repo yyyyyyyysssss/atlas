@@ -1,10 +1,10 @@
 package com.atlas.user.mapping;
 
 
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.mapping.LocalDateMapper;
 import com.atlas.common.core.mapping.LocalDateTimeMapper;
-
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.User;
@@ -31,6 +31,8 @@ public interface UserMapping {
     void overwriteUser(UserUpdateDTO userUpdateDTO, @MappingTarget User user);
 
     UserVO toUserVO(User user);
+
+    UserAuthDTO toUserAuthDTO(User user);
 
     UserDTO toUserDTO(User user);
 

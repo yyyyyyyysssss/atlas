@@ -1,7 +1,7 @@
 package com.atlas.user.domain.vo;
 
 
-import com.atlas.user.domain.entity.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import lombok.Getter;
 import lombok.Setter;
 

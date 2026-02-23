@@ -43,11 +43,7 @@ public class RedisSecurityContextRepository implements SecurityContextStore {
         if (attribute == null || attribute.isEmpty()){
             return null;
         }
-        try {
-            return redisTemplate.opsForValue().get(SECURITY_CONTEXT_KEY_PREFIX + attribute);
-        }finally {
-            request.removeAttribute(DEFAULT_REQUEST_ATTR_NAME);
-        }
+        return redisTemplate.opsForValue().get(SECURITY_CONTEXT_KEY_PREFIX + attribute);
     }
 
     @Override
@@ -81,11 +77,11 @@ public class RedisSecurityContextRepository implements SecurityContextStore {
 
     @Override
     public boolean containsContext(HttpServletRequest request) {
-        String attribute = (String)request.getAttribute(DEFAULT_REQUEST_ATTR_NAME);
-        if (attribute == null || attribute.isEmpty()){
+        String tokenId = (String)request.getAttribute(DEFAULT_REQUEST_ATTR_NAME);
+        if (tokenId == null || tokenId.isEmpty()){
             return false;
         }
-        return Boolean.TRUE.equals(redisTemplate.hasKey(SECURITY_CONTEXT_KEY_PREFIX + attribute));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(SECURITY_CONTEXT_KEY_PREFIX + tokenId));
     }
 
 
@@ -95,4 +91,9 @@ public class RedisSecurityContextRepository implements SecurityContextStore {
         return Boolean.TRUE.equals(redisTemplate.delete(SECURITY_CONTEXT_KEY_PREFIX + tokenId));
     }
 
+    @Override
+    public boolean containsContext(String tokenId) {
+
+        return Boolean.TRUE.equals(redisTemplate.hasKey(SECURITY_CONTEXT_KEY_PREFIX + tokenId));
+    }
 }

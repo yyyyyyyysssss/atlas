@@ -16,7 +16,7 @@ import lombok.Setter;
 public class LoginDTO {
 
     public LoginDTO(){
-        this.rememberMe = 0;
+        this.rememberMe = false;
     }
 
     private String username;
@@ -29,9 +29,6 @@ public class LoginDTO {
     private ClientType clientType = ClientType.WEB;
 
     //是否勾选记住我 1 勾选  0未勾选
-    private Integer rememberMe;
+    private Boolean rememberMe;
 
-    public boolean rememberMe(){
-        return rememberMe != null && rememberMe == 1;
-    }
 }

@@ -2,10 +2,14 @@ package com.atlas.auth.service;
 
 
 import com.atlas.security.enums.ClientType;
+import com.atlas.security.enums.TokenType;
+import com.atlas.security.exception.TokenAuthenticationException;
+import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenResponse;
 import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.service.TokenService;
+import com.atlas.security.token.RefreshAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,12 +30,7 @@ public class LoginService {
 
     private final TokenService tokenService;
 
-    public TokenResponse login(Authentication authenticationToken, ClientType clientType) {
-
-        return login(authenticationToken, clientType, false);
-    }
-
-    public TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean rememberMe) {
+    public TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh, boolean rememberMe) {
         // 执行认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         // 类型安全检查
@@ -39,9 +38,8 @@ public class LoginService {
             throw new InternalAuthenticationServiceException("认证系统内部错误：无法获取用户信息主体");
         }
         //生成token
-        TokenResponse tokenResponse = tokenService.createToken(securityUser, clientType, rememberMe);
+        TokenResponse tokenResponse = tokenService.createToken(securityUser, clientType, refresh, rememberMe);
         String tokenId = tokenResponse.tokenId();
-        securityUser.setTokenId(tokenId);
         //序列化securityContext
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(authenticate);
@@ -52,7 +50,13 @@ public class LoginService {
     }
 
     public TokenResponse refreshToken(String refreshToken) {
-        return tokenService.refreshToken(refreshToken);
+        PayloadInfo payloadInfo = tokenService.verify(refreshToken, TokenType.REFRESH_TOKEN);
+        if (payloadInfo == null) {
+            throw new TokenAuthenticationException("刷新令牌已失效");
+        }
+        String username = payloadInfo.getSubject();
+        RefreshAuthenticationToken refreshAuthenticationToken = new RefreshAuthenticationToken(username, null);
+        return login(refreshAuthenticationToken, payloadInfo.getClientType(), true, false);
     }
 
 }

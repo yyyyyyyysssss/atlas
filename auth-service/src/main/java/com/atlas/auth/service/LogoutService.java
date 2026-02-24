@@ -1,7 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.common.core.context.UserContext;
-import com.atlas.security.repository.SecurityContextStore;
+import com.atlas.security.service.TokenService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,12 +10,10 @@ import org.springframework.stereotype.Service;
 public class LogoutService {
 
     @Resource
-    private SecurityContextStore securityContextRepository;
+    private TokenService tokenService;
     
     public void logout(String tokenId) {
-        Long userId = UserContext.getUserId();
-        // 移除 TokenID 对应的 SecurityContext
-        securityContextRepository.clearContext(tokenId);
+        tokenService.revoke(tokenId);
     }
 
 }

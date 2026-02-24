@@ -2,10 +2,12 @@ package com.atlas.auth.config.security;
 
 
 import com.atlas.auth.config.security.authentication.provider.EmailAuthenticationProvider;
+import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
 import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.handler.MagicLinkOneTimeTokenGenerationSuccessHandler;
+import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.service.LogoutService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -14,8 +16,8 @@ import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
-import com.atlas.security.repository.RedisSecurityContextRepository;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
+import com.atlas.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,7 +49,6 @@ import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
-import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 import java.nio.charset.StandardCharsets;
@@ -74,6 +75,9 @@ public class SecurityConfig {
 
     @Resource
     private SecurityProperties securityProperties;
+
+    @Resource
+    private TokenService tokenService;
 
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -141,6 +145,8 @@ public class SecurityConfig {
                 .authenticationProvider(emailAuthenticationProvider())
                 //用于使用三方登录的身份认证
                 .authenticationProvider(thirdPartyAuthenticationProvider())
+                // 刷新令牌
+                .authenticationProvider(refreshAuthenticationProvider())
                 //记住我身份认证
                 .authenticationProvider(rememberMeAuthenticationProvider())
                 //一次性令牌认证
@@ -177,7 +183,7 @@ public class SecurityConfig {
     @Bean
     public RememberMeServices rememberMeServices() {
         String secretKey = securityProperties.getRememberMe().getSecretKey();
-        return new TokenBasedRememberMeServices(secretKey, userService, TokenBasedRememberMeServices.RememberMeTokenAlgorithm.SHA256);
+        return new HeaderBasedRememberMeServices(secretKey,tokenService,userService);
     }
 
     //三方登录认证
@@ -207,6 +213,12 @@ public class SecurityConfig {
     }
 
     @Bean
+    public RefreshAuthenticationProvider refreshAuthenticationProvider(){
+
+        return new RefreshAuthenticationProvider(userService);
+    }
+
+    @Bean
     public HeaderAuthenticationFilter headerAuthenticationFilter(){
         return new HeaderAuthenticationFilter();
     }
@@ -215,16 +227,12 @@ public class SecurityConfig {
     public LogoutSuccessHandler logoutSuccessHandler() {
 
         return (request, response, authentication) -> {
-            String tokenId = (String) request.getAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME);
-            if (tokenId == null) {
-                // 尝试手动解析
-                tokenId = normalBearerTokenResolver.resolve(request);
-            }
-            if (tokenId != null) {
+            String token = normalBearerTokenResolver.resolve(request);
+            if (token != null) {
                 try {
-                    logoutService.logout(tokenId);
+                    logoutService.logout(token);
                 }catch (Exception e){
-                    log.error("Logout error for token: {}", tokenId, e);
+                    log.error("Logout error for token: {}", token, e);
                 }
 
             }

@@ -1,4 +1,4 @@
-package com.atlas.security.handler;
+package com.atlas.security.exception;
 
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultCode;
@@ -26,16 +26,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 @Slf4j
-public class SecurityExceptionHandler {
+public class SecurityExceptionAdvice {
 
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler({AuthenticationException.class})
     public Result<?> handlerAuthenticationException(AuthenticationException authenticationException){
-        if(authenticationException instanceof BadCredentialsException
-                || authenticationException instanceof UsernameNotFoundException
-        ){
-            log.error("用户名或密码错误: ",authenticationException);
+        if(authenticationException instanceof BadCredentialsException || authenticationException instanceof UsernameNotFoundException){
+            log.error("用户名或密码错误: {}",authenticationException.getMessage());
             return ResultGenerator.failed(ResultCode.AUTH_LOGIN_FAILED);
         }
         log.error("认证异常: ",authenticationException);

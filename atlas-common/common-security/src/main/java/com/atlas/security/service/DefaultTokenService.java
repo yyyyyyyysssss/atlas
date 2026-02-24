@@ -5,6 +5,7 @@ import com.atlas.security.constant.SecurityConstant;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.enums.TokenScheme;
 import com.atlas.security.enums.TokenType;
+import com.atlas.security.exception.TokenAuthenticationException;
 import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenDetail;
@@ -22,8 +23,6 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.web.authentication.rememberme.CookieTheftException;
-import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationException;
 
 import java.time.Duration;
 
@@ -47,14 +46,17 @@ public class DefaultTokenService implements TokenService {
     private final UserDetailsService userService;
 
     @Override
-    public TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean rememberMeFlag) {
+    public TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag, boolean rememberMeFlag) {
         Long userId = securityUser.getId();
         // 生成 Access Token
         TokenDetail access = createAccessToken(userId, clientType);
         // 提取 tokenId
         String tokenId = jwtUtils.extractPayloadInfo(access.token(), PayloadInfo::getId);
         // 生成关联的 Refresh Token
-        TokenDetail refresh = createRefreshToken(securityUser.getUsername(), tokenId, clientType);
+        TokenDetail refresh = null;
+        if(refreshFlag){
+            refresh = createRefreshToken(securityUser.getUsername(), tokenId, clientType);
+        }
         // 处理 RememberMe
         TokenDetail rememberMe = null;
         if (rememberMeFlag) {
@@ -89,13 +91,24 @@ public class DefaultTokenService implements TokenService {
         String tokenId = payloadInfo.getId();
         // 黑名单是否存在
         if (redisHelper.hasKey(SecurityConstant.TOKEN_BLACKLIST + tokenId)) {
-            throw new InsufficientAuthenticationException("登录会话已失效，请重新登录");
+            throw new BadCredentialsException("登录会话已失效，请重新登录");
         }
         return payloadInfo;
     }
 
     @Override
-    public void revoke(String tokenId) {
+    public void revoke(String token) {
+        try {
+            String tokenId = jwtUtils.extractPayloadInfo(token, PayloadInfo::getId);
+            if (StringUtils.isNotEmpty(tokenId)) {
+                revokeByTokenId(tokenId);
+            }
+        } catch (Exception e) {
+            log.warn("注销令牌时解析失败，可能令牌已无效: {}", e.getMessage());
+        }
+    }
+
+    private void revokeByTokenId(String tokenId) {
         long d = Math.max(
                 securityProperties.getJwt().getRefreshExpiration(),
                 Math.max(
@@ -106,22 +119,11 @@ public class DefaultTokenService implements TokenService {
         //加入黑名单
         redisHelper.setValue(
                 SecurityConstant.TOKEN_BLACKLIST + tokenId,
-                null,
+                "revoked",
                 Duration.ofSeconds(d)
         );
         // 清除会话
         securityContextRepository.clearContext(tokenId);
-    }
-
-    @Override
-    public TokenResponse refreshToken(String refreshToken) {
-        PayloadInfo payloadInfo = this.verify(refreshToken, TokenType.REFRESH_TOKEN);
-        if (payloadInfo == null) {
-            throw new BadCredentialsException("刷新令牌签名校验失败");
-        }
-        String username = payloadInfo.getSubject();
-        SecurityUser securityUser = (SecurityUser) userService.loadUserByUsername(username);
-        return createToken(securityUser, payloadInfo.getClientType(), false);
     }
 
     private TokenDetail createAccessToken(Long userId, ClientType clientType) {
@@ -135,12 +137,12 @@ public class DefaultTokenService implements TokenService {
         }
         if (!jwtUtils.verifier(token)) {
             log.warn("Token signature invalid or expired");
-            throw new CredentialsExpiredException("令牌已过期或签名无效");
+            throw new CredentialsExpiredException("访问令牌已过期");
         }
         PayloadInfo payloadInfo = jwtUtils.extractPayloadInfo(token);
         if (payloadInfo == null || !TokenType.ACCESS_TOKEN.equals(payloadInfo.getTokenType())) {
             log.warn("Invalid token type: {}", payloadInfo != null ? payloadInfo.getTokenType() : "null");
-            throw new InsufficientAuthenticationException("非法的访问令牌类型");
+            throw new TokenAuthenticationException("非法的访问令牌类型");
         }
         return payloadInfo;
     }
@@ -150,7 +152,7 @@ public class DefaultTokenService implements TokenService {
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
-        String data = String.join(":",
+        String data = EncryptUtils.concatTokens(
                 username,
                 Long.toString(expiration),
                 clientType.name()
@@ -163,7 +165,7 @@ public class DefaultTokenService implements TokenService {
                         tokenId,
                         Long.toString(expiration),
                         clientType.name(),
-                        "HMAC-SHA256",
+                        "HmacSHA256",
                         signature
                 )
         );
@@ -175,9 +177,9 @@ public class DefaultTokenService implements TokenService {
             throw new InsufficientAuthenticationException("刷新令牌不能为空");
         }
         String decoded = EncryptUtils.base64Decode(token);
-        String[] parts = decoded.split(":");
+        String[] parts = EncryptUtils.splitToken(decoded);
         if (parts.length != 6) {
-            throw new InsufficientAuthenticationException("刷新令牌格式非法");
+            throw new TokenAuthenticationException("刷新令牌格式非法");
         }
         String username = parts[0];
         String tokenId = parts[1];
@@ -191,9 +193,9 @@ public class DefaultTokenService implements TokenService {
         }
         // 重新计算签名并比对 (验签)
         String dataToVerify = String.join(":", username, Long.toString(expiration), clientType);
-        String expectedSignature = EncryptUtils.hmacSha256(dataToVerify, securityProperties.getJwt().getSecretKey());
+        String expectedSignature = EncryptUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
-            throw new InsufficientAuthenticationException("刷新令牌签名校验失败");
+            throw new TokenAuthenticationException("刷新令牌已无效");
         }
         return PayloadInfo.builder()
                 .id(tokenId)
@@ -209,7 +211,7 @@ public class DefaultTokenService implements TokenService {
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
-        String data = String.join(":",
+        String data = EncryptUtils.concatTokens(
                 username,
                 Long.toString(expiration),
                 password,
@@ -223,29 +225,11 @@ public class DefaultTokenService implements TokenService {
                         tokenId,
                         Long.toString(expiration),
                         clientType.name(),
-                        "HMAC-SHA256",
+                        "HmacSHA256",
                         signature
                 )
         );
         return new TokenDetail(token, expiration);
-
-//        String encryptStr = EncryptUtils.sha256(
-//                String.join(":",
-//                        username,
-//                        Long.toString(expiration),
-//                        password,
-//                        securityProperties.getRememberMe().getSecretKey()
-//                )
-//        );
-//        String token = EncryptUtils.base64Encode(
-//                String.join(":",
-//                        username,
-//                        Long.toString(expiration),
-//                        TokenBasedRememberMeServices.RememberMeTokenAlgorithm.SHA256.name(),
-//                        encryptStr
-//                )
-//        );
-//        return new TokenDetail(token, expiration);
     }
 
     private PayloadInfo verifyRememberMeToken(String token) {
@@ -253,9 +237,9 @@ public class DefaultTokenService implements TokenService {
             throw new InsufficientAuthenticationException("记住我令牌不能为空");
         }
         String decoded = EncryptUtils.base64Decode(token);
-        String[] parts = decoded.split(":");
+        String[] parts = EncryptUtils.splitToken(decoded);
         if (parts.length != 6) {
-            throw new InsufficientAuthenticationException("刷新令牌格式非法");
+            throw new TokenAuthenticationException("记住我令牌格式非法");
         }
         String username = parts[0];
         String tokenId = parts[1];
@@ -267,7 +251,7 @@ public class DefaultTokenService implements TokenService {
             throw new CredentialsExpiredException("记住我令牌已过期");
         }
         UserDetails userDetails = userService.loadUserByUsername(username);
-        if (userDetails == null){
+        if (userDetails == null) {
             throw new UsernameNotFoundException("用户不存在");
         }
         String dataToVerify = String.join(":",
@@ -276,10 +260,10 @@ public class DefaultTokenService implements TokenService {
                 userDetails.getPassword(),
                 clientType
         );
-        String expectedSignature = EncryptUtils.hmacSha256(dataToVerify, securityProperties.getRememberMe().getSecretKey());
+        String expectedSignature = EncryptUtils.hmac(dataToVerify, securityProperties.getRememberMe().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             // 签名不匹配通常意味着令牌被伪造，或者用户修改了密码
-            throw new RememberMeAuthenticationException("记住我令牌签名校验失败，凭据可能已被篡改或已失效");
+            throw new TokenAuthenticationException("记住我令牌已失效");
         }
         return PayloadInfo.builder()
                 .id(tokenId)

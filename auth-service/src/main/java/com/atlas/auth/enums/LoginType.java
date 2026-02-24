@@ -9,6 +9,8 @@ public enum LoginType {
     //邮箱验证码登录
     EMAIL,
     //一次性token登录
-    OTT
+    OTT,
+    // 记住我
+    REMEMBER_ME
     ;
 }

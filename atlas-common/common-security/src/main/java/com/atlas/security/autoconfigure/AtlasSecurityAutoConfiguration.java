@@ -4,7 +4,7 @@ import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.security.handler.SecurityExceptionHandler;
+import com.atlas.security.exception.SecurityExceptionAdvice;
 import com.atlas.security.jackson.AuthorityUrlMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
 import com.atlas.security.jackson.SecurityUserMixin;
@@ -17,6 +17,7 @@ import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.DefaultTokenService;
 import com.atlas.security.service.TokenService;
 import com.atlas.security.token.EmailAuthenticationToken;
+import com.atlas.security.token.RefreshAuthenticationToken;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.atlas.security.utils.JwtUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -34,6 +35,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.security.authentication.RememberMeAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
@@ -50,7 +52,7 @@ import org.springframework.security.web.jackson2.WebServletJackson2Module;
         AtlasCoreAutoConfiguration.class,
         AtlasRedisAutoConfiguration.class
 })
-@Import({SecurityExceptionHandler.class})
+@Import({SecurityExceptionAdvice.class})
 @EnableConfigurationProperties(SecurityProperties.class)
 public class AtlasSecurityAutoConfiguration {
 
@@ -126,6 +128,7 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
         objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
         objectMapper.addMixIn(ThirdPartyAuthenticationToken.class, ThirdPartyAuthenticationToken.ThirdPartyAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
 
         // 3. 必须开启的配置：保留类型信息
         // 否则 Redis 反序列化时不知道要把 JSON 转成哪个具体的实现类

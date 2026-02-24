@@ -8,16 +8,10 @@ import com.atlas.security.model.TokenResponse;
 
 public interface TokenService {
 
-    TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean rememberMe);
-
-    default TokenResponse createToken(SecurityUser securityUser, ClientType clientType) {
-        return createToken(securityUser, clientType, false);
-    }
+    TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag, boolean rememberMeFlag);
 
     PayloadInfo verify(String token, TokenType tokenType);
 
-    void revoke(String tokenId);
-
-    TokenResponse refreshToken(String refreshToken);
+    void revoke(String token);
 
 }

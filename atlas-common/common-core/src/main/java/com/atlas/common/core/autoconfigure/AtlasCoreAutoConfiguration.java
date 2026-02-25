@@ -9,7 +9,7 @@ import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.json.JacksonConfiguration;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
 import com.atlas.common.core.web.filter.UserContextFilter;
-import com.atlas.common.core.web.handler.GlobalExceptionHandler;
+import com.atlas.common.core.web.exception.GlobalExceptionAdvice;
 import com.atlas.common.core.web.filter.MDCTraceFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +22,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -47,7 +44,7 @@ public class AtlasCoreAutoConfiguration {
      */
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @Import({GlobalExceptionHandler.class, FeignConfiguration.class})
+    @Import({GlobalExceptionAdvice.class, FeignConfiguration.class})
     public static class WebFeatureConfiguration {
 
         /**

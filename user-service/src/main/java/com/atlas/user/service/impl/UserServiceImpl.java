@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,7 +71,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserAuthDTO  loadUserByUsername(String username) {
-        User user = findByUsername(username);
+        QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
+        queryWrapper
+                .lambda()
+                .eq(User::getUsername,username)
+                .or()
+                .eq(User::getId,username)
+                .or()
+                .eq(User::getPhone,username)
+                .or()
+                .eq(User::getEmail,username);
+        User user = userMapper.selectOne(queryWrapper);
+        if (user == null) {
+            throw new UsernameNotFoundException("用户不存在: " + username);
+        }
         return getUserAuthDTO(user);
     }
 

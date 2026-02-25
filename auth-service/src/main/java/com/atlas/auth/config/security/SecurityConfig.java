@@ -9,25 +9,19 @@ import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.handler.MagicLinkOneTimeTokenGenerationSuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.service.LogoutService;
-import com.atlas.common.core.response.Result;
-import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
-import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
@@ -41,7 +35,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -51,15 +44,10 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
-import java.nio.charset.StandardCharsets;
-
 @EnableWebSecurity
 @Configuration
 @Slf4j
 public class SecurityConfig {
-
-    @Resource
-    private NormalBearerTokenResolver normalBearerTokenResolver;
 
     @Resource
     private LogoutService logoutService;
@@ -226,26 +214,7 @@ public class SecurityConfig {
     @Bean
     public LogoutSuccessHandler logoutSuccessHandler() {
 
-        return (request, response, authentication) -> {
-            String token = normalBearerTokenResolver.resolve(request);
-            if (token != null) {
-                try {
-                    logoutService.logout(token);
-                }catch (Exception e){
-                    log.error("Logout error for token: {}", token, e);
-                }
-
-            }
-            // 清理本地上下文
-            SecurityContextHolder.clearContext();
-            // 返回标准响应
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setHeader("Content-type", MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding(StandardCharsets.UTF_8.displayName());
-            Result<Object> result = ResultGenerator.ok();
-            response.getWriter().println(JsonUtils.toJson(result));
-            response.getWriter().flush();
-        };
+        return logoutService;
     }
 
 

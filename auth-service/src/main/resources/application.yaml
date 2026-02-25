@@ -59,7 +59,7 @@ security:
       - /error
       - /favicon.ico
   # 用户设备最大token数量 -1 表示不限制
-  coexistToken: -1
+  coexistToken: 1
   # jwt token配置
   jwt:
     secretKey: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

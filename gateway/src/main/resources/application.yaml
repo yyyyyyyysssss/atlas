@@ -39,13 +39,22 @@ spring:
               filters:
                 - StripPrefix=2 # 转发前剥离 2 层路径
 
+            - id: auth_route
+              uri: http://localhost:9096
+              predicates:
+                - Path=/api/auth/** # 匹配以此路径开头的请求
+              filters:
+                - StripPrefix=2 # 转发前剥离 2 层路径
+
 
 security:
   loginPage: http://localhost:3000/login
   authorize:
     permit:
       - /api/auth/login
+      - /api/auth/logout
       - /api/auth/login/ott
+      - /api/auth/ott/generate
       - /api/auth/refreshToken
       - /api/auth/oauth2/client/**
       - /api/auth/oauth2/consent
@@ -57,8 +66,6 @@ security:
       - /error
       - /favicon.ico
     authenticated:
-      - /api/auth/logout
-      - /api/auth/ott/generate
       - /file/**
       - /api/file/files/**
       - /api/user/profile/**
@@ -77,7 +84,10 @@ security:
 
 logging:
   level:
-    org.springframework.security: trace
+    org.springframework.security: info
+    org.springframework.cloud.gateway: info
+
+
 
 http:
   config:

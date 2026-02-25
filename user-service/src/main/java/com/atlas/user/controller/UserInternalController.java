@@ -39,12 +39,6 @@ public class UserInternalController {
         return ResultGenerator.ok(userAuthDTO);
     }
 
-    @GetMapping("/{id}")
-    public Result<UserAuthDTO> loadUserByUserId(@PathVariable("id") Long id) {
-        UserAuthDTO userAuthDTO = userService.loadUserByUserId(id);
-        return ResultGenerator.ok(userAuthDTO);
-    }
-
     @GetMapping("/ids")
     public Result<List<UserDTO>> findByIds(@RequestParam("ids") Collection<Long> ids) {
         List<UserDTO> userDTOList = userService.findByUserId(ids);

@@ -23,9 +23,6 @@ public interface UserFeignApi {
     @GetMapping("/username")
     Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
 
-    @GetMapping("/{id}")
-    Result<UserAuthDTO> loadUserByUserId(@PathVariable("id") Long id);
-
     @GetMapping("/ids")
     Result<List<UserDTO>> findByIds(@RequestParam("ids") Collection<Long> ids);
 

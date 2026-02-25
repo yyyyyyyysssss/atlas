@@ -4,6 +4,7 @@ import com.atlas.gateway.config.security.authentication.apikey.ApikeyAuthenticat
 import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathRequestMatcher;
 import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
 import com.atlas.gateway.config.security.filter.FileCookieAuthenticationFilter;
+import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
 import com.atlas.gateway.config.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
@@ -25,6 +26,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -92,12 +94,14 @@ public class GatewaySecurityConfig {
                             //必须校验权限的路径
                             .anyRequest().access(requestPathAuthorizationManager());
                 })
-                //该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
+                // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
                 .addFilterBefore(tokenAuthenticationFilter(), SecurityContextHolderFilter.class)
                 // 用于文件访问的过滤器
                 .addFilterBefore(fileCookieAuthenticationFilter(), SecurityContextHolderFilter.class)
-                //基于请求头apikey认证的过滤器
-                .addFilterBefore(apikeyAuthenticationFilter(authenticationManager(http)), HeaderWriterFilter.class);
+                // 基于请求头apikey认证的过滤器
+                .addFilterBefore(apikeyAuthenticationFilter(authenticationManager(http)), HeaderWriterFilter.class)
+                // 设置用户信息到请求头
+                .addFilterAfter(gatewayHeaderHeaderPropagationFilter(), AuthenticationFilter.class);
 
         return http.build();
     }
@@ -124,6 +128,12 @@ public class GatewaySecurityConfig {
     public FileCookieAuthenticationFilter fileCookieAuthenticationFilter() {
 
         return new FileCookieAuthenticationFilter(tokenService);
+    }
+
+    @Bean
+    public GatewayHeaderHeaderPropagationFilter gatewayHeaderHeaderPropagationFilter(){
+
+        return new GatewayHeaderHeaderPropagationFilter();
     }
 
     //基于请求路径的权限管理器

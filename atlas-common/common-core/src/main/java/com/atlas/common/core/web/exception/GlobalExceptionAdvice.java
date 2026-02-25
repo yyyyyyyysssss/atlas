@@ -1,4 +1,4 @@
-package com.atlas.common.core.web.handler;
+package com.atlas.common.core.web.exception;
 
 import com.atlas.common.core.exception.BaseException;
 import com.atlas.common.core.response.Result;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Order(Ordered.LOWEST_PRECEDENCE)
 @RestControllerAdvice
 @Slf4j
-public class GlobalExceptionHandler {
+public class GlobalExceptionAdvice {
 
 
     // Resilience4j 熔断器开启时的异常

@@ -37,12 +37,6 @@ public class UserFallbackFactory implements BaseFallbackFactory<UserFeignApi> {
             }
 
             @Override
-            public Result<UserAuthDTO> loadUserByUserId(Long id) {
-
-                return ResultGenerator.failed();
-            }
-
-            @Override
             public Result<List<UserDTO>> findByIds(Collection<Long> ids) {
 
                 return ResultGenerator.failed();

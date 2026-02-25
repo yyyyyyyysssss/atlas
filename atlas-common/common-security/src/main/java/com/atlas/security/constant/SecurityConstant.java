@@ -7,8 +7,8 @@ package com.atlas.security.constant;
  */
 public interface SecurityConstant {
 
-    String USER_TOKEN= "user:token:";
-
     String TOKEN_BLACKLIST= "token:blacklist:";
+
+    String USER_TOKEN_LIMIT = "user:token:limit:";
 
 }

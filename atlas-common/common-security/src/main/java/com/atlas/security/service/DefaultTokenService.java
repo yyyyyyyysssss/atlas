@@ -25,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 /**
  * @Description
@@ -55,12 +56,12 @@ public class DefaultTokenService implements TokenService {
         // 生成关联的 Refresh Token
         TokenDetail refresh = null;
         if(refreshFlag){
-            refresh = createRefreshToken(securityUser.getUsername(), tokenId, clientType);
+            refresh = createRefreshToken(userId, tokenId, clientType);
         }
         // 处理 RememberMe
         TokenDetail rememberMe = null;
         if (rememberMeFlag) {
-            rememberMe = createRememberMeToken(securityUser.getUsername(), securityUser.getPassword(), tokenId, clientType);
+            rememberMe = createRememberMeToken(userId, securityUser.getPassword(), tokenId, clientType);
         }
         return new TokenResponse(
                 tokenId,
@@ -91,39 +92,60 @@ public class DefaultTokenService implements TokenService {
         String tokenId = payloadInfo.getId();
         // 黑名单是否存在
         if (redisHelper.hasKey(SecurityConstant.TOKEN_BLACKLIST + tokenId)) {
-            throw new BadCredentialsException("登录会话已失效，请重新登录");
+            throw new TokenAuthenticationException("登录会话已失效，请重新登录");
         }
         return payloadInfo;
     }
 
     @Override
     public void revoke(String token) {
-        try {
-            String tokenId = jwtUtils.extractPayloadInfo(token, PayloadInfo::getId);
-            if (StringUtils.isNotEmpty(tokenId)) {
-                revokeByTokenId(tokenId);
-            }
-        } catch (Exception e) {
-            log.warn("注销令牌时解析失败，可能令牌已无效: {}", e.getMessage());
+        if (StringUtils.isEmpty(token)) {
+            return;
         }
+        String tokenId = extractInfo(token, PayloadInfo::getId);
+        Long expiration = extractInfo(token, PayloadInfo::getExpiration);
+        revoke(tokenId,expiration);
     }
 
-    private void revokeByTokenId(String tokenId) {
-        long d = Math.max(
+    @Override
+    public void revoke(String tokenId, Long expiration) {
+        if(tokenId == null || expiration == null){
+            log.warn("tokenId or expiration is null");
+            return;
+        }
+        long currentTimeMillis = System.currentTimeMillis();
+        long remainingMillis = expiration - currentTimeMillis;
+        long maxConfigExpiration = Math.max(
                 securityProperties.getJwt().getRefreshExpiration(),
-                Math.max(
-                        securityProperties.getJwt().getExpiration(),
-                        securityProperties.getRememberMe().getExpiration()
-                )
+                securityProperties.getRememberMe().getExpiration()
         );
+        // 只要 remainingMillis 还没走完，或者长效 Token 还没到期，黑名单就必须存在
+        long finalTtlSeconds = Math.max(remainingMillis / 1000, maxConfigExpiration);
+        // 至少保留1分钟 防止出现负数
+        finalTtlSeconds = Math.max(finalTtlSeconds, 60L);
         //加入黑名单
         redisHelper.setValue(
                 SecurityConstant.TOKEN_BLACKLIST + tokenId,
                 "revoked",
-                Duration.ofSeconds(d)
+                Duration.ofSeconds(finalTtlSeconds)
         );
         // 清除会话
         securityContextRepository.clearContext(tokenId);
+    }
+
+    @Override
+    public <T> T extractInfo(String token, Function<PayloadInfo, T> extractor) {
+        if (StringUtils.isEmpty(token)) {
+            return null;
+        }
+        PayloadInfo payloadInfo = null;
+        // 自动识别：根据特征判断格式 标准的jwt格式包含 2 个 . 将其分为 3 个部分
+        if (token.contains(".") && StringUtils.countMatches(token, ".") == 2) {
+            payloadInfo = jwtUtils.extractPayloadInfo(token);
+        }else {
+            payloadInfo = extractCustomSimplePayloadInfo(token);
+        }
+        return (payloadInfo != null) ? extractor.apply(payloadInfo) : null;
     }
 
     private TokenDetail createAccessToken(Long userId, ClientType clientType) {
@@ -147,13 +169,13 @@ public class DefaultTokenService implements TokenService {
         return payloadInfo;
     }
 
-    private TokenDetail createRefreshToken(String username, String tokenId, ClientType clientType) {
+    private TokenDetail createRefreshToken(Long userId, String tokenId, ClientType clientType) {
         Long configExpiration = securityProperties.getJwt().getRefreshExpiration();
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
         String data = EncryptUtils.concatTokens(
-                username,
+                userId,
                 Long.toString(expiration),
                 clientType.name()
         );
@@ -161,7 +183,7 @@ public class DefaultTokenService implements TokenService {
         String signature = EncryptUtils.hmacSha256(data, securityProperties.getJwt().getSecretKey());
         String token = EncryptUtils.base64Encode(
                 String.join(":",
-                        username,
+                        userId.toString(),
                         tokenId,
                         Long.toString(expiration),
                         clientType.name(),
@@ -181,7 +203,7 @@ public class DefaultTokenService implements TokenService {
         if (parts.length != 6) {
             throw new TokenAuthenticationException("刷新令牌格式非法");
         }
-        String username = parts[0];
+        String userId = parts[0];
         String tokenId = parts[1];
         long expiration = Long.parseLong(parts[2]);
         String clientType = parts[3];
@@ -192,27 +214,21 @@ public class DefaultTokenService implements TokenService {
             throw new CredentialsExpiredException("刷新令牌已过期");
         }
         // 重新计算签名并比对 (验签)
-        String dataToVerify = String.join(":", username, Long.toString(expiration), clientType);
+        String dataToVerify = String.join(":", userId, Long.toString(expiration), clientType);
         String expectedSignature = EncryptUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             throw new TokenAuthenticationException("刷新令牌已无效");
         }
-        return PayloadInfo.builder()
-                .id(tokenId)
-                .subject(username)
-                .clientType(ClientType.valueOf(clientType))
-                .tokenType(TokenType.REFRESH_TOKEN)
-                .expiration(expiration)
-                .build();
+        return extractCustomSimplePayloadInfo(parts);
     }
 
-    private TokenDetail createRememberMeToken(String username, String password, String tokenId, ClientType clientType) {
+    private TokenDetail createRememberMeToken(Long userId, String password, String tokenId, ClientType clientType) {
         Long configExpiration = securityProperties.getRememberMe().getExpiration();
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
         String data = EncryptUtils.concatTokens(
-                username,
+                userId,
                 Long.toString(expiration),
                 password,
                 clientType.name()
@@ -221,7 +237,7 @@ public class DefaultTokenService implements TokenService {
         String signature = EncryptUtils.hmacSha256(data, securityProperties.getRememberMe().getSecretKey());
         String token = EncryptUtils.base64Encode(
                 String.join(":",
-                        username,
+                        userId.toString(),
                         tokenId,
                         Long.toString(expiration),
                         clientType.name(),
@@ -241,7 +257,7 @@ public class DefaultTokenService implements TokenService {
         if (parts.length != 6) {
             throw new TokenAuthenticationException("记住我令牌格式非法");
         }
-        String username = parts[0];
+        String userId = parts[0];
         String tokenId = parts[1];
         long expiration = Long.parseLong(parts[2]);
         String clientType = parts[3];
@@ -250,12 +266,12 @@ public class DefaultTokenService implements TokenService {
         if (System.currentTimeMillis() > expiration) {
             throw new CredentialsExpiredException("记住我令牌已过期");
         }
-        UserDetails userDetails = userService.loadUserByUsername(username);
+        UserDetails userDetails = userService.loadUserByUsername(userId);
         if (userDetails == null) {
             throw new UsernameNotFoundException("用户不存在");
         }
         String dataToVerify = String.join(":",
-                username,
+                userId,
                 Long.toString(expiration),
                 userDetails.getPassword(),
                 clientType
@@ -265,12 +281,28 @@ public class DefaultTokenService implements TokenService {
             // 签名不匹配通常意味着令牌被伪造，或者用户修改了密码
             throw new TokenAuthenticationException("记住我令牌已失效");
         }
+        return extractCustomSimplePayloadInfo(parts);
+    }
+
+    private PayloadInfo extractCustomSimplePayloadInfo(String token){
+        if (StringUtils.isEmpty(token)){
+            return null;
+        }
+        String decoded = EncryptUtils.base64Decode(token);
+        String[] parts = EncryptUtils.splitToken(decoded);
+        return extractCustomSimplePayloadInfo(parts);
+    }
+
+    private PayloadInfo extractCustomSimplePayloadInfo(String[] parts){
+        if (parts.length < 4) {
+            log.warn("自定义Token格式不完整，无法解析Payload");
+            return null;
+        }
         return PayloadInfo.builder()
-                .id(tokenId)
-                .subject(username)
-                .clientType(ClientType.valueOf(clientType))
-                .tokenType(TokenType.REMEMBER_ME_TOKEN)
-                .expiration(expiration)
+                .id(parts[1])
+                .subject(parts[0])
+                .clientType(ClientType.valueOf(parts[3]))
+                .expiration(Long.parseLong(parts[2]))
                 .build();
     }
 

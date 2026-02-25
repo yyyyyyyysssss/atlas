@@ -30,22 +30,28 @@ public class LoginService {
 
     private final TokenService tokenService;
 
+    private final SessionControlService sessionControlService;
+
     public TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh, boolean rememberMe) {
-        // 执行认证
+        // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-        // 类型安全检查
-        if (!(authenticate.getPrincipal() instanceof SecurityUser securityUser)) {
-            throw new InternalAuthenticationServiceException("认证系统内部错误：无法获取用户信息主体");
-        }
-        //生成token
+        SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
+
+        // 会话控制
+        sessionControlService.kickOutExcessiveSessions(securityUser.getId());
+
+        // 发证
         TokenResponse tokenResponse = tokenService.createToken(securityUser, clientType, refresh, rememberMe);
         String tokenId = tokenResponse.tokenId();
-        //序列化securityContext
+
+        // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(authenticate);
         securityContextStore.saveContext(securityContext, tokenId);
-        // 更新当前线程的 Holder
         SecurityContextHolder.setContext(securityContext);
+
+        // 注册会话
+        sessionControlService.registerSession(securityUser.getId(),tokenId,tokenResponse.access().expiresIn());
         return tokenResponse;
     }
 
@@ -54,8 +60,8 @@ public class LoginService {
         if (payloadInfo == null) {
             throw new TokenAuthenticationException("刷新令牌已失效");
         }
-        String username = payloadInfo.getSubject();
-        RefreshAuthenticationToken refreshAuthenticationToken = new RefreshAuthenticationToken(username, null);
+        String userId = payloadInfo.getSubject();
+        RefreshAuthenticationToken refreshAuthenticationToken = new RefreshAuthenticationToken(userId, null);
         return login(refreshAuthenticationToken, payloadInfo.getClientType(), true, false);
     }
 

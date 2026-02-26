@@ -8,9 +8,10 @@ import com.atlas.file.domain.vo.FileMD5CheckVO;
 import com.atlas.file.domain.vo.FileUploadChunkVO;
 import com.atlas.file.domain.vo.FileUploadProgressVO;
 import com.atlas.file.service.FileService;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.web.bind.annotation.*;
@@ -28,11 +29,11 @@ import java.time.Duration;
 @RequestMapping("/upload")
 @RestController
 @Slf4j
+@RequiredArgsConstructor
+
 public class FileUploadController {
 
-    @Resource
-    private FileService fileService;
-
+    private final FileService fileService;
 
     // md5检查 如果存在直接返回访问的url
     @GetMapping("/check/{md5}")
@@ -89,7 +90,7 @@ public class FileUploadController {
     }
 
     @PostMapping(value = "/inner/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<String> uploadSimpleInner(@RequestPart("file") org.springframework.core.io.Resource file) throws IOException {
+    public Result<String> uploadSimpleInner(@RequestPart("file") Resource file) throws IOException {
         InputStream inputStream = file.getInputStream();
         String filename = file.getFilename();
         String fileType = MediaTypeFactory

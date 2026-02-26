@@ -29,25 +29,22 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.time.LocalDateTime;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -262,7 +259,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             BufferedImage bufferedImage = AvatarGeneratorUtils.generateAvatar(name);
             ImageIO.write(bufferedImage, "png", os);
             byte[] bytes = os.toByteArray();
-            org.springframework.core.io.Resource resource = new ByteArrayResource(bytes){
+            Resource resource = new ByteArrayResource(bytes){
                 @Override
                 public String getFilename() {
                     return filename;

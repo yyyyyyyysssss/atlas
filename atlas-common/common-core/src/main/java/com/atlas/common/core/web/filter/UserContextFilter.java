@@ -19,6 +19,7 @@ public class UserContextFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String userId = request.getHeader(CommonConstant.USER_ID);
         String fullName = request.getHeader(CommonConstant.USER_FULL_NAME);
+        String masking = request.getHeader(CommonConstant.DATA_MASKING);
         try {
             if(StringUtils.isNumeric(userId)){
                 String decodedName = fullName;
@@ -29,7 +30,11 @@ public class UserContextFilter extends OncePerRequestFilter {
                         logger.warn("UserContextFilter: fullName 解码失败: " + fullName);
                     }
                 }
-                UserContext.setUser(Long.valueOf(userId),decodedName);
+                if(StringUtils.isNotEmpty(masking)){
+                    UserContext.setUser(Long.valueOf(userId),decodedName,Boolean.parseBoolean(masking));
+                } else {
+                    UserContext.setUser(Long.valueOf(userId),decodedName);
+                }
             }
             filterChain.doFilter(request, response);
         }finally {

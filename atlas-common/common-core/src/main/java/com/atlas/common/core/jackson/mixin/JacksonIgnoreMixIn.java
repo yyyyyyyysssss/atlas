@@ -1,4 +1,4 @@
-package com.atlas.common.core.json.mixin;
+package com.atlas.common.core.jackson.mixin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 

@@ -17,4 +17,6 @@ public interface CommonConstant {
 
     String USER_FULL_NAME = "x-full-name";
 
+    String DATA_MASKING = "x-data-masking";
+
 }

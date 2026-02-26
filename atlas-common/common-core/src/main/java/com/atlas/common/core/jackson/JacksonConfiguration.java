@@ -1,4 +1,4 @@
-package com.atlas.common.core.json;
+package com.atlas.common.core.jackson;
 
 
 import com.atlas.common.core.utils.JsonUtils;

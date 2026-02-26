@@ -6,7 +6,7 @@ import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.aspect.ControllerLogAspect;
 import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
-import com.atlas.common.core.json.JacksonConfiguration;
+import com.atlas.common.core.jackson.JacksonConfiguration;
 import com.atlas.common.core.utils.SpringUtils;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
 import com.atlas.common.core.web.filter.UserContextFilter;

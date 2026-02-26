@@ -10,7 +10,11 @@ public class UserContext {
     private static final ThreadLocal<UserObject> USER_HOLDER = new ThreadLocal<>();
 
     public static void setUser(Long userId, String fullName) {
-        USER_HOLDER.set(new UserObject(userId, fullName));
+        USER_HOLDER.set(new UserObject(userId, fullName,true));
+    }
+
+    public static void setUser(Long userId, String fullName, boolean masking) {
+        USER_HOLDER.set(new UserObject(userId, fullName,masking));
     }
 
     public static Long getRequiredUserId() {
@@ -31,6 +35,12 @@ public class UserContext {
         return user != null ? user.getFullName() : null;
     }
 
+    public static boolean isMasking() {
+        UserObject user = USER_HOLDER.get();
+        // 如果没有用户信息，默认开启脱敏，保证安全隐患最小化
+        return user == null || user.isMasking();
+    }
+
     public static UserObject getUser() {
         return USER_HOLDER.get();
     }
@@ -46,6 +56,7 @@ public class UserContext {
     public static class UserObject {
         private Long userId;
         private String fullName;
+        private boolean masking;
     }
 
 }

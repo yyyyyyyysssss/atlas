@@ -1,9 +1,11 @@
 package com.atlas.user.service.impl;
 
+import com.atlas.common.core.api.file.feign.FileFeignApi;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.core.response.Result;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
@@ -34,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,6 +72,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RoleAuthorityService roleAuthorityService;
 
     private final AuthorityService authorityService;
+
+    private final FileFeignApi fileFeignApi;
 
     @Override
     public UserAuthDTO  loadUserByUsername(String username) {
@@ -123,11 +129,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User u = findByUsername(user.getUsername());
         if (u == null) {
             user.setId(IdGen.genId());
-            user.setCreateTime(LocalDateTime.now());
             return userMapper.insert(user) > 0;
         } else {
             user.setId(u.getId());
-            user.setCreateTime(u.getCreateTime());
             return userMapper.updateById(user) > 0;
         }
     }
@@ -227,9 +231,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "user:role", key = "#userUpdateDTO.getId()"),
-            @CacheEvict(value = "user:authority", key = "#userUpdateDTO.getId()"),
-            @CacheEvict(value = "user:menu", key = "#userUpdateDTO.getId()"),
+            @CacheEvict(value = "user:role", key = "#p0.getId()"),
+            @CacheEvict(value = "user:authority", key = "#p0.getId()"),
+            @CacheEvict(value = "user:menu", key = "#p0.getId()"),
     })
     public Boolean updateUser(UserUpdateDTO userUpdateDTO, Boolean isFullUpdate) {
         User user = checkAndResult(userUpdateDTO.getId());
@@ -253,14 +257,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private String generateDefaultAvatar(String name) {
+        String filename = UUID.randomUUID().toString().replace("-", "") + ".png";
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             BufferedImage bufferedImage = AvatarGeneratorUtils.generateAvatar(name);
             ImageIO.write(bufferedImage, "png", os);
-            InputStream inputStream = new ByteArrayInputStream(os.toByteArray());
-            String filename = UUID.randomUUID().toString().replaceAll("-", "");
-            return null;
+            byte[] bytes = os.toByteArray();
+            org.springframework.core.io.Resource resource = new ByteArrayResource(bytes){
+                @Override
+                public String getFilename() {
+                    return filename;
+                }
+            };
+            log.info("上传生成的默认头像: {}", filename);
+            Result<String> result = fileFeignApi.uploadSimple(resource);
+            if (result == null || !result.isSucceed()) {
+                log.error("调用上传头像失败: {}", result != null ? result.getMessage() : "Response is null");
+                return null;
+            }
+            return result.getData();
         } catch (IOException e) {
-            log.error("生成默认头像失败: {}", e.getMessage());
+            log.error("生成默认头像异常: {}", e.getMessage());
             return null;
         }
     }

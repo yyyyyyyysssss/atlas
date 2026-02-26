@@ -1,5 +1,5 @@
 server:
-  port: 9090
+  port: 9099
   tomcat:
     threads:
       max: 200
@@ -19,8 +19,6 @@ spring:
   mvc:
     async:
       request-timeout: -1
-    pathmatch:
-      matching-strategy: ant_path_matcher
   output:
     ansi:
       enabled: always

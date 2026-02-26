@@ -14,7 +14,7 @@ import java.util.List;
 
 @FeignClient(
         name = "userFeignApi",
-        path = "/internal/users",
+        path = "/internal/user",
         url = "${atlas.user.server-url:}",
         fallbackFactory = UserFallbackFactory.class
 )

@@ -1,4 +1,4 @@
-package com.atlas.user.controller;
+package com.atlas.user.controller.system;
 
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -21,7 +21,7 @@ import java.util.List;
  * @Author ys
  * @Date 2025/5/19 9:58
  */
-@RequestMapping("/menus")
+@RequestMapping("/system/menu")
 @RestController
 @Slf4j
 @RequiredArgsConstructor

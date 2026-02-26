@@ -1,5 +1,5 @@
 server:
-  port: 9000
+  port: 9090
   tomcat:
     threads:
       max: 200
@@ -19,8 +19,6 @@ spring:
   mvc:
     async:
       request-timeout: -1
-    pathmatch:
-      matching-strategy: ant_path_matcher
   output:
     ansi:
       enabled: always
@@ -32,19 +30,38 @@ spring:
       server:
         webmvc:
           routes:
+            # 用户服务
             - id: user_route
               uri: http://localhost:9091
               predicates:
                 - Path=/api/user/** # 匹配以此路径开头的请求
               filters:
                 - StripPrefix=2 # 转发前剥离 2 层路径
-
+            # 认证服务
             - id: auth_route
               uri: http://localhost:9096
               predicates:
-                - Path=/api/auth/** # 匹配以此路径开头的请求
+                - Path=/api/auth/**
               filters:
-                - StripPrefix=2 # 转发前剥离 2 层路径
+                - StripPrefix=2
+            # 文件服务
+            - id: file_route
+              uri: http://localhost:9097
+              predicates:
+                - Path=/api/file/**
+              filters:
+                - StripPrefix=2
+            - id: file_access_route
+              uri: http://localhost:9097
+              predicates:
+                - Path=/file/**
+            # 消息通知服务
+            - id: notification_route
+              uri: http://localhost:9090
+              predicates:
+                - Path=/api/notification/**
+              filters:
+                - StripPrefix=2
 
 
 security:
@@ -67,9 +84,9 @@ security:
       - /favicon.ico
     authenticated:
       - /file/**
-      - /api/file/files/**
+      - /api/file/**
       - /api/user/profile/**
-      - /api/*/authenticated/**
+      - /api/user/option/**
   # 基于请求头的身份认证
   requestHeadAuthentications:
     - antPath: /api/internal/**

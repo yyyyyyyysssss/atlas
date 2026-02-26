@@ -10,7 +10,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import java.util.Collection;
 import java.util.List;
 
-@HttpExchange(url = "/internal/users")
+@HttpExchange(url = "/internal/user")
 public interface UserApi {
 
     @GetExchange("/ids")

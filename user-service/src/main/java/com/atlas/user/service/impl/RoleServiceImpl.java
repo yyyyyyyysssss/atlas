@@ -216,9 +216,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(value = "user:role", key = "#userId"),
-            @CacheEvict(value = "user:authority", key = "#userId"),
-            @CacheEvict(value = "user:menu", key = "#userId"),
+            @CacheEvict(value = "user:role", key = "#p0"),
+            @CacheEvict(value = "user:authority", key = "#p0"),
+            @CacheEvict(value = "user:menu", key = "#p0"),
     })
     public Boolean bindUserRole(Long userId, Collection<Long> roleIds) {
         userRoleService.addUserRole(userId,roleIds);
@@ -227,7 +227,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
 
     // 查询用户对应的角色
     @Override
-    @Cacheable(value = "user:role", key = "#userId")
+    @Cacheable(value = "user:role", key="#p0")
     public List<RoleVO> findByUserId(Long userId) {
         if (userId == null) {
             log.warn("findRoleByUserId called with null userId");

@@ -25,9 +25,10 @@ public class MDCTaskDecorator implements TaskDecorator {
                 if (copyOfContextMap != null) {
                     MDC.setContextMap(copyOfContextMap);
                 } else {
-                    String traceId = UUID.randomUUID().toString().replaceAll("-", "");
+                    String traceId = UUID.randomUUID().toString().replace("-", "");
                     MDC.put(CommonConstant.TRACE_ID, traceId);
                 }
+                MDC.put(CommonConstant.THREAD_TYPE, Thread.currentThread().isVirtual() ? "V" : "P");
                 runnable.run();
             } finally {
                 MDC.clear();

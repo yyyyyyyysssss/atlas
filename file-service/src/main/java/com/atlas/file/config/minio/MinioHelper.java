@@ -1,0 +1,260 @@
+package com.atlas.file.config.minio;
+
+import com.atlas.file.config.exception.FileException;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import groovy.lang.Tuple2;
+import io.minio.*;
+import io.minio.errors.MinioException;
+import io.minio.http.Method;
+import io.minio.messages.Part;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2024/8/19 13:37
+ */
+@Component
+@Slf4j
+public class MinioHelper extends MinioAsyncClient {
+
+    @Resource
+    private MinioClient minioClient;
+
+    @Resource
+    private MinioConfig minioConfig;
+
+    //去除首尾的双引号
+    private String etagRegex = "^\"|\"$";
+
+    public MinioHelper(MinioAsyncClient minioAsyncClient) {
+        super(minioAsyncClient);
+    }
+
+    public String uploadId(String objectName,String fileType) {
+        try {
+            Multimap<String,String> header = HashMultimap.create();
+            header.put("Content-Type",fileType);
+            CompletableFuture<CreateMultipartUploadResponse> multipartUploadAsync = this.createMultipartUploadAsync(
+                    minioConfig.getBucketName(),
+                    null,
+                    objectName,
+                    header,
+                    null
+            );
+            return multipartUploadAsync.get().result().uploadId();
+        } catch (Exception e) {
+            log.error("获取minio uploadId异常: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public String uploadPart(String uploadId,InputStream inputStream,String objectName,Integer chunkIndex,Long partSize){
+        try {
+            CompletableFuture<UploadPartResponse> completableFuture = this.uploadPartAsync(
+                    minioConfig.getBucketName(),
+                    null,
+                    objectName,
+                    inputStream,
+                    partSize,
+                    uploadId,
+                    chunkIndex + 1,
+                    null,
+                    null
+            );
+            UploadPartResponse uploadPartResponse = completableFuture.get();
+            return uploadPartResponse.etag().replaceAll(etagRegex, "");
+        } catch (Exception e) {
+            //取消上传
+            abortUpload(uploadId,objectName);
+            throw new FileException(e);
+        }
+    }
+
+    public Tuple2<String, String> mergePart(String uploadId,String objectName,Integer totalChunk){
+        try {
+            List<Part> parts = listParts(uploadId, objectName ,totalChunk);
+            CompletableFuture<ObjectWriteResponse> completableFuture = this.completeMultipartUploadAsync(
+                    minioConfig.getBucketName(),
+                    null,
+                    objectName,
+                    uploadId,
+                    parts.toArray(new Part[]{}),
+                    null,
+                    null
+            );
+            ObjectWriteResponse objectWriteResponse = completableFuture.get();
+            String accessUrl = getAccessUrl(objectName);
+            String etag = objectWriteResponse.etag().replaceAll(etagRegex, "");
+            return new Tuple2<>(etag, accessUrl);
+        } catch (Exception e) {
+            //取消上传
+            abortUpload(uploadId,objectName);
+            throw new FileException(e);
+        }
+    }
+
+    public List<Part> listParts(String uploadId,String objectName,Integer totalChunk) {
+        try {
+            CompletableFuture<ListPartsResponse> completableFuture = this.listPartsAsync(
+                    minioConfig.getBucketName(),
+                    null,
+                    objectName,
+                    totalChunk,
+                    0,
+                    uploadId,
+                    null,
+                    null
+            );
+            ListPartsResponse listPartsResponse = completableFuture.get();
+            return listPartsResponse.result().partList();
+        } catch (Exception e) {
+            throw new FileException(e);
+        }
+    }
+
+    public StatObjectResponse statObject(String bucketName,String objectName){
+        try {
+            StatObjectArgs statObjectArgs = StatObjectArgs
+                    .builder()
+                    .bucket(bucketName)
+                    .object(objectName)
+                    .build();
+            return minioClient.statObject(statObjectArgs);
+        } catch (Exception e) {
+            log.error("statObject error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+
+    public Tuple2<String, String> upload(String filepath, String objectName) {
+        try {
+            UploadObjectArgs uploadObjectArgs = UploadObjectArgs
+                    .builder()
+                    .bucket(minioConfig.getBucketName())
+                    .object(objectName)
+                    .filename(filepath)
+                    .build();
+            ObjectWriteResponse objectWriteResponse = minioClient.uploadObject(uploadObjectArgs);
+            String accessUrl = getAccessUrl(objectName);
+            String etag = objectWriteResponse.etag().replaceAll(etagRegex, "");
+            return new Tuple2<>(etag, accessUrl);
+        } catch (Exception e) {
+            log.error("uploadMinio error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public Tuple2<String, String> upload(InputStream inputStream,String objectName,String contentType,Long size) {
+        try {
+            PutObjectArgs putObjectArgs = PutObjectArgs
+                    .builder()
+                    .bucket(minioConfig.getBucketName())
+                    .contentType(contentType)
+                    .object(objectName)
+                    .stream(inputStream, size, -1)
+                    .build();
+            ObjectWriteResponse objectWriteResponse = minioClient.putObject(putObjectArgs);
+            String accessUrl = getAccessUrl(objectName);
+            String etag = objectWriteResponse.etag().replaceAll(etagRegex, "");
+            return new Tuple2<>(etag, accessUrl);
+        } catch (Exception e) {
+            log.error("uploadMinio error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public GetObjectResponse download(String bucketName,String objectName){
+
+        return download(bucketName, objectName,null,null);
+    }
+
+    public GetObjectResponse download(String bucketName,String objectName,Long offset,Long length){
+        GetObjectArgs.Builder builder = GetObjectArgs.builder();
+        builder.bucket(bucketName)
+                .object(objectName);
+        if(offset != null && length != null) {
+            builder.offset(offset)
+                    .length(length);
+        }
+        GetObjectArgs getObjectArgs = builder.build();
+        try {
+            return minioClient.getObject(getObjectArgs);
+        } catch (Exception e) {
+            log.error("download error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public String generateTemporaryAccessUrl(String name, Duration duration) {
+        try {
+            GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs
+                    .builder()
+                    .method(Method.GET)
+                    .bucket(minioConfig.getBucketName())
+                    .expiry((int) duration.toSeconds())
+                    .object(name)
+                    .build();
+            return minioClient.getPresignedObjectUrl(args);
+        } catch (Exception e) {
+            log.error("getTemporaryAccessUrl error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public String generateTemporaryDownloadUrl(String name) {
+        try {
+            Map<String, String> map = new HashMap<>();
+            map.put("response-content-type", MediaType.APPLICATION_OCTET_STREAM_VALUE);
+            GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs
+                    .builder()
+                    .method(Method.GET)
+                    .bucket(minioConfig.getBucketName())
+                    .object(name)
+                    .extraQueryParams(map)
+                    .build();
+            return minioClient.getPresignedObjectUrl(args);
+        } catch (Exception e) {
+            log.error("getTemporaryDownloadUrl error: ", e);
+            throw new FileException(e);
+        }
+    }
+
+    public String getBucketName(){
+
+        return minioConfig.getBucketName();
+    }
+
+
+    private String getAccessUrl(String filename) {
+        return minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/" + filename;
+    }
+
+    private void abortUpload(String uploadId,String objectName){
+        try {
+            this.abortMultipartUploadAsync(
+                    minioConfig.getBucketName(),
+                    null,
+                    objectName,
+                    uploadId,
+                    null,
+                    null
+            );
+        } catch (Exception e) {
+            throw new FileException(e);
+        }
+    }
+
+}

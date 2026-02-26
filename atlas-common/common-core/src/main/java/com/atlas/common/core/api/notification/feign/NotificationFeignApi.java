@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "notificationFeignApi",
-        path = "/v1/notifications",
+        path = "/v1/notification",
         url = "${atlas.notification.server-url:}",
         fallbackFactory = NotificationFallbackFactory.class
 )

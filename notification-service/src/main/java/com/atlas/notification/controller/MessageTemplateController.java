@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 2026-01-30 10:26:10
  */
 @RestController
-@RequestMapping("/templates")
+@RequestMapping("/template")
 @Slf4j
 public class MessageTemplateController {
     /**

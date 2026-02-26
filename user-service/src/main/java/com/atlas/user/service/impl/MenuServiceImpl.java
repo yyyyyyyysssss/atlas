@@ -234,7 +234,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
     }
 
     @Override
-    @Cacheable(value = "user:menu", key = "#userId")
+    @Cacheable(value = "user:menu", key = "#p0")
     public List<MenuVO> findByUserId(Long userId) {
         List<RoleVO> roles = roleService.findByUserId(userId);
         if (CollectionUtils.isEmpty(roles)) {
@@ -245,7 +245,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
     }
 
     @Override
-    @Cacheable(value = "user:menu", key = "#userId")
+    @Cacheable(value = "user:menu", key = "#p0")
     public List<MenuVO> findByUserId(Long userId, Collection<Long> roleIds) {
         return findByRoleId(roleIds);
     }

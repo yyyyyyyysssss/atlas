@@ -1,0 +1,137 @@
+package com.atlas.file.service.impl;
+
+import com.atlas.common.core.exception.BusinessException;
+import com.atlas.file.config.minio.MinioHelper;
+import com.atlas.file.domain.dto.FileRangeDTO;
+import com.atlas.file.domain.entity.FileRecord;
+import com.atlas.file.domain.vo.FileStreamVO;
+import com.atlas.file.enums.FileStorageType;
+import com.atlas.file.mapper.FileMapper;
+import com.atlas.file.service.AbstractFileService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import groovy.lang.Tuple2;
+import io.minio.GetObjectResponse;
+import io.minio.StatObjectResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Service;
+
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2024/8/19 10:19
+ */
+@Primary
+@Service("minioFileService")
+@Slf4j
+@RequiredArgsConstructor
+public class MinioFileServiceImpl extends AbstractFileService {
+
+    private final MinioHelper minioHelper;
+
+    private final FileMapper fileMapper;
+
+    @Override
+    public FileStorageType fileStorageType() {
+        return FileStorageType.MINIO;
+    }
+
+    @Override
+    public String getUploadId(String objectName, String fileType) {
+        return minioHelper.uploadId(objectName, fileType);
+    }
+
+    @Override
+    public String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize) {
+        return minioHelper.uploadPart(uploadId, inputStream, objectName, chunkIndex, partSize);
+    }
+
+    @Override
+    public Tuple2<String, String> mergePart(String uploadId, String objectName, Integer totalChunk) {
+        return minioHelper.mergePart(uploadId, objectName, totalChunk);
+    }
+
+    @Override
+    public String generateTemporaryUrl(String uploadId, Duration duration) {
+        QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
+        fileUploadQueryWrapper.select("id,file_name,access_url,original_url");
+        fileUploadQueryWrapper.eq("upload_id", uploadId);
+        FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
+        if (fileUpload == null) {
+            throw new BusinessException("该上传任务不存在: " + uploadId);
+        }
+        String originalUrl = fileUpload.getOriginalUrl();
+        String objectName = originalUrl.substring(originalUrl.lastIndexOf("/") + 1);
+        return minioHelper.generateTemporaryAccessUrl(objectName, duration);
+    }
+
+    @Override
+    public Tuple2<String, String> simpleUpload(InputStream inputStream, String objectName, String contentType, Long size) {
+        return minioHelper.upload(inputStream, objectName, contentType, size);
+    }
+
+    @Override
+    public InputStream download(String bucketName, String objectName) {
+        return minioHelper.download(bucketName, objectName);
+    }
+
+    @Override
+    public FileStreamVO getFileStream(String bucketName, String objectName, FileRangeDTO range) {
+        Map<String, String> headerMap = new HashMap<>();
+        GetObjectResponse objectResponse;
+        // 如果没有指定范围，则直接下载整个文件
+        if (range == null) {
+            objectResponse = minioHelper.download(bucketName, objectName);
+            objectResponse.headers().forEach(h -> {
+                if(h != null){
+                    headerMap.put(h.getFirst(), h.getSecond());
+                }
+            });
+            return new FileStreamVO(outputStream -> streamFile(objectResponse, outputStream), headerMap);
+        }
+        //指定范围时 先获取文件信息
+        StatObjectResponse statObjectResponse = minioHelper.statObject(bucketName, objectName);
+        long size = statObjectResponse.size();
+        //验证范围
+        validateRange(range, size);
+
+        //如果范围是 -1 则表示从开始到结束
+        long start = range.getStart();
+        long end = range.getEnd() == -1 ? size - 1 : range.getEnd();
+        long length = end - start + 1;
+        //设置请求头
+        headerMap.put(HttpHeaders.ACCEPT_RANGES,"bytes");
+        headerMap.put(HttpHeaders.CONTENT_TYPE, statObjectResponse.contentType());
+        headerMap.put(HttpHeaders.ETAG,statObjectResponse.etag());
+        headerMap.put(HttpHeaders.LAST_MODIFIED,statObjectResponse.lastModified().toString());
+        headerMap.put(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + size);
+        headerMap.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(length));
+        //读取
+        GetObjectResponse rangeObjectResponse = minioHelper.download(bucketName, objectName, start, length);
+        return new FileStreamVO(outputStream -> streamFile(rangeObjectResponse, outputStream), headerMap);
+    }
+
+    private void validateRange(FileRangeDTO range, long size) {
+        if (range.getStart() < 0 ||
+                (range.getEnd() != -1 && (range.getEnd() >= size || range.getEnd() < range.getStart()))) {
+            throw new BusinessException("Invalid range: The range exceeds the file size.");
+        }
+    }
+
+    @Override
+    public String pathSeparator() {
+        return "/";
+    }
+
+    @Override
+    protected String bucketName() {
+        return minioHelper.getBucketName();
+    }
+}

@@ -40,6 +40,8 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final RoleService roleService;
 
+    private final PasswordEncoder passwordEncoder;
+
     @Override
     public UserInfoVO userInfo(Long userId) {
         User user = userService.findByUserId(userId);
@@ -91,39 +93,28 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public Boolean changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
-//        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-//        userQueryWrapper
-//                .lambda()
-//                .select(User::getId, User::getPassword)
-//                .eq(User::getId, userId);
-//        User user = userService.getOne(userQueryWrapper);
-//        if (user == null){
-//            throw new BusinessException("用户不存在");
-//        }
-//        if (!passwordEncoder.matches(changePasswordDTO.getOriginPassword(), user.getPassword())){
-//            throw new BusinessException("原密码不正确");
-//        }
-//        if(passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())){
-//            throw new BusinessException("新密码不能与原密码相同");
-//        }
-//        String newEncodedPassword = passwordEncoder.encode(changePasswordDTO.getNewPassword());
-//        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-//        userUpdateWrapper
-//                .lambda()
-//                .set(User::getPassword, newEncodedPassword)
-//                .eq(User::getId, userId);
-//        return userService.update(userUpdateWrapper);
-        return false;
+        User user = userService.findByUserId(userId);
+        if (user == null){
+            throw new BusinessException("用户不存在");
+        }
+        if (!passwordEncoder.matches(changePasswordDTO.getOriginPassword(), user.getPassword())){
+            throw new BusinessException("原密码不正确");
+        }
+        if(passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())){
+            throw new BusinessException("新密码不能与原密码相同");
+        }
+        String newEncodedPassword = passwordEncoder.encode(changePasswordDTO.getNewPassword());
+        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
+        userUpdateWrapper
+                .lambda()
+                .set(User::getPassword, newEncodedPassword)
+                .eq(User::getId, userId);
+        return userService.update(userUpdateWrapper);
     }
 
     @Override
     public Boolean changeAvatar(Long userId, String avatarUrl) {
-        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        userQueryWrapper
-                .lambda()
-                .select(User::getId)
-                .eq(User::getId, userId);
-        User user = userService.getOne(userQueryWrapper);
+        User user = userService.findByUserId(userId);
         if (user == null){
             throw new BusinessException("用户不存在");
         }

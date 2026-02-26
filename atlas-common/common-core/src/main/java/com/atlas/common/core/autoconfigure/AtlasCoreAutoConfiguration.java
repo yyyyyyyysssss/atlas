@@ -7,6 +7,7 @@ import com.atlas.common.core.aspect.ControllerLogAspect;
 import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.json.JacksonConfiguration;
+import com.atlas.common.core.utils.SpringUtils;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
 import com.atlas.common.core.web.filter.UserContextFilter;
 import com.atlas.common.core.web.exception.GlobalExceptionAdvice;
@@ -44,7 +45,7 @@ public class AtlasCoreAutoConfiguration {
      */
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @Import({GlobalExceptionAdvice.class, FeignConfiguration.class})
+    @Import({GlobalExceptionAdvice.class, FeignConfiguration.class, SpringUtils.class})
     public static class WebFeatureConfiguration {
 
         /**

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2026-01-30 10:26:10
  */
 @RestController
-@RequestMapping("/v1/notifications")
+@RequestMapping("/v1/notification")
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationController {

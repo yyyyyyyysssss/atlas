@@ -38,6 +38,8 @@ public class MDCTraceFilter extends OncePerRequestFilter {
             // 设置 MDC
             attributes.setAttribute(CommonConstant.TRACE_ID,traceId, RequestAttributes.SCOPE_REQUEST);
             MDC.put(CommonConstant.TRACE_ID,traceId);
+            MDC.put(CommonConstant.THREAD_TYPE,Thread.currentThread().isVirtual() ? "V" : "P");
+
 
             filterChain.doFilter(wrappedRequest,response);
         }finally {

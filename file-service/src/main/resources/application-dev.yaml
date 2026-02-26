@@ -1,0 +1,38 @@
+
+spring:
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding.yaml
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ys0921.sbs
+      port: 46379
+      password: Yan@136156
+      lettuce:
+        pool:
+          min-idle: 10
+          max-idle: 20
+          max-active: 100
+          max-wait: 5000
+
+
+minio:
+  endpoint: http://ys0921.sbs:29000
+  bucketName: y-chat-bucket
+  accessKey: L4C2Tx0MZEqkV9M6JZt6
+  secretKey: CQYZaB36pyMHPbVyIO4wjWMTNeqSBbVJlMoLPTwI
+
+atlas:
+  user:
+    server-url: http://localhost:9091
+  auth:
+    server-url: http://localhost:9096
+  file:
+    server-url: http://localhost:9097
+  notification:
+    server-url: http://localhost:9099
+
+file:
+  access-url: http://localhost:9090

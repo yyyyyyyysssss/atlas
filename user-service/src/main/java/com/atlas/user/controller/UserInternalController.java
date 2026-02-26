@@ -23,7 +23,7 @@ import java.util.Map;
  * @Author ys
  * @Date 2026/2/9 17:10
  */
-@RequestMapping("/internal/users")
+@RequestMapping("/internal/user")
 @RestController
 @Slf4j
 @RequiredArgsConstructor

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.lettuce.core.api.StatefulConnection;
 import jakarta.annotation.Resource;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -138,7 +139,7 @@ public class AtlasRedisAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer(ObjectMapper redisObjectMapper) {
+    public GenericJackson2JsonRedisSerializer genericJackson2JsonRedisSerializer(@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper) {
 
         return new GenericJackson2JsonRedisSerializer(redisObjectMapper);
     }

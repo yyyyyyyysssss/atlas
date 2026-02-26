@@ -1,4 +1,4 @@
-package com.atlas.user.controller;
+package com.atlas.user.controller.system;
 
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  * @Author ys
  * @Date 2025/6/6 11:32
  */
-@RequestMapping("/users")
+@RequestMapping("/system/user")
 @RestController
 @Slf4j
 @RequiredArgsConstructor

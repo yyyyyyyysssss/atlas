@@ -15,15 +15,15 @@ public abstract class BaseException extends RuntimeException{
 
     private final String detail;
 
-    protected BaseException(IErrorCode errorCode) {
+    public BaseException(IErrorCode errorCode) {
         this(errorCode, null, null);
     }
 
-    protected BaseException(IErrorCode errorCode, String detail) {
+    public BaseException(IErrorCode errorCode, String detail) {
         this(errorCode, detail, null);
     }
 
-    protected BaseException(IErrorCode errorCode, String detail, Throwable cause) {
+    public BaseException(IErrorCode errorCode, String detail, Throwable cause) {
         // 构造父类消息：[错误信息] -> [详细详情]
         super(formatMessage(errorCode, detail), cause);
         this.errorCode = errorCode;

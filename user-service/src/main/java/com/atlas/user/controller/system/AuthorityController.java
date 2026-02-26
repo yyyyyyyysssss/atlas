@@ -1,4 +1,4 @@
-package com.atlas.user.controller;
+package com.atlas.user.controller.system;
 
 
 import com.atlas.common.core.response.Result;
@@ -20,7 +20,7 @@ import java.util.List;
  * @Author ys
  * @Date 2025/5/16 16:12
  */
-@RequestMapping("/authorities")
+@RequestMapping("/system/authority")
 @RestController
 @Slf4j
 @RequiredArgsConstructor

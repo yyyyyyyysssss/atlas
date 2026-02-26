@@ -9,6 +9,8 @@ public interface CommonConstant {
 
     String TRACE_ID = "x-request-id";
 
+    String THREAD_TYPE = "x-thread-type";
+
     long ROOT_PARENT_ID = 0L;
 
     String USER_ID = "x-user-id";

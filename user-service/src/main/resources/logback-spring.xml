@@ -4,7 +4,7 @@
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %cyan(%logger) : %msg %n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %X{x-thread-type} %cyan(%logger) : %msg %n</pattern>
         </encoder>
     </appender>
 
@@ -21,7 +21,7 @@
         <!-- 文件输出 -->
         <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %cyan(%logger) : %msg%replace(%ex{full}){"[\r\n]+", "|"}%nopex%n</pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %clr([x-request-id: %X{x-request-id}]) [%thread] %X{x-thread-type} %cyan(%logger) : %msg%replace(%ex{full}){"[\r\n]+", "|"}%nopex%n</pattern>
             </encoder>
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
                 <FileNamePattern>/var/log/app-%d{yyyy-MM-dd}.log</FileNamePattern>

@@ -9,7 +9,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -23,6 +25,7 @@ import java.io.IOException;
  * @Author ys
  * @Date 2023/7/26 17:30
  */
+@Slf4j
 public class FileCookieAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
@@ -47,11 +50,17 @@ public class FileCookieAuthenticationFilter extends OncePerRequestFilter {
         }
         String token = extractToken(request);
         if(token != null){
-            PayloadInfo payloadInfo = tokenService.verify(token,TokenType.ACCESS_TOKEN);
-            if (payloadInfo != null){
-                String tokenId = payloadInfo.getId();
-                request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);
+            try {
+                PayloadInfo payloadInfo = tokenService.verify(token,TokenType.ACCESS_TOKEN);
+                if (payloadInfo != null){
+                    String tokenId = payloadInfo.getId();
+                    request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);
+                }
+            }catch (AuthenticationException e){
+                log.debug("Token authentication failed: {}", e.getMessage());
+                filterChain.doFilter(request, response);
             }
+
         }
         filterChain.doFilter(request,response);
     }

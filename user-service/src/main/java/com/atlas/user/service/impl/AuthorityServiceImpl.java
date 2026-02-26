@@ -155,7 +155,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
 
     // 根据用户ID查询权限
     @Override
-    @Cacheable(value = "user:authority", key = "#userId")
+    @Cacheable(value = "user:authority", key = "#p0")
     public List<AuthorityVO> findByUserId(Long userId) {
         if(userId == null){
             return Collections.emptyList();

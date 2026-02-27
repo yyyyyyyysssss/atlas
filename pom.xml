@@ -113,6 +113,7 @@
                     <configuration>
                         <source>${java.version}</source> <!-- depending on your project -->
                         <target>${java.version}</target> <!-- depending on your project -->
+                        <parameters>true</parameters>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>

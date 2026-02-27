@@ -1,0 +1,22 @@
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: var(--ant-border-radius);
+    color: var(--ant-color-icon);
+    background-color: transparent;
+    transition: background-color 0.2s, border-radius 0.2s;
+}
+
+
+.icon-button:hover {
+    background-color: var(--ant-control-item-bg-hover);
+    color: var(--ant-color-icon-hover);
+}
+
+
+.icon-button:active {
+    background-color: var(--ant-control-item-bg-active);
+    color: var(--ant-color-icon-hover);
+}

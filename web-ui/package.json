@@ -1,0 +1,73 @@
+{
+  "name": "my-app",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@ant-design/charts": "^2.3.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@reduxjs/toolkit": "^2.6.1",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "ahooks": "^3.8.5",
+    "antd": "^5.29.1",
+    "axios": "^1.8.4",
+    "classnames": "^2.5.1",
+    "dayjs": "^1.11.18",
+    "hash-wasm": "^4.12.0",
+    "i18next": "^25.6.3",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.511.0",
+    "nprogress": "^0.2.0",
+    "p-limit": "^7.2.0",
+    "react": "^18.3.1",
+    "react-circular-progressbar": "^2.2.0",
+    "react-dom": "^18.3.1",
+    "react-error-boundary": "^6.0.0",
+    "react-i18next": "^16.3.5",
+    "react-image-crop": "^11.0.10",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^6.30.0",
+    "react-transition-group": "^4.4.5",
+    "swiper": "^12.0.2",
+    "tinycolor2": "^1.6.0",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "dev": "vite --mode dev",
+    "stg": "vite --mode stg",
+    "build": "vite build --mode prod",
+    "preview": "vite preview"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.7",
+    "@types/lodash": "^4.17.20",
+    "@vitejs/plugin-react": "^4.5.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.7",
+    "vite": "^6.3.5"
+  }
+}

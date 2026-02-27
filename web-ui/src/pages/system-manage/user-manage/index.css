@@ -1,0 +1,18 @@
+
+.typography-text-icon:hover{
+    color: var(--ant-color-link);
+    cursor: pointer;
+}
+
+.hoverable-list-item:hover{
+    background-color: var(--ant-control-item-bg-hover);
+    border-radius: var(--ant-border-radius);
+}
+
+.hoverable-list-item .actions {
+  display: none;
+}
+
+.hoverable-list-item:hover .actions {
+  display: flex;
+}

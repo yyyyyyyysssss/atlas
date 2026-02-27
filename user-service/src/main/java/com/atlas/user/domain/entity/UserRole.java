@@ -16,7 +16,7 @@ import lombok.experimental.Tolerate;
 
 @Getter
 @Setter
-@TableName("im_user_role")
+@TableName("user_role")
 @Builder
 public class UserRole extends BaseIdEntity {
 

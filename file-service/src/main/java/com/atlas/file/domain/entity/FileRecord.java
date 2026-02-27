@@ -17,7 +17,7 @@ import lombok.experimental.Tolerate;
  */
 @Getter
 @Setter
-@TableName("im_files")
+@TableName("file")
 @Builder
 public class FileRecord extends BaseEntity {
 

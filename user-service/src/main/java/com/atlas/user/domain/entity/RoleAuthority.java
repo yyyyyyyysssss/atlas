@@ -16,7 +16,7 @@ import lombok.experimental.Tolerate;
  */
 @Getter
 @Setter
-@TableName("im_role_authority")
+@TableName("role_authority")
 @Builder
 public class RoleAuthority extends BaseIdEntity {
 

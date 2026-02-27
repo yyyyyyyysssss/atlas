@@ -12,7 +12,7 @@ import lombok.experimental.Tolerate;
 @Getter
 @Setter
 @Builder
-@TableName("im_dict")
+@TableName("dict")
 public class Dictionary extends BaseEntity {
 
     @Tolerate

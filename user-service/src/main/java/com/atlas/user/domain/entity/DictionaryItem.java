@@ -13,7 +13,7 @@ import lombok.experimental.Tolerate;
 @Getter
 @Setter
 @Builder
-@TableName("im_dict_item")
+@TableName("dict_item")
 public class DictionaryItem extends BaseEntity implements TreeRelation {
 
     @Tolerate

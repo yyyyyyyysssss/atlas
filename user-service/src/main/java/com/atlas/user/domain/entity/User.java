@@ -15,7 +15,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("im_user")
+@TableName("user")
 public class User extends BaseEntity {
 
     @TableField("username")

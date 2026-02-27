@@ -1,0 +1,27 @@
+.search-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    /* 水平居中 */
+    align-items: center;
+}
+
+.search-button.hidden {
+    display: none;
+}
+
+.search-input {
+    width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.search-input.active {
+    width: 200px;
+    /* 展开时输入框的宽度 */
+    opacity: 1;
+    /* 展开时透明度为1 */
+    visibility: visible;
+    /* 使输入框可见 */
+}

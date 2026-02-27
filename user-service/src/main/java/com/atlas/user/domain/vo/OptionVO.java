@@ -33,6 +33,10 @@ public class OptionVO<T extends Serializable> {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<OptionVO<T>> children;
 
+    public T getId() {
+        return value;
+    }
+
     public static <T extends Serializable> OptionVO<T> of(String label, T value) {
         return OptionVO.of(label, value, null);
     }

@@ -11,14 +11,10 @@ import com.atlas.file.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.Duration;
 
 /**
@@ -86,18 +82,6 @@ public class FileUploadController {
     @PostMapping(value = "/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<String> uploadSimple(@RequestPart("file") MultipartFile file) {
         String accessUrl = fileService.uploadSingleFile(file);
-        return ResultGenerator.ok(accessUrl);
-    }
-
-    @PostMapping(value = "/inner/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<String> uploadSimpleInner(@RequestPart("file") Resource file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-        String filename = file.getFilename();
-        String fileType = MediaTypeFactory
-                .getMediaType(filename)
-                .map(MediaType::toString)
-                .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
-        String accessUrl = fileService.uploadSingleFile(inputStream, filename, fileType);
         return ResultGenerator.ok(accessUrl);
     }
 

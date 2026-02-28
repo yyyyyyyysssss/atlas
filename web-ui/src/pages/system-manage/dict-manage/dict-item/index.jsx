@@ -481,8 +481,8 @@ const DictItem = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button type="primary" onClick={handleSearch} loading={getDictItemDataLoading}>{t('查询')}</Button>
-                    <Button onClick={handleReset} loading={getDictItemDataLoading}>{t('重置')}</Button>
+                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getDictItemDataLoading}>{t('查询')}</Button>
+                    <Button style={{width: '80px'}} onClick={handleReset} loading={getDictItemDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable

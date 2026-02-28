@@ -33,18 +33,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -239,6 +237,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } else {
             UserMapping.INSTANCE.updateUser(userUpdateDTO, user);
         }
+        if (user.getAvatar() == null || user.getAvatar().isEmpty()) {
+            String defaultAvatar = generateDefaultAvatar(user.getFullName());
+            user.setAvatar(defaultAvatar);
+        }
         int i = userMapper.updateById(user);
         if (i <= 0) {
             throw new BusinessException("更新用户失败");
@@ -254,19 +256,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private String generateDefaultAvatar(String name) {
-        String filename = UUID.randomUUID().toString().replace("-", "") + ".png";
+        String filename = UUID.randomUUID().toString().replace("-", "");
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             BufferedImage bufferedImage = AvatarGeneratorUtils.generateAvatar(name);
             ImageIO.write(bufferedImage, "png", os);
-            byte[] bytes = os.toByteArray();
-            Resource resource = new ByteArrayResource(bytes){
-                @Override
-                public String getFilename() {
-                    return filename;
-                }
-            };
+            MockMultipartFile mockMultipartFile = new MockMultipartFile(
+                    "file",
+                    filename + ".png",
+                    "image/png",
+                    os.toByteArray()
+            );
             log.info("上传生成的默认头像: {}", filename);
-            Result<String> result = fileFeignApi.uploadSimple(resource);
+            Result<String> result = fileFeignApi.uploadSimple(mockMultipartFile);
             if (result == null || !result.isSucceed()) {
                 log.error("调用上传头像失败: {}", result != null ? result.getMessage() : "Response is null");
                 return null;

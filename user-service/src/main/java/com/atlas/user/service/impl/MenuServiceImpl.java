@@ -16,6 +16,7 @@ import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
 import com.atlas.user.service.MenuService;
+import com.atlas.user.service.RoleAuthorityService;
 import com.atlas.user.service.RoleService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -45,6 +46,8 @@ import java.util.stream.Stream;
 public class MenuServiceImpl extends AbstractAuthorityService implements MenuService {
 
     private final RoleService roleService;
+
+    private final RoleAuthorityService roleAuthorityService;
 
     private final AuthorityMapper authorityMapper;
 
@@ -262,15 +265,22 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         } else {
             List<Role> roles = roleService.listByIds(roleIds);
             boolean isSuperAdmin = roles.stream().anyMatch(Role::isSuperAdmin);
+            QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
+            queryWrapper
+                    .lambda()
+                    .in(Authority::getType, AuthorityType.MENU.name(), AuthorityType.BASE.name())
+                    .orderByAsc(Authority::getSort, Authority::getId);
+            // 不是超级管理员则根据角色进行查询
             if (isSuperAdmin) {
-                QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
-                queryWrapper
-                        .lambda()
-                        .in(Authority::getType, AuthorityType.MENU.name(), AuthorityType.BASE.name())
-                        .orderByAsc(Authority::getSort, Authority::getId);
                 authorities = authorityMapper.selectList(queryWrapper);
             } else {
-                authorities = authorityMapper.findMenuByRoleIds(roleIds);
+                List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
+                if(CollectionUtils.isEmpty(authorityIds)){
+                    authorities = Collections.emptyList();
+                } else {
+                    queryWrapper.lambda().in(Authority::getId,authorityIds);
+                    authorities = authorityMapper.selectList(queryWrapper);
+                }
             }
         }
         if (CollectionUtils.isEmpty(authorities)) {

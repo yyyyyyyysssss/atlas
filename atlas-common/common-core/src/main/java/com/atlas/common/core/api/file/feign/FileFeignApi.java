@@ -2,10 +2,10 @@ package com.atlas.common.core.api.file.feign;
 
 import com.atlas.common.core.response.Result;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @FeignClient(
         name = "fileFeignApi",
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 )
 public interface FileFeignApi {
 
-    @PostMapping(value = "/inner/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    Result<String> uploadSimple(@RequestPart("file") Resource file);
+    @PostMapping(value = "/simple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    Result<String> uploadSimple(@RequestPart("file") MultipartFile file);
 
 }

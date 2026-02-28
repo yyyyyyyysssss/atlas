@@ -1,6 +1,7 @@
 package com.atlas.common.mybatis.autoconfigure;
 
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
+import com.atlas.common.mybatis.handler.BaseMetaHandler;
 import com.atlas.common.mybatis.injector.MySqlInjector;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,12 @@ public class AtlasMybatisAutoConfiguration {
     public MySqlInjector mySqlInjector(){
 
         return new MySqlInjector();
+    }
+
+    @Bean
+    public BaseMetaHandler baseMetaHandler(){
+
+        return new BaseMetaHandler();
     }
 
 

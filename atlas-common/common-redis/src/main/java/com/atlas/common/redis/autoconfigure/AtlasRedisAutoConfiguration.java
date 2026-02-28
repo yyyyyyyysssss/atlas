@@ -161,18 +161,18 @@ public class AtlasRedisAutoConfiguration {
     }
 
     @Bean("timeSequenceGenerator")
-    @Primary
     public SequenceGenerator timeSequenceGenerator(RedisTemplate<String, Object> redisTemplate){
         SequencePart datePart = new DateSequencePart("yyyyMMdd");
         SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 6);
-        SequencePart suffixPart = new SuffixSequencePart();
+        SequencePart suffixPart = new RandomSuffixSequencePart(1);
         return new RedisSequenceGenerator(Arrays.asList(datePart,sequencePart,suffixPart));
     }
 
     @Bean("numberSequenceGenerator")
     public SequenceGenerator numberSequenceGenerator(RedisTemplate<String, Object> redisTemplate){
         SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 3);
-        return new RedisSequenceGenerator(List.of(sequencePart));
+        SequencePart suffixPart = new RandomSuffixSequencePart(1);
+        return new RedisSequenceGenerator(List.of(sequencePart,suffixPart));
     }
 
 

@@ -4,7 +4,6 @@ import com.atlas.common.core.api.feign.factory.BaseFallbackFactory;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,9 +23,9 @@ public class FileFallbackFactory implements BaseFallbackFactory<FileFeignApi> {
 
         return new FileFeignApi() {
 
-            @Override
-            public Result<String> uploadSimple(Resource file) {
 
+            @Override
+            public Result<String> uploadSimple(MultipartFile file) {
                 return ResultGenerator.failed();
             }
         };

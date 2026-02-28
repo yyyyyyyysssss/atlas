@@ -539,8 +539,8 @@ const UserManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button type="primary" onClick={handleSearch} loading={getUserDataLoading}>{t('查询')}</Button>
-                    <Button onClick={handleReset} loading={getUserDataLoading}>{t('重置')}</Button>
+                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getUserDataLoading}>{t('查询')}</Button>
+                    <Button  style={{width: '80px'}} onClick={handleReset} loading={getUserDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable

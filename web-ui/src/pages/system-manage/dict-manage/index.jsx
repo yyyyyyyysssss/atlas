@@ -373,8 +373,8 @@ const DictManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button type="primary" onClick={handleSearch} loading={getDictDataLoading}>{t('查询')}</Button>
-                    <Button onClick={handleReset} loading={getDictDataLoading}>{t('重置')}</Button>
+                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getDictDataLoading}>{t('查询')}</Button>
+                    <Button style={{width: '80px'}} onClick={handleReset} loading={getDictDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable

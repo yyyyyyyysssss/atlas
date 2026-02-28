@@ -33,7 +33,7 @@ export const createUser = async (userBody) => {
 // 更新用户
 export const updateUser = async (userBody) => {
 
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/system/user', userBody))
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/system/user', userBody))
 }
 
 // 用户搜索
@@ -330,30 +330,24 @@ export const fetchDictTreeByCode = async (code, category = null) => {
 
 
 
-//公司树
-export const fetchCompanyTree = async () => {
+//部门树
+export const fetchDeptTree = async () => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/system/company/tree'))
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/system/dept/tree'))
 }
 
 
-// 创建公司
-export const createCompany = async (req) => {
-    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/company/create', req))
+// 创建部门
+export const createDept = async (req) => {
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/dept/create', req))
 }
 
-// 修改公司
-export const updateCompany = async (req) => {
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/system/company/update', req))
+// 修改部门
+export const updateDept= async (req) => {
+    return apiRequestWrapper(() => httpWrapper.put('/api/user/system/dept/update', req))
 }
 
-// 查询公司详情
-export const fetchCompanyDetails = async (companyId) => {
-    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/company/${companyId}`))
-}
-
-// 公司
-export const fetchCompanyOptions = async () => {
-
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/option/company'))
+// 查询部门详情
+export const fetchDeptDetails = async (companyId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/dept/${companyId}`))
 }

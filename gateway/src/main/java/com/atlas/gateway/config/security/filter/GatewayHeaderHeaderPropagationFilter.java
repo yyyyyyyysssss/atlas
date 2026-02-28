@@ -12,6 +12,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Description
@@ -27,7 +29,11 @@ public class GatewayHeaderHeaderPropagationFilter extends OncePerRequestFilter {
         if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof SecurityUser securityUser) {
             HeaderEnhanceRequestWrapper wrappedRequest = new HeaderEnhanceRequestWrapper(request);
             wrappedRequest.addHeader(CommonConstant.USER_ID,securityUser.getId().toString());
-            wrappedRequest.addHeader(CommonConstant.USER_FULL_NAME,securityUser.getFullName());
+            String fullName = securityUser.getFullName();
+            if (fullName != null) {
+                String encodedName = URLEncoder.encode(fullName, StandardCharsets.UTF_8);
+                wrappedRequest.addHeader(CommonConstant.USER_FULL_NAME,encodedName);
+            }
 
             filterChain.doFilter(wrappedRequest,response);
         }else {

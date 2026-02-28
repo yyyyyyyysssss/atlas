@@ -394,9 +394,21 @@ const RoleManage = () => {
             align: 'center',
         },
         {
+            key: 'creatorName',
+            title: '创建人',
+            dataIndex: 'creatorName',
+            align: 'center',
+        },
+        {
             key: 'updateTime',
             title: '修改时间',
             dataIndex: 'updateTime',
+            align: 'center',
+        },
+        {
+            key: 'updaterName',
+            title: '修改人',
+            dataIndex: 'updaterName',
             align: 'center',
         },
         {
@@ -487,8 +499,8 @@ const RoleManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
-                    <Button onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
+                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
+                    <Button style={{width: '80px'}} onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable

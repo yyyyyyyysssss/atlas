@@ -29,7 +29,11 @@ public class RoleVO {
 
     private String createTime;
 
+    private String creatorName;
+
     private String updateTime;
+
+    private String updaterName;
 
     private List<Long> userIds;
 

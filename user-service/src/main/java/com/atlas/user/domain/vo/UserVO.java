@@ -30,7 +30,11 @@ public class UserVO {
 
     private String createTime;
 
+    private String creatorName;
+
     private String updateTime;
+
+    private String updaterName;
 
     private List<Long> roleIds;
 

@@ -1,4 +1,4 @@
-package com.atlas.common.redis.utils;
+package com.atlas.common.redis.sequence;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;

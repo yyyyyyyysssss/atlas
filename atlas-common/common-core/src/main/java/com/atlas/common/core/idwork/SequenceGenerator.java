@@ -4,4 +4,8 @@ public interface SequenceGenerator {
 
     String generate(String bizPrefix);
 
+    default String generate(){
+        return generate("");
+    }
+
 }

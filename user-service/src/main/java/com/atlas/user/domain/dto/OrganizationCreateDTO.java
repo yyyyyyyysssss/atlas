@@ -1,5 +1,7 @@
 package com.atlas.user.domain.dto;
 
+import com.atlas.user.enums.OrganizationStatus;
+import com.atlas.user.enums.OrganizationType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,10 +19,10 @@ public class OrganizationCreateDTO {
     private String orgName;
 
     // 状态 ENABLE: 启用 DISABLE: 停用 
-    private String status;
+    private OrganizationStatus status;
 
     // 组织类型 GROUP、COMPANY、DEPT、TEAM 
-    private String orgType;
+    private OrganizationType orgType;
 
     // 组织路径 
     private String orgPath;

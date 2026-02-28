@@ -1,6 +1,8 @@
 package com.atlas.user.domain.entity;
 
 import com.atlas.common.mybatis.entity.BaseEntity;
+import com.atlas.user.enums.OrganizationStatus;
+import com.atlas.user.enums.OrganizationType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Builder;
@@ -38,11 +40,11 @@ public class Organization extends BaseEntity {
 
     // 状态 ENABLE: 启用 DISABLE: 停用 
     @TableField("status")
-    private String status;
+    private OrganizationStatus status;
 
     // 组织类型 GROUP、COMPANY、DEPT、TEAM 
     @TableField("org_type")
-    private String orgType;
+    private OrganizationType orgType;
 
     // 组织路径 
     @TableField("org_path")

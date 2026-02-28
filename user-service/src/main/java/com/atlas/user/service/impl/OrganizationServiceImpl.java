@@ -2,6 +2,7 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.core.idwork.SequenceGenerator;
 import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.OrganizationCreateDTO;
@@ -31,7 +32,46 @@ import java.util.List;
 @Slf4j
 public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Organization> implements OrganizationService {
     
-    private OrganizationMapper organizationMapper;
+    private final OrganizationMapper organizationMapper;
+
+    private final SequenceGenerator orgSequenceGenerator;
+
+    @Override
+    @Transactional
+    public Long createOrganization(OrganizationCreateDTO createDTO){
+        Organization entity = OrganizationMapping.INSTANCE.toOrganization(createDTO);
+        Long id = IdGen.genId();
+        entity.setId(id);
+        entity.setOrgCode(orgSequenceGenerator.generate());
+        if(createDTO.getParentId() != null){
+            Organization parentOrganization = organizationMapper.selectById(createDTO.getParentId());
+            if(parentOrganization == null){
+                throw new BusinessException("上级组织不存在");
+            }
+            entity.setOrgPath(parentOrganization.getOrgPath() + id + "/");
+            entity.setOrgPathName(parentOrganization.getOrgPathName() + entity.getOrgName() + "/");
+        }
+        int row = organizationMapper.insert(entity);
+        if (row <= 0) {
+            throw new BusinessException("创建失败");
+        }
+        return entity.getId();
+    }
+
+    @Override
+    @Transactional
+    public void updateOrganization(OrganizationUpdateDTO updateDTO, boolean isFullUpdate){
+        Organization entity = checkAndResult(updateDTO.getId());
+        if(isFullUpdate){
+            OrganizationMapping.INSTANCE.overwriteOrganization(updateDTO, entity);
+        } else {
+            OrganizationMapping.INSTANCE.updateOrganization(updateDTO, entity);
+        }
+        int row = organizationMapper.updateById(entity);
+        if (row <= 0) {
+            throw new BusinessException("修改失败");
+        }
+    }
 
     @Override
     public OrganizationVO findById(Long id){
@@ -54,33 +94,6 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 OrganizationVO::setChildren,
                 CommonConstant.ROOT_PARENT_ID
         );
-    }
-
-    @Override
-    @Transactional
-    public Long createOrganization(OrganizationCreateDTO createDTO){
-        Organization entity = OrganizationMapping.INSTANCE.toOrganization(createDTO);
-        entity.setId(IdGen.genId());
-        int row = organizationMapper.insert(entity);
-        if (row <= 0) {
-            throw new BusinessException("创建失败");
-        }
-        return entity.getId();
-    }
-
-    @Override
-    @Transactional
-    public void updateOrganization(OrganizationUpdateDTO updateDTO, boolean isFullUpdate){
-        Organization entity = checkAndResult(updateDTO.getId());
-        if(isFullUpdate){
-            OrganizationMapping.INSTANCE.overwriteOrganization(updateDTO, entity);
-        } else {
-            OrganizationMapping.INSTANCE.updateOrganization(updateDTO, entity);
-        }
-        int row = organizationMapper.updateById(entity);
-        if (row <= 0) {
-            throw new BusinessException("修改失败");
-        }
     }
 
     @Override

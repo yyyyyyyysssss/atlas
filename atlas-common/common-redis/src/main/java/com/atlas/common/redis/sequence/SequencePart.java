@@ -1,4 +1,4 @@
-package com.atlas.common.redis.utils;
+package com.atlas.common.redis.sequence;
 
 public interface SequencePart {
 

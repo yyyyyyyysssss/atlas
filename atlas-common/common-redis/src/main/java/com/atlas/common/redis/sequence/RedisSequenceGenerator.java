@@ -1,4 +1,4 @@
-package com.atlas.common.redis.utils;
+package com.atlas.common.redis.sequence;
 
 import com.atlas.common.core.idwork.SequenceGenerator;
 

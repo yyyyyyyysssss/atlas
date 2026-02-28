@@ -2,6 +2,7 @@ package com.atlas.common.redis.autoconfigure;
 
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.core.idwork.SequenceGenerator;
+import com.atlas.common.redis.sequence.*;
 import com.atlas.common.redis.utils.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;

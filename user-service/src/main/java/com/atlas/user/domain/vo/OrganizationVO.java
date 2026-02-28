@@ -1,12 +1,11 @@
 package com.atlas.user.domain.vo;
 
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import java.util.List;
-
+import com.atlas.user.enums.OrganizationStatus;
+import com.atlas.user.enums.OrganizationType;
 import lombok.Getter;
 import lombok.Setter;
-import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -25,10 +24,10 @@ public class OrganizationVO {
     private String orgName;
 
     // 状态 ENABLE: 启用 DISABLE: 停用 
-    private String status;
+    private OrganizationStatus status;
 
     // 组织类型 GROUP、COMPANY、DEPT、TEAM 
-    private String orgType;
+    private OrganizationType orgType;
 
     // 组织路径 
     private String orgPath;
@@ -59,5 +58,12 @@ public class OrganizationVO {
 
     private List<OrganizationVO> children;
 
+    public String getStatusName() {
+        return status != null ? status.getDescription() : null;
+    }
+
+    public String getOrgTypeName() {
+        return orgType != null ? orgType.getDescription() : null;
+    }
 }
 

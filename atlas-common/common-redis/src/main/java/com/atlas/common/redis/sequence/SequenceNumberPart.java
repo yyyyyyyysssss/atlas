@@ -12,23 +12,37 @@ import java.util.Collections;
  */
 public class SequenceNumberPart implements SequencePart{
 
-    private RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    private int length;
+    private final int length;
 
-    public SequenceNumberPart(RedisTemplate<String, Object> redisTemplate, int length) {
+    private final String keyPrefix;
+
+    private final long sequenceMax;
+
+    private static final RedisScript<Long> SEQUENCE_SCRIPT = RedisScript.of(
+            "local current = redis.call('INCR', KEYS[1]) " +
+                    "local max = tonumber(ARGV[1]) " +
+                    "if current >= max then " +
+                    "   redis.call('SET', KEYS[1], 0) " +
+                    "   current = 0 " +
+                    "end " +
+                    "return current", Long.class);
+
+    public SequenceNumberPart(RedisTemplate<String, Object> redisTemplate, int length,String keyPrefix) {
         this.redisTemplate = redisTemplate;
         this.length = length;
+        this.keyPrefix = keyPrefix;
+        this.sequenceMax = (long) Math.pow(10, length);
     }
 
     @Override
     public String generate(String bizContent) {
-        // 计算最大序列值
-        int sequenceMax = (int) Math.pow(10, length) - 1;
+        String seqKey = keyPrefix + ":" + bizContent;
         // 执行 Lua 脚本，保证递增、超出最大值时重置
         Long sequence = redisTemplate.execute(
-                RedisScript.of(getLuaScript(), Long.class),
-                Collections.singletonList(bizContent),
+                SEQUENCE_SCRIPT,
+                Collections.singletonList(seqKey),
                 sequenceMax
         );
         return String.format("%0" + length + "d", sequence);

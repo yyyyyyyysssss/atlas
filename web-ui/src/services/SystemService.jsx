@@ -286,7 +286,7 @@ export const fetchDictItemChildren = async (dictItemId) => {
 // 批量获取字典项子节点
 export const batchDictItemChildren = async (dictItemIdList) => {
 
-    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/dict/item/children/batch`,dictItemIdList))
+    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/dict/item/children/batch`, dictItemIdList))
 }
 
 // 创建字典项
@@ -330,24 +330,40 @@ export const fetchDictTreeByCode = async (code, category = null) => {
 
 
 
-//部门树
-export const fetchDeptTree = async () => {
-
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/system/dept/tree'))
+//组织架构树
+export const fetchOrgTree = async (orgTypes) => {
+    let formattedTypes = orgTypes
+    if (Array.isArray(orgTypes)) {
+        formattedTypes = orgTypes.join(',')
+    }
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/system/org/tree', {
+        params: {
+            orgTypes: formattedTypes
+        }
+    }))
 }
 
 
-// 创建部门
-export const createDept = async (req) => {
-    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/dept/create', req))
+// 创建组织
+export const createOrg = async (req) => {
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/org/create', req))
 }
 
-// 修改部门
-export const updateDept= async (req) => {
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/system/dept/update', req))
+// 修改组织
+export const updateOrg = async (req) => {
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/system/org/update', req))
 }
 
-// 查询部门详情
-export const fetchDeptDetails = async (companyId) => {
-    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/dept/${companyId}`))
+// 组织停启用
+export const enableOrg = async (orgId, enabled) => {
+    const req = {
+        id: orgId,
+        enabled: enabled
+    }
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/system/org/update', req))
+}
+
+// 查询组织详情
+export const fetchOrgDetails = async (orgId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}`))
 }

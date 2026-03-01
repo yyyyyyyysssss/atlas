@@ -10,7 +10,7 @@ public enum OrganizationType implements BaseEnum<String> {
     GROUP("GROUP", "集团"),
     COMPANY("COMPANY", "公司"),
     DEPT("DEPT", "部门"),
-    TEAM("TEAM", "小组"),
+    TEAM("TEAM", "团队"),
     ;
 
     @EnumValue

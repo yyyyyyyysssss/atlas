@@ -9,6 +9,7 @@ import com.atlas.user.domain.dto.OrganizationCreateDTO;
 import com.atlas.user.domain.dto.OrganizationUpdateDTO;
 import com.atlas.user.domain.entity.Organization;
 import com.atlas.user.domain.vo.OrganizationVO;
+import com.atlas.user.enums.OrganizationType;
 import com.atlas.user.mapper.OrganizationMapper;
 import com.atlas.user.mapping.OrganizationMapping;
 import com.atlas.user.service.OrganizationService;
@@ -18,8 +19,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * (Organization)表服务实现类
@@ -50,6 +55,10 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             }
             entity.setOrgPath(parentOrganization.getOrgPath() + id + "/");
             entity.setOrgPathName(parentOrganization.getOrgPathName() + entity.getOrgName() + "/");
+        } else {
+            entity.setParentId(CommonConstant.TREE_ROOT_PARENT_ID);
+            entity.setOrgPath("/" + id + "/");
+            entity.setOrgPathName("/" + entity.getOrgName() + "/");
         }
         int row = organizationMapper.insert(entity);
         if (row <= 0) {
@@ -76,14 +85,35 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     @Override
     public OrganizationVO findById(Long id){
         Organization entity = checkAndResult(id);
-        return OrganizationMapping.INSTANCE.toOrganizationVO(entity);
+        OrganizationVO organizationVO = OrganizationMapping.INSTANCE.toOrganizationVO(entity);
+        Long parentId = entity.getParentId();
+        if(parentId != CommonConstant.TREE_ROOT_PARENT_ID){
+            Organization parentOrganization = organizationMapper.selectById(parentId);
+            if(parentOrganization != null){
+                organizationVO.setParentCode(parentOrganization.getOrgCode());
+                organizationVO.setParentName(parentOrganization.getOrgName());
+            }
+        }
+        return organizationVO;
     }
 
     @Override
-    public List<OrganizationVO> tree() {
+    public List<OrganizationVO> tree(List<String> orgTypes) {
+        if(CollectionUtils.isEmpty(orgTypes)){
+            orgTypes = Arrays.stream(OrganizationType.values()).map(OrganizationType::getCode).collect(Collectors.toList());
+        }
         QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
         organizationQueryWrapper
                 .lambda()
+                .select(Organization::getId,
+                        Organization::getParentId,
+                        Organization::getOrgCode,
+                        Organization::getOrgName,
+                        Organization::getOrgType,
+                        Organization::getStatus,
+                        Organization::getOrgPath)
+                .in(Organization::getOrgType,orgTypes)
+                .orderByAsc(Organization::getSort)
                 .orderByAsc(Organization::getCreateTime);
         List<Organization> organizations = organizationMapper.selectList(organizationQueryWrapper);
         List<OrganizationVO> organizationList = OrganizationMapping.INSTANCE.toOrganizationVO(organizations);
@@ -92,7 +122,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 OrganizationVO::getId,
                 OrganizationVO::getParentId,
                 OrganizationVO::setChildren,
-                CommonConstant.ROOT_PARENT_ID
+                CommonConstant.TREE_ROOT_PARENT_ID
         );
     }
 

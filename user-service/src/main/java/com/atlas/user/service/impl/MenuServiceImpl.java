@@ -57,11 +57,11 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         Authority authority = AuthorityMapping.INSTANCE.toAuthority(menuCreateDTO);
         authority.setId(IdGen.genId());
         authority.setType(AuthorityType.MENU);
-        if (authority.getParentId() != null && authority.getParentId() != CommonConstant.ROOT_PARENT_ID) {
+        if (authority.getParentId() != null && authority.getParentId() != CommonConstant.TREE_ROOT_PARENT_ID) {
             Authority selectAuthority = authorityMapper.selectById(authority.getParentId());
             authority.setRootId(selectAuthority.getRootId());
         } else {
-            authority.setParentId(CommonConstant.ROOT_PARENT_ID);
+            authority.setParentId(CommonConstant.TREE_ROOT_PARENT_ID);
             authority.setRootId(authority.getId());
         }
         if (authority.getSort() == null) {
@@ -173,7 +173,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
                 MenuVO::getId,
                 MenuVO::getParentId,
                 MenuVO::setChildren,
-                CommonConstant.ROOT_PARENT_ID
+                CommonConstant.TREE_ROOT_PARENT_ID
         );
     }
 
@@ -186,7 +186,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         queryWrapper
                 .lambda()
                 .eq(Authority::getType, AuthorityType.MENU.name())
-                .eq(Authority::getParentId, CommonConstant.ROOT_PARENT_ID)
+                .eq(Authority::getParentId, CommonConstant.TREE_ROOT_PARENT_ID)
                 .eq(StringUtils.isNotEmpty(menuQueryDTO.getCode()), Authority::getCode, menuQueryDTO.getCode())
                 .eq(StringUtils.isNotEmpty(menuQueryDTO.getRoutePath()), Authority::getRoutePath, menuQueryDTO.getRoutePath())
                 .like(StringUtils.isNotEmpty(menuQueryDTO.getName()), Authority::getName, menuQueryDTO.getName())
@@ -207,7 +207,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
                 MenuVO::getId,
                 MenuVO::getParentId,
                 MenuVO::setChildren,
-                CommonConstant.ROOT_PARENT_ID
+                CommonConstant.TREE_ROOT_PARENT_ID
         );
         PageInfo<MenuVO> menuVOPageInfo = new PageInfo<>();
         menuVOPageInfo.setList(menuVOList);
@@ -224,7 +224,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             throw new BusinessException("该菜单不存在");
         }
         MenuVO menuVo = AuthorityMapping.INSTANCE.toMenuVo(authority);
-        if(!menuVo.getParentId().equals(CommonConstant.ROOT_PARENT_ID)){
+        if(!menuVo.getParentId().equals(CommonConstant.TREE_ROOT_PARENT_ID)){
             QueryWrapper<Authority> authorityQueryWrapper = new QueryWrapper<>();
             authorityQueryWrapper
                     .lambda()

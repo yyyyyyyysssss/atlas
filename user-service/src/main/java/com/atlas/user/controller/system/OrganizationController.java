@@ -22,7 +22,7 @@ import java.util.List;
  * @since 2026-02-28 16:21:29
  */
 @RestController
-@RequestMapping("/system/organization")
+@RequestMapping("/system/org")
 @Slf4j
 public class OrganizationController {
     /**
@@ -56,8 +56,8 @@ public class OrganizationController {
     }
 
     @GetMapping("/tree")
-    public Result<?> tree() {
-        List<OrganizationVO> tree = organizationService.tree();
+    public Result<?> tree(@RequestParam(value = "orgTypes", required = false) List<String> orgTypes) {
+        List<OrganizationVO> tree = organizationService.tree(orgTypes);
         return ResultGenerator.ok(tree);
     }
 

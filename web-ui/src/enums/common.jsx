@@ -19,5 +19,6 @@ export const RequestMethod = Object.freeze({
 export const OperationMode = Object.freeze({
     ADD: { value: 'ADD', description: '新增' },
     EDIT: { value: 'EDIT', description: '编辑' },
-    VIEW: { value: 'VIEW', description: '查看' }
+    VIEW: { value: 'VIEW', description: '查看' },
+    CANCEL: { value: 'CANCEL', description: '取消' }
 })

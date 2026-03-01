@@ -19,7 +19,7 @@ public class SequenceConfig {
     @Bean("orgSequenceGenerator")
     public SequenceGenerator orgSequenceGenerator(RedisTemplate<String, Object> redisTemplate){
         SequencePart fixedPrefixSequencePart = new FixedPrefixSequencePart("1");
-        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 5);
+        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 5,"orgSequenceGenerator");
         return new RedisSequenceGenerator(Arrays.asList(fixedPrefixSequencePart,sequencePart));
     }
 

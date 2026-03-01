@@ -22,7 +22,7 @@ public interface OrganizationService extends IService<Organization> {
 
     OrganizationVO findById(Long id);
 
-    List<OrganizationVO> tree();
+    List<OrganizationVO> tree(List<String> orgTypes);
 
     Long createOrganization(OrganizationCreateDTO createDTO);
 

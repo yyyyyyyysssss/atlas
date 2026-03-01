@@ -1,1 +1,1 @@
-# react-web-template
+# atlas-web-ui

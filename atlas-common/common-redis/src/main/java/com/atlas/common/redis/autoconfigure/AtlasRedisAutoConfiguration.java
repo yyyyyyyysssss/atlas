@@ -122,7 +122,7 @@ public class AtlasRedisAutoConfiguration {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+        StringRedisSerializer stringRedisSerializer = new PrefixStringSerializer(applicationName);
         redisTemplate.setKeySerializer(stringRedisSerializer);
         redisTemplate.setHashKeySerializer(stringRedisSerializer);
 
@@ -164,14 +164,14 @@ public class AtlasRedisAutoConfiguration {
     @Bean("timeSequenceGenerator")
     public SequenceGenerator timeSequenceGenerator(RedisTemplate<String, Object> redisTemplate){
         SequencePart datePart = new DateSequencePart("yyyyMMdd");
-        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 6);
+        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 6,"timeSequenceGenerator");
         SequencePart suffixPart = new RandomSuffixSequencePart(1);
         return new RedisSequenceGenerator(Arrays.asList(datePart,sequencePart,suffixPart));
     }
 
     @Bean("numberSequenceGenerator")
     public SequenceGenerator numberSequenceGenerator(RedisTemplate<String, Object> redisTemplate){
-        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 3);
+        SequencePart sequencePart = new SequenceNumberPart(redisTemplate, 3,"numberSequenceGenerator");
         SequencePart suffixPart = new RandomSuffixSequencePart(1);
         return new RedisSequenceGenerator(List.of(sequencePart,suffixPart));
     }

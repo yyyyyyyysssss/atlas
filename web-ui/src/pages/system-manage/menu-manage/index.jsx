@@ -114,7 +114,6 @@ const MenuManage = () => {
         manual: true
     })
 
-
     const { runAsync: deleteMenuAsync, loading: deleteMenuLoading } = useRequest(deleteMenu, {
         manual: true
     })

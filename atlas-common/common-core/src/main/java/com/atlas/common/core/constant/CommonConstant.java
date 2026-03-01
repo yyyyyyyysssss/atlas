@@ -11,7 +11,7 @@ public interface CommonConstant {
 
     String THREAD_TYPE = "x-thread-type";
 
-    long ROOT_PARENT_ID = 0L;
+    long TREE_ROOT_PARENT_ID = 0L;
 
     String USER_ID = "x-user-id";
 

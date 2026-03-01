@@ -2,6 +2,8 @@ package com.atlas.user.domain.dto;
 
 import com.atlas.user.enums.OrganizationStatus;
 import com.atlas.user.enums.OrganizationType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,13 +17,15 @@ public class OrganizationCreateDTO {
     // 组织编码 
     private String orgCode;
 
-    // 组织名称 
+    // 组织名称
+    @NotBlank(message = "组织名称不能为空")
     private String orgName;
 
     // 状态 ENABLE: 启用 DISABLE: 停用 
-    private OrganizationStatus status;
+    private OrganizationStatus status = OrganizationStatus.ACTIVE;
 
-    // 组织类型 GROUP、COMPANY、DEPT、TEAM 
+    // 组织类型 GROUP、COMPANY、DEPT、TEAM
+    @NotNull(message = "组织类型不能为空")
     private OrganizationType orgType;
 
     // 组织路径 

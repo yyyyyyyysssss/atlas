@@ -2,6 +2,7 @@ package com.atlas.common.core.jackson;
 
 
 import com.atlas.common.core.utils.JsonUtils;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -43,6 +44,9 @@ public class JacksonConfiguration {
 
         // 忽略未知属性（防止反序列化失败）
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // 仅包含非空字段
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         // 处理 Java 8+ 的时间类型
         JavaTimeModule javaTimeModule = new JavaTimeModule();

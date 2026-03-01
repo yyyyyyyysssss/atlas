@@ -1,12 +1,9 @@
 package com.atlas.user.domain.dto;
 
 
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.validation.constraints.NotNull;
 
 @Getter
 @Setter

@@ -17,6 +17,10 @@ public class OrganizationVO {
     // 父节点id 
     private Long parentId;
 
+    private String parentCode;
+
+    private String parentName;
+
     // 组织编码 
     private String orgCode;
 

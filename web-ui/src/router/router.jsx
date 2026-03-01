@@ -12,6 +12,7 @@ import Success from "../pages/Success";
 const AppLayout = lazy(() => import('../layouts'))
 const Home = lazy(() => import('../pages/home'))
 const Login = lazy(() => import('../pages/login'))
+const OrgManage = lazy(() => import('../pages/system-manage/org-manage'))
 const UserManage = lazy(() => import('../pages/system-manage/user-manage'))
 const UserDetails = lazy(() => import('../pages/system-manage/user-manage/details'))
 const RoleManage = lazy(() => import('../pages/system-manage/role-manage'))
@@ -45,6 +46,14 @@ export const routes = [
                 breadcrumbName: '系统管理',
                 defaultIcon: <Settings size={18} />,
                 children: [
+                    {
+                        path: 'org',
+                        element: <OrgManage />,
+                        breadcrumbName: '组织管理',
+                        defaultIcon: <Building2 size={18} />,
+                        protected: true,
+                        requiredPermissions: ['system:org']
+                    },
                     {
                         path: 'user',
                         element: <UserManage />,

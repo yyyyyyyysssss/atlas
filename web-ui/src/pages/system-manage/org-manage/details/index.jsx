@@ -1,9 +1,8 @@
 import './index.css'
 import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber } from 'antd'
-import { UploadOutlined } from '@ant-design/icons';
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useState } from 'react';
-import { createOrg, fetchOrgDetails, fetchUserOptions, updateOrg } from '../../../../services/SystemService';
+import { createOrg, fetchOrgDetails, updateOrg } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
 import { getMessageApi } from '../../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
@@ -11,6 +10,7 @@ import Loading from '../../../../components/loading';
 import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
 import { OrganizationStatus } from '../../../../enums/system';
+import OrgDept from '../dept';
 
 const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, changeOperationMode, onSuccess }) => {
 
@@ -32,16 +32,16 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
         manual: true
     })
 
-    useEffect(() => {
-
-        const fetchData = async (orgId) => {
-            if (!orgId) {
-                return
-            }
-            const orgData = await fetchOrgDetailsAsync(orgId)
-            form.setFieldsValue({ ...orgData, parentCode: parentCode })
-            setOrgData(orgData)
+    const fetchData = async (orgId) => {
+        if (!orgId) {
+            return
         }
+        const orgData = await fetchOrgDetailsAsync(orgId)
+        form.setFieldsValue({ ...orgData, parentCode: parentCode })
+        setOrgData(orgData)
+    }
+
+    useEffect(() => {
         switch (operationMode) {
             case OperationMode.VIEW.value:
                 fetchData(orgId)
@@ -83,8 +83,6 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
         getMessageApi().success('保存成功')
         onSuccess(orgId)
     }
-
-
 
     return (
         <Loading spinning={fetchOrgDetailsLoading || createOrgLoading || updateOrgLoading}>
@@ -153,19 +151,6 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                     <Row gutter={16}>
                         <Col span={24}>
                             <Form.Item
-                                label="负责人"
-                                name="leaderId"
-                            >
-                                <OptionSelect
-                                    loadData={() => fetchUserOptions()}
-                                    placeholder="请选择负责人"
-                                />
-                            </Form.Item>
-                        </Col>
-                    </Row>
-                    <Row gutter={16}>
-                        <Col span={24}>
-                            <Form.Item
                                 label="排序"
                                 name="sort"
                             >
@@ -184,6 +169,9 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                         </Col>
                     </Row>
                 </Form>
+                {(operationMode === OperationMode.VIEW.value || operationMode === OperationMode.CANCEL.value) && (
+                    <OrgDept orgId={orgId} />
+                )}
                 <Flex
                     justify='flex-end'
                     align='center'

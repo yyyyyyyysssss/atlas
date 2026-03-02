@@ -1,11 +1,9 @@
 import './index.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input } from 'antd'
-import { Plus, Trash2 } from 'lucide-react';
+import { Dropdown, Flex, Tree, Splitter, Typography, Input } from 'antd'
+import { Plus } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
-import Highlight from '../../../components/Highlight';
 import HasPermission from '../../../components/HasPermission';
-import { getMessageApi } from '../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import Loading from '../../../components/loading';

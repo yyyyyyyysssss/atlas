@@ -22,6 +22,8 @@ public interface OrganizationService extends IService<Organization> {
 
     OrganizationVO findById(Long id);
 
+    List<OrganizationVO> findSubUnits(Long id, String organizationType);
+
     List<OrganizationVO> tree(List<String> orgTypes);
 
     Long createOrganization(OrganizationCreateDTO createDTO);

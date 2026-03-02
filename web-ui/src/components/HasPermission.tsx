@@ -28,6 +28,10 @@ export const useHasPermission = (
         if (!permissionCodes || permissionCodes.length === 0) {
             return false
         }
+        // 如果目标权限为no-show 则直接隐藏
+        if (permissions.some(p => typeof p === 'string' && p.toUpperCase() === 'NO-SHOW')) {
+            return false
+        }
         // 用户权限中包含 'all'，直接允许
         if (permissionCodes.includes('all')) {
             return true

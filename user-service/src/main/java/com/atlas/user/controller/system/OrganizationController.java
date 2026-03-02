@@ -55,6 +55,12 @@ public class OrganizationController {
         return ResultGenerator.ok(vo);
     }
 
+    @GetMapping("/{id}/sub-units")
+    public Result<?> getSubUnits(@PathVariable("id") Long id, @RequestParam("type") String type) {
+        List<OrganizationVO> deptList = organizationService.findSubUnits(id,type);
+        return ResultGenerator.ok(deptList);
+    }
+
     @GetMapping("/tree")
     public Result<?> tree(@RequestParam(value = "orgTypes", required = false) List<String> orgTypes) {
         List<OrganizationVO> tree = organizationService.tree(orgTypes);

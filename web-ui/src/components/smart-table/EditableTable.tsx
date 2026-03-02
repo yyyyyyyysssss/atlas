@@ -29,6 +29,8 @@ interface EditableTableProps {
     remove: (index: number) => void
     onSave?: (rowData: any, rowIndex: number) => Promise<any>
     onDelete?: (rowData: any, rowIndex: number) => Promise<any>
+    loading: boolean
+    renderExtraActions?: (record: any, rowIndex: number, isAnyRowEditing: boolean) => React.ReactNode
 }
 
 const EditableTable: React.FC<EditableTableProps> = ({
@@ -45,6 +47,8 @@ const EditableTable: React.FC<EditableTableProps> = ({
     remove,
     onSave,
     onDelete,
+    loading = false,
+    renderExtraActions,
     ...props
 }) => {
 
@@ -264,6 +268,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                                                 </Typography.Link>
                                             </Popconfirm>
                                         </HasPermission>
+                                        {renderExtraActions && renderExtraActions(record, rowIndex, editingKey !== null)}
                                     </Flex>
                                 )
                             )
@@ -295,6 +300,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                         </HasPermission>
                     )
                 )}
+                loading={loading}
                 {...props}
             />
             <Form.Item>

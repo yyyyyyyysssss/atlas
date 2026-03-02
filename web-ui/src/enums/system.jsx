@@ -8,6 +8,6 @@ export const OrganizationType = Object.freeze({
 })
 
 export const OrganizationStatus = Object.freeze({
-    ACTIVE: { value: 'ACTIVE', label: '启用' },
-    INACTIVE: { value: 'INACTIVE', label: '停用' },
+    ACTIVE: { value: 'ACTIVE', label: '已生效', color: 'success' },
+    INACTIVE: { value: 'INACTIVE', label: '已停用', color: 'gray' },
 })

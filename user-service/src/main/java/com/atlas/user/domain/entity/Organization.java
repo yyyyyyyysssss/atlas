@@ -54,10 +54,6 @@ public class Organization extends BaseEntity {
     @TableField("org_path_name")
     private String orgPathName;
 
-    // 负责人id 
-    @TableField("leader_id")
-    private Long leaderId;
-
     // 排序 
     @TableField("sort")
     private Integer sort;

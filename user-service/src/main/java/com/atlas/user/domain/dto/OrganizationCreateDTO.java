@@ -34,9 +34,6 @@ public class OrganizationCreateDTO {
     // 组织路径名称 
     private String orgPathName;
 
-    // 负责人id 
-    private Long leaderId;
-
     // 排序 
     private Integer sort;
 

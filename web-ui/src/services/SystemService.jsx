@@ -367,3 +367,10 @@ export const enableOrg = async (orgId, enabled) => {
 export const fetchOrgDetails = async (orgId) => {
     return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}`))
 }
+
+// 查询组织下的部门
+export const fetchOrgSubUnits = async (orgId, type) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/sub-units`, {
+        params: { type: type }
+    }))
+}

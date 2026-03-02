@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -95,6 +96,29 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             }
         }
         return organizationVO;
+    }
+
+    @Override
+    public List<OrganizationVO> findSubUnits(Long id, String organizationType){
+        QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
+        organizationQueryWrapper
+                .lambda()
+                .select(
+                        Organization::getId,
+                        Organization::getParentId,
+                        Organization::getStatus,
+                        Organization::getOrgCode,
+                        Organization::getOrgName,
+                        Organization::getSort)
+                .eq(Organization::getOrgType,organizationType)
+                .eq(Organization::getParentId,id)
+                .orderByAsc(Organization::getSort)
+                .orderByAsc(Organization::getCreateTime);
+        List<Organization> deptList = organizationMapper.selectList(organizationQueryWrapper);
+        if(CollectionUtils.isEmpty(deptList)){
+            return Collections.emptyList();
+        }
+        return OrganizationMapping.INSTANCE.toOrganizationVO(deptList);
     }
 
     @Override

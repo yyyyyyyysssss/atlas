@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
 import { OrganizationStatus, OrganizationType } from '../../../../enums/system';
 import EditableTable from '../../../../components/smart-table/EditableTable';
+import OrgMember from '../member';
 
 
 const OrgDeptTeam = ({ deptId }) => {
@@ -22,6 +23,7 @@ const OrgDeptTeam = ({ deptId }) => {
 
     const [teamUserDrawer, setTeamUserDrawer] = useState({
         open: false,
+        teamId: null,
         title: ''
     })
 
@@ -138,6 +140,22 @@ const OrgDeptTeam = ({ deptId }) => {
         },
     ]
 
+    const openTeamUserDrawer = (team) => {
+        setTeamUserDrawer({
+            open: true,
+            teamId: team.id,
+            title: team.orgName
+        })
+    }
+
+    const closeTeamUserDrawer = () => {
+        setTeamUserDrawer({
+            open: false,
+            teamId: null,
+            title: null
+        })
+    }
+
     return (
         <Form form={teamForm} component={false}>
             <Flex gap={8} vertical>
@@ -160,7 +178,7 @@ const OrgDeptTeam = ({ deptId }) => {
                             renderExtraActions={(record, rowIndex, isAnyRowEditing) => {
 
                                 return (
-                                    <Typography.Link style={{ whiteSpace: 'nowrap' }} disabled={isAnyRowEditing}>
+                                    <Typography.Link onClick={() => openTeamUserDrawer(record)} style={{ whiteSpace: 'nowrap' }} disabled={isAnyRowEditing}>
                                         {t('成员列表')}
                                     </Typography.Link>
                                 )
@@ -168,6 +186,17 @@ const OrgDeptTeam = ({ deptId }) => {
                         />
                     )}
                 </Form.List>
+                <Drawer
+                    title={t('成员列表') + `[${teamUserDrawer.title}]`}
+                    closable={{ 'aria-label': 'Close Button' }}
+                    onClose={closeTeamUserDrawer}
+                    open={teamUserDrawer.open}
+                    width={700}
+                >
+                    <OrgMember
+                        orgId={teamUserDrawer.teamId}
+                    />
+                </Drawer>
             </Flex>
         </Form>
     )

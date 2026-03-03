@@ -1,8 +1,12 @@
 package com.atlas.user.mapper;
 
 import com.atlas.user.domain.entity.Organization;
+import com.atlas.user.domain.vo.OrgMemberVO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * (Organization)表数据库访问层
@@ -12,6 +16,8 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface OrganizationMapper extends BaseMapper<Organization> {
-    
+
+    List<OrgMemberVO> findMembers(@Param("orgPath") String orgPath,@Param("includeChild") boolean includeChild);
+
 }
 

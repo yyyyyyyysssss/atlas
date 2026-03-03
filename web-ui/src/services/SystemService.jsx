@@ -374,3 +374,8 @@ export const fetchOrgSubUnits = async (orgId, type) => {
         params: { type: type }
     }))
 }
+
+// 查询组织下的成员
+export const fetchOrgMembers = async (orgId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/members`))
+}

@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
 import { OrganizationStatus, OrganizationType } from '../../../../enums/system';
 import OrgDeptTeam from '../team';
+import OrgMember from '../member';
 
 const OrgDept = ({ orgId }) => {
 
@@ -33,6 +34,7 @@ const OrgDept = ({ orgId }) => {
 
     const [deptUserDrawer, setDeptUserDrawer] = useState({
         open: false,
+        deptId: null,
         title: ''
     })
 
@@ -195,7 +197,7 @@ const OrgDept = ({ orgId }) => {
         })
     }
 
-    const closeDeptUserDrawer = (dept) => {
+    const closeDeptUserDrawer = () => {
         setDeptUserDrawer({
             open: false,
             deptId: null,
@@ -315,7 +317,9 @@ const OrgDept = ({ orgId }) => {
                 open={deptUserDrawer.open}
                 width={700}
             >
-
+                <OrgMember
+                    orgId={deptUserDrawer.deptId}
+                />
             </Drawer>
         </Flex>
     )

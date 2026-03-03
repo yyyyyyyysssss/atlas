@@ -5,6 +5,8 @@ import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.domain.dto.OrganizationCreateDTO;
 import com.atlas.user.domain.dto.OrganizationQueryDTO;
 import com.atlas.user.domain.dto.OrganizationUpdateDTO;
+import com.atlas.user.domain.dto.UserOrgDTO;
+import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.OrganizationVO;
 import com.atlas.user.service.OrganizationService;
 import com.github.pagehelper.PageInfo;
@@ -32,43 +34,58 @@ public class OrganizationController {
     private OrganizationService organizationService;
 
     @PostMapping("/create")
-    public Result<?> createOrganization(@RequestBody @Validated OrganizationCreateDTO createDTO) {
+    public Result<Long> createOrganization(@RequestBody @Validated OrganizationCreateDTO createDTO) {
         Long id = organizationService.createOrganization(createDTO);
         return ResultGenerator.ok(id);
     }
 
     @PutMapping("/update")
-    public Result<?> updateOrganization(@RequestBody @Validated OrganizationUpdateDTO updateDTO) {
+    public Result<Void> updateOrganization(@RequestBody @Validated OrganizationUpdateDTO updateDTO) {
         organizationService.updateOrganization(updateDTO, true);
         return ResultGenerator.ok();
     }
 
     @PatchMapping("/update")
-    public Result<?> modifyOrganization(@RequestBody OrganizationUpdateDTO updateDTO) {
+    public Result<Void> modifyOrganization(@RequestBody OrganizationUpdateDTO updateDTO) {
         organizationService.updateOrganization(updateDTO, false);
         return ResultGenerator.ok();
     }
 
+    @PostMapping("/{id}/members")
+    public Result<Void> addMembers(@PathVariable("id") Long id, @RequestBody @Validated List<UserOrgDTO> userOrgList) {
+        organizationService.addMembers(id,userOrgList);
+        return ResultGenerator.ok();
+    }
+
     @GetMapping("/{id}")
-    public Result<?> getOrganization(@PathVariable("id") Long id) {
+    public Result<OrganizationVO> getOrganization(@PathVariable("id") Long id) {
         OrganizationVO vo = organizationService.findById(id);
         return ResultGenerator.ok(vo);
     }
 
     @GetMapping("/{id}/sub-units")
-    public Result<?> getSubUnits(@PathVariable("id") Long id, @RequestParam("type") String type) {
-        List<OrganizationVO> deptList = organizationService.findSubUnits(id,type);
+    public Result<List<OrganizationVO>> getSubUnits(@PathVariable("id") Long id, @RequestParam("type") String type) {
+        List<OrganizationVO> deptList = organizationService.findSubUnits(id, type);
         return ResultGenerator.ok(deptList);
     }
 
+    @GetMapping("/{id}/members")
+    public Result<List<OrgMemberVO>> getMembers(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "includeChild", required = false, defaultValue = "false") Boolean includeChild
+    ) {
+        List<OrgMemberVO> orgMemberList = organizationService.findMembers(id, includeChild);
+        return ResultGenerator.ok(orgMemberList);
+    }
+
     @GetMapping("/tree")
-    public Result<?> tree(@RequestParam(value = "orgTypes", required = false) List<String> orgTypes) {
+    public Result<List<OrganizationVO>> tree(@RequestParam(value = "orgTypes", required = false) List<String> orgTypes) {
         List<OrganizationVO> tree = organizationService.tree(orgTypes);
         return ResultGenerator.ok(tree);
     }
 
     @DeleteMapping("/{id}")
-    public Result<?> deleteOrganization(@PathVariable("id") Long id) {
+    public Result<Void> deleteOrganization(@PathVariable("id") Long id) {
         organizationService.deleteOrganization(id);
         return ResultGenerator.ok();
     }

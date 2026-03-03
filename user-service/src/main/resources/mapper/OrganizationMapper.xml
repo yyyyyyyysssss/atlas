@@ -11,7 +11,6 @@
         <result property="orgType" column="org_type" jdbcType="VARCHAR"/>
         <result property="orgPath" column="org_path" jdbcType="VARCHAR"/>
         <result property="orgPathName" column="org_path_name" jdbcType="VARCHAR"/>
-        <result property="leaderId" column="leader_id" jdbcType="INTEGER"/>
         <result property="sort" column="sort" jdbcType="INTEGER"/>
         <result property="remark" column="remark" jdbcType="VARCHAR"/>
         <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
@@ -21,6 +20,32 @@
         <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
         <result property="updaterName" column="updater_name" jdbcType="VARCHAR"/>
     </resultMap>
+
+    <select id="findMembers" resultType="com.atlas.user.domain.vo.OrgMemberVO">
+        SELECT
+            f.id,
+            f.user_id,
+            f.org_id,
+            f.pos_id,
+            f.join_time,
+            f.is_main,
+            u.full_name as user_full_name,
+            t.org_name
+        from organization t
+        INNER JOIN user_org f ON t.id = f.org_id
+        INNER JOIN user u ON f.user_id = u.id
+        <where>
+            <choose>
+                <when test="includeChild == true">
+                    AND t.org_path LIKE CONCAT(#{orgPath}, '%')
+                </when>
+                <otherwise>
+                    AND t.org_path = #{orgPath}
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY f.is_main DESC, f.join_time ASC
+    </select>
 
 
 </mapper>

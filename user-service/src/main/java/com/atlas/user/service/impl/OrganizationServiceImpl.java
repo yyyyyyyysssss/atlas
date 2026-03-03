@@ -7,12 +7,15 @@ import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.OrganizationCreateDTO;
 import com.atlas.user.domain.dto.OrganizationUpdateDTO;
+import com.atlas.user.domain.dto.UserOrgDTO;
 import com.atlas.user.domain.entity.Organization;
+import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.OrganizationVO;
 import com.atlas.user.enums.OrganizationType;
 import com.atlas.user.mapper.OrganizationMapper;
 import com.atlas.user.mapping.OrganizationMapping;
 import com.atlas.user.service.OrganizationService;
+import com.atlas.user.service.UserOrgService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
@@ -24,7 +27,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,8 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     private final OrganizationMapper organizationMapper;
 
     private final SequenceGenerator orgSequenceGenerator;
+
+    private final UserOrgService userOrgService;
 
     @Override
     @Transactional
@@ -84,6 +88,12 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     @Override
+    public void addMembers(Long orgId, List<UserOrgDTO> userOrgList) {
+        checkAndResult(orgId);
+        userOrgService.addUserOrg(userOrgList);
+    }
+
+    @Override
     public OrganizationVO findById(Long id){
         Organization entity = checkAndResult(id);
         OrganizationVO organizationVO = OrganizationMapping.INSTANCE.toOrganizationVO(entity);
@@ -119,6 +129,12 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             return Collections.emptyList();
         }
         return OrganizationMapping.INSTANCE.toOrganizationVO(deptList);
+    }
+
+    @Override
+    public List<OrgMemberVO> findMembers(Long id, boolean includeChild) {
+        Organization organization = checkAndResult(id);
+        return organizationMapper.findMembers(organization.getOrgPath(), includeChild);
     }
 
     @Override

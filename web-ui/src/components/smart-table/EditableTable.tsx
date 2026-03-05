@@ -22,6 +22,7 @@ interface EditableTableProps {
     fields: any[]
     mode: 'single-edit' | 'multi-add'
     operationMode: OperationModeType
+    addPermission?: string | string[]
     editPermission?: string | string[]
     deletePermission?: string | string[]
     errors: any,
@@ -41,6 +42,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
     mode = 'multi-add',
     operationMode = OperationMode.ADD.value,
     editPermission,
+    addPermission = editPermission,
     deletePermission,
     errors,
     add,
@@ -295,7 +297,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                 pagination={false}
                 footer={() => (
                     operationMode && operationMode !== OperationMode.VIEW.value && (
-                        <HasPermission hasPermissions={editPermission}>
+                        <HasPermission hasPermissions={addPermission}>
                             <Button onClick={handleAdd} type="dashed" style={{ width: '100%' }}><PlusOutlined />{t('新增一行')}</Button>
                         </HasPermission>
                     )

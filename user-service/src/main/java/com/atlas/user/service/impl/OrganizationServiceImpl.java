@@ -9,6 +9,7 @@ import com.atlas.user.domain.dto.OrganizationCreateDTO;
 import com.atlas.user.domain.dto.OrganizationUpdateDTO;
 import com.atlas.user.domain.dto.UserOrgDTO;
 import com.atlas.user.domain.entity.Organization;
+import com.atlas.user.domain.entity.UserOrg;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.OrganizationVO;
 import com.atlas.user.enums.OrganizationType;
@@ -94,6 +95,12 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     @Override
+    public void removeMembers(Long orgId, List<Long> userOrgIds) {
+        checkAndResult(orgId);
+        userOrgService.deleteOrgUser(orgId,userOrgIds);
+    }
+
+    @Override
     public OrganizationVO findById(Long id){
         Organization entity = checkAndResult(id);
         OrganizationVO organizationVO = OrganizationMapping.INSTANCE.toOrganizationVO(entity);
@@ -132,9 +139,54 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     @Override
-    public List<OrgMemberVO> findMembers(Long id, boolean includeChild) {
+    public List<OrgMemberVO> findMembers(Long id, String mode) {
         Organization organization = checkAndResult(id);
-        return organizationMapper.findMembers(organization.getOrgPath(), includeChild);
+        String targetPath = organization.getOrgPath();
+        boolean includeChild;
+        switch (mode){
+            case "CHILDREN":
+                includeChild = true;
+                break;
+            case "PARENT":
+                includeChild = true;
+                targetPath = getParentPath(organization.getOrgPath());
+                break;
+            case "CURRENT":
+            default:
+                includeChild = false;
+                targetPath = organization.getOrgPath();
+                break;
+        }
+        return organizationMapper.findMembers(targetPath, includeChild);
+    }
+
+    private String getParentPath(String path) {
+        if (path == null || path.length() <= 1) {
+            return path; // 或者返回自定义的根标识
+        }
+
+        // 1. 去掉末尾可能存在的斜杠，统一成 /1/2/3
+        String normalizedPath = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+
+        // 2. 找到最后一个斜杠的位置
+        int lastSlashIndex = normalizedPath.lastIndexOf("/");
+
+        // 3. 如果没找到斜杠，或者斜杠就在开头（如 "/1"），说明已经没有父级了
+        if (lastSlashIndex <= 0) {
+            // 返回原路径或根路径，取决于你数据库根节点的定义
+            // 如果你的根节点是 /1/，那么这里建议直接返回原 path，避免查不到数据
+            return path;
+        }
+
+        // 4. 截取到父级位置并补回斜杠 -> /1/2/
+        return normalizedPath.substring(0, lastSlashIndex + 1);
+    }
+
+    // 辅助方法：截取路径获取父级或根级
+    private String getRootPath(String path) {
+        // 逻辑：/1/2/3/ -> 取第一个斜杠后的 ID
+        String[] parts = path.split("/");
+        return "/" + parts[1] + "/";
     }
 
     @Override
@@ -164,6 +216,27 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 OrganizationVO::setChildren,
                 CommonConstant.TREE_ROOT_PARENT_ID
         );
+    }
+
+
+    @Override
+    public OrganizationVO orgMemberMainCheck(Long id, Long userId){
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
+        if(userOrgMain == null){
+            return null;
+        }
+        Long orgId = userOrgMain.getOrgId();
+        Organization organization = this.lambdaQuery()
+                .select(Organization::getId,Organization::getOrgName, Organization::getOrgPath, Organization::getOrgPathName)
+                .eq(Organization::getId, orgId)
+                .one();
+        if(organization == null){
+            throw new BusinessException("组织部门缺失,请联系管理员");
+        }
+        if(organization.getId().equals(id)){
+            return null;
+        }
+        return OrganizationMapping.INSTANCE.toOrganizationVO(organization);
     }
 
     @Override

@@ -130,6 +130,7 @@ const App = () => {
         },
         Button: {
           primaryShadow: '0 2px 0 rgba(5,145,255,0.1)',
+          dangerShadow: '0 2px 0 rgba(0, 0, 0, 0.2)',
         },
         Input: {
 

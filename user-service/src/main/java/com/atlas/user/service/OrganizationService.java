@@ -26,7 +26,7 @@ public interface OrganizationService extends IService<Organization> {
 
     List<OrganizationVO> findSubUnits(Long id, String organizationType);
 
-    List<OrgMemberVO> findMembers(Long id, boolean includeChild);
+    List<OrgMemberVO> findMembers(Long id, String mode);
 
     List<OrganizationVO> tree(List<String> orgTypes);
 
@@ -36,6 +36,10 @@ public interface OrganizationService extends IService<Organization> {
 
     void addMembers(Long orgId,List<UserOrgDTO> userOrgList);
 
+    void removeMembers(Long orgId, List<Long> userOrgIds);
+
     void deleteOrganization(Long id);
+
+    OrganizationVO orgMemberMainCheck(Long id, Long userId);
 }
 

@@ -30,7 +30,10 @@
             f.join_time,
             f.is_main,
             u.full_name as user_full_name,
-            t.org_name
+            t.org_name,
+            t.org_type,
+            t.org_path,
+            t.org_path_name
         from organization t
         INNER JOIN user_org f ON t.id = f.org_id
         INNER JOIN user u ON f.user_id = u.id

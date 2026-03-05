@@ -16,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * (Organization)表控制层
@@ -53,7 +54,14 @@ public class OrganizationController {
 
     @PostMapping("/{id}/members")
     public Result<Void> addMembers(@PathVariable("id") Long id, @RequestBody @Validated List<UserOrgDTO> userOrgList) {
+        userOrgList = userOrgList.stream().peek( p -> p.setOrgId(id)).collect(Collectors.toList());
         organizationService.addMembers(id,userOrgList);
+        return ResultGenerator.ok();
+    }
+
+    @DeleteMapping("/{id}/members")
+    public Result<Void> removeMembers(@PathVariable("id") Long id, @RequestBody List<Long> userOrgIds) {
+        organizationService.removeMembers(id,userOrgIds);
         return ResultGenerator.ok();
     }
 
@@ -72,10 +80,16 @@ public class OrganizationController {
     @GetMapping("/{id}/members")
     public Result<List<OrgMemberVO>> getMembers(
             @PathVariable("id") Long id,
-            @RequestParam(value = "includeChild", required = false, defaultValue = "false") Boolean includeChild
+            @RequestParam(value = "mode", required = false, defaultValue = "CURRENT") String mode
     ) {
-        List<OrgMemberVO> orgMemberList = organizationService.findMembers(id, includeChild);
+        List<OrgMemberVO> orgMemberList = organizationService.findMembers(id, mode);
         return ResultGenerator.ok(orgMemberList);
+    }
+
+    @GetMapping("/{id}/main-check")
+    public Result<OrganizationVO> orgMemberMainCheck(@PathVariable("id") Long id, @RequestParam("userId")Long userId) {
+        OrganizationVO organizationVO = organizationService.orgMemberMainCheck(id, userId);
+        return ResultGenerator.ok(organizationVO);
     }
 
     @GetMapping("/tree")

@@ -19,15 +19,20 @@ public interface UserOrgService extends IService<UserOrg> {
 
     void addUserOrg(List<UserOrgDTO> list);
 
+
+    UserOrg findUserOrgMain(Long userId);
+
+    void deleteOrgUser(Long orgId, List<Long> userIds);
+
     List<UserOrgDTO> findByUserId(Collection<Long> userIds);
 
     List<UserOrgDTO> findByOrgId(Collection<Long> orgIds);
 
-    default List<UserOrgDTO> findByUserId(Long userId){
+    default List<UserOrgDTO> findByUserId(Long userId) {
         return findByUserId(Collections.singleton(userId));
     }
 
-    default List<UserOrgDTO> findByOrgId(Long orgId){
+    default List<UserOrgDTO> findByOrgId(Long orgId) {
         return findByOrgId(Collections.singleton(orgId));
     }
 }

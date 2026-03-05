@@ -24,6 +24,7 @@ const OrgDeptTeam = ({ deptId }) => {
     const [teamUserDrawer, setTeamUserDrawer] = useState({
         open: false,
         teamId: null,
+        teamName: null,
         title: ''
     })
 
@@ -144,6 +145,7 @@ const OrgDeptTeam = ({ deptId }) => {
         setTeamUserDrawer({
             open: true,
             teamId: team.id,
+            teamName: team.orgName,
             title: team.orgName
         })
     }
@@ -152,6 +154,7 @@ const OrgDeptTeam = ({ deptId }) => {
         setTeamUserDrawer({
             open: false,
             teamId: null,
+            teamName: null,
             title: null
         })
     }
@@ -192,9 +195,12 @@ const OrgDeptTeam = ({ deptId }) => {
                     onClose={closeTeamUserDrawer}
                     open={teamUserDrawer.open}
                     width={700}
+                    destroyOnHidden
                 >
                     <OrgMember
                         orgId={teamUserDrawer.teamId}
+                        orgName={teamUserDrawer.teamName}
+                        orgType={OrganizationType.TEAM.value}
                     />
                 </Drawer>
             </Flex>

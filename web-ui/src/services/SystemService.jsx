@@ -376,6 +376,25 @@ export const fetchOrgSubUnits = async (orgId, type) => {
 }
 
 // 查询组织下的成员
-export const fetchOrgMembers = async (orgId) => {
-    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/members`))
+export const fetchOrgMembers = async (orgId, mode = 'CURRENT') => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/members?mode=${mode}`))
+}
+
+// 添加组织成员
+export const addOrgMembers = async (orgId, req) => {
+    
+    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/org/${orgId}/members`,req))
+}
+
+// 批量移除组织成员
+export const removeOrgMembers = async (orgId, userOrgIds) => {
+    
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/user/system/org/${orgId}/members`,{
+        data: userOrgIds
+    }))
+}
+
+export const orgMemberMainCheck = async (orgId, userId) => {
+    
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/main-check?userId=${userId}`))
 }

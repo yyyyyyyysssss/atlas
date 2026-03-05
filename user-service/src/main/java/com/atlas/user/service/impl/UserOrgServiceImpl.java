@@ -2,6 +2,7 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.user.config.idwork.IdGen;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.atlas.user.mapper.UserOrgMapper;
@@ -44,20 +45,31 @@ public class UserOrgServiceImpl extends ServiceImpl<UserOrgMapper, UserOrg> impl
         List<UserOrgDTO> isMainNoNList = list.stream().filter(f -> f.getIsMain() == null).toList();
         if (!isMainNoNList.isEmpty()) {
             Set<Long> userIds = isMainNoNList.stream().map(UserOrgDTO::getUserId).collect(Collectors.toSet());
-            Set<Long> usersWithMain = this.lambdaQuery()
+            // 查询出用户主部门
+            List<UserOrg> usersWithMain = this.lambdaQuery()
                     .in(UserOrg::getUserId, userIds)
                     .eq(UserOrg::getIsMain, 1)
-                    .list()
-                    .stream()
-                    .map(UserOrg::getUserId)
-                    .collect(Collectors.toSet());
+                    .list();
             Set<Long> assignedInThisBatch = new HashSet<>();
             for (UserOrgDTO dto : list) {
                 if (dto.getIsMain() == null) {
-                    // 如果数据库里没有，且本批次前面也没设过，才设为 1
-                    boolean needsMain = !usersWithMain.contains(dto.getUserId())
-                            && !assignedInThisBatch.contains(dto.getUserId());
-                    dto.setIsMain(needsMain);
+                    // 如果用户没有设置过主部门则默认设置为主部门
+                    if(usersWithMain.stream().noneMatch(m -> m.getUserId().equals(dto.getUserId()))){
+                        // 如果数据库里没有，且本批次前面也没设过，才设为 1
+                        dto.setIsMain(!assignedInThisBatch.contains(dto.getUserId()));
+                    } else {
+                        // 已设置过主部门的
+                        UserOrg userOrg = usersWithMain
+                                .stream()
+                                .filter(m -> m.getUserId().equals(dto.getUserId()) && m.getOrgId().equals(dto.getOrgId()))
+                                .findFirst().orElse(null);
+                        // 同组织则直接赋值
+                        if(userOrg != null){
+                            dto.setIsMain(userOrg.getIsMain());
+                        } else { // 不同组织表示用户已经设置过
+                            dto.setIsMain(false);
+                        }
+                    }
                 }
                 if (Boolean.TRUE.equals(dto.getIsMain())) {
                     assignedInThisBatch.add(dto.getUserId());
@@ -108,11 +120,23 @@ public class UserOrgServiceImpl extends ServiceImpl<UserOrgMapper, UserOrg> impl
         this.saveOrUpdateBatch(finalEntities);
     }
 
-    private void deleteUserOrg(List<UserOrgDTO> list) {
-        if (CollectionUtils.isEmpty(list)) {
+    public UserOrg findUserOrgMain(Long userId){
+
+        return this.lambdaQuery()
+                .eq(UserOrg::getUserId, userId)
+                .eq(UserOrg::getIsMain, 1)
+                .one();
+    }
+
+    public void deleteOrgUser(Long orgId, List<Long> userOrgIds) {
+        if (orgId == null || CollectionUtils.isEmpty(userOrgIds)) {
             return;
         }
-        userOrgMapper.batchDeletePairwise(list);
+        LambdaQueryWrapper<UserOrg> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserOrg::getOrgId, orgId)
+                .in(UserOrg::getId, userOrgIds);
+        int deletedRows = userOrgMapper.delete(wrapper);
+        log.info("从组织 {} 中移除了 {} 名成员", orgId, deletedRows);
     }
 
     @Override

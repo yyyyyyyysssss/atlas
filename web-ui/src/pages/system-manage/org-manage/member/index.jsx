@@ -12,7 +12,7 @@ import {
     ArrowDownOutlined
 } from '@ant-design/icons';
 
-const OrgMember = ({ orgId, orgName, orgType }) => {
+const OrgMember = ({ orgId, parentOrgName, orgType }) => {
 
     const { t } = useTranslation()
 
@@ -90,11 +90,11 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
     const handleAddMember = async () => {
         setOrgMemberModal({
             open: true,
-            title: orgName,
+            title: parentOrgName,
             orgId: orgId,
         })
         // 获取整个部门的
-        if (orgType === OrganizationType.TEAM.value) {
+        if (orgType === OrganizationType.TEAM.value || orgType === OrganizationType.DEPT.value) {
             const allDeptMembers = await fetchOrgMemberAsync(orgId, 'PARENT')
             const allUserIds = allDeptMembers.map(m => m.userId)
             const diffUserIds = allUserIds.filter(id => !orgMemberIdsRef.current.includes(id))

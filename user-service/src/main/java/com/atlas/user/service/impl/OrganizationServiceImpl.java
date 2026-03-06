@@ -17,10 +17,12 @@ import com.atlas.user.mapper.OrganizationMapper;
 import com.atlas.user.mapping.OrganizationMapping;
 import com.atlas.user.service.OrganizationService;
 import com.atlas.user.service.UserOrgService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -40,7 +42,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Slf4j
 public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Organization> implements OrganizationService {
-    
+
     private final OrganizationMapper organizationMapper;
 
     private final SequenceGenerator orgSequenceGenerator;
@@ -49,14 +51,14 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
     @Override
     @Transactional
-    public Long createOrganization(OrganizationCreateDTO createDTO){
+    public Long createOrganization(OrganizationCreateDTO createDTO) {
         Organization entity = OrganizationMapping.INSTANCE.toOrganization(createDTO);
         Long id = IdGen.genId();
         entity.setId(id);
         entity.setOrgCode(orgSequenceGenerator.generate());
-        if(createDTO.getParentId() != null){
+        if (createDTO.getParentId() != null) {
             Organization parentOrganization = organizationMapper.selectById(createDTO.getParentId());
-            if(parentOrganization == null){
+            if (parentOrganization == null) {
                 throw new BusinessException("上级组织不存在");
             }
             entity.setOrgPath(parentOrganization.getOrgPath() + id + "/");
@@ -75,16 +77,20 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
     @Override
     @Transactional
-    public void updateOrganization(OrganizationUpdateDTO updateDTO, boolean isFullUpdate){
+    public void updateOrganization(OrganizationUpdateDTO updateDTO, boolean isFullUpdate) {
         Organization entity = checkAndResult(updateDTO.getId());
-        if(isFullUpdate){
+        String oldPathName = entity.getOrgPathName();
+        String newName = updateDTO.getOrgName();
+        boolean nameChanged = StringUtils.isNotEmpty(newName) && !newName.equals(entity.getOrgName());
+        if (isFullUpdate) {
             OrganizationMapping.INSTANCE.overwriteOrganization(updateDTO, entity);
         } else {
             OrganizationMapping.INSTANCE.updateOrganization(updateDTO, entity);
         }
-        int row = organizationMapper.updateById(entity);
-        if (row <= 0) {
-            throw new BusinessException("修改失败");
+        if (nameChanged) {
+            this.updateOrgPathNameAndChildren(entity, oldPathName);
+        } else {
+            organizationMapper.updateById(entity);
         }
     }
 
@@ -97,17 +103,17 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     @Override
     public void removeMembers(Long orgId, List<Long> userOrgIds) {
         checkAndResult(orgId);
-        userOrgService.deleteOrgUser(orgId,userOrgIds);
+        userOrgService.deleteOrgUser(orgId, userOrgIds);
     }
 
     @Override
-    public OrganizationVO findById(Long id){
+    public OrganizationVO findById(Long id) {
         Organization entity = checkAndResult(id);
         OrganizationVO organizationVO = OrganizationMapping.INSTANCE.toOrganizationVO(entity);
         Long parentId = entity.getParentId();
-        if(parentId != CommonConstant.TREE_ROOT_PARENT_ID){
+        if (parentId != CommonConstant.TREE_ROOT_PARENT_ID) {
             Organization parentOrganization = organizationMapper.selectById(parentId);
-            if(parentOrganization != null){
+            if (parentOrganization != null) {
                 organizationVO.setParentCode(parentOrganization.getOrgCode());
                 organizationVO.setParentName(parentOrganization.getOrgName());
             }
@@ -116,7 +122,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     @Override
-    public List<OrganizationVO> findSubUnits(Long id, String organizationType){
+    public List<OrganizationVO> findSubUnits(Long id, String organizationType) {
         QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
         organizationQueryWrapper
                 .lambda()
@@ -127,12 +133,12 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                         Organization::getOrgCode,
                         Organization::getOrgName,
                         Organization::getSort)
-                .eq(Organization::getOrgType,organizationType)
-                .eq(Organization::getParentId,id)
+                .eq(Organization::getOrgType, organizationType)
+                .eq(Organization::getParentId, id)
                 .orderByAsc(Organization::getSort)
                 .orderByAsc(Organization::getCreateTime);
         List<Organization> deptList = organizationMapper.selectList(organizationQueryWrapper);
-        if(CollectionUtils.isEmpty(deptList)){
+        if (CollectionUtils.isEmpty(deptList)) {
             return Collections.emptyList();
         }
         return OrganizationMapping.INSTANCE.toOrganizationVO(deptList);
@@ -143,7 +149,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         Organization organization = checkAndResult(id);
         String targetPath = organization.getOrgPath();
         boolean includeChild;
-        switch (mode){
+        switch (mode) {
             case "CHILDREN":
                 includeChild = true;
                 break;
@@ -158,6 +164,33 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 break;
         }
         return organizationMapper.findMembers(targetPath, includeChild);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void updateOrgPathNameAndChildren(Organization currentEntity, String oldPathName) {
+        String parentPathName = getParentPath(oldPathName);
+        String newPathName = StringUtils.isEmpty(parentPathName) ? currentEntity.getOrgName() : parentPathName + currentEntity.getOrgName() + "/";
+        currentEntity.setOrgPathName(newPathName);
+        organizationMapper.updateById(currentEntity);
+
+        // 获取所有子节点 (不包含自己)
+        String orgPath = currentEntity.getOrgPath();
+        List<Organization> children = organizationMapper.selectList(
+                new LambdaQueryWrapper<Organization>()
+                        .likeRight(Organization::getOrgPath, orgPath)
+                        .ne(Organization::getId, currentEntity.getId()) // 排除自己
+        );
+        if (!children.isEmpty()) {
+            for (Organization child : children) {
+                String childOldPathName = child.getOrgPathName();
+                if (StringUtils.isNotEmpty(childOldPathName)) {
+                    String newChildPathName = newPathName + childOldPathName.substring(oldPathName.length());
+                    child.setOrgPathName(newChildPathName);
+                }
+            }
+            this.updateBatchById(children);
+        }
+
     }
 
     private String getParentPath(String path) {
@@ -191,7 +224,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
     @Override
     public List<OrganizationVO> tree(List<String> orgTypes) {
-        if(CollectionUtils.isEmpty(orgTypes)){
+        if (CollectionUtils.isEmpty(orgTypes)) {
             orgTypes = Arrays.stream(OrganizationType.values()).map(OrganizationType::getCode).collect(Collectors.toList());
         }
         QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
@@ -204,7 +237,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                         Organization::getOrgType,
                         Organization::getStatus,
                         Organization::getOrgPath)
-                .in(Organization::getOrgType,orgTypes)
+                .in(Organization::getOrgType, orgTypes)
                 .orderByAsc(Organization::getSort)
                 .orderByAsc(Organization::getCreateTime);
         List<Organization> organizations = organizationMapper.selectList(organizationQueryWrapper);
@@ -220,20 +253,20 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
 
     @Override
-    public OrganizationVO orgMemberMainCheck(Long id, Long userId){
+    public OrganizationVO orgMemberMainCheck(Long id, Long userId) {
         UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
-        if(userOrgMain == null){
+        if (userOrgMain == null) {
             return null;
         }
         Long orgId = userOrgMain.getOrgId();
         Organization organization = this.lambdaQuery()
-                .select(Organization::getId,Organization::getOrgName, Organization::getOrgPath, Organization::getOrgPathName)
+                .select(Organization::getId, Organization::getOrgName, Organization::getOrgPath, Organization::getOrgPathName)
                 .eq(Organization::getId, orgId)
                 .one();
-        if(organization == null){
+        if (organization == null) {
             throw new BusinessException("组织部门缺失,请联系管理员");
         }
-        if(organization.getId().equals(id)){
+        if (organization.getId().equals(id)) {
             return null;
         }
         return OrganizationMapping.INSTANCE.toOrganizationVO(organization);
@@ -241,11 +274,11 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
     @Override
     @Transactional
-    public void deleteOrganization(Long id){
+    public void deleteOrganization(Long id) {
         checkAndResult(id);
         organizationMapper.deleteById(id);
     }
-    
+
     private Organization checkAndResult(Long id) {
         Organization entity = organizationMapper.selectById(id);
         if (entity == null) {
@@ -253,6 +286,6 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         }
         return entity;
     }
-    
+
 }
 

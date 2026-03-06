@@ -215,6 +215,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                 dataIndex: 'operation',
                 width: 100,
                 align: 'center',
+                fixed: 'right',
                 render: (_: any, record: any, rowIndex: number) => {
                     if (mode === 'multi-add') {
                         return (
@@ -295,6 +296,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                 columns={mergedColumns}
                 rowKey={rowKey}
                 pagination={false}
+                scroll={{ x: 'max-content', y: 280 }}
                 footer={() => (
                     operationMode && operationMode !== OperationMode.VIEW.value && (
                         <HasPermission hasPermissions={addPermission}>

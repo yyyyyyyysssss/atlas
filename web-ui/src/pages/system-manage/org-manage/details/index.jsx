@@ -1,7 +1,7 @@
 import './index.css'
-import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber } from 'antd'
+import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, Breadcrumb, Typography } from 'antd'
 import { OperationMode } from '../../../../enums/common';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createOrg, fetchOrgDetails, updateOrg } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
 import { getMessageApi } from '../../../../utils/MessageUtil';
@@ -9,10 +9,12 @@ import { useRequest } from 'ahooks';
 import Loading from '../../../../components/loading';
 import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
-import { OrganizationStatus } from '../../../../enums/system';
+import { OrganizationStatus, OrganizationType } from '../../../../enums/system';
 import OrgDept from '../dept';
+import OrgDeptTeam from '../team';
+import OrgMember from '../member';
 
-const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, changeOperationMode, onSuccess }) => {
+const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, changeOperationMode, selectedOrgTreeNode, onSuccess }) => {
 
     const { t } = useTranslation()
 
@@ -36,6 +38,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
         if (!orgId) {
             return
         }
+        form.resetFields()
         const orgData = await fetchOrgDetailsAsync(orgId)
         form.setFieldsValue({ ...orgData, parentCode: parentCode })
         setOrgData(orgData)
@@ -60,12 +63,65 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
         }
     }, [operationMode, orgId, orgType, form, parentId, parentCode])
 
+
+    const breadcrumbItems = useMemo(() => {
+        if (!orgData?.orgPathName) return []
+        const paths = orgData.orgPath.split('/').filter(Boolean)
+        const pathNames = orgData.orgPathName.split('/').filter(Boolean)
+        return pathNames.map((name, index) => ({
+            key: paths[index],
+            title: paths[index] === orgId ? name : <Typography.Link onClick={() => selectedOrgTreeNode(paths[index])}>{name}</Typography.Link>,
+            // 如果需要点击跳转，可以在这里加 href 或 onClick
+        }))
+    }, [orgData, selectedOrgTreeNode])
+
     if (!operationMode || (operationMode === OperationMode.CANCEL.value && !orgId)) {
         return null
     }
 
     const resetForm = () => {
         form.resetFields()
+    }
+
+    const renderExtraContent = (orgId, orgType, orgName, operationMode) => {
+        const isViewMode = operationMode === OperationMode.VIEW.value || operationMode === OperationMode.CANCEL.value
+
+        if (isViewMode) {
+            switch (orgType) {
+                case OrganizationType.GROUP.value, OrganizationType.COMPANY.value:
+                    return (
+                        <OrgDept orgId={orgId} />
+                    )
+                case OrganizationType.DEPT.value:
+                    return (
+                        <Flex
+                            vertical
+                        >
+                            <Flex vertical>
+                                <OrgMember
+                                    orgId={orgId}
+                                    parentOrgName={orgName}
+                                    orgType={orgType}
+                                />
+                            </Flex>
+                            <Flex vertical>
+                                <Typography.Title level={5}>团队列表</Typography.Title>
+                                <OrgDeptTeam deptId={orgId} />
+                            </Flex>
+                        </Flex>
+
+                    )
+                case OrganizationType.TEAM.value:
+                    return (
+                        <OrgMember
+                            orgId={orgId}
+                            parentOrgName={orgName}
+                            orgType={orgType}
+                        />
+                    )
+            }
+        }
+        return null
     }
 
     const saveOrg = async () => {
@@ -91,6 +147,10 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                 gap={20}
                 vertical
             >
+                <Breadcrumb
+                    items={breadcrumbItems}
+                    separator=">"
+                />
                 <Flex
                     hidden={!(operationMode === OperationMode.VIEW.value || operationMode === OperationMode.CANCEL.value)}
                 >
@@ -102,7 +162,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                     form={form}
                     style={{ width: '100%' }}
                     labelCol={{ span: 2 }}
-                    wrapperCol={{ span: 20 }}
+                    wrapperCol={{ span: 24 }}
                     layout="horizontal"
                     disabled={operationMode === OperationMode.VIEW.value || operationMode === OperationMode.CANCEL.value}
                 >
@@ -169,9 +229,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                         </Col>
                     </Row>
                 </Form>
-                {(operationMode === OperationMode.VIEW.value || operationMode === OperationMode.CANCEL.value) && (
-                    <OrgDept orgId={orgId} />
-                )}
+                {renderExtraContent(orgId, orgType, orgData?.orgName, operationMode)}
                 <Flex
                     justify='flex-end'
                     align='center'

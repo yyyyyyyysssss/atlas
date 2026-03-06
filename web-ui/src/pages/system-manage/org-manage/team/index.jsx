@@ -98,6 +98,7 @@ const OrgDeptTeam = ({ deptId }) => {
             dataIndex: 'orgCode',
             align: 'center',
             inputType: 'custom',
+            width: '100',
             editable: true,
             editRender: ({ value, onChange }) => {
                 return <Input value={value} disabled />
@@ -109,6 +110,7 @@ const OrgDeptTeam = ({ deptId }) => {
             dataIndex: 'status',
             align: 'center',
             inputType: 'custom',
+            width: '100',
             editable: true,
             required: true,
             editRender: ({ value, onChange }) => {

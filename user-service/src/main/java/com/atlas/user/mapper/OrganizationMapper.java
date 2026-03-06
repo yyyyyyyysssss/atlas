@@ -1,5 +1,6 @@
 package com.atlas.user.mapper;
 
+import com.atlas.common.mybatis.mapper.TreeMapper;
 import com.atlas.user.domain.entity.Organization;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -15,7 +16,7 @@ import java.util.List;
  * @since 2026-02-28 16:21:33
  */
 @Mapper
-public interface OrganizationMapper extends BaseMapper<Organization> {
+public interface OrganizationMapper extends BaseMapper<Organization>,TreeMapper<Organization> {
 
     List<OrgMemberVO> findMembers(@Param("orgPath") String orgPath,@Param("includeChild") boolean includeChild);
 

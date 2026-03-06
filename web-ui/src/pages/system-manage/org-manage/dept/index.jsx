@@ -127,12 +127,14 @@ const OrgDept = ({ orgId }) => {
         },
         {
             key: 'orgCode',
+            width: '100',
             title: '部门编码',
             dataIndex: 'orgCode',
             align: 'center'
         },
         {
             key: 'status',
+            width: '100',
             title: '状态',
             dataIndex: 'status',
             align: 'center',
@@ -296,6 +298,16 @@ const OrgDept = ({ orgId }) => {
                                 name="sort"
                             >
                                 <InputNumber precision={0} style={{ width: '100%' }} />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <Form.Item
+                                label="备注"
+                                name="remark"
+                            >
+                                <Input.TextArea placeholder="请输入备注" />
                             </Form.Item>
                         </Col>
                     </Row>

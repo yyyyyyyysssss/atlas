@@ -49,7 +49,7 @@ export const routes = [
                     {
                         path: 'org',
                         element: <OrgManage />,
-                        breadcrumbName: '组织管理',
+                        breadcrumbName: '组织架构',
                         defaultIcon: <Building2 size={18} />,
                         protected: true,
                         requiredPermissions: ['system:org']

@@ -1,13 +1,13 @@
 import './index.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dropdown, Flex, Tree, Splitter, Typography, Input } from 'antd'
-import { Plus } from 'lucide-react';
+import { Dropdown, Flex, Tree, Splitter, Typography, Input, Checkbox, theme } from 'antd'
+import { Building2, Building, Component, Users, Plus } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
 import HasPermission from '../../../components/HasPermission';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import Loading from '../../../components/loading';
-import { enableOrg, fetchOrgTree } from '../../../services/SystemService';
+import { fetchOrgTree } from '../../../services/SystemService';
 import OrgDetails from './details';
 import { OrganizationType } from '../../../enums/system';
 
@@ -26,6 +26,30 @@ const getParentKey = (id, tree) => {
     return parentKey
 }
 
+const getAllKeys = (data) => {
+    const keys = []
+    const traverse = (nodes) => {
+        nodes.forEach(node => {
+            keys.push(node.id)
+            if (node.children && node.children.length > 0) {
+                traverse(node.children)
+            }
+        })
+    }
+    traverse(data)
+    return keys
+}
+
+let defaultOrgTypes = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value]
+
+let allOrgTypes = Object.values(OrganizationType).map(item => item.value)
+
+const OrgTypeIcon = {
+    [OrganizationType.GROUP.value]: <Building2 size={16} />,
+    [OrganizationType.COMPANY.value]: <Building size={16} />,
+    [OrganizationType.DEPT.value]: <Component size={16} />,
+    [OrganizationType.TEAM.value]: <Users size={16} />,
+}
 
 const OrgManage = () => {
 
@@ -43,19 +67,17 @@ const OrgManage = () => {
 
     const [autoExpandParent, setAutoExpandParent] = useState(true)
 
-    const { runAsync: getOrgTreeAsync, loading: getOrgTreeLoading } = useRequest(fetchOrgTree, {
-        manual: true
-    })
+    const [showAllLevel, setShowAllLevel] = useState(false)
 
-    const { runAsync: enableOrgAsync, loading: enableOrgLoading } = useRequest(enableOrg, {
+    const { runAsync: getOrgTreeAsync, loading: getOrgTreeLoading } = useRequest(fetchOrgTree, {
         manual: true
     })
 
     const flattenTreeRef = useRef()
 
     useEffect(() => {
-        refreshOrgTree()
-    }, [])
+        refreshOrgTree(null, showAllLevel)
+    }, [showAllLevel])
 
     // 将树形结构扁平化，方便搜索
     useEffect(() => {
@@ -76,17 +98,24 @@ const OrgManage = () => {
     }, [orgData])
 
     // 刷新组织树数据
-    const refreshOrgTree = async (options) => {
-        let orgTypes = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value]
+    const refreshOrgTree = async (options, showAllLevel) => {
+        let orgTypes = showAllLevel ? allOrgTypes : defaultOrgTypes
         const data = await getOrgTreeAsync(orgTypes)
         setOrgData(data)
-        // 默认展开第一层级
-        if (expandedKeys.length == 0) {
+        if (showAllLevel) {
+            const allKeys = getAllKeys(data)
+            setExpandedKeys(allKeys)
+        } else if (expandedKeys.length == 0) { // 默认展开第一层级
             setExpandedKeys(data.map((node) => node.id))
         }
+
         if (options?.selectOrgId) {
             handleSelectOrg(options.selectOrgId)
         }
+    }
+
+    const selectedOrgTreeNode = (key) => {
+        handleSelectOrg(key)
     }
 
     const handleAddOrg = (type, orgItem) => {
@@ -150,13 +179,14 @@ const OrgManage = () => {
 
     // 选中组织
     const handleSelectOrg = async (orgId) => {
+        const selectedOrg = flattenTreeRef.current.find(f => f.id == orgId)
         // 不取消选中
         setSelectedKeys([orgId])
         setSelectedOrg({
             id: orgId,
             parentId: null,
             parentCode: null,
-            orgType: null,
+            orgType: selectedOrg.orgType,
             operationMode: OperationMode.VIEW.value
         })
     }
@@ -196,7 +226,17 @@ const OrgManage = () => {
                         vertical
                     >
                         <Input.Search style={{ marginBottom: 8 }} placeholder="搜索" onChange={handleSearchChange} allowClear />
-                        <Loading spinning={getOrgTreeLoading || enableOrgLoading}>
+                        <Flex gap={8} justify='end'>
+                            <Typography.Text onClick={() => setShowAllLevel(!showAllLevel)} type="secondary" style={{ fontSize: '12px', cursor: 'pointer' }}>
+                                {t('包含下级组织')}
+                            </Typography.Text>
+                            <Checkbox
+                                checked={showAllLevel}
+                                onChange={(e) => setShowAllLevel(e.target.checked)}
+                            />
+                        </Flex>
+
+                        <Loading spinning={getOrgTreeLoading}>
                             <Tree
                                 className="draggable-tree"
                                 draggable={{
@@ -221,10 +261,11 @@ const OrgManage = () => {
                         orgType={selectedOrg?.orgType}
                         operationMode={selectedOrg?.operationMode}
                         changeOperationMode={changeOperationMode}
+                        selectedOrgTreeNode={selectedOrgTreeNode}
                         onSuccess={(orgId) => {
                             refreshOrgTree({
                                 selectOrgId: orgId
-                            })
+                            }, showAllLevel)
                         }}
                     />
                 </Splitter.Panel>
@@ -242,9 +283,13 @@ const OrgItem = ({ item, selected, onAddOrg }) => {
             justify='space-between'
             align='center'
         >
-            <Typography.Text>
-                {item.title}
-            </Typography.Text>
+            <Flex align='center' gap={8}>
+                {OrgTypeIcon[item.orgType]}
+                <Typography.Text>
+                    {item.title}
+                </Typography.Text>
+            </Flex>
+
             <HasPermission requireAll={true} hasPermissions={['system:org:write', 'system:org:delete']}>
                 <div className={`flex items-center transition-opacity ${selected ? 'opacity-100' : 'opacity-0'}`}>
                     <Dropdown

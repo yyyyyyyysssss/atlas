@@ -1,6 +1,7 @@
 package com.atlas.user.domain.entity;
 
 import com.atlas.common.mybatis.entity.BaseEntity;
+import com.atlas.common.mybatis.mapper.TreeRelation;
 import com.atlas.user.enums.OrganizationStatus;
 import com.atlas.user.enums.OrganizationType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -20,7 +21,7 @@ import lombok.experimental.Tolerate;
 @Setter
 @TableName(value = "organization", autoResultMap = true)
 @Builder
-public class Organization extends BaseEntity {
+public class Organization extends BaseEntity implements TreeRelation {
 
     @Tolerate
     public Organization() {

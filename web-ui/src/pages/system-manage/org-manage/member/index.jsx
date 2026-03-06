@@ -276,6 +276,14 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
             dataIndex: 'userFullName',
             align: 'center',
             editable: false,
+            filters: [
+                ...new Set(orgMember.map(item => item.userFullName))  // 动态提取唯一值作为筛选项
+            ].map(value => ({
+                text: value,
+                value: value,
+            })),
+            filterSearch: true,
+            onFilter: (value, record) => record.userFullName === value,
         },
         {
             key: 'orgName',
@@ -398,18 +406,6 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
                     )}
                 </Form.List>
             </Form>
-            {/* <Table
-                style={{ width: '100%' }}
-                columns={columns}
-                loading={fetchOrgMemberLoading || addOrgMemberLoading || removeOrgMemberLoading}
-                dataSource={orgMember}
-                rowKey={(record) => record.id}
-                rowSelection={{
-                    selectedRowKeys,
-                    onChange: (keys) => setSelectedRowKeys(keys)
-                }}
-                pagination={false}
-            /> */}
             <Modal
                 title={`添加成员[${orgMemberModal.title}]`}
                 width={600}

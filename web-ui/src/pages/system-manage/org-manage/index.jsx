@@ -11,21 +11,6 @@ import { fetchOrgTree } from '../../../services/SystemService';
 import OrgDetails from './details';
 import { OrganizationType } from '../../../enums/system';
 
-const getParentKey = (id, tree) => {
-    let parentKey
-    for (let i = 0; i < tree.length; i++) {
-        const node = tree[i]
-        if (node.children) {
-            if (node.children.some(item => item.id === id)) {
-                parentKey = node.id
-            } else if (getParentKey(id, node.children)) {
-                parentKey = getParentKey(id, node.children)
-            }
-        }
-    }
-    return parentKey
-}
-
 const getAllKeys = (data) => {
     const keys = []
     const traverse = (nodes) => {
@@ -38,6 +23,16 @@ const getAllKeys = (data) => {
     }
     traverse(data)
     return keys
+}
+
+// 根据当前组织类型获取下一级组织类型
+const getNextOrgType = (currentType) => {
+    const typeOrder = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value, OrganizationType.DEPT.value, OrganizationType.TEAM.value]
+    const currentIndex = typeOrder.indexOf(currentType)
+    if (currentIndex === -1 || currentIndex === typeOrder.length - 1) {
+        return null // 未知类型或已是最低层级，返回 null 表示不允许新增
+    }
+    return typeOrder[currentIndex + 1]
 }
 
 let defaultOrgTypes = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value]
@@ -73,28 +68,27 @@ const OrgManage = () => {
         manual: true
     })
 
-    const flattenTreeRef = useRef()
-
     useEffect(() => {
         refreshOrgTree(null, showAllLevel)
     }, [showAllLevel])
 
-    // 将树形结构扁平化，方便搜索
-    useEffect(() => {
-        const flattenTree = (orgData) => {
-            const result = []
-            const dfs = (nodes) => {
-                nodes.forEach(node => {
-                    result.push({ ...node, children: null })
-                    if (node.children && node.children.length > 0) {
-                        dfs(node.children)
-                    }
-                })
-            }
-            dfs(orgData)
-            return result
+    // 将树形结构扁平化，方便搜索，并预计算父子关系映射
+    const flattenTree = useMemo(() => {
+        const result = []
+        const parentMap = {}
+        const dfs = (nodes, parentId = null) => {
+            nodes.forEach(node => {
+                result.push({ ...node, children: null })
+                if (parentId !== null) {
+                    parentMap[node.id] = parentId
+                }
+                if (node.children && node.children.length > 0) {
+                    dfs(node.children, node.id)
+                }
+            })
         }
-        flattenTreeRef.current = flattenTree(orgData)
+        dfs(orgData)
+        return { flattenList: result, parentMap }
     }, [orgData])
 
     // 刷新组织树数据
@@ -110,7 +104,7 @@ const OrgManage = () => {
         }
 
         if (options?.selectOrgId) {
-            handleSelectOrg(options.selectOrgId)
+            handleSelectOrg(options.selectOrgId, options.orgType)
         }
     }
 
@@ -120,15 +114,20 @@ const OrgManage = () => {
 
     const handleAddOrg = (type, orgItem) => {
         if (type === 'child') {
+            const nextOrgType = getNextOrgType(orgItem.orgType)
+            if (!nextOrgType) {
+                // 如果已是最低层级，不允许新增子级
+                return
+            }
             setSelectedOrg({
                 id: null,
                 parentId: orgItem.id,
                 parentCode: orgItem.code,
-                orgType: OrganizationType.COMPANY.value,
+                orgType: nextOrgType,
                 operationMode: OperationMode.ADD.value
             })
         } else {
-            const parentOrgItem = flattenTreeRef.current.find(f => f.id === orgItem.parentId)
+            const parentOrgItem = flattenTree.flattenList.find(f => f.id === orgItem.parentId)
             setSelectedOrg({
                 id: null,
                 parentId: parentOrgItem.id,
@@ -178,15 +177,15 @@ const OrgManage = () => {
     }
 
     // 选中组织
-    const handleSelectOrg = async (orgId) => {
-        const selectedOrg = flattenTreeRef.current.find(f => f.id == orgId)
+    const handleSelectOrg = async (orgId, orgType = null) => {
+        const selectedOrg = flattenTree.flattenList.find(f => f.id == orgId)
         // 不取消选中
         setSelectedKeys([orgId])
         setSelectedOrg({
             id: orgId,
             parentId: null,
             parentCode: null,
-            orgType: selectedOrg.orgType,
+            orgType: orgType || selectedOrg.orgType,
             operationMode: OperationMode.VIEW.value
         })
     }
@@ -198,10 +197,10 @@ const OrgManage = () => {
 
     const handleSearchChange = (e) => {
         const { value } = e.target
-        const newExpandedKeys = flattenTreeRef.current
+        const newExpandedKeys = flattenTree.flattenList
             .map(item => {
                 if (item.orgName.includes(value)) {
-                    return getParentKey(item.id, orgData)
+                    return flattenTree.parentMap[item.id]
                 }
                 return null
             })
@@ -262,9 +261,10 @@ const OrgManage = () => {
                         operationMode={selectedOrg?.operationMode}
                         changeOperationMode={changeOperationMode}
                         selectedOrgTreeNode={selectedOrgTreeNode}
-                        onSuccess={(orgId) => {
+                        onSuccess={(orgId, orgType) => {
                             refreshOrgTree({
-                                selectOrgId: orgId
+                                selectOrgId: orgId,
+                                orgType: orgType
                             }, showAllLevel)
                         }}
                     />
@@ -277,6 +277,8 @@ const OrgManage = () => {
 const OrgItem = ({ item, selected, onAddOrg }) => {
 
     const { t } = useTranslation()
+
+    const canAddChild = getNextOrgType(item.orgType) !== null
 
     return (
         <Flex
@@ -295,10 +297,10 @@ const OrgItem = ({ item, selected, onAddOrg }) => {
                     <Dropdown
                         menu={{
                             items: [
-                                {
+                                ...(canAddChild ? [{
                                     key: 'child',
                                     label: t('新增子级')
-                                },
+                                }] : []),
                                 {
                                     key: 'brother',
                                     label: t('新增同级')

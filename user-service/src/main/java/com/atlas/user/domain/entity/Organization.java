@@ -63,6 +63,14 @@ public class Organization extends BaseEntity implements TreeRelation {
     @TableField("remark")
     private String remark;
 
+    @Override
+    public String parentFieldName() {
+        return "parent_id";
+    }
 
+    @Override
+    public String childFieldName() {
+        return "id";
+    }
 }
 

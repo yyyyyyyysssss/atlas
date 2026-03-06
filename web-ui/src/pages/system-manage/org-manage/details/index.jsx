@@ -137,7 +137,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
             orgId = orgInfo.id
         }
         getMessageApi().success('保存成功')
-        onSuccess(orgId)
+        onSuccess(orgId, orgInfo.orgType)
     }
 
     return (

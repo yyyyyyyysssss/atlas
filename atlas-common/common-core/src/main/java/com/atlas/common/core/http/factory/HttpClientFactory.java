@@ -102,6 +102,12 @@ public class HttpClientFactory {
                 .addRequestInterceptorLast(new HttpClientUserContextInterceptor())
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManager(connectionManager)
+                // Keep-Alive 策略
+                .setKeepAliveStrategy((response, context) -> {
+                    // 1. 优先获取服务器返回的 Keep-Alive Header 中的 timeout
+                    // 2. 如果服务器没给，默认保持 30 秒，防止连接被后端静默关闭
+                    return TimeValue.ofSeconds(30);
+                })
                 // 驱逐空闲连接 如果一个连接在池子里空闲超过 30 秒，就将其关闭并移出池子
                 .evictIdleConnections(TimeValue.ofSeconds(30))
                 // 自动清理那些已经达到 TTL（生存时间）限制的连接

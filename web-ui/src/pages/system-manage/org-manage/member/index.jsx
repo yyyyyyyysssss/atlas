@@ -1,6 +1,6 @@
 import { useRequest } from "ahooks"
-import { Badge, Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
-import { useEffect, useRef, useState } from "react"
+import { Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { addOrgMembers, fetchOrgMembers, orgMemberMainCheck, removeOrgMembers } from "../../../../services/SystemService"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from 'react-i18next';
@@ -12,10 +12,9 @@ import {
     ArrowDownOutlined
 } from '@ant-design/icons';
 
-const OrgMember = ({ orgId, parentOrgName, orgType }) => {
+const OrgMember = ({ orgId, orgName, orgType }) => {
 
     const { t } = useTranslation()
-
 
     const [modal, contextHolder] = Modal.useModal()
 
@@ -38,6 +37,8 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
     const [includeChild, setIncludeChild] = useState(false)
 
     const [availableUsers, setAvailableUsers] = useState(null)
+
+    const [userNameFilter, setUserNameFilter] = useState('')
 
     const { runAsync: fetchOrgMemberAsync, loading: fetchOrgMemberLoading } = useRequest(fetchOrgMembers, {
         manual: true
@@ -66,15 +67,22 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
             mode = 'CURRENT'
         }
         const data = await fetchOrgMemberAsync(orgId, mode)
-        orgMemberForm.setFieldsValue({
-            orgMembers: data
-        })
         setOrgMember(data)
+
+        // 根据当前过滤条件过滤数据并设置到表单
+        const filteredData = filterOrgMemberData(data, userNameFilter)
+        orgMemberForm.setFieldsValue({
+            orgMembers: filteredData
+        })
     }
 
+    const editFlag = useMemo(() => {
+        return orgType === OrganizationType.DEPT.value || orgType === OrganizationType.TEAM.value
+    }, [orgType])
+
     useEffect(() => {
-        fetchOrgMemberData(orgId)
-    }, [orgId])
+        fetchOrgMemberData(orgId, !editFlag)
+    }, [orgId, editFlag])
 
     useEffect(() => {
         if (orgMember) {
@@ -84,25 +92,48 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
 
     const refreshOrgMember = () => {
         fetchOrgMemberData(orgId, includeChild)
+    }
+
+    const filterOrgMemberData = (data, filterValue) => {
+        if (!filterValue || filterValue.trim() === '') {
+            return data
+        }
+        return data.filter(item =>
+            item.userFullName.toLowerCase().includes(filterValue.toLowerCase())
+        )
+    }
+
+    const handleUserNameFilterChange = (value) => {
+        setUserNameFilter(value)
+        const filteredData = filterOrgMemberData(orgMember, value)
+        orgMemberForm.setFieldsValue({
+            orgMembers: filteredData
+        })
+        // 清除选择状态，因为过滤后行索引可能改变
         setSelectedRowKeys([])
     }
 
     const handleAddMember = async () => {
         setOrgMemberModal({
             open: true,
-            title: parentOrgName,
+            title: orgName,
             orgId: orgId,
         })
-        // 获取整个部门的
-        if (orgType === OrganizationType.TEAM.value || orgType === OrganizationType.DEPT.value) {
-            const allDeptMembers = await fetchOrgMemberAsync(orgId, 'PARENT')
-            const allUserIds = allDeptMembers.map(m => m.userId)
-            const diffUserIds = allUserIds.filter(id => !orgMemberIdsRef.current.includes(id))
-            setAvailableUsers(diffUserIds)
-        } else {
-            setAvailableUsers(null)
+        // 获取组织下的用户
+        let allDeptMembers = []
+        switch (orgType) {
+            case OrganizationType.GROUP.value:
+            case OrganizationType.COMPANY.value:
+            case OrganizationType.DEPT.value:
+                allDeptMembers = await fetchOrgMemberAsync(orgId, 'CHILDREN')
+                break
+            case OrganizationType.TEAM.value:
+                allDeptMembers = await fetchOrgMemberAsync(orgId, 'PARENT')
+                break
         }
-
+        const allDeptUserIds = allDeptMembers.map(m => m.userId)
+        const diffUserIds = allDeptUserIds.filter(id => !orgMemberIdsRef.current.includes(id))
+        setAvailableUsers(diffUserIds)
         addOrgMemberForm.setFieldValue('userIds', orgMemberIdsRef.current)
     }
 
@@ -189,11 +220,11 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
     const handleSetMain = async (record, checked) => {
         const org = await orgMemberMainCheckAsync(orgId, record.userId)
         if ((org === null || org === undefined) && checked === false) {
-            getMessageApi().error('该用户必须保留至少一个主部门归属，无法取消。')
+            getMessageApi().error('该用户必须保留至少一个主组织归属，无法取消。')
             return
         } else {
             modal.confirm({
-                title: t('确定设置主部门归属'),
+                title: t('确定设置主组织归属'),
                 okText: t('确定'),
                 cancelText: t('取消'),
                 okButtonProps: { danger: true },
@@ -210,7 +241,7 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
                         vertical
                     >
                         <Typography.Text>
-                            {t('系统检测到该用户已有关联的主部门，执行此操作将变更其行政归属：')}
+                            {t('系统检测到该用户已有关联的主组织归属，执行此操作将变更其行政归属：')}
                         </Typography.Text>
 
                         <Flex align="center" justify="space-between" vertical>
@@ -249,7 +280,7 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
         fetchOrgMemberData(orgId, checked)
     }
 
-    const columns = [
+    const columns = useMemo(() => [
         {
             key: 'id',
             dataIndex: 'id',
@@ -276,27 +307,33 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
             dataIndex: 'userFullName',
             align: 'center',
             editable: false,
-            filters: [
-                ...new Set(orgMember.map(item => item.userFullName))  // 动态提取唯一值作为筛选项
-            ].map(value => ({
-                text: value,
-                value: value,
-            })),
-            filterSearch: true,
-            onFilter: (value, record) => record.userFullName === value,
+
         },
         {
             key: 'orgName',
             title: '所属组织',
-            dataIndex: 'orgName',
+            dataIndex: editFlag ? 'orgName' : 'orgPathName',
             align: 'center',
             editable: false,
             render: (text, record) => {
                 const isDept = record.orgType === OrganizationType.DEPT.value
+                let displayPath = text || ''
+                if (!editFlag && displayPath) {
+                    // 1. 分割路径并过滤空项（解决后缀 / 问题）
+                    const pathNodes = displayPath.split('/').filter(Boolean)
+
+                    // 2. 去掉第一级（集团名），如果只有一级则保留
+                    if (pathNodes.length > 1) {
+                        pathNodes.shift()
+                    }
+
+                    // 3. 重新拼接成更易读的格式，例如：上海分公司 > 研发部 > Java组
+                    displayPath = pathNodes.join(' > ')
+                }
                 return (
                     <Flex vertical align="center" gap={4}>
                         <Typography.Text style={{ fontSize: '14px' }}>
-                            {text}
+                            {displayPath}
                         </Typography.Text>
                         {/* 使用 Tag 区分层级类型 */}
                         <Tag color={isDept ? 'blue' : 'cyan'} style={{ fontSize: '11px', lineHeight: '16px', margin: 0 }}>
@@ -334,7 +371,7 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
                 )
             }
         },
-    ]
+    ], [editFlag])
 
     const updateOrgMember = async (_, rowIndex) => {
         const formValues = await orgMemberForm.validateFields()
@@ -356,30 +393,48 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
             vertical
         >
             <Flex
-                gap={20}
+                justify='space-between'
                 align="center"
             >
-                <HasPermission hasPermissions='system:org:write'>
-                    <Button type="primary" onClick={() => handleAddMember()} className='w-20'>{t('添加成员')}</Button>
-                </HasPermission>
-                <HasPermission hasPermissions='system:org:write'>
-                    <Button
-                        danger
-                        onClick={() => handleRemoveMember()}
-                        className='w-20'
-                        disabled={selectedRowKeys.length === 0}
-                    >
-                        {t('移除成员')}
-                    </Button>
-                </HasPermission>
-                <Checkbox
-                    checked={includeChild}
-                    onChange={handleIncludeChildChange}
+                <Flex
+                    gap={20}
+                    align="center"
                 >
-                    {t('包含下级成员')}
-                </Checkbox>
+                    {editFlag && (
+                        <>
+                            <HasPermission hasPermissions='system:org:write'>
+                                <Button type="primary" onClick={() => handleAddMember()} className='w-20'>{t('添加成员')}</Button>
+                            </HasPermission>
+                            <HasPermission hasPermissions='system:org:write'>
+                                <Button
+                                    danger
+                                    onClick={() => handleRemoveMember()}
+                                    className='w-20'
+                                    disabled={selectedRowKeys.length === 0}
+                                >
+                                    {t('移除成员')}
+                                </Button>
+                            </HasPermission>
+                        </>
+                    )}
+                    <Input.Search
+                        placeholder="搜索用户名称"
+                        allowClear
+                        onSearch={handleUserNameFilterChange}
+                        onChange={(e) => handleUserNameFilterChange(e.target.value)}
+                        style={{ width: 200 }}
+                    />
+                </Flex>
+                {editFlag && (
+                    <Checkbox
+                        checked={includeChild}
+                        onChange={handleIncludeChildChange}
+                    >
+                        {t('包含下级成员')}
+                    </Checkbox>
+                )}
             </Flex>
-            <Form form={orgMemberForm} component={false}>
+            <Form form={orgMemberForm} component={false} disabled={editFlag === false}>
                 <Form.List
                     name="orgMembers"
                     noStyle
@@ -393,7 +448,7 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
                             fields={fields}
                             editPermission={'system:org:write'}
                             addPermission={'no-show'}
-                            deletePermission={'system:org:write'}
+                            deletePermission={'system:org:delete'}
                             add={add}
                             remove={remove}
                             onSave={updateOrgMember}
@@ -437,7 +492,7 @@ const OrgMember = ({ orgId, parentOrgName, orgType }) => {
                                             <Typography.Text>{item.label}</Typography.Text>
                                             {item.disabled && (
                                                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                                                    (已在部门)
+                                                    (已在组织中)
                                                 </Typography.Text>
                                             )}
                                         </Flex>

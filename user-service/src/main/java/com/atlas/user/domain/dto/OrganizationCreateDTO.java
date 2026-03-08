@@ -28,12 +28,6 @@ public class OrganizationCreateDTO {
     @NotNull(message = "组织类型不能为空")
     private OrganizationType orgType;
 
-    // 组织路径 
-    private String orgPath;
-
-    // 组织路径名称 
-    private String orgPathName;
-
     // 排序 
     private Integer sort;
 

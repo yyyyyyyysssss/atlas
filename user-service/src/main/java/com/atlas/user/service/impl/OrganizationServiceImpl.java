@@ -260,23 +260,16 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         }
         Long orgId = userOrgMain.getOrgId();
         Organization organization = this.lambdaQuery()
-                .select(Organization::getId, Organization::getOrgName, Organization::getOrgPath, Organization::getOrgPathName)
+                .select(Organization::getId,Organization::getParentId, Organization::getOrgName, Organization::getOrgPath, Organization::getOrgPathName)
                 .eq(Organization::getId, orgId)
                 .one();
         if (organization == null) {
             throw new BusinessException("组织部门缺失,请联系管理员");
         }
-        if (organization.getId().equals(id)) {
+        if (organization.getId().equals(id) || organization.getParentId().equals(id)) {
             return null;
         }
         return OrganizationMapping.INSTANCE.toOrganizationVO(organization);
-    }
-
-    @Override
-    @Transactional
-    public void deleteOrganization(Long id) {
-        checkAndResult(id);
-        organizationMapper.deleteById(id);
     }
 
     private Organization checkAndResult(Long id) {

@@ -173,7 +173,8 @@ const OrgManage = () => {
 
     const handleSelect = (selectedKeys, info) => {
         const clickedKey = info.node.key
-        handleSelectOrg(clickedKey)
+        const orgDataInfo = flattenTree.flattenList.find(f => f.id === clickedKey)
+        handleSelectOrg(clickedKey, orgDataInfo.orgType)
     }
 
     // 选中组织

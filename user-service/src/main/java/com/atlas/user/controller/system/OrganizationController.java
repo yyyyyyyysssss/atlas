@@ -98,11 +98,5 @@ public class OrganizationController {
         return ResultGenerator.ok(tree);
     }
 
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteOrganization(@PathVariable("id") Long id) {
-        organizationService.deleteOrganization(id);
-        return ResultGenerator.ok();
-    }
-
 }
 

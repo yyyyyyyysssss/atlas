@@ -38,8 +38,6 @@ public interface OrganizationService extends IService<Organization> {
 
     void removeMembers(Long orgId, List<Long> userOrgIds);
 
-    void deleteOrganization(Long id);
-
     OrganizationVO orgMemberMainCheck(Long id, Long userId);
 }
 

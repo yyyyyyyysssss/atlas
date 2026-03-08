@@ -121,7 +121,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
 
     const showDrawer = (authorityId) => {
         const authorityData = authorityList.find(item => item.id === authorityId)
-        const newAuthorityUrls = authorityData.urls.map((item, index) => {
+        const newAuthorityUrls = authorityData.urls?.map((item, index) => {
             return {
                 ...item,
                 id: index
@@ -372,6 +372,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                 onClose={handleDrawerClose}
                 open={authorityApiDrawerOpen.open}
                 width={700}
+                destroyOnHidden
             >
                 <AuthorityUrl
                     authorityUrls={authorityApiDrawerOpen.authorityUrls}

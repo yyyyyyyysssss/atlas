@@ -88,9 +88,19 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
 
         if (isViewMode) {
             switch (orgType) {
-                case OrganizationType.GROUP.value, OrganizationType.COMPANY.value:
+                case OrganizationType.COMPANY.value:
                     return (
-                        <OrgDept orgId={orgId} />
+                        <Flex
+                            gap={20}
+                            vertical
+                        >
+                            <OrgDept orgId={orgId} />
+                            <OrgMember
+                                orgId={orgId}
+                                orgName={orgName}
+                                orgType={orgType}
+                            />
+                        </Flex>
                     )
                 case OrganizationType.DEPT.value:
                     return (
@@ -98,15 +108,15 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                             vertical
                         >
                             <Flex vertical>
-                                <OrgMember
-                                    orgId={orgId}
-                                    parentOrgName={orgName}
-                                    orgType={orgType}
-                                />
-                            </Flex>
-                            <Flex vertical>
                                 <Typography.Title level={5}>团队列表</Typography.Title>
                                 <OrgDeptTeam deptId={orgId} />
+                            </Flex>
+                            <Flex vertical>
+                                <OrgMember
+                                    orgId={orgId}
+                                    orgName={orgName}
+                                    orgType={orgType}
+                                />
                             </Flex>
                         </Flex>
 
@@ -115,7 +125,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                     return (
                         <OrgMember
                             orgId={orgId}
-                            parentOrgName={orgName}
+                            orgName={orgName}
                             orgType={orgType}
                         />
                     )

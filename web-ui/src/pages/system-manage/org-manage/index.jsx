@@ -1,29 +1,13 @@
 import './index.css'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dropdown, Flex, Tree, Splitter, Typography, Input, Checkbox, theme } from 'antd'
+import { useRef, useState } from 'react'
+import { Dropdown, Flex, Splitter, Typography } from 'antd'
 import { Building2, Building, Component, Users, Plus } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
 import HasPermission from '../../../components/HasPermission';
-import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
-import Loading from '../../../components/loading';
-import { fetchOrgTree } from '../../../services/SystemService';
 import OrgDetails from './details';
 import { OrganizationType } from '../../../enums/system';
-
-const getAllKeys = (data) => {
-    const keys = []
-    const traverse = (nodes) => {
-        nodes.forEach(node => {
-            keys.push(node.id)
-            if (node.children && node.children.length > 0) {
-                traverse(node.children)
-            }
-        })
-    }
-    traverse(data)
-    return keys
-}
+import OrgTree from '../../../components/OrgTree';
 
 // 根据当前组织类型获取下一级组织类型
 const getNextOrgType = (currentType) => {
@@ -34,10 +18,6 @@ const getNextOrgType = (currentType) => {
     }
     return typeOrder[currentIndex + 1]
 }
-
-let defaultOrgTypes = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value]
-
-let allOrgTypes = Object.values(OrganizationType).map(item => item.value)
 
 const OrgTypeIcon = {
     [OrganizationType.GROUP.value]: <Building2 size={16} />,
@@ -50,63 +30,9 @@ const OrgManage = () => {
 
     const { t } = useTranslation()
 
-    const [orgData, setOrgData] = useState([])
-
     const [selectedOrg, setSelectedOrg] = useState(null)
 
-    const [selectedKeys, setSelectedKeys] = useState(null)
-
-    const [expandedKeys, setExpandedKeys] = useState([])
-
-    const [searchValue, setSearchValue] = useState('')
-
-    const [autoExpandParent, setAutoExpandParent] = useState(true)
-
-    const [showAllLevel, setShowAllLevel] = useState(false)
-
-    const { runAsync: getOrgTreeAsync, loading: getOrgTreeLoading } = useRequest(fetchOrgTree, {
-        manual: true
-    })
-
-    useEffect(() => {
-        refreshOrgTree(null, showAllLevel)
-    }, [showAllLevel])
-
-    // 将树形结构扁平化，方便搜索，并预计算父子关系映射
-    const flattenTree = useMemo(() => {
-        const result = []
-        const parentMap = {}
-        const dfs = (nodes, parentId = null) => {
-            nodes.forEach(node => {
-                result.push({ ...node, children: null })
-                if (parentId !== null) {
-                    parentMap[node.id] = parentId
-                }
-                if (node.children && node.children.length > 0) {
-                    dfs(node.children, node.id)
-                }
-            })
-        }
-        dfs(orgData)
-        return { flattenList: result, parentMap }
-    }, [orgData])
-
-    // 刷新组织树数据
-    const refreshOrgTree = async (options, showAllLevel) => {
-        let orgTypes = showAllLevel ? allOrgTypes : defaultOrgTypes
-        const data = await getOrgTreeAsync(orgTypes)
-        setOrgData(data)
-        if (showAllLevel) {
-            const allKeys = getAllKeys(data)
-            setExpandedKeys(allKeys)
-        } else if (expandedKeys.length == 0) { // 默认展开第一层级
-            setExpandedKeys(data.map((node) => node.id))
-        }
-
-        if (options?.selectOrgId) {
-            handleSelectOrg(options.selectOrgId, options.orgType)
-        }
-    }
+    const orgTreeRef = useRef()
 
     const selectedOrgTreeNode = (key) => {
         handleSelectOrg(key)
@@ -140,43 +66,6 @@ const OrgManage = () => {
         setSelectedKeys([])
     }
 
-    const convertToTreeData = (data, selectedKeys, searchValue) => {
-        return data.map(item => {
-            const selected = selectedKeys?.includes(item.id)
-            const strTitle = item.orgName
-            const index = strTitle.indexOf(searchValue)
-            const beforeStr = strTitle.substring(0, index)
-            const afterStr = strTitle.slice(index + searchValue.length)
-            const title = index > -1 ? (
-                <span key={item.id}>
-                    {beforeStr}
-                    <span className="site-tree-search-value">{searchValue}</span>
-                    {afterStr}
-                </span>
-            ) : (
-                <span key={item.id}>{strTitle}</span>
-            )
-            item.title = title
-            return {
-                title: <OrgItem
-                    item={item}
-                    selected={selected}
-                    onAddOrg={handleAddOrg}
-                />,
-                key: item.id,
-                children: item.children && item.children.length > 0 ? convertToTreeData(item.children, selectedKeys, searchValue) : [],
-            }
-        })
-    }
-
-    const orgItems = useMemo(() => convertToTreeData(orgData, selectedKeys, searchValue), [orgData, selectedKeys, searchValue]);
-
-    const handleSelect = (selectedKeys, info) => {
-        const clickedKey = info.node.key
-        const orgDataInfo = flattenTree.flattenList.find(f => f.id === clickedKey)
-        handleSelectOrg(clickedKey, orgDataInfo.orgType)
-    }
-
     // 选中组织
     const handleSelectOrg = async (orgId, orgType = null) => {
         const selectedOrg = flattenTree.flattenList.find(f => f.id == orgId)
@@ -191,24 +80,14 @@ const OrgManage = () => {
         })
     }
 
-    const handleExpand = (newExpandedKeys) => {
-        setExpandedKeys(newExpandedKeys)
-        setAutoExpandParent(false)
-    }
-
-    const handleSearchChange = (e) => {
-        const { value } = e.target
-        const newExpandedKeys = flattenTree.flattenList
-            .map(item => {
-                if (item.orgName.includes(value)) {
-                    return flattenTree.parentMap[item.id]
-                }
-                return null
-            })
-            .filter((item, i, self) => !!(item && self.indexOf(item) === i))
-        setExpandedKeys(newExpandedKeys)
-        setSearchValue(value)
-        setAutoExpandParent(true)
+    const selectOrg = (orgId, orgRecord) => {
+        setSelectedOrg({
+            id: orgId,
+            parentId: null,
+            parentCode: null,
+            orgType: orgRecord.orgType,
+            operationMode: OperationMode.VIEW.value
+        })
     }
 
     const changeOperationMode = (operationMode) => {
@@ -225,32 +104,18 @@ const OrgManage = () => {
                     <Flex
                         vertical
                     >
-                        <Input.Search style={{ marginBottom: 8 }} placeholder="搜索" onChange={handleSearchChange} allowClear />
-                        <Flex gap={8} justify='end'>
-                            <Typography.Text onClick={() => setShowAllLevel(!showAllLevel)} type="secondary" style={{ fontSize: '12px', cursor: 'pointer' }}>
-                                {t('包含下级组织')}
-                            </Typography.Text>
-                            <Checkbox
-                                checked={showAllLevel}
-                                onChange={(e) => setShowAllLevel(e.target.checked)}
-                            />
-                        </Flex>
-
-                        <Loading spinning={getOrgTreeLoading}>
-                            <Tree
-                                className="draggable-tree"
-                                draggable={{
-                                    icon: false
-                                }}
-                                blockNode
-                                treeData={orgItems}
-                                selectedKeys={selectedKeys}
-                                onSelect={handleSelect}
-                                expandedKeys={expandedKeys} // 控制展开的节点
-                                onExpand={handleExpand} // 更新展开的节点
-                                autoExpandParent={autoExpandParent}
-                            />
-                        </Loading>
+                        <OrgTree
+                            ref={orgTreeRef}
+                            onSelect={selectOrg}
+                            itemRender={(item) => {
+                                return (
+                                    <OrgItem
+                                        item={item}
+                                        onAddOrg={handleAddOrg}
+                                    />
+                                )
+                            }}
+                        />
                     </Flex>
                 </Splitter.Panel>
                 <Splitter.Panel style={{ padding: '20px' }}>
@@ -262,11 +127,8 @@ const OrgManage = () => {
                         operationMode={selectedOrg?.operationMode}
                         changeOperationMode={changeOperationMode}
                         selectedOrgTreeNode={selectedOrgTreeNode}
-                        onSuccess={(orgId, orgType) => {
-                            refreshOrgTree({
-                                selectOrgId: orgId,
-                                orgType: orgType
-                            }, showAllLevel)
+                        onSuccess={() => {
+                            orgTreeRef.current.refresh()
                         }}
                     />
                 </Splitter.Panel>
@@ -275,7 +137,7 @@ const OrgManage = () => {
     )
 }
 
-const OrgItem = ({ item, selected, onAddOrg }) => {
+const OrgItem = ({ item, selected = item.selected, onAddOrg }) => {
 
     const { t } = useTranslation()
 
@@ -285,6 +147,7 @@ const OrgItem = ({ item, selected, onAddOrg }) => {
         <Flex
             justify='space-between'
             align='center'
+            style={{ height: '38px' }}
         >
             <Flex align='center' gap={8}>
                 {OrgTypeIcon[item.orgType]}

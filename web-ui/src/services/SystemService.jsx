@@ -395,6 +395,54 @@ export const removeOrgMembers = async (orgId, userOrgIds) => {
 }
 
 export const orgMemberMainCheck = async (orgId, userId) => {
-    
+
     return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/main-check?userId=${userId}`))
+}
+
+// 创建岗位
+export const createPosition = async (positionBody) => {
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/position/create', positionBody))
+}
+
+// 更新岗位
+export const updatePosition = async (positionBody) => {
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/system/position/update', positionBody))
+}
+
+// 删除岗位
+export const deletePositionById = async (positionId) => {
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/user/system/position/${positionId}`))
+}
+
+// 查询岗位列表
+export const fetchPositionList = async (queryParam) => {
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/system/position/query', queryParam))
+}
+
+// 查询岗位详情
+export const fetchPositionDetails = async (positionId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/position/${positionId}`))
+}
+
+// 绑定岗位权限
+export const bindAuthorityByPositionId = async (positionId, authorityIds) => {
+    const req = {
+        positionId: positionId,
+        authorityIds: authorityIds
+    }
+    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/position/${positionId}/authorities`, req))
+}
+
+// 查询岗位下的用户ID列表
+export const fetchUserIdByPositionId = async (positionId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/position/${positionId}/users`))
+}
+
+// 绑定岗位用户
+export const bindPositionUser = async (positionId, userIds) => {
+    const req = {
+        positionId: positionId,
+        userIds: userIds
+    }
+    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/position/${positionId}/users`, req))
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atlas.user.mapper.PositionMapper">
+
+    <resultMap type="com.atlas.user.domain.entity.Position" id="PositionMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="orgId" column="org_id" jdbcType="INTEGER"/>
+        <result property="posName" column="pos_name" jdbcType="VARCHAR"/>
+        <result property="posCode" column="pos_code" jdbcType="VARCHAR"/>
+        <result property="level" column="level" jdbcType="INTEGER"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
+        <result property="updaterName" column="updater_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryList" parameterType="com.atlas.user.domain.dto.PositionQueryDTO" resultMap="PositionMap">
+        SELECT t.* from position t
+        <if test="query.orgPath != null and query.orgPath != ''">
+            left JOIN organization f ON t.org_id = f.id
+        </if>
+        <where>
+            AND (
+                <choose>
+                    <when test="query.includeChildren == true">
+                        f.org_path LIKE CONCAT(#{query.orgPath}, '%')
+                    </when>
+                    <otherwise>
+                        f.org_path = #{query.orgPath}
+                    </otherwise>
+                </choose>
+            )
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (
+                    t.pos_name LIKE CONCAT('%', #{query.keyword}, '%') or t.pos_code LIKE CONCAT('%', #{query.keyword}, '%')
+                )
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND t.status = #{query.status}
+            </if>
+        </where>
+        ORDER BY t.type DESC, t.create_time DESC
+    </select>
+
+</mapper>
+

@@ -91,7 +91,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
                 case OrganizationType.COMPANY.value:
                     return (
                         <Flex
-                            gap={3}
+                            gap={30}
                             vertical
                         >
                             <OrgDept orgId={orgId} />

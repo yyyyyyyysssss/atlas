@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { House, Settings, UserCog, Menu, ShieldUser, User, Building2, UserRound, PersonStanding, Store, TableProperties, NotepadText, ShieldPlus, Users, CarFront, Triangle, ChartBarDecreasing } from "lucide-react";
+import { House, Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -17,6 +17,7 @@ const UserManage = lazy(() => import('../pages/system-manage/user-manage'))
 const UserDetails = lazy(() => import('../pages/system-manage/user-manage/details'))
 const RoleManage = lazy(() => import('../pages/system-manage/role-manage'))
 const MenuManage = lazy(() => import('../pages/system-manage/menu-manage'))
+const PositionManage = lazy(() => import('../pages/system-manage/pos-manage'))
 const DictManage = lazy(() => import('../pages/system-manage/dict-manage'))
 const DictItemManage = lazy(() => import('../pages/system-manage/dict-manage/dict-item'))
 export const routes = [
@@ -74,6 +75,14 @@ export const routes = [
                         defaultIcon: <ShieldUser size={18} />,
                         protected: true,
                         requiredPermissions: ['system:role']
+                    },
+                    {
+                        path: 'position',
+                        element: <PositionManage />,
+                        breadcrumbName: '岗位管理',
+                        defaultIcon: <ShieldCheck size={18} />,
+                        protected: true,
+                        requiredPermissions: ['system:position']
                     },
                     {
                         path: 'menu',

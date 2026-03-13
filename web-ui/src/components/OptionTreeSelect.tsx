@@ -1,5 +1,5 @@
-import { Spin, TreeSelect, TreeSelectProps } from "antd";
-import React, { useEffect, useMemo, useState } from "react";
+import { Spin, TreeSelect, TreeSelectProps, Typography } from "antd";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRequest } from 'ahooks';
 
 // 定义字段映射的接口
@@ -30,16 +30,35 @@ const OptionTreeSelect = <T extends any>({
     ...restProps
 }: TreeSelectPropsType<T>) => {
     // 字段映射解构
-    const idField = fieldNames.id || "id";
-    const labelField = fieldNames.label || "name";
+    const idField = fieldNames.id || "value";
+    const labelField = fieldNames.label || "label";
     const childrenField = fieldNames.children || "children";
 
+    const [searchValue, setSearchValue] = useState("");
+
     const [treeData, setTreeData] = useState<any[]>([]);
+
+    const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+
+    const getAllKeys = useCallback((nodes: any[]): string[] => {
+        const keys: string[] = [];
+        const walk = (list: any[]) => {
+            list.forEach((node) => {
+                keys.push(String(node[idField]));
+                if (node[childrenField]?.length) walk(node[childrenField]);
+            });
+        };
+        walk(nodes);
+        return keys;
+    }, [idField, childrenField]);
 
     const { run: runFetch, loading: fetchDataLoading } = useRequest(fetchData, {
         manual: true,
         onSuccess: (data) => {
-            setTreeData(data || []);
+            const list = data || [];
+            setTreeData(list);
+            // 初始加载成功后，默认展开所有
+            setExpandedKeys(getAllKeys(list));
         }
     });
 
@@ -51,6 +70,9 @@ const OptionTreeSelect = <T extends any>({
     const handleDropdownVisibleChange = (open: boolean) => {
         if (open && treeData.length === 0) {
             runFetch();
+        }
+        if (!open) {
+            setSearchValue("")
         }
     };
 
@@ -113,16 +135,36 @@ const OptionTreeSelect = <T extends any>({
         onChange?.(Array.from(finalIds));
     };
 
+    const renderTitle = (text: string, searchValue: string) => {
+        if (!searchValue) return text;
+        const index = text.toLowerCase().indexOf(searchValue.toLowerCase());
+        if (index === -1) return text;
+
+        const beforeStr = text.substring(0, index);
+        const matchedStr = text.substring(index, index + searchValue.length);
+        const afterStr = text.substring(index + searchValue.length);
+
+        return (
+            <Typography.Text >
+                {beforeStr}
+                <Typography.Text style={{ color: '#f50' }}>{matchedStr}</Typography.Text>
+                {afterStr}
+            </Typography.Text>
+        );
+    };
+
     /**
      * 将原始数据转换为 TreeSelect 需要的格式，并处理字段展示
      */
     const mappedTreeData = useMemo(() => {
         const format = (nodes: any[]): any[] => {
             return nodes.map(node => {
-                const isSelectable = node.isAllowMount ?? true
+                const label = String(node[labelField] || '');
+                const isSelectable = node.selectable ?? true
                 return {
                     ...node,
-                    title: node[labelField], // 展示字段
+                    title: renderTitle(label, searchValue), // 展示字段
+                    label: label,
                     value: String(node[idField]), // 绑定值
                     key: String(node[idField]),
                     children: node[childrenField]?.length ? format(node[childrenField]) : [],
@@ -132,7 +174,7 @@ const OptionTreeSelect = <T extends any>({
             });
         };
         return format(treeData);
-    }, [treeData, labelField, idField, childrenField]);
+    }, [treeData, labelField, idField, childrenField, searchValue]);
 
     /**
      * 计算受控显示的 value
@@ -167,13 +209,22 @@ const OptionTreeSelect = <T extends any>({
                 filterTreeNode={(input, treeNode) =>
                     String(treeNode.label || '').toLowerCase().includes(input.toLowerCase())
                 }
+                treeExpandedKeys={expandedKeys}
+                onTreeExpand={(keys) => setExpandedKeys(keys as string[])}
+                showSearch
+                searchValue={searchValue}
+                onSearch={(val) => {
+                    setSearchValue(val)
+                    if (!val) {
+                        setExpandedKeys(getAllKeys(treeData));
+                    }
+                }}
                 // 默认配置
                 treeCheckable={multiple}
                 multiple={multiple}
                 treeCheckStrictly={false} // 开启 UI 上的联动
                 showCheckedStrategy={TreeSelect.SHOW_ALL}
                 maxTagCount={restProps.maxTagCount ?? 3}
-                treeDefaultExpandAll={true}
                 onOpenChange={handleDropdownVisibleChange}
             />
         </Spin>

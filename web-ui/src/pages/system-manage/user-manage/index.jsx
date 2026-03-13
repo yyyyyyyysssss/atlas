@@ -2,7 +2,7 @@ import { Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Sk
 import './index.css'
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-import { bindRoleByUserId, createUser, deleteUserById, fetchUserDetails, fetchUserList, resetPassword, updateUser, updateUserEnabled } from '../../../services/SystemService';
+import { bindRoleByUserId, createUser, deleteUserById, fetchOrgOptions, fetchUserDetails, fetchUserList, resetPassword, updateUser, updateUserEnabled } from '../../../services/SystemService';
 import { CopyOutlined } from '@ant-design/icons';
 import Highlight from '../../../components/Highlight';
 import { getMessageApi } from '../../../utils/MessageUtil';
@@ -575,6 +575,7 @@ const UserManage = () => {
                 okButtonProps={{
                     disabled: getUserDetailsLoading
                 }}
+                destroyOnHidden
                 afterClose={() => editForm.resetFields()}
             >
                 <Loading spinning={getUserDetailsLoading}>
@@ -646,9 +647,16 @@ const UserManage = () => {
                             <Form.Item
                                 label="所属组织"
                                 name="orgId"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: `所属组织不能为空`,
+                                    },
+                                ]}
                             >
                                 <OptionTreeSelect
-                                    
+                                    fetchData={fetchOrgOptions}
+                                    multiple={false}
                                 />
                             </Form.Item>
                             <Form.Item

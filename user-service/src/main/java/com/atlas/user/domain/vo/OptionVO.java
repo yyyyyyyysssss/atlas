@@ -33,6 +33,8 @@ public class OptionVO<T extends Serializable> {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<OptionVO<T>> children;
 
+    private Boolean selectable = Boolean.TRUE;
+
     public T getId() {
         return value;
     }

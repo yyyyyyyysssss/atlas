@@ -26,25 +26,31 @@ public class OptionController {
     private final OptionService optionsService;
 
     @GetMapping("/user")
-    public Result<?> userOptions() {
+    public Result<List<OptionVO<Long>>> userOptions() {
         List<OptionVO<Long>> userOptions = optionsService.userOptions();
         return ResultGenerator.ok(userOptions);
     }
 
     @GetMapping("/role")
-    public Result<?> roleOptions() {
+    public Result<List<OptionVO<Long>>> roleOptions() {
         List<OptionVO<Long>> roleOptions = optionsService.roleOptions();
         return ResultGenerator.ok(roleOptions);
     }
 
     @GetMapping("/authority")
-    public Result<?> authorityOptions() {
+    public Result<List<OptionVO<Long>>> authorityOptions() {
         List<OptionVO<Long>> authorityTreeList = optionsService.authorityTreeOption();
         return ResultGenerator.ok(authorityTreeList);
     }
 
+    @GetMapping("/org/tree")
+    public Result<List<OptionVO<Long>>> orgOptions() {
+        List<OptionVO<Long>> authorityTreeList = optionsService.orgTreeOption();
+        return ResultGenerator.ok(authorityTreeList);
+    }
+
     @GetMapping("/dict")
-    public Result<?> dictOptions(@RequestParam String code, @RequestParam(required = false) String category) {
+    public Result<List<OptionVO<String>>> dictOptions(@RequestParam String code, @RequestParam(required = false) String category) {
         List<DictionaryItemVO> dictList = optionsService.dictOptions(code, category);
         return ResultGenerator.ok(
                 dictList.stream()
@@ -55,7 +61,7 @@ public class OptionController {
     }
 
     @GetMapping("/dict/tree")
-    public Result<?> dictTreeOptions(@RequestParam String code, @RequestParam(required = false) String category) {
+    public Result<List<OptionVO<String>>> dictTreeOptions(@RequestParam String code, @RequestParam(required = false) String category) {
         List<DictionaryItemVO> dictTreeList = optionsService.dictTreeOptions(code, category);
         return ResultGenerator.ok(
                 OptionVO.copyTree(

@@ -399,6 +399,12 @@ export const orgMemberMainCheck = async (orgId, userId) => {
     return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/org/${orgId}/main-check?userId=${userId}`))
 }
 
+// 组织选择
+export const fetchOrgOptions = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/option/org/tree'))
+}
+
 // 创建岗位
 export const createPosition = async (positionBody) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/user/system/position/create', positionBody))

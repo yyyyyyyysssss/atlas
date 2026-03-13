@@ -12,6 +12,7 @@ import com.atlas.user.domain.entity.Organization;
 import com.atlas.user.domain.entity.UserOrg;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.OrganizationVO;
+import com.atlas.user.enums.OrganizationStatus;
 import com.atlas.user.enums.OrganizationType;
 import com.atlas.user.mapper.OrganizationMapper;
 import com.atlas.user.mapping.OrganizationMapping;
@@ -164,6 +165,25 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 break;
         }
         return organizationMapper.findMembers(targetPath, includeChild);
+    }
+
+    @Override
+    public List<OrganizationVO> findAll() {
+        QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
+        organizationQueryWrapper
+                .lambda()
+                .select(Organization::getId,
+                        Organization::getParentId,
+                        Organization::getOrgCode,
+                        Organization::getOrgName,
+                        Organization::getOrgType,
+                        Organization::getStatus,
+                        Organization::getOrgPath)
+                .eq(Organization::getStatus, OrganizationStatus.ACTIVE.getCode())
+                .orderByAsc(Organization::getSort)
+                .orderByAsc(Organization::getCreateTime);
+        List<Organization> organizations = organizationMapper.selectList(organizationQueryWrapper);
+        return OrganizationMapping.INSTANCE.toOrganizationVO(organizations);
     }
 
     @Transactional(rollbackFor = Exception.class)

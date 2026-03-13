@@ -66,10 +66,5 @@ public class OrganizationVO {
     public String getOrgTypeName() {
         return orgType != null ? orgType.getDescription() : null;
     }
-
-    public boolean isAllowMount(){
-
-        return orgType.equals(OrganizationType.DEPT) || orgType.equals(OrganizationType.TEAM);
-    }
 }
 

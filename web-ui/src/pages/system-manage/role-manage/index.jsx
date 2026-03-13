@@ -167,7 +167,6 @@ const RoleManage = () => {
             operationType: null,
             roleItem: null,
         })
-        editForm.resetFields()
     }
 
     const handleSaveRole = () => {
@@ -534,7 +533,9 @@ const RoleManage = () => {
                 okButtonProps={{
                     disabled: getRoleDetailsLoading
                 }}
+                afterClose={() => editForm.resetFields()}
                 cancelText={t('取消')}
+                destroyOnHidden
             >
                 <Form
                     form={editForm}

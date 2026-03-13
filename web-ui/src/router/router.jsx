@@ -63,11 +63,11 @@ export const routes = [
                         protected: true,
                         requiredPermissions: ['system:user']
                     },
-                    {
-                        path: 'user/details',
-                        element: <UserDetails />,
-                        breadcrumbName: '用户详情',
-                    },
+                    // {
+                    //     path: 'user/details',
+                    //     element: <UserDetails />,
+                    //     breadcrumbName: '用户详情',
+                    // },
                     {
                         path: 'role',
                         element: <RoleManage />,
@@ -76,14 +76,14 @@ export const routes = [
                         protected: true,
                         requiredPermissions: ['system:role']
                     },
-                    {
-                        path: 'position',
-                        element: <PositionManage />,
-                        breadcrumbName: '岗位管理',
-                        defaultIcon: <ShieldCheck size={18} />,
-                        protected: true,
-                        requiredPermissions: ['system:position']
-                    },
+                    // {
+                    //     path: 'position',
+                    //     element: <PositionManage />,
+                    //     breadcrumbName: '岗位管理',
+                    //     defaultIcon: <ShieldCheck size={18} />,
+                    //     protected: true,
+                    //     requiredPermissions: ['system:position']
+                    // },
                     {
                         path: 'menu',
                         element: <MenuManage />,

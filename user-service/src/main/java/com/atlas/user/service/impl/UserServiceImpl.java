@@ -248,7 +248,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (isFullUpdate) {
             bindRoles(user.getId(), userUpdateDTO.getRoleIds());
         } else {
-            if (!CollectionUtils.isEmpty(userUpdateDTO.getRoleIds())) {
+            if (userUpdateDTO.getRoleIds() != null) {
                 bindRoles(user.getId(), userUpdateDTO.getRoleIds());
             }
         }

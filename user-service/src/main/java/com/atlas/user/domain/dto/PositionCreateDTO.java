@@ -26,7 +26,7 @@ public class PositionCreateDTO {
     private PositionType type;
 
     // 岗位级别 
-    private Integer level;
+    private String level;
 
     // 状态 ACTIVE: 启用 INACTIVE: 停用 
     private PositionStatus status = PositionStatus.ACTIVE;

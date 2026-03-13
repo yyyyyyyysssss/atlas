@@ -43,7 +43,7 @@ public class Position extends BaseEntity {
 
     // 岗位级别 
     @TableField("level")
-    private Integer level;
+    private String level;
 
     // 状态 ACTIVE: 启用 INACTIVE: 停用 
     @TableField("status")

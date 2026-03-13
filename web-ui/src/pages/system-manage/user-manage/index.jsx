@@ -13,6 +13,7 @@ import SmartTable from '../../../components/smart-table';
 import ActionDropdown from '../../../components/ActionDropdown';
 import Loading from '../../../components/loading';
 import { useTranslation } from 'react-i18next';
+import OptionTreeSelect from '../../../components/OptionTreeSelect';
 
 
 const initQueryParam = {
@@ -539,8 +540,8 @@ const UserManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getUserDataLoading}>{t('查询')}</Button>
-                    <Button  style={{width: '80px'}} onClick={handleReset} loading={getUserDataLoading}>{t('重置')}</Button>
+                    <Button style={{ width: '80px' }} type="primary" onClick={handleSearch} loading={getUserDataLoading}>{t('查询')}</Button>
+                    <Button style={{ width: '80px' }} onClick={handleReset} loading={getUserDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable
@@ -607,7 +608,7 @@ const UserManage = () => {
                                 rules={[
                                     {
                                         required: true,
-                                        message: `角色账号不能为空`,
+                                        message: `用户账号不能为空`,
                                     },
                                 ]}
                             >
@@ -640,6 +641,14 @@ const UserManage = () => {
                                         { value: true, label: '启用' },
                                         { value: false, label: '停用' }
                                     ]}
+                                />
+                            </Form.Item>
+                            <Form.Item
+                                label="所属组织"
+                                name="orgId"
+                            >
+                                <OptionTreeSelect
+                                    
                                 />
                             </Form.Item>
                             <Form.Item

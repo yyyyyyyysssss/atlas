@@ -22,7 +22,7 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
         keyword: null,
         status: null,
         orgPath: orgPath,
-        includeChildren: false
+        includeChildren: true
     }
 
     const [modal, contextHolder] = Modal.useModal()
@@ -48,10 +48,6 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
     })
 
     const { runAsync: updatePositionAsync, loading: updatePositionLoading } = useRequest(updatePosition, {
-        manual: true
-    })
-
-    const { runAsync: deletePositionByIdAsync, loading: deletePositionByIdLoading } = useRequest(deletePositionById, {
         manual: true
     })
 
@@ -192,6 +188,12 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
                     </Tag>
                 )
             }
+        },
+        {
+            key: 'level',
+            title: '职级',
+            dataIndex: 'level',
+            align: 'center',
         },
         {
             key: 'createTime',
@@ -353,6 +355,21 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
                             <OptionSelect
                                 loadData={Object.values(PositionStatus)}
                                 placeholder="请选择状态"
+                            />
+                        </Form.Item>
+                        <Form.Item
+                            label="职级"
+                            name="level"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: `职级不能为空`,
+                                },
+                            ]}
+                        >
+                            <OptionSelect
+                                loadData='POSITION_LEVEL'
+                                placeholder="请选择职级"
                             />
                         </Form.Item>
                         <Form.Item

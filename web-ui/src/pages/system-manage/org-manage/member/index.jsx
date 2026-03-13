@@ -344,17 +344,6 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
             }
         },
         {
-            key: 'posName',
-            title: '岗位',
-            dataIndex: 'posName',
-            align: 'center',
-            editable: true,
-            required: true,
-            editRender: ({ value, onChange }) => {
-                return <Input value={value} onChange={onChange} />
-            },
-        },
-        {
             key: 'isMain',
             title: '主部门',
             dataIndex: 'isMain',
@@ -446,7 +435,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
                             mode='single-edit'
                             loading={fetchOrgMemberLoading || addOrgMemberLoading || removeOrgMemberLoading || orgMemberMainCheckLoading}
                             fields={fields}
-                            editPermission={'system:org:write'}
+                            editPermission={'no-show'}
                             addPermission={'no-show'}
                             deletePermission={'system:org:delete'}
                             add={add}

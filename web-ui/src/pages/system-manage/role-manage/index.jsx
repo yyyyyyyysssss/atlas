@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './index.css'
-import { bindAuthorityByRoleId, bindRoleUser, createRole, deleteRoleById, fetchRoleDetails, fetchRoleList, fetchSearchUser, fetchUserIdByRoleId, updateRole, updateRoleEnabled } from '../../../services/SystemService'
+import { bindAuthorityByRoleId, bindRoleUser, createRole, deleteRoleById, fetchAuthorityTree, fetchRoleDetails, fetchRoleList, fetchSearchUser, fetchUserIdByRoleId, updateRole, updateRoleEnabled } from '../../../services/SystemService'
 import { Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, Table, Typography } from 'antd'
 import AuthorityTreeSelect from '../../../components/AuthorityTreeSelect'
 import AuthorityTree from '../../../components/AuthorityTree'
@@ -13,6 +13,7 @@ import RemoteSearchSelect from '../../../components/RemoteSearchSelect'
 import Loading from '../../../components/loading'
 import { useTranslation } from 'react-i18next'
 import UserTransfer from '../../../components/UserTransfer'
+import OptionTreeSelect from '../../../components/OptionTreeSelect'
 
 const initQueryParam = {
     pageNum: 1,
@@ -499,8 +500,8 @@ const RoleManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button style={{width: '80px'}} type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
-                    <Button style={{width: '80px'}} onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
+                    <Button style={{ width: '80px' }} type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
+                    <Button style={{ width: '80px' }} onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable
@@ -593,7 +594,16 @@ const RoleManage = () => {
                                 label="分配权限"
                                 name="authorityIds"
                             >
-                                <AuthorityTreeSelect />
+                                {/* <AuthorityTreeSelect /> */}
+                                <OptionTreeSelect
+                                    fetchData={fetchAuthorityTree}
+                                    multiple={true}
+                                    fieldNames={{
+                                        title: 'label',
+                                        value: 'value',
+                                        children: 'children'
+                                    }}
+                                />
                             </Form.Item>
                             <Form.Item
                                 label="分配用户"

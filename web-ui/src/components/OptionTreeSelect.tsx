@@ -21,7 +21,7 @@ type TreeSelectPropsType<T = any> = Omit<
 };
 
 const OptionTreeSelect = <T extends any>({
-    value = [],
+    value,
     onChange,
     fetchData,
     fieldNames = {},
@@ -52,24 +52,33 @@ const OptionTreeSelect = <T extends any>({
         return keys;
     }, [idField, childrenField]);
 
-    const { run: runFetch, loading: fetchDataLoading } = useRequest(fetchData, {
-        manual: true,
-        onSuccess: (data) => {
-            const list = data || [];
-            setTreeData(list);
-            // 初始加载成功后，默认展开所有
-            setExpandedKeys(getAllKeys(list));
-        }
-    });
+    const { runAsync: runFetch, loading: fetchDataLoading } = useRequest(fetchData, {
+        manual: true
+    })
+
+    const fetchDataRef = useRef(false);
+
+    const getData = async () => {
+        if (fetchDataRef.current) return; // 已经加载过数据，直接返回
+        fetchDataRef.current = true; // 标记为已加载
+        const data = await runFetch()
+        const list = data || [];
+        setTreeData(list);
+        // 初始加载成功后，默认展开所有
+        setExpandedKeys(getAllKeys(list));
+    }
 
     // 初始加载：如果有值，则需要拉取数据以显示 Label
     useEffect(() => {
-        runFetch();
-    }, [])
+        if(value){
+            getData();
+        }
+        
+    }, [value])
 
     const handleDropdownVisibleChange = (open: boolean) => {
         if (open && treeData.length === 0) {
-            runFetch();
+            getData();
         }
         if (!open) {
             setSearchValue("")

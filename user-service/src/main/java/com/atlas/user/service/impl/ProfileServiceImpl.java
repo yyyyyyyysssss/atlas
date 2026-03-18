@@ -13,6 +13,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -56,17 +59,17 @@ public class ProfileServiceImpl implements ProfileService {
 
         // 用户角色
         List<RoleVO> roles = roleService.findByUserId(userId);
-        if (!CollectionUtils.isEmpty(roles)){
+        if (!CollectionUtils.isEmpty(roles)) {
             List<String> roleCodes = roles.stream().map(RoleVO::getCode).toList();
             userInfoVO.setRoleCodes(roleCodes);
-        }else {
+        } else {
             userInfoVO.setRoleCodes(Collections.emptyList());
         }
         List<Long> roleIds = Optional.ofNullable(roles).orElse(new ArrayList<>()).stream().map(RoleVO::getId).toList();
 
         // 用户菜单
         List<MenuVO> menus = menuService.findByUserId(userId, roleIds);
-        if (!CollectionUtils.isEmpty(menus)){
+        if (!CollectionUtils.isEmpty(menus)) {
             List<MenuVO> menuTree = TreeUtils.buildTree(
                     menus,
                     MenuVO::getId,
@@ -75,16 +78,16 @@ public class ProfileServiceImpl implements ProfileService {
                     0L
             );
             userInfoVO.setMenuTree(menuTree);
-        }else {
+        } else {
             userInfoVO.setMenuTree(Collections.emptyList());
         }
 
         // 用户权限
         List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId);
-        if (!CollectionUtils.isEmpty(authorityVOList)){
+        if (!CollectionUtils.isEmpty(authorityVOList)) {
             List<String> permissionCodes = authorityVOList.stream().map(AuthorityVO::getCode).distinct().toList();
             userInfoVO.setPermissionCodes(permissionCodes);
-        }else {
+        } else {
             userInfoVO.setPermissionCodes(Collections.emptyList());
         }
 
@@ -94,13 +97,13 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public Boolean changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
         User user = userService.findByUserId(userId);
-        if (user == null){
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        if (!passwordEncoder.matches(changePasswordDTO.getOriginPassword(), user.getPassword())){
+        if (!passwordEncoder.matches(changePasswordDTO.getOriginPassword(), user.getPassword())) {
             throw new BusinessException("原密码不正确");
         }
-        if(passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())){
+        if (passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())) {
             throw new BusinessException("新密码不能与原密码相同");
         }
         String newEncodedPassword = passwordEncoder.encode(changePasswordDTO.getNewPassword());
@@ -115,7 +118,7 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public Boolean changeAvatar(Long userId, String avatarUrl) {
         User user = userService.findByUserId(userId);
-        if (user == null){
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();

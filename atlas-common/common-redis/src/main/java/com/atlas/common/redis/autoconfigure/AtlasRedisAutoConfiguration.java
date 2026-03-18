@@ -3,13 +3,11 @@ package com.atlas.common.redis.autoconfigure;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.core.idwork.SequenceGenerator;
 import com.atlas.common.redis.sequence.*;
-import com.atlas.common.redis.utils.*;
+import com.atlas.common.redis.utils.RedisHelper;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.lettuce.core.api.StatefulConnection;
 import jakarta.annotation.Resource;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -34,7 +32,10 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @Description
@@ -134,8 +135,8 @@ public class AtlasRedisAutoConfiguration {
     }
 
     @Bean("redisObjectMapper") // 明确指定名称，避免冲突
-    public ObjectMapper redisObjectMapper() {
-        return createRedisObjectMapper();
+    public ObjectMapper redisObjectMapper(ObjectMapper objectMapper) {
+        return createRedisObjectMapper(objectMapper);
     }
 
     @Bean
@@ -188,14 +189,9 @@ public class AtlasRedisAutoConfiguration {
     }
 
 
-    private ObjectMapper createRedisObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        // 基础设置
-        mapper.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private ObjectMapper createRedisObjectMapper(ObjectMapper objectMapper) {
+        ObjectMapper mapper = objectMapper.copy();
 
-        // 注册 Java8 时间模块
-        mapper.registerModule(new JavaTimeModule());
         // 禁止将日期转为时间戳（保持 pattern 格式）
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 

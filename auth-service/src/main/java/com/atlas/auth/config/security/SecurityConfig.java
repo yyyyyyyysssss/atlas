@@ -6,9 +6,10 @@ import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticat
 import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
 import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
-import com.atlas.auth.config.security.handler.MagicLinkOneTimeTokenGenerationSuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
+import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.LogoutService;
+import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
@@ -59,6 +60,9 @@ public class SecurityConfig {
     private UserDetailsService userService;
 
     @Resource
+    private EmailVerificationService emailVerificationService;
+
+    @Resource
     private PasswordEncoder passwordEncoder;
 
     @Resource
@@ -69,6 +73,9 @@ public class SecurityConfig {
 
     @Resource
     private JdbcTemplate jdbcTemplate;
+
+    @Resource
+    private OneTimeTokenGenerationSuccessService oneTimeTokenGenerationSuccessService;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -104,7 +111,7 @@ public class SecurityConfig {
                     //令牌生成以及存储
                     ott.tokenService(oneTimeTokenService());
                     //令牌生成成功处理器
-                    ott.tokenGenerationSuccessHandler(new MagicLinkOneTimeTokenGenerationSuccessHandler(securityProperties.getLoginPage()));
+                    ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
                 .addFilterAfter(headerAuthenticationFilter(), SecurityContextHolderFilter.class)
                 //记住我过滤器
@@ -177,7 +184,7 @@ public class SecurityConfig {
     //三方登录认证
     @Bean
     public EmailAuthenticationProvider emailAuthenticationProvider() {
-        return new EmailAuthenticationProvider(userService, redisHelper);
+        return new EmailAuthenticationProvider(userService, emailVerificationService);
     }
 
     //一次性令牌

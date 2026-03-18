@@ -1,6 +1,6 @@
 package com.atlas.user.enums;
 
-import com.atlas.common.mybatis.enums.BaseEnum;
+import com.atlas.common.mybatis.enums.MybatisBaseEnum;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.Getter;
 
@@ -10,7 +10,7 @@ import lombok.Getter;
  * @Date 2026/2/28 17:47
  */
 @Getter
-public enum OrganizationStatus implements BaseEnum<String>{
+public enum OrganizationStatus implements MybatisBaseEnum<String> {
 
     ACTIVE("ACTIVE", "启用"),
     INACTIVE("INACTIVE", "停用"),

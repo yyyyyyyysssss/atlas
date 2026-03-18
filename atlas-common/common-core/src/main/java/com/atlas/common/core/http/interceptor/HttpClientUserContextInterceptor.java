@@ -21,10 +21,20 @@ public class HttpClientUserContextInterceptor implements HttpRequestInterceptor 
             if (user.getUserId() != null) {
                 httpRequest.addHeader(CommonConstant.USER_ID, user.getUserId());
             }
+            if (user.getOrgId() != null) {
+                httpRequest.addHeader(CommonConstant.ORG_ID, user.getOrgId());
+            }
             if (user.getFullName() != null) {
                 String encodedName = URLEncoder.encode(user.getFullName(), StandardCharsets.UTF_8);
                 httpRequest.addHeader(CommonConstant.USER_FULL_NAME, encodedName);
             }
+            if (user.getDataScope() != null) {
+                httpRequest.addHeader(CommonConstant.DATA_SCOPE, user.getDataScope());
+            }
+            if(user.getDataScope() != null){
+                httpRequest.addHeader(CommonConstant.DATA_SCOPE, user.getDataScope());
+            }
+            httpRequest.addHeader(CommonConstant.DATA_MASKING, user.isMasking());
         }
     }
 }

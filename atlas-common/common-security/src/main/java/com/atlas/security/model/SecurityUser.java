@@ -25,6 +25,10 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private boolean enabled;
 
+    private Integer dataScope;
+
+    private Long orgId;
+
     private List<? extends GrantedAuthority> authorities;
 
     @Override

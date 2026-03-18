@@ -1,11 +1,11 @@
 package com.atlas.notification.service;
 
 
-import com.atlas.common.core.api.user.UserApi;
-import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
+import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,9 +57,12 @@ public class AccountResolver {
         }
 
         List<UserDTO> users = switch (targetType) {
-            case USER_ID -> Optional.ofNullable(userApi.findByIds(targets.stream().map(Long::valueOf).toList())).filter(Result::isSucceed).orElseThrow().getData();
-            case EMAIL   -> Optional.ofNullable(userApi.findByEmails(targets)).filter(Result::isSucceed).orElseThrow().getData();
-            case PHONE   -> Optional.ofNullable(userApi.findByPhones(targets)).filter(Result::isSucceed).orElseThrow().getData();
+            case USER_ID ->
+                    Optional.ofNullable(userApi.findByIdentifier(targets)).filter(Result::isSucceed).orElseThrow().getData();
+            case EMAIL ->
+                    Optional.ofNullable(userApi.findByEmails(targets)).filter(Result::isSucceed).orElseThrow().getData();
+            case PHONE ->
+                    Optional.ofNullable(userApi.findByPhones(targets)).filter(Result::isSucceed).orElseThrow().getData();
         };
         Function<UserDTO, String> getter = getGetter(requiredType);
         return users.stream()
@@ -81,7 +84,7 @@ public class AccountResolver {
 
     public static Function<UserDTO, String> getGetter(TargetType type) {
         Function<UserDTO, String> getter = FIELD_GETTER.get(type);
-        if(getter == null){
+        if (getter == null) {
             throw new NotificationException("未配置目标类型的数据提取规则: " + type);
         }
         return getter;

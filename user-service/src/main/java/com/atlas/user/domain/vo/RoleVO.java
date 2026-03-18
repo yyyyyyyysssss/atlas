@@ -1,5 +1,6 @@
 package com.atlas.user.domain.vo;
 
+import com.atlas.user.enums.DataScope;
 import com.atlas.user.enums.RoleType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,6 +28,8 @@ public class RoleVO {
 
     private RoleType type;
 
+    private DataScope dataScope;
+
     private String createTime;
 
     private String creatorName;
@@ -38,6 +41,8 @@ public class RoleVO {
     private List<Long> userIds;
 
     private List<Long> authorityIds;
+
+    private List<Long> customDataScope;
 
     @JsonIgnore
     public boolean isSuperAdmin() {

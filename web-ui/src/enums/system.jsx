@@ -22,3 +22,12 @@ export const PositionType = Object.freeze({
     BASE: { value: 'BASE', label: '通用岗位', color: 'processing' },
     ORG: { value: 'ORG', label: '组织岗位', color: 'success' },
 })
+
+
+export const RoleDataScope = Object.freeze({
+    ALL: { value: 50, label: '全部', color: 'magenta' },
+    CUSTOM: { value: 40, label: '自定义', color: 'orange' },
+    COMPANY: { value: 30, label: '本公司', color: 'geekblue' },
+    DEPT: { value: 20, label: '本部门', color: 'blue' },
+    SELF: { value: 10, label: '本人', color: 'green' },
+})

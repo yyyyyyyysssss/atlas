@@ -31,12 +31,5 @@ public class NotificationController {
         return ResultGenerator.ok();
     }
 
-    final static AtomicInteger a = new AtomicInteger(0);
-    @GetMapping("/test")
-    public Result<?> test() {
-
-        return ResultGenerator.ok();
-    }
-
 }
 

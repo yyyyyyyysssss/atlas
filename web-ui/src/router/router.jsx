@@ -16,6 +16,7 @@ const OrgManage = lazy(() => import('../pages/system-manage/org-manage'))
 const UserManage = lazy(() => import('../pages/system-manage/user-manage'))
 const UserDetails = lazy(() => import('../pages/system-manage/user-manage/details'))
 const RoleManage = lazy(() => import('../pages/system-manage/role-manage'))
+const RoleDetails = lazy(() => import('../pages/system-manage/role-manage/details'))
 const MenuManage = lazy(() => import('../pages/system-manage/menu-manage'))
 const PositionManage = lazy(() => import('../pages/system-manage/pos-manage'))
 const DictManage = lazy(() => import('../pages/system-manage/dict-manage'))
@@ -75,6 +76,12 @@ export const routes = [
                         defaultIcon: <ShieldUser size={18} />,
                         protected: true,
                         requiredPermissions: ['system:role']
+                    },
+                    {
+                        path: 'role/details',
+                        element: <RoleDetails />,
+                        breadcrumbName: '角色',
+                        hideOperationMode: false
                     },
                     // {
                     //     path: 'position',

@@ -18,7 +18,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -166,6 +168,14 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         }
         List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
         return this.findByRoleId(roleIds);
+    }
+
+    @Caching(evict = {
+            @CacheEvict(value = "user:menu", key = "#p0"),
+            @CacheEvict(value = "user:authority", key = "#p0")
+    })
+    public void clearCache(Long userId) {
+
     }
 
 

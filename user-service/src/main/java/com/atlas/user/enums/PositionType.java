@@ -1,11 +1,11 @@
 package com.atlas.user.enums;
 
-import com.atlas.common.mybatis.enums.BaseEnum;
+import com.atlas.common.mybatis.enums.MybatisBaseEnum;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.Getter;
 
 @Getter
-public enum PositionType implements BaseEnum<String> {
+public enum PositionType implements MybatisBaseEnum<String> {
 
     BASE("BASE", "基础通用岗位"),
     ORG("ORG", "组织下特有岗位"),

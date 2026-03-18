@@ -27,12 +27,6 @@ public class NotificationFallbackFactory implements BaseFallbackFactory<Notifica
             public void send(NotificationDTO notification) {
                 log.warn("降级逻辑：忽略该通知发送，Subject: {}", notification.getTitle());
             }
-
-            @Override
-            public Result<?> test() {
-                log.warn("test fallback");
-                return ResultGenerator.failed("test fallback");
-            }
         };
     }
 }

@@ -1,6 +1,7 @@
 package com.atlas.common.core.autoconfigure;
 
 import com.atlas.common.core.api.feign.FeignConfiguration;
+import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.aspect.ControllerLogAspect;
@@ -9,9 +10,9 @@ import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.jackson.JacksonConfiguration;
 import com.atlas.common.core.utils.SpringUtils;
 import com.atlas.common.core.web.client.factory.RestClientFactory;
-import com.atlas.common.core.web.filter.UserContextFilter;
 import com.atlas.common.core.web.exception.GlobalExceptionAdvice;
 import com.atlas.common.core.web.filter.MDCTraceFilter;
+import com.atlas.common.core.web.filter.UserContextFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -113,6 +114,13 @@ public class AtlasCoreAutoConfiguration {
         public UserApi userApi(@Value("${atlas.user.server-url}") String url, RestClientFactory restClientFactory, HttpClientFactory httpClientFactory) {
 
             return createProxy(UserApi.class, url, restClientFactory, httpClientFactory);
+        }
+
+        @Bean
+        @ConditionalOnProperty(prefix = "atlas.file", name = "server-url")
+        public FileApi fileApi(@Value("${atlas.file.server-url}") String url, RestClientFactory restClientFactory, HttpClientFactory httpClientFactory) {
+
+            return createProxy(FileApi.class, url, restClientFactory, httpClientFactory);
         }
 
         private <T> T createProxy(Class<T> clazz, String url, RestClientFactory factory, HttpClientFactory httpFactory) {

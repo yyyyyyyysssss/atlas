@@ -1,7 +1,6 @@
 package com.atlas.common.core.api.notification;
 
 
-import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.dto.NotificationDTO;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.HttpExchange;
@@ -13,11 +12,5 @@ public interface NotificationApi {
 
     @PostExchange("/send")
     void send(@RequestBody NotificationDTO notification);
-
-    default void send(NotificationRequest.NotificationOp op) {
-        if (op != null) {
-            this.send(op.build());
-        }
-    }
 
 }

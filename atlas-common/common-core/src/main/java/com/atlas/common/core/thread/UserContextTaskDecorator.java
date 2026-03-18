@@ -12,7 +12,7 @@ public class UserContextTaskDecorator implements TaskDecorator {
         return () -> {
             try {
                 if (user != null) {
-                    UserContext.setUser(user.getUserId(), user.getFullName(),user.isMasking());
+                    UserContext.setUser(user);
                 }
                 runnable.run();
             } finally {

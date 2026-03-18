@@ -29,12 +29,16 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String password = JsonNodeUtils.findStringValue(root, "password");
         String fullName = JsonNodeUtils.findStringValue(root, "fullName");
         String tokenId = JsonNodeUtils.findStringValue(root, "tokenId");
+        String dataScope = JsonNodeUtils.findNumberValue(root, "dataScope");
+        String orgId = JsonNodeUtils.findNumberValue(root, "orgId");
         List<? extends GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(root, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
         securityUser.setId(Long.parseLong(id));
         securityUser.setUsername(username);
         securityUser.setPassword(password);
         securityUser.setFullName(fullName);
         securityUser.setTokenId(tokenId);
+        securityUser.setDataScope(dataScope != null ? Integer.parseInt(dataScope) : null);
+        securityUser.setOrgId(orgId != null ? Long.parseLong(orgId) : null);
         securityUser.setAuthorities(authorities);
         return securityUser;
     }

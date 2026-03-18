@@ -9,9 +9,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import java.util.TimeZone;
 
 @EnableAsync
-@SpringBootApplication
 @EnableCaching
 @EnableAtlasFeign
+@SpringBootApplication
 public class NotificationServiceApplication {
 
     public static void main(String[] args) {

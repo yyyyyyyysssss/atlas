@@ -74,6 +74,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
     }, [optionsData])
 
     const safeValue = useMemo(() => {
+        if (value === undefined || value === null || value === '') return undefined
         if (mode === 'multiple') {
             return value?.filter((id: any) => availableKeys.has(id))
         }
@@ -93,7 +94,7 @@ const OptionSelect: React.FC<OptionSelectProps> = ({
                 mode={mode}
                 style={{ width: '100%' }}
                 placeholder="请选择"
-                value={safeValue ? String(value) : undefined}
+                value={safeValue ?? undefined}
                 onChange={handleChange}
                 notFoundContent={fetchOptionsLoading ? <Loading size="small" style={{ display: 'block', margin: '0 auto' }} /> : <NoDataEmpty />}
                 options={optionsData}

@@ -19,7 +19,4 @@ public interface NotificationFeignApi {
     @PostMapping("/send")
     void send(@RequestBody NotificationDTO notification);
 
-    @GetMapping("/test")
-    Result<?> test();
-
 }

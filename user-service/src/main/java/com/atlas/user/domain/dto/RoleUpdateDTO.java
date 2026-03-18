@@ -1,5 +1,6 @@
 package com.atlas.user.domain.dto;
 
+import com.atlas.user.enums.DataScope;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,5 +26,9 @@ public class RoleUpdateDTO {
     private List<Long> userIds;
 
     private List<Long> authorityIds;
+
+    private DataScope dataScope;
+
+    private List<Long> customDataScope;
 
 }

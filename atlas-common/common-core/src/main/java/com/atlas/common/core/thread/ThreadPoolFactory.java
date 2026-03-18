@@ -17,6 +17,8 @@ public class ThreadPoolFactory {
 
         private final ThreadPoolTaskExecutor executor;
 
+        private boolean isVirtual = false;
+
         private Builder(String namePrefix) {
             this.executor = new ThreadPoolTaskExecutor();
             // 基础识别配置
@@ -61,7 +63,26 @@ public class ThreadPoolFactory {
             return this;
         }
 
+        /**
+         * 开启虚拟线程模式
+         */
+        public Builder virtual() {
+            this.isVirtual = true;
+            // 虚拟线程不需要“池”的概念，核心线程设为 0，最大值设为理论无穷
+            executor.setCorePoolSize(0);
+            executor.setMaxPoolSize(Integer.MAX_VALUE);
+            // 虚拟线程通常不使用阻塞队列排队，直接创建新线程
+            executor.setQueueCapacity(0);
+            return this;
+        }
+
         public ThreadPoolTaskExecutor build() {
+            if (isVirtual) {
+                // 使用虚拟线程工厂
+                executor.setThreadFactory(Thread.ofVirtual()
+                        .name(executor.getThreadNamePrefix(), 0)
+                        .factory());
+            }
             executor.initialize();
             return executor;
         }

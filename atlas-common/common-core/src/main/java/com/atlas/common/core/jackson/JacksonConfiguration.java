@@ -1,10 +1,14 @@
 package com.atlas.common.core.jackson;
 
 
+import com.atlas.common.core.enums.BaseEnum;
+import com.atlas.common.core.jackson.deserializer.BaseEnumDeserializer;
+import com.atlas.common.core.jackson.serializer.BaseEnumSerializer;
 import com.atlas.common.core.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -24,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -71,6 +76,19 @@ public class JacksonConfiguration {
         simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
         // BigInteger，防止大数溢出
         simpleModule.addSerializer(BigInteger.class, ToStringSerializer.instance);
+        // BaseEnum
+        simpleModule.addSerializer((Class<BaseEnum<?>>) (Class<?>) BaseEnum.class, new BaseEnumSerializer());
+        simpleModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyEnumDeserializer(DeserializationConfig config, JavaType type, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
+                // 判断当前处理的类是否实现了 BaseEnum 接口
+                if (BaseEnum.class.isAssignableFrom(type.getRawClass())) {
+                    // 构造时传入具体的子类类型，解决“不知道转成哪个枚举”的问题
+                    return new BaseEnumDeserializer<>((Class) type.getRawClass());
+                }
+                return super.modifyEnumDeserializer(config, type, beanDesc, deserializer);
+            }
+        });
 
         objectMapper.registerModule(simpleModule);
 

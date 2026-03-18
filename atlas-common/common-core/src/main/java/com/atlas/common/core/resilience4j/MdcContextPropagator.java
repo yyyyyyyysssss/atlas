@@ -1,7 +1,9 @@
 package com.atlas.common.core.resilience4j;
 
 import io.github.resilience4j.core.ContextPropagator;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +15,8 @@ import java.util.function.Supplier;
  * @Author ys
  * @Date 2026/2/12 15:36
  */
+@Slf4j
+@Component
 public class MdcContextPropagator implements ContextPropagator<Map<String, String>> {
     @Override
     public Supplier<Optional<Map<String, String>>> retrieve() {

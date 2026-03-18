@@ -44,6 +44,7 @@ spring:
                 - Path=/api/auth/**
               filters:
                 - StripPrefix=2
+
             # 文件服务
             - id: file_route
               uri: http://localhost:9097
@@ -82,6 +83,7 @@ security:
       - /api/*/actuator/**
       - /error
       - /favicon.ico
+      - /api/auth/code/**
     authenticated:
       - /file/**
       - /api/file/**

@@ -11,7 +11,6 @@ import com.atlas.user.domain.vo.UserVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +27,7 @@ public interface UserService extends IService<User> {
 
     User findByUserId(Serializable userId);
 
-    List<UserDTO> findByUserId(Collection<Long> userIds);
+    List<UserDTO> findByIdentifier(Collection<?> identifiers);
 
     List<UserDTO> findByEmail(Collection<String> emails);
 

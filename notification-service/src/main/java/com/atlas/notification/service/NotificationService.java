@@ -36,7 +36,7 @@ public class NotificationService {
 
     private final AccountResolver accountResolver;
 
-    @Async("notificationExecutor")
+    @Async
     public void send(NotificationDTO ctx) {
         if (ctx == null) {
             log.error("[Notification-Engine] MessageContext is null");

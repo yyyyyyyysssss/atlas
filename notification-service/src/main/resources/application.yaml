@@ -45,13 +45,9 @@ spring:
         config:
           default:
             loggerLevel: none
-            connect-timeout: 5000
-            read-timeout: 5000
       httpclient:
         hc5:
           enabled: true
-        max-connections: 500
-        max-connections-per-route: 100
 
 logging:
   level:
@@ -106,7 +102,7 @@ resilience4j:
   timelimiter:
     configs:
       default:
-        timeoutDuration: 5s
+        timeoutDuration: 60s
         cancelRunningFuture: true
     instances:
       AppFuse:

@@ -1,12 +1,12 @@
 package com.atlas.notification.enums;
 
-import com.atlas.common.mybatis.enums.BaseEnum;
+import com.atlas.common.mybatis.enums.MybatisBaseEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum ActivationStatus implements BaseEnum {
+public enum ActivationStatus implements MybatisBaseEnum {
 
     ACTIVE("生效"),
     INACTIVE("禁用"),

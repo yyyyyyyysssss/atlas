@@ -9,11 +9,11 @@ import HasPermission from '../../../components/HasPermission'
 import { getMessageApi } from '../../../utils/MessageUtil'
 import { useRequest } from 'ahooks'
 import SmartTable from '../../../components/smart-table'
-import RemoteSearchSelect from '../../../components/RemoteSearchSelect'
 import Loading from '../../../components/loading'
 import { useTranslation } from 'react-i18next'
 import UserTransfer from '../../../components/UserTransfer'
-import OptionTreeSelect from '../../../components/OptionTreeSelect'
+import { useNavigate } from "react-router-dom"
+import { OperationMode } from '../../../enums/common'
 
 const initQueryParam = {
     pageNum: 1,
@@ -26,11 +26,11 @@ const RoleManage = () => {
 
     const { t } = useTranslation()
 
+    const navigate = useNavigate()
+
     const [modal, contextHolder] = Modal.useModal()
 
     const [searchForm] = Form.useForm()
-
-    const [editForm] = Form.useForm()
 
     const [bindUserForm] = Form.useForm()
 
@@ -40,14 +40,6 @@ const RoleManage = () => {
     const [queryParam, setQueryParam] = useState(initQueryParam)
 
     const { runAsync: getRoleDataAsync, loading: getRoleDataLoading } = useRequest(fetchRoleList, {
-        manual: true
-    })
-
-    const { runAsync: createRoleAsync, loading: createRoleLoading } = useRequest(createRole, {
-        manual: true
-    })
-
-    const { runAsync: updateRoleAsync, loading: updateRoleLoading } = useRequest(updateRole, {
         manual: true
     })
 
@@ -73,13 +65,6 @@ const RoleManage = () => {
 
     const [roleEnabledLoadingMap, setRoleEnabledLoadingMap] = useState({})
 
-    const [roleOperation, setRoleOperation] = useState({
-        open: false,
-        title: null,
-        operationType: null,
-        roleItem: null,
-    })
-
     const [bindAuthority, setBindAuthority] = useState({
         open: false,
         title: null,
@@ -91,12 +76,6 @@ const RoleManage = () => {
         title: null,
         roleId: null,
     })
-
-    useEffect(() => {
-        if (roleOperation && roleOperation.open === true && roleOperation.operationType === 'EDIT') {
-            editForm.setFieldsValue(roleOperation.roleItem)
-        }
-    }, [roleOperation])
 
     useEffect(() => {
         if (bindAuthority && bindAuthority.open === true) {
@@ -128,73 +107,20 @@ const RoleManage = () => {
     }
 
     const handleAddRole = () => {
-        setRoleOperation({
-            open: true,
-            title: '新增角色',
-            operationType: 'ADD',
-            roleItem: null,
+        navigate('/system/role/details', {
+            state: {
+                operationMode: OperationMode.ADD.value
+            }
         })
     }
 
     const handleEditRole = (roleId) => {
-        setRoleOperation({
-            open: true,
-            title: '编辑角色',
-            operationType: 'EDIT',
-            roleItem: null,
+        navigate('/system/role/details', {
+            state: {
+                roleId: roleId,
+                operationMode: OperationMode.EDIT.value
+            }
         })
-        getRoleDetailsAsync(roleId)
-            .then(
-                (roleData) => {
-                    setRoleOperation(prev => {
-                        if (prev.open) {
-                            return {
-                                ...prev,
-                                roleItem: roleData
-                            }
-                        }
-                        return prev
-                    })
-                }
-            )
-
-    }
-
-    const handleClose = () => {
-        setRoleOperation({
-            open: false,
-            title: null,
-            operationType: null,
-            roleItem: null,
-        })
-    }
-
-    const handleSaveRole = () => {
-        editForm.validateFields()
-            .then(
-                (values) => {
-                    if (roleOperation.operationType === 'ADD') {
-                        createRoleAsync(values)
-                            .then(
-                                () => {
-                                    getMessageApi().success(t('新增成功'))
-                                    handleClose()
-                                    handleRefresh()
-                                }
-                            )
-                    } else {
-                        updateRoleAsync(values)
-                            .then(
-                                () => {
-                                    getMessageApi().success(t('修改成功'))
-                                    handleClose()
-                                    handleRefresh()
-                                }
-                            )
-                    }
-
-                }
-            )
     }
 
     const handleUpdateEnabled = async (id, enabled) => {
@@ -518,112 +444,6 @@ const RoleManage = () => {
                 queryParam={queryParam}
                 setQueryParam={setQueryParam}
             />
-            <Modal
-                title={t(roleOperation.title)}
-                width={400}
-                centered
-                open={roleOperation.open}
-                confirmLoading={createRoleLoading || updateRoleLoading}
-                onOk={handleSaveRole}
-                onCancel={handleClose}
-                onClose={handleClose}
-                maskClosable={false}
-                keyboard={false}
-                okText={t('保存')}
-                okButtonProps={{
-                    disabled: getRoleDetailsLoading
-                }}
-                afterClose={() => editForm.resetFields()}
-                cancelText={t('取消')}
-                destroyOnHidden
-            >
-                <Form
-                    form={editForm}
-                    labelCol={{ span: 6 }}
-                    wrapperCol={{ span: 18 }}
-                    layout="horizontal"
-                >
-                    <Loading spinning={getRoleDetailsLoading}>
-                        <div
-                            className='w-full mt-5'
-                        >
-                            <Form.Item name="id" hidden>
-                                <Input />
-                            </Form.Item>
-                            <Form.Item
-                                label="角色名称"
-                                name="name"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `角色名称不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Input />
-                            </Form.Item>
-                            <Form.Item
-                                label="角色编码"
-                                name="code"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `角色编码不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Input disabled={roleOperation.operationType == 'EDIT'} />
-                            </Form.Item>
-                            <Form.Item
-                                label="启用状态"
-                                name="enabled"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `启用状态不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Radio.Group
-                                    options={[
-                                        { value: true, label: '启用' },
-                                        { value: false, label: '停用' }
-                                    ]}
-                                />
-                            </Form.Item>
-                            <Form.Item
-                                label="分配权限"
-                                name="authorityIds"
-                            >
-                                {/* <AuthorityTreeSelect /> */}
-                                <OptionTreeSelect
-                                    fetchData={fetchAuthorityTree}
-                                    multiple={true}
-                                    fieldNames={{
-                                        title: 'label',
-                                        value: 'value',
-                                        children: 'children'
-                                    }}
-                                />
-                            </Form.Item>
-                            <Form.Item
-                                label="分配用户"
-                                name="userIds"
-                            >
-                                <RemoteSearchSelect
-                                    mode='multiple'
-                                    fetchData={fetchSearchUser}
-                                    labelField='fullName'
-                                    valueField='id'
-                                    placeholder='请输入用户名称'
-                                    allowClear
-                                />
-                            </Form.Item>
-                        </div>
-                    </Loading>
-                </Form>
-
-            </Modal>
             <Modal
                 title={bindUser.title}
                 width={600}

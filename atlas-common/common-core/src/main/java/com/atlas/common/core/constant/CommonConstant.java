@@ -17,6 +17,10 @@ public interface CommonConstant {
 
     String USER_FULL_NAME = "x-full-name";
 
+    String ORG_ID = "x-org-id";
+
+    String DATA_SCOPE = "x-data-scope";
+
     String DATA_MASKING = "x-data-masking";
 
 }

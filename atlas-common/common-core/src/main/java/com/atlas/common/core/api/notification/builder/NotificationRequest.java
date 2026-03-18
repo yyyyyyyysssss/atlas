@@ -97,14 +97,6 @@ public class NotificationRequest {
     }
 
     public interface NotificationOp {
-        // 通用目标设置
-        NotificationOp toUsers(Long... userIds);
-
-        NotificationOp toUsers(String... userIds);
-
-        NotificationOp toEmails(String... emails);
-
-        NotificationOp toPhones(String... phones);
 
         // 通用属性
         NotificationOp title(String title);
@@ -122,36 +114,39 @@ public class NotificationRequest {
         NotificationOp sse(Consumer<SseConfig> config);
         NotificationOp sse();
 
+        TargetOp to();
+
+    }
+
+    public interface TargetOp {
+        // 锁定目标类型的方法
+        UserIdActionOp toUserIds(Long... userIds);
+        UsernameActionOp toUsernames(String... usernames);
+        EmailActionOp toEmails(String... emails);
+        PhoneActionOp toPhones(String... phones);
+    }
+
+    public interface UserIdActionOp {
+        UserIdActionOp toUserIds(Long... userIds);   // 仅允许继续加用户
+        NotificationDTO build();
+    }
+
+    public interface UsernameActionOp {
+        UsernameActionOp toUsernames(String... usernames);   // 仅允许继续加用户
+        NotificationDTO build();
+    }
+
+    public interface EmailActionOp {
+        EmailActionOp toEmails(String... emails); // 仅允许继续加邮箱
+        NotificationDTO build();
+    }
+
+    public interface PhoneActionOp {
+        PhoneActionOp toPhones(String... phones); // 仅允许继续加手机
         NotificationDTO build();
     }
 
     private record NotificationBuilder(NotificationRequest ctx) implements NotificationOp {
-
-        @Override
-        public NotificationOp toUsers(Long... userIds) {
-            if (userIds == null || userIds.length == 0) {
-                return this;
-            }
-            String[] userIdList = Arrays.stream(userIds)
-                    .map(String::valueOf)
-                    .toArray(String[]::new);
-            return addTargets(TargetType.USER_ID, userIdList);
-        }
-
-        @Override
-        public NotificationOp toUsers(String... userIds) {
-            return addTargets(TargetType.USER_ID, userIds);
-        }
-
-        @Override
-        public NotificationOp toEmails(String... emails) {
-            return addTargets(TargetType.EMAIL, emails);
-        }
-
-        @Override
-        public NotificationOp toPhones(String... phones) {
-            return addTargets(TargetType.PHONE, phones);
-        }
 
         @Override
         public NotificationOp title(String title) {
@@ -207,6 +202,52 @@ public class NotificationRequest {
         }
 
         @Override
+        public TargetOp to() {
+            return new TargetOpBuilder(ctx);
+        }
+
+        private NotificationOp enableChannel(ChannelType type) {
+            ctx.channels = ensureMutable(ctx.channels);
+            if (!ctx.channels.contains(type)) {
+                ctx.channels.add(type);
+            }
+            return this;
+        }
+    }
+
+    private record TargetOpBuilder(NotificationRequest ctx) implements TargetOp,UserIdActionOp,UsernameActionOp,EmailActionOp,PhoneActionOp {
+
+        @Override
+        public UserIdActionOp toUserIds(Long... userIds) {
+            if (userIds == null || userIds.length == 0) {
+                throw new NotificationException("接收目标不能为空");
+            }
+            String[] userIdList = Arrays.stream(userIds)
+                    .map(String::valueOf)
+                    .toArray(String[]::new);
+            addTargets(TargetType.USER_ID, userIdList);
+            return this;
+        }
+
+        @Override
+        public UsernameActionOp toUsernames(String... usernames) {
+            addTargets(TargetType.USER_ID, usernames);
+            return this;
+        }
+
+        @Override
+        public EmailActionOp toEmails(String... emails) {
+            addTargets(TargetType.EMAIL, emails);
+            return this;
+        }
+
+        @Override
+        public PhoneActionOp toPhones(String... phones) {
+            addTargets(TargetType.PHONE, phones);
+            return this;
+        }
+
+        @Override
         public NotificationDTO build() {
             if (ctx.title == null || ctx.title.isBlank()) {
                 ctx.title = "系统通知";
@@ -233,17 +274,9 @@ public class NotificationRequest {
             }
         }
 
-        private NotificationOp enableChannel(ChannelType type) {
-            ctx.channels = ensureMutable(ctx.channels);
-            if (!ctx.channels.contains(type)) {
-                ctx.channels.add(type);
-            }
-            return this;
-        }
-
-        private NotificationOp addTargets(TargetType type, String... newTargets) {
+        private void addTargets(TargetType type, String... newTargets) {
             if (newTargets == null || newTargets.length == 0) {
-                return this;
+                throw new NotificationException("接收目标不能为空");
             }
             checkTargetType(type);
             ctx.targetType = type;
@@ -262,7 +295,6 @@ public class NotificationRequest {
             }
             // 写回 ctx (保持为可变的 ArrayList)
             ctx.targets = new ArrayList<>(set);
-            return this;
         }
     }
 

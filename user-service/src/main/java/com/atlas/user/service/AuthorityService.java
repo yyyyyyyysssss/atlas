@@ -26,4 +26,6 @@ public interface AuthorityService extends IService<Authority> {
     List<AuthorityVO> findByRoleId(Long roleId);
 
     List<AuthorityVO> findByUserId(Long userId);
+
+    void clearCache(Long userId);
 }

@@ -1,8 +1,6 @@
 package com.atlas.common.core.api.user.feign;
 
 import com.atlas.common.core.api.feign.factory.BaseFallbackFactory;
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
-import com.atlas.common.core.api.notification.feign.NotificationFeignApi;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
@@ -26,7 +24,7 @@ public class UserFallbackFactory implements BaseFallbackFactory<UserFeignApi> {
     @Override
     public UserFeignApi createFallback(Throwable cause) {
         // 这里统一记录调用异常的原因
-        log.error("User Feign Fallback: {}", cause.getMessage());
+        log.error("User Feign Error: ", cause);
 
         return new UserFeignApi() {
 
@@ -37,19 +35,19 @@ public class UserFallbackFactory implements BaseFallbackFactory<UserFeignApi> {
             }
 
             @Override
-            public Result<List<UserDTO>> findByIds(Collection<Long> ids) {
+            public Result<List<UserDTO>> findByIdentifier(List<String> identifiers) {
 
                 return ResultGenerator.failed();
             }
 
             @Override
-            public Result<List<UserDTO>> findByEmails(Collection<String> emails) {
+            public Result<List<UserDTO>> findByEmails(List<String> emails) {
 
                 return ResultGenerator.failed();
             }
 
             @Override
-            public Result<List<UserDTO>> findByPhones(Collection<String> phones) {
+            public Result<List<UserDTO>> findByPhones(List<String> emails) {
 
                 return ResultGenerator.failed();
             }

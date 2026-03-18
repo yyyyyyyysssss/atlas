@@ -137,7 +137,7 @@ public class RedisHelper {
 
     public <T> T getValue(String key, Class<T> clazz) {
         Object obj = getValue(key);
-        return deserialize(key,clazz);
+        return deserialize(obj,clazz);
     }
 
     public <T> T getValue(String key, TypeReference<T> toValueTypeRef) {

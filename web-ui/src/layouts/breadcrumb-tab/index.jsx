@@ -24,11 +24,15 @@ const TopBreadcrumbTab = () => {
             if (index === pathnames.length - 1 && location.search) {
                 path += location.search
             }
-            let breadcrumbName
-            if(OperationMode[operationMode] && (pathnames.length - 1) === index){
+            const isLastItem = index === pathnames.length - 1
+            let breadcrumbName = t(route?.breadcrumbName)
+            // 只有当 hideOperationMode 显式定义为 false，且是最后一级，且有操作模式时才拼接
+            const shouldShowMode =
+                route?.hideOperationMode === false &&
+                isLastItem &&
+                OperationMode[operationMode]
+            if (shouldShowMode) {
                 breadcrumbName = OperationMode[operationMode].description + t(route?.breadcrumbName)
-            } else {
-                breadcrumbName = t(route?.breadcrumbName)
             }
             return {
                 key: path,

@@ -2,6 +2,7 @@ import React from 'react';
 import './index.css'
 import { Flex, Form, Input, Radio } from 'antd';
 import RoleSelect from '../../../../components/RoleSelect';
+import OptionTreeSelect from '../../../../components/OptionTreeSelect';
 // import useStateParams from '../../../../hooks/useStateParams';
 // import { useParams } from 'react-router-dom';
 
@@ -75,6 +76,25 @@ const UserDetails = ({ userId, operationMode }) => {
                                     { value: true, label: '启用' },
                                     { value: false, label: '停用' }
                                 ]}
+                            />
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Row gutter={16}>
+                    <Col span={24}>
+                        <Form.Item
+                            label="所属组织"
+                            name="orgId"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: `所属组织不能为空`,
+                                },
+                            ]}
+                        >
+                            <OptionTreeSelect
+                                fetchData={fetchOrgOptions}
+                                multiple={false}
                             />
                         </Form.Item>
                     </Col>

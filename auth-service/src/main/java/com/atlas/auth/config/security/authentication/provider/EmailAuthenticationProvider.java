@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.authentication.provider;
 
+import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.security.token.EmailAuthenticationToken;
-import com.atlas.common.redis.utils.RedisHelper;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -17,15 +17,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  */
 public class EmailAuthenticationProvider implements AuthenticationProvider {
 
-    private UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
 
-    private RedisHelper redisHelper;
+    private final EmailVerificationService emailVerificationService;
 
-    public static final String EMAIL_VERIFICATION_CODE_PREFIX = "email:verification:code:";
-
-    public EmailAuthenticationProvider(UserDetailsService userDetailsService, RedisHelper redisHelper){
+    public EmailAuthenticationProvider(UserDetailsService userDetailsService, EmailVerificationService emailVerificationService){
         this.userDetailsService = userDetailsService;
-        this.redisHelper = redisHelper;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
@@ -40,11 +38,10 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }
-        Object verificationCode = redisHelper.getValue(EMAIL_VERIFICATION_CODE_PREFIX + principal);
-        if (verificationCode == null || !verificationCode.equals(credentials)){
+        boolean verify = emailVerificationService.verify((String) principal, (String)credentials);
+        if (!verify){
             throw new BadCredentialsException("验证码错误!");
         }
-        redisHelper.delete(EMAIL_VERIFICATION_CODE_PREFIX + principal);
         EmailAuthenticationToken authenticated = EmailAuthenticationToken.authenticated(
                 userDetails,
                 null,

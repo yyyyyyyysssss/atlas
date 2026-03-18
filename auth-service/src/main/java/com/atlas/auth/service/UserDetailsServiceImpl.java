@@ -1,8 +1,8 @@
 package com.atlas.auth.service;
 
+import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
-import com.atlas.common.core.api.user.feign.UserFeignApi;
 import com.atlas.common.core.response.Result;
 import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.model.SecurityUser;
@@ -21,11 +21,11 @@ import java.util.List;
 @Slf4j
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserFeignApi userFeignApi;
+    private final UserApi userApi;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Result<UserAuthDTO> result = userFeignApi.loadUserByUsername(username);
+        Result<UserAuthDTO> result = userApi.loadUserByUsername(username);
         if(!result.isSucceed()){
             throw new UsernameNotFoundException(result.getMessage());
         }
@@ -36,6 +36,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         securityUser.setPassword(userAuthDTO.getPassword());
         securityUser.setFullName(userAuthDTO.getFullName());
         securityUser.setEnabled(userAuthDTO.isEnabled());
+        securityUser.setDataScope(userAuthDTO.getDataScope());
+        securityUser.setOrgId(userAuthDTO.getOrgId());
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();
         for (RoleAuthDTO roleAuthDTO : authorities) {

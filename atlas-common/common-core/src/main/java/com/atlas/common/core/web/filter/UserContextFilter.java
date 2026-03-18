@@ -18,26 +18,24 @@ public class UserContextFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String userId = request.getHeader(CommonConstant.USER_ID);
+        String orgId = request.getHeader(CommonConstant.ORG_ID);
         String fullName = request.getHeader(CommonConstant.USER_FULL_NAME);
-        String masking = request.getHeader(CommonConstant.DATA_MASKING);
+        String dataScope = StringUtils.isNotEmpty(request.getHeader(CommonConstant.DATA_SCOPE)) ? request.getHeader(CommonConstant.DATA_SCOPE) : "10";
+        String masking = StringUtils.isNotEmpty(request.getHeader(CommonConstant.DATA_MASKING)) ? request.getHeader(CommonConstant.DATA_MASKING) : "true";
         try {
-            if(StringUtils.isNumeric(userId)){
+            if (StringUtils.isNumeric(userId)) {
                 String decodedName = fullName;
                 if (StringUtils.isNotEmpty(fullName)) {
                     try {
                         decodedName = URLDecoder.decode(fullName, StandardCharsets.UTF_8);
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         logger.warn("UserContextFilter: fullName 解码失败: " + fullName);
                     }
                 }
-                if(StringUtils.isNotEmpty(masking)){
-                    UserContext.setUser(Long.valueOf(userId),decodedName,Boolean.parseBoolean(masking));
-                } else {
-                    UserContext.setUser(Long.valueOf(userId),decodedName);
-                }
+                UserContext.setUser(userId, orgId, decodedName, dataScope, masking);
             }
             filterChain.doFilter(request, response);
-        }finally {
+        } finally {
             UserContext.clear();
         }
     }

@@ -1,40 +1,15 @@
-package com.atlas.common.mybatis.enums;
-
-import com.baomidou.mybatisplus.annotation.IEnum;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+package com.atlas.common.core.enums;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-public interface BaseEnum<T extends Serializable> extends IEnum<T> {
+public interface BaseEnum<T extends Serializable>{
 
-    /**
-     * 获取枚举的显示名称（通常用于前端展示或日志）
-     */
     String getDescription();
 
-    /**
-     * 获取枚举的值（对应数据库存储的值）
-     */
     T getCode();
-
-    @Override
-    default T getValue() {
-        return getCode();
-    }
-
-    /**
-     * 统一 Jackson 序列化：直接返回 code
-     */
-    @JsonValue
-    default T getJsonValue() {
-        return getCode();
-    }
 
     Map<Class<?>, Map<String, BaseEnum<?>>> ENUM_CACHE = new ConcurrentHashMap<>();
 

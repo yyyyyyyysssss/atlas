@@ -1,6 +1,6 @@
 package com.atlas.user.service.impl;
 
-import com.atlas.common.core.api.file.feign.FileFeignApi;
+import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
@@ -12,16 +12,19 @@ import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.entity.User;
+import com.atlas.user.domain.entity.UserOrg;
 import com.atlas.user.domain.entity.UserRole;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
+import com.atlas.user.enums.DataScope;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import com.atlas.user.utils.AvatarGeneratorUtils;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -31,6 +34,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.mock.web.MockMultipartFile;
@@ -42,7 +46,9 @@ import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,16 +68,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final UserRoleService userRoleService;
 
+    private final UserOrgService userOrgService;
+
     private final PasswordEncoder passwordEncoder;
 
     private final RoleAuthorityService roleAuthorityService;
 
     private final AuthorityService authorityService;
 
-    private final FileFeignApi fileFeignApi;
+    private final FileApi fileApi;
 
     @Override
-    public UserAuthDTO  loadUserByUsername(String username) {
+    public UserAuthDTO loadUserByUsername(String username) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
         queryWrapper
                 .lambda()
@@ -96,12 +104,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private UserAuthDTO getUserAuthDTO(User user) {
+        // 清空用户缓存
+        roleService.clearCache(user.getId());
+        authorityService.clearCache(user.getId());
+
         UserAuthDTO userAuthDTO = UserMapping.INSTANCE.toUserAuthDTO(user);
+
+        // 用户所属组织
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(user.getId());
+        if(userOrgMain != null){
+            userAuthDTO.setOrgId(userOrgMain.getOrgId());
+        }
+
         List<Long> roleIds = userRoleService.findRoleIdByUserId(user.getId());
         if (CollectionUtils.isEmpty(roleIds)) {
             userAuthDTO.setAuthorities(Collections.emptyList());
+            userAuthDTO.setDataScope(DataScope.SELF.getCode());
             return userAuthDTO;
         }
+        // 角色关联的数据权限
+        DataScope dataScope = roleService.getDataScope(roleIds);
+        userAuthDTO.setDataScope(dataScope.getCode());
+        // 角色关联的权限
         List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
         if (CollectionUtils.isEmpty(authorityIds)) {
             userAuthDTO.setAuthorities(Collections.emptyList());
@@ -148,12 +172,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<UserDTO> findByUserId(Collection<Long> userIds) {
-        if (CollectionUtils.isEmpty(userIds)) {
-            log.warn("findByUserId called with empty userIds");
+    public List<UserDTO> findByIdentifier(Collection<?> identifiers) {
+        if (CollectionUtils.isEmpty(identifiers)) {
+            log.warn("findByIdentifier called with empty identifiers");
             return Collections.emptyList();
         }
-        List<User> users = userMapper.selectByIds(userIds);
+        Object first = identifiers.iterator().next();
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        if(first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))){
+            queryWrapper.in(User::getId, identifiers);
+        } else {
+            // 否则走账号查询
+            queryWrapper.in(User::getUsername, identifiers);
+        }
+        List<User> users = this.list(queryWrapper);
         if (CollectionUtils.isEmpty(users)) {
             return Collections.emptyList();
         }
@@ -267,7 +299,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     os.toByteArray()
             );
             log.info("上传生成的默认头像: {}", filename);
-            Result<String> result = fileFeignApi.uploadSimple(mockMultipartFile);
+            Result<String> result = fileApi.uploadSimple(mockMultipartFile);
             if (result == null || !result.isSucceed()) {
                 log.error("调用上传头像失败: {}", result != null ? result.getMessage() : "Response is null");
                 return null;

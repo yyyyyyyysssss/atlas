@@ -21,5 +21,9 @@ public class UserAuthDTO {
 
     private List<RoleAuthDTO> authorities;
 
+    private Integer dataScope;
+
+    private Long orgId;
+
 
 }

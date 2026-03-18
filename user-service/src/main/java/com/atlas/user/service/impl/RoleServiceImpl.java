@@ -3,14 +3,17 @@ package com.atlas.user.service.impl;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.RoleCreateDTO;
+import com.atlas.user.domain.dto.RoleDataScopeDTO;
 import com.atlas.user.domain.dto.RoleQueryDTO;
 import com.atlas.user.domain.dto.RoleUpdateDTO;
 import com.atlas.user.domain.entity.Role;
 import com.atlas.user.domain.vo.RoleVO;
+import com.atlas.user.enums.DataScope;
 import com.atlas.user.enums.RoleType;
 import com.atlas.user.mapper.RoleMapper;
 import com.atlas.user.mapping.RoleMapping;
 import com.atlas.user.service.RoleAuthorityService;
+import com.atlas.user.service.RoleDataScopeService;
 import com.atlas.user.service.RoleService;
 import com.atlas.user.service.UserRoleService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -29,10 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -42,13 +43,15 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements RoleService {
+public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
 
     private final RoleMapper roleMapper;
 
     private final RoleAuthorityService roleAuthorityService;
 
     private final UserRoleService userRoleService;
+
+    private final RoleDataScopeService dataScopeService;
 
     @Override
     @Transactional
@@ -60,11 +63,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
         if (row <= 0) {
             throw new BusinessException("创建角色失败");
         }
-        if(!CollectionUtils.isEmpty(roleCreateDTO.getUserIds())){
+        if (!CollectionUtils.isEmpty(roleCreateDTO.getUserIds())) {
             this.bindRoleUsers(role.getId(), roleCreateDTO.getUserIds());
         }
-        if(!CollectionUtils.isEmpty(roleCreateDTO.getAuthorityIds())){
+        if (!CollectionUtils.isEmpty(roleCreateDTO.getAuthorityIds())) {
             this.bindRoleAuthorities(role.getId(), roleCreateDTO.getAuthorityIds());
+        }
+        if (roleCreateDTO.getDataScope() != null && roleCreateDTO.getDataScope().equals(DataScope.CUSTOM)) {
+            List<Long> customDataScope = roleCreateDTO.getCustomDataScope();
+            dataScopeService.addRoleDataScope(role.getId(), customDataScope);
+        } else {
+            dataScopeService.deleteRoleDataScope(role.getId());
         }
         return role.getId();
     }
@@ -78,10 +87,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
     })
     public Integer updateRole(RoleUpdateDTO roleUpdateDTO, Boolean isFullUpdate) {
         Role role = checkAndResult(roleUpdateDTO.getId());
-        if(role.isSuperAdmin()){
+        if (role.isSuperAdmin()) {
             throw new BusinessException("超级管理员角色无法修改");
         }
-        if(isFullUpdate){
+        if (isFullUpdate) {
             RoleMapping.INSTANCE.overwriteRole(roleUpdateDTO, role);
         } else {
             RoleMapping.INSTANCE.updateRole(roleUpdateDTO, role);
@@ -90,17 +99,32 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
         if (i <= 0) {
             throw new BusinessException("更新角色失败");
         }
-        if(isFullUpdate){
+        if (isFullUpdate) {
             // 更新角色关联的用户
-            this.bindRoleUsers(role.getId(),roleUpdateDTO.getUserIds());
+            this.bindRoleUsers(role.getId(), roleUpdateDTO.getUserIds());
             // 更新角色关联的权限
             this.bindRoleAuthorities(role.getId(), roleUpdateDTO.getAuthorityIds());
-        } else {
-            if(!CollectionUtils.isEmpty(roleUpdateDTO.getUserIds())){
-                this.bindRoleUsers(role.getId(),roleUpdateDTO.getUserIds());
+            // 数据权限
+            if (roleUpdateDTO.getDataScope() != null && roleUpdateDTO.getDataScope().equals(DataScope.CUSTOM)) {
+                List<Long> customDataScope = roleUpdateDTO.getCustomDataScope();
+                dataScopeService.addRoleDataScope(role.getId(), customDataScope);
+            } else {
+                dataScopeService.deleteRoleDataScope(role.getId());
             }
-            if(!CollectionUtils.isEmpty(roleUpdateDTO.getAuthorityIds())){
+        } else {
+            if (!CollectionUtils.isEmpty(roleUpdateDTO.getUserIds())) {
+                this.bindRoleUsers(role.getId(), roleUpdateDTO.getUserIds());
+            }
+            if (!CollectionUtils.isEmpty(roleUpdateDTO.getAuthorityIds())) {
                 this.bindRoleAuthorities(role.getId(), roleUpdateDTO.getAuthorityIds());
+            }
+            if (roleUpdateDTO.getDataScope() != null) {
+                if (roleUpdateDTO.getDataScope().equals(DataScope.CUSTOM)) {
+                    List<Long> customDataScope = roleUpdateDTO.getCustomDataScope();
+                    dataScopeService.addRoleDataScope(role.getId(), customDataScope);
+                } else {
+                    dataScopeService.deleteRoleDataScope(role.getId());
+                }
             }
         }
         return i;
@@ -136,6 +160,11 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
         // 查询角色关联的用户
         List<Long> userIds = userRoleService.findUserIdByRoleId(id);
         roleVO.setUserIds(userIds);
+        // 查询角色关联的数据权限
+        if (roleVO.getDataScope() != null && roleVO.getDataScope().equals(DataScope.CUSTOM)) {
+            List<RoleDataScopeDTO> roleDataScope = dataScopeService.findRoleDataScope(roleVO.getId());
+            roleVO.setCustomDataScope(roleDataScope.stream().map(RoleDataScopeDTO::getOrgId).collect(Collectors.toList()));
+        }
         return roleVO;
     }
 
@@ -154,11 +183,11 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
     @Transactional
     public Boolean deleteRole(Long roleId) {
         Role role = checkAndResult(roleId);
-        if(role.isSuperAdmin()){
+        if (role.isSuperAdmin()) {
             throw new BusinessException("超级管理员角色无法删除");
         }
         int i = roleMapper.deleteById(roleId);
-        if(i <= 0){
+        if (i <= 0) {
             throw new BusinessException("删除角色失败，角色可能不存在");
         }
         // 解绑角色对应的权限
@@ -180,7 +209,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
             log.warn("buildRoleAuthorities called with empty roleId");
             return true;
         }
-        roleAuthorityService.addRoleAuthority(roleId,authorityIds);
+        roleAuthorityService.addRoleAuthority(roleId, authorityIds);
         return true;
     }
 
@@ -195,7 +224,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
             log.warn("bindAuthorityRole called with empty authorityId");
             return true;
         }
-        roleAuthorityService.addAuthorityRole(authorityId,roleIds);
+        roleAuthorityService.addAuthorityRole(authorityId, roleIds);
         return true;
     }
 
@@ -208,7 +237,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
             @CacheEvict(value = "user:menu", allEntries = true),
     })
     public Boolean bindRoleUsers(Long roleId, List<Long> userIds) {
-        userRoleService.addRoleUser(roleId,userIds);
+        userRoleService.addRoleUser(roleId, userIds);
         return true;
     }
 
@@ -221,27 +250,27 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
             @CacheEvict(value = "user:menu", key = "#p0"),
     })
     public Boolean bindUserRole(Long userId, Collection<Long> roleIds) {
-        userRoleService.addUserRole(userId,roleIds);
+        userRoleService.addUserRole(userId, roleIds);
         return true;
     }
 
     // 查询用户对应的角色
     @Override
-    @Cacheable(value = "user:role", key="#p0")
+    @Cacheable(value = "user:role", key = "#p0")
     public List<RoleVO> findByUserId(Long userId) {
         if (userId == null) {
             log.warn("findRoleByUserId called with null userId");
             return Collections.emptyList();
         }
         Collection<Long> roleIds = userRoleService.findRoleIdByUserId(userId);
-        if(CollectionUtils.isEmpty(roleIds)){
+        if (CollectionUtils.isEmpty(roleIds)) {
             return Collections.emptyList();
         }
         return findRoleByIds(roleIds);
     }
 
-    private List<RoleVO> findRoleByIds(Collection<Long> roleIds){
-        if(CollectionUtils.isEmpty(roleIds)){
+    private List<RoleVO> findRoleByIds(Collection<Long> roleIds) {
+        if (CollectionUtils.isEmpty(roleIds)) {
             return Collections.emptyList();
         }
         QueryWrapper<Role> roleQueryWrapper = new QueryWrapper<>();
@@ -265,7 +294,28 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role>  implements R
         return RoleMapping.INSTANCE.toRoleVO(roles);
     }
 
-    private Role checkAndResult(Serializable id){
+    @Override
+    public DataScope getDataScope(List<Long> roleIds) {
+        return this
+                .lambdaQuery()
+                .select(Role::getDataScope)
+                .in(Role::getId, roleIds)
+                .list()
+                .stream()
+                .map(Role::getDataScope)
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingInt(DataScope::getCode))
+                .orElse(DataScope.SELF); // 兜底
+    }
+
+    @Caching(evict = {
+            @CacheEvict(value = "user:role", key = "#p0")
+    })
+    public void clearCache(Long userId) {
+
+    }
+
+    private Role checkAndResult(Serializable id) {
         Role role = roleMapper.selectById(id);
         if (role == null) {
             throw new BusinessException("角色不存在");

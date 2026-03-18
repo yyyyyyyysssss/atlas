@@ -18,6 +18,7 @@ type TreeSelectPropsType<T = any> = Omit<
     fetchData: () => Promise<T[]>;
     fieldNames?: TreeFieldNames;
     multiple: boolean
+    includeParents: boolean // 是否在选中子节点时自动包含父节点
 };
 
 const OptionTreeSelect = <T extends any>({
@@ -27,6 +28,7 @@ const OptionTreeSelect = <T extends any>({
     fieldNames = {},
     placeholder = "请选择",
     multiple = true,
+    includeParents = true,
     ...restProps
 }: TreeSelectPropsType<T>) => {
     // 字段映射解构
@@ -70,10 +72,10 @@ const OptionTreeSelect = <T extends any>({
 
     // 初始加载：如果有值，则需要拉取数据以显示 Label
     useEffect(() => {
-        if(value){
+        if (value) {
             getData();
         }
-        
+
     }, [value])
 
     const handleDropdownVisibleChange = (open: boolean) => {
@@ -132,6 +134,11 @@ const OptionTreeSelect = <T extends any>({
         }
         // AntD 在 treeCheckStrictly: false 时 checked 可能是简单数组
         const rawValues = Array.isArray(checked) ? checked : [];
+        // 不需要包含父节点，直接回调当前选中的值
+        if (!includeParents) {
+            onChange?.(rawValues)
+            return
+        }
         const finalIds = new Set<string>();
 
         rawValues.forEach((val: any) => {
@@ -140,7 +147,6 @@ const OptionTreeSelect = <T extends any>({
             const parentIds = getAllParents(id);
             parentIds.forEach(pId => finalIds.add(pId));
         });
-
         onChange?.(Array.from(finalIds));
     };
 
@@ -235,6 +241,7 @@ const OptionTreeSelect = <T extends any>({
                 showCheckedStrategy={TreeSelect.SHOW_ALL}
                 maxTagCount={restProps.maxTagCount ?? 3}
                 onOpenChange={handleDropdownVisibleChange}
+                allowClear
             />
         </Spin>
     );

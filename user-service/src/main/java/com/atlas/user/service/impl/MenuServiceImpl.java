@@ -224,12 +224,12 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             throw new BusinessException("该菜单不存在");
         }
         MenuVO menuVo = AuthorityMapping.INSTANCE.toMenuVo(authority);
-        if(!menuVo.getParentId().equals(CommonConstant.TREE_ROOT_PARENT_ID)){
+        if (!menuVo.getParentId().equals(CommonConstant.TREE_ROOT_PARENT_ID)) {
             QueryWrapper<Authority> authorityQueryWrapper = new QueryWrapper<>();
             authorityQueryWrapper
                     .lambda()
                     .select(Authority::getCode)
-                    .eq(Authority::getId,menuVo.getParentId());
+                    .eq(Authority::getId, menuVo.getParentId());
             Authority parentAuthority = authorityMapper.selectOne(authorityQueryWrapper);
             menuVo.setParentName(parentAuthority.getCode());
         }
@@ -244,7 +244,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             return Collections.emptyList();
         }
         List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
-        return findByUserId(userId,roleIds);
+        return findByUserId(userId, roleIds);
     }
 
     @Override
@@ -268,20 +268,26 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
             queryWrapper
                     .lambda()
-                    .in(Authority::getType, AuthorityType.MENU.name(), AuthorityType.BASE.name())
                     .orderByAsc(Authority::getSort, Authority::getId);
             // 不是超级管理员则根据角色进行查询
             if (isSuperAdmin) {
-                authorities = authorityMapper.selectList(queryWrapper);
+                queryWrapper
+                        .lambda()
+                        .in(Authority::getType, AuthorityType.MENU.name(), AuthorityType.BASE.name());
             } else {
                 List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
-                if(CollectionUtils.isEmpty(authorityIds)){
-                    authorities = Collections.emptyList();
-                } else {
-                    queryWrapper.lambda().in(Authority::getId,authorityIds);
-                    authorities = authorityMapper.selectList(queryWrapper);
-                }
+                queryWrapper.and(wrapper -> {
+                    wrapper.lambda().
+                            eq(Authority::getType, AuthorityType.BASE.name())
+                            .or(orWrapper -> {
+                                orWrapper.eq(Authority::getType, AuthorityType.MENU.name());
+                                if (!CollectionUtils.isEmpty(authorityIds)) {
+                                    orWrapper.in(Authority::getId, authorityIds);
+                                }
+                            });
+                });
             }
+            authorities = authorityMapper.selectList(queryWrapper);
         }
         if (CollectionUtils.isEmpty(authorities)) {
             return Collections.emptyList();
@@ -299,11 +305,11 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         }
         Set<Long> delIds = authorities.stream().map(Authority::getId).collect(Collectors.toSet());
         int i = authorityMapper.deleteByIds(delIds);
-        if(i != delIds.size()){
+        if (i != delIds.size()) {
             throw new BusinessException("删除菜单失败");
         }
         //删除菜单或权限与角色的关联关系
-        for (Long delId : delIds){
+        for (Long delId : delIds) {
             roleService.bindAuthorityRole(delId, new ArrayList<>());
         }
         return true;

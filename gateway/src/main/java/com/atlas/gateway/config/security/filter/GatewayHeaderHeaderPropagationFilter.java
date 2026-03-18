@@ -29,6 +29,12 @@ public class GatewayHeaderHeaderPropagationFilter extends OncePerRequestFilter {
         if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof SecurityUser securityUser) {
             HeaderEnhanceRequestWrapper wrappedRequest = new HeaderEnhanceRequestWrapper(request);
             wrappedRequest.addHeader(CommonConstant.USER_ID,securityUser.getId().toString());
+            if(securityUser.getOrgId() != null){
+                wrappedRequest.addHeader(CommonConstant.ORG_ID,securityUser.getOrgId().toString());
+            }
+            if(securityUser.getDataScope() != null){
+                wrappedRequest.addHeader(CommonConstant.DATA_SCOPE,securityUser.getDataScope().toString());
+            }
             String fullName = securityUser.getFullName();
             if (fullName != null) {
                 String encodedName = URLEncoder.encode(fullName, StandardCharsets.UTF_8);

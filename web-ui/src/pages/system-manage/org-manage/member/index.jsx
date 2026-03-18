@@ -352,11 +352,23 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
             render: (_, record) => {
                 const { isMain } = record
                 return (
-                    <Switch
-                        size="small"
-                        checked={isMain}
-                        onChange={(checked) => handleSetMain(record, checked)}
-                    />
+                    <HasPermission
+                        hasPermissions='system:org:write'
+                        fallback={
+                            <Switch
+                                size="small"
+                                checked={isMain}
+                                disabled
+                            />
+                        }
+                    >
+                        <Switch
+                            size="small"
+                            checked={isMain}
+                            onChange={(checked) => handleSetMain(record, checked)}
+                        />
+                    </HasPermission>
+
                 )
             }
         },

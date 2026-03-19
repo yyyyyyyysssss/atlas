@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>登录验证</title>
+    <style>
+        .container { width: 100%; max-width: 600px; margin: 0 auto; font-family: 'Microsoft YaHei', sans-serif; color: #333; }
+        .header { background-color: #4A90E2; padding: 20px; text-align: center; color: white; border-radius: 8px 8px 0 0; }
+        .content { padding: 30px; border: 1px solid #ddd; border-top: none; line-height: 1.6; }
+        .footer { text-align: center; font-size: 12px; color: #999; padding: 20px; }
+        .button {
+            display: inline-block; padding: 12px 25px; background-color: #4A90E2;
+            color: white !important; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 20px;
+        }
+        .token-box { background: #f4f4f4; padding: 10px; border-radius: 4px; border: 1px dashed #ccc; font-family: monospace; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Atlas 系统登录验证</h2>
+    </div>
+    <div class="content">
+        <p>您好，</p>
+        <p>我们收到了您的登录请求。请点击下方按钮直接登录系统（链接在 10 分钟内有效）：</p>
+
+        <div style="text-align: center;">
+            <a th:href="${loginUrl}" class="button">立即登录</a>
+        </div>
+
+        <p style="margin-top: 30px;">如果上方按钮无法点击，请复制以下链接粘贴至浏览器访问：</p>
+        <p class="token-box" th:text="${loginUrl}"></p>
+
+        <p>如果您并未尝试登录，请忽略此邮件，您的账号非常安全。</p>
+        <p>祝好，<br/>Atlas 团队</p>
+    </div>
+    <div class="footer">
+        此邮件由系统自动发送，请勿直接回复。
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style type="text/css">
+        /* 邮件客户端兼容性处理 */
+        body { margin: 0; padding: 0; background-color: #f6f9fc; -webkit-text-size-adjust: 100%; }
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f6f9fc; padding-bottom: 40px; }
+        .main-card {
+            max-width: 500px; margin: 40px auto; background-color: #ffffff;
+            border-radius: 12px; border: 1px solid #e6e9f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden;
+        }
+        .header { background-color: #007bff; padding: 30px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .content { padding: 40px 30px; font-family: 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif; color: #444; line-height: 1.6; }
+        .code-container {
+            background-color: #f8fafd; border: 1px dashed #007bff; border-radius: 8px;
+            padding: 20px; margin: 25px 0; text-align: center;
+        }
+        .code-text {
+            font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 8px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .footer { padding: 0 30px 30px; font-size: 12px; color: #999; text-align: center; line-height: 1.5; }
+        .warning { color: #ff4d4f; font-size: 13px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="main-card">
+        <div class="header">
+            <h1>Atlas 系统安全验证</h1>
+        </div>
+
+        <div class="content">
+            <p style="font-size: 16px; font-weight: bold; margin-top: 0;">尊敬的用户：</p>
+            <p>您正在进行登录/操作验证，请在验证码输入框中输入以下代码完成验证：</p>
+
+            <div class="code-container">
+                <span class="code-text" th:text="${code}">888888</span>
+            </div>
+
+            <p>提示：该验证码将在 <strong th:text="${min}">5</strong> 分钟内有效。请勿将此验证码泄露给他人。</p>
+
+            <div class="warning">
+                如果您并未请求此验证码，请忽略此邮件。您的账号可能正面临风险，建议您及时检查账号安全状态。
+            </div>
+            <p>祝好，<br/>Atlas 团队</p>
+        </div>
+
+        <div class="footer">
+            此邮件由系统自动发送，请勿直接回复。
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -5,7 +5,7 @@ import './index.css'
 import { getMessageApi } from '../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
-import { login } from '../../services/LoginService';
+import { login, sendEmailVerificationCode } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 
 const Login = () => {
@@ -68,8 +68,9 @@ const Login = () => {
 
     // 发送验证码
     const handleWithVerificationCode = async () => {
-        await form.validateFields(['email'])
+        const values =await form.validateFields(['email'])
         let ti = verificationCode.time;
+        sendEmailVerificationCode(values.email)
         setVerificationCode({
             disabled: true,
             tips: `{{ti}} 秒后重新获取`,

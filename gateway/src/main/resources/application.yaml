@@ -37,6 +37,7 @@ spring:
                 - Path=/api/user/** # 匹配以此路径开头的请求
               filters:
                 - StripPrefix=2 # 转发前剥离 2 层路径
+
             # 认证服务
             - id: auth_route
               uri: http://localhost:9096
@@ -56,6 +57,7 @@ spring:
               uri: http://localhost:9097
               predicates:
                 - Path=/file/**
+
             # 消息通知服务
             - id: notification_route
               uri: http://localhost:9090
@@ -64,6 +66,18 @@ spring:
               filters:
                 - StripPrefix=2
 
+
+rate-limit:
+  services:
+    - serviceId: auth-service
+      uri: http://localhost:9096
+      stripPrefix: 2
+      limits:
+        - path: /api/auth/code/send-email
+          capacity: 1 # 令牌桶容量（或最大访问次数） 在指定周期内同一个 Key 最多允许访问 1 次
+          periodInSeconds: 60 # 限流周期 配合 capacity 使用
+          methods: ["POST"]
+          keyResolverName: ipKeyResolver
 
 security:
   loginPage: http://localhost:3000/login

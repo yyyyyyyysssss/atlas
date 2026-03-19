@@ -49,7 +49,7 @@ public class EmailVerificationService {
         Map<String, Object> variable = new HashMap<>();
         variable.put("code", code);
         NotificationDTO dto = NotificationRequest
-                .template("EmailVerificationCode", "邮箱验证码", variable)
+                .template("auth-code-email", "邮箱验证码", variable)
                 .email()
                 .withParam("min", 10)
                 .to()

@@ -12,6 +12,8 @@ import org.springframework.security.authentication.ott.OneTimeToken;
 import org.springframework.security.web.authentication.ott.OneTimeTokenGenerationSuccessHandler;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * @Description
  * @Author ys
@@ -27,12 +29,12 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
     private final NotificationApi notificationApi;
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) throws ServletException {
+    public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) {
         String magicLink = securityProperties.getLoginPage() + "?ottToken=" + oneTimeToken.getTokenValue();
         log.info("magic link: {}", magicLink);
         notificationApi.send(
                 NotificationRequest
-                        .text(magicLink)
+                        .template("ott-login-email", Map.of("loginUrl", magicLink))
                         .email()
                         .to()
                         .toUsernames(oneTimeToken.getUsername())

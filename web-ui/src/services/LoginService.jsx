@@ -19,10 +19,8 @@ export const logout = () => {
 export const sendEmailVerificationCode = (email) => {
 
     return apiRequestWrapper(() =>
-        httpWrapper.get('/open/sendEmailVerificationCode', {
-            params: {
-                email: email
-            }
+        httpWrapper.post('/api/auth/code/send-email', {
+            email: email
         })
     )
 }

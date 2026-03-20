@@ -21,6 +21,8 @@ public class OrgMemberVO {
 
     private Long userId;
 
+    private Long posId;
+
     private LocalDateTime joinTime;
 
     private Boolean isMain;

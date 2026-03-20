@@ -14,6 +14,7 @@ import ActionDropdown from '../../../components/ActionDropdown';
 import Loading from '../../../components/loading';
 import { useTranslation } from 'react-i18next';
 import OptionTreeSelect from '../../../components/OptionTreeSelect';
+import { OperationMode } from '../../../enums/common';
 
 
 const initQueryParam = {
@@ -71,24 +72,11 @@ const UserManage = () => {
 
     const [userEnabledLoadingMap, setUserEnabledLoadingMap] = useState({})
 
-    const [userOperation, setUserOperation] = useState({
-        open: false,
-        title: null,
-        operationType: null,
-        userItem: null,
-    })
-
     const [bindRole, setBindRole] = useState({
         open: false,
         title: null,
         userItem: null,
     })
-
-    useEffect(() => {
-        if (userOperation && userOperation.open === true && userOperation.operationType === 'EDIT') {
-            editForm.setFieldsValue(userOperation.userItem)
-        }
-    }, [userOperation])
 
     useEffect(() => {
         if (bindRole && bindRole.open === true) {
@@ -119,35 +107,20 @@ const UserManage = () => {
     }
 
     const handleAddUser = () => {
-        setUserOperation({
-            open: true,
-            title: '新增用户',
-            operationType: 'ADD',
-            userItem: null,
+        navigate('/system/user/details', {
+            state: {
+                operationMode: OperationMode.ADD.value
+            }
         })
     }
 
     const handleEditUser = (userId) => {
-        setUserOperation({
-            open: true,
-            title: '编辑用户',
-            operationType: 'EDIT',
-            userItem: null,
+        navigate('/system/user/details', {
+            state: {
+                userId: userId,
+                operationMode: OperationMode.EDIT.value
+            }
         })
-        getUserDetailsAsync(userId, true)
-            .then(
-                (userData) => {
-                    setUserOperation(prev => {
-                        if (prev.open) {
-                            return {
-                                ...prev,
-                                userItem: userData
-                            }
-                        }
-                        return prev
-                    })
-                }
-            )
     }
 
     const handleSaveUser = () => {
@@ -197,15 +170,6 @@ const UserManage = () => {
 
                 }
             )
-    }
-
-    const handleClose = () => {
-        setUserOperation({
-            open: false,
-            title: null,
-            operationType: null,
-            userItem: null,
-        })
     }
 
     const handleUpdateEnabled = async (id, enabled) => {
@@ -490,18 +454,6 @@ const UserManage = () => {
         }
     ]
 
-    const toUserDetails = () => {
-        // navigate('/system/user/details',{
-        //     state: {
-        //         id: 1
-        //     }
-        // })
-
-        navigate('/system/user/details?id=1')
-
-        // navigate('/system/user/details')
-    }
-
     return (
         <Flex
             gap={16}
@@ -559,116 +511,6 @@ const UserManage = () => {
                 queryParam={queryParam}
                 setQueryParam={setQueryParam}
             />
-            <Modal
-                title={t(userOperation.title)}
-                width={400}
-                centered
-                confirmLoading={createUserLoading || updateUserLoading}
-                open={userOperation.open}
-                onOk={handleSaveUser}
-                onCancel={handleClose}
-                onClose={handleClose}
-                maskClosable={false}
-                keyboard={false}
-                okText={t('保存')}
-                cancelText={t('取消')}
-                okButtonProps={{
-                    disabled: getUserDetailsLoading
-                }}
-                destroyOnHidden
-                afterClose={() => editForm.resetFields()}
-            >
-                <Loading spinning={getUserDetailsLoading}>
-                    <div
-                        className='w-full mt-5'
-                    >
-                        <Form
-                            form={editForm}
-                            labelCol={{ span: 6 }}
-                            wrapperCol={{ span: 18 }}
-                            layout="horizontal"
-                        >
-                            <Form.Item name="id" hidden>
-                                <Input />
-                            </Form.Item>
-                            <Form.Item
-                                label="用户姓名"
-                                name="fullName"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `用户姓名不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Input placeholder="请输入用户姓名" />
-                            </Form.Item>
-                            <Form.Item
-                                label="用户账号"
-                                name="username"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `用户账号不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Input placeholder="请输入用户账号" disabled={userOperation.operationType == 'EDIT'} />
-                            </Form.Item>
-                            <Form.Item
-                                label="用户邮箱"
-                                name="email"
-                            >
-                                <Input placeholder="请输入用户邮箱" />
-                            </Form.Item>
-                            <Form.Item
-                                label="用户手机号"
-                                name="phone"
-                            >
-                                <Input placeholder="请输入用户手机号" />
-                            </Form.Item>
-                            <Form.Item
-                                label="启用状态"
-                                name="enabled"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `启用状态不能为空`,
-                                    },
-                                ]}
-                            >
-                                <Radio.Group
-                                    options={[
-                                        { value: true, label: '启用' },
-                                        { value: false, label: '停用' }
-                                    ]}
-                                />
-                            </Form.Item>
-                            <Form.Item
-                                label="所属组织"
-                                name="orgId"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: `所属组织不能为空`,
-                                    },
-                                ]}
-                            >
-                                <OptionTreeSelect
-                                    fetchData={fetchOrgOptions}
-                                    multiple={false}
-                                />
-                            </Form.Item>
-                            <Form.Item
-                                label="分配角色"
-                                name="roleIds"
-                            >
-                                <RoleSelect />
-                            </Form.Item>
-                        </Form>
-                    </div>
-                </Loading>
-            </Modal>
             <Drawer
                 title={bindRole.title}
                 closable={{ 'aria-label': 'Close Button' }}

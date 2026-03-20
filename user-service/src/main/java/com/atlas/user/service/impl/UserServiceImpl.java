@@ -240,8 +240,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptPassword = passwordEncoder.encode(password);
         user.setPassword(encryptPassword);
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
-            String defaultAvatar = generateDefaultAvatar(user.getFullName());
-            user.setAvatar(defaultAvatar);
+//            String defaultAvatar = generateDefaultAvatar(user.getFullName());
+//            user.setAvatar(defaultAvatar);
         }
         int row = userMapper.insert(user);
         if (row <= 0) {
@@ -270,8 +270,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserMapping.INSTANCE.updateUser(userUpdateDTO, user);
         }
         if (user.getAvatar() == null || user.getAvatar().isEmpty()) {
-            String defaultAvatar = generateDefaultAvatar(user.getFullName());
-            user.setAvatar(defaultAvatar);
+//            String defaultAvatar = generateDefaultAvatar(user.getFullName());
+//            user.setAvatar(defaultAvatar);
         }
         int i = userMapper.updateById(user);
         if (i <= 0) {

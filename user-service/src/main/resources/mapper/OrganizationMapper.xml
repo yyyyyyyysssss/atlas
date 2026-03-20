@@ -33,10 +33,12 @@
             t.org_name,
             t.org_type,
             t.org_path,
-            t.org_path_name
+            t.org_path_name,
+            p.pos_name
         from organization t
         INNER JOIN user_org f ON t.id = f.org_id
         INNER JOIN user u ON f.user_id = u.id
+        INNER JOIN position p ON f.pos_id = p.id
         <where>
             <choose>
                 <when test="includeChild == true">

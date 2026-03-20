@@ -80,11 +80,12 @@ export const routes = [
                         protected: true,
                         requiredPermissions: ['system:user']
                     },
-                    // {
-                    //     path: 'user/details',
-                    //     element: <UserDetails />,
-                    //     breadcrumbName: '用户详情',
-                    // },
+                    {
+                        path: 'user/details',
+                        element: <UserDetails />,
+                        breadcrumbName: '用户',
+                        hideOperationMode: false
+                    },
                     {
                         path: 'role',
                         element: <RoleManage />,

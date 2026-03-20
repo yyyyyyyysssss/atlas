@@ -386,6 +386,12 @@ export const addOrgMembers = async (orgId, req) => {
     return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/org/${orgId}/members`,req))
 }
 
+// 更新组织成员
+export const updateOrgMembers = async (orgId, req) => {
+    
+    return apiRequestWrapper(() => httpWrapper.patch(`/api/user/system/org/${orgId}/members`,req))
+}
+
 // 批量移除组织成员
 export const removeOrgMembers = async (orgId, userOrgIds) => {
     

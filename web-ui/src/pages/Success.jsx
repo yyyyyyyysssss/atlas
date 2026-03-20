@@ -1,4 +1,4 @@
-import { Button, Flex, Result } from "antd"
+import { Button, Flex, Result, Typography } from "antd"
 import { useNavigate } from 'react-router-dom';
 import useFullParams from "../hooks/useFullParams";
 import CopyToClipboard from "../components/CopyToClipboard";
@@ -6,7 +6,7 @@ import CopyToClipboard from "../components/CopyToClipboard";
 
 const Success = () => {
 
-    const { title, code, listRouterPath, againRouterPath } = useFullParams()
+    const { title, subTitle, code, listRouterPath, againRouterPath } = useFullParams()
 
     const navigate = useNavigate()
 
@@ -22,7 +22,12 @@ const Success = () => {
         <Result
             status="success"
             title={title}
-            subTitle={<Flex justify="center" align="center">编号：<CopyToClipboard text={code} /></Flex>}
+            subTitle={
+                <Flex justify="center" align="center" gap={10}>
+                    <Typography.Text type="secondary">{subTitle}: </Typography.Text>
+                    <CopyToClipboard text={code} />
+                </Flex>
+            }
             extra={[
                 <Button type="primary" onClick={goList} key='goList'>
                     返回列表

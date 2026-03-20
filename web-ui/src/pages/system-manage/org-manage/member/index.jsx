@@ -1,7 +1,7 @@
 import { useRequest } from "ahooks"
 import { Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { addOrgMembers, fetchOrgMembers, fetchPositionByOrgId, orgMemberMainCheck, removeOrgMembers } from "../../../../services/SystemService"
+import { addOrgMembers, fetchOrgMembers, fetchPositionByOrgId, orgMemberMainCheck, removeOrgMembers, updateOrgMembers } from "../../../../services/SystemService"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from 'react-i18next';
 import UserTransfer from "../../../../components/UserTransfer"
@@ -46,6 +46,10 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
     })
 
     const { runAsync: addOrgMemberAsync, loading: addOrgMemberLoading } = useRequest(addOrgMembers, {
+        manual: true
+    })
+
+    const { runAsync: updateOrgMemberAsync, loading: updateOrgMemberLoading } = useRequest(updateOrgMembers, {
         manual: true
     })
 
@@ -370,7 +374,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
 
                 return posName
             }
-            
+
         },
         {
             key: 'isMain',
@@ -406,7 +410,8 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
     const updateOrgMember = async (_, rowIndex) => {
         const formValues = await orgMemberForm.validateFields()
         const om = formValues.orgMembers[rowIndex]
-        console.log('om',om)
+        await updateOrgMemberAsync(om.orgId, om)
+        refreshOrgMember()
     }
 
     const deleteOrgMember = async (_, rowIndex) => {

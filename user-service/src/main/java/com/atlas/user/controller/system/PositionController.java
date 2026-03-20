@@ -1,4 +1,4 @@
-package com.atlas.user.controller;
+package com.atlas.user.controller.system;
 
 
 import com.atlas.common.core.response.Result;
@@ -43,6 +43,12 @@ public class PositionController{
     public Result<?> getPosition(@PathVariable("id") Long id) {
         PositionVO vo = positionService.findById(id);
         return ResultGenerator.ok(vo);
+    }
+
+    @GetMapping("/orgId/{orgId}")
+    public Result<?> getPositionOrgId(@PathVariable("orgId") Long orgId) {
+        List<PositionVO> positionVOS = positionService.findByOrgId(orgId);
+        return ResultGenerator.ok(positionVOS);
     }
 
     @PostMapping("/create")

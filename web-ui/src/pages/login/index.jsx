@@ -20,6 +20,10 @@ const Login = () => {
         manual: true
     })
 
+    const { runAsync: sendEmailVerificationCodeAsync, loading: sendEmailVerificationCodeLoading } = useRequest(sendEmailVerificationCode, {
+        manual: true
+    })
+
     //登录方式
     const [loginMethod, setLoginMethod] = useState("1");
 
@@ -70,7 +74,7 @@ const Login = () => {
     const handleWithVerificationCode = async () => {
         const values =await form.validateFields(['email'])
         let ti = verificationCode.time;
-        sendEmailVerificationCode(values.email)
+        await sendEmailVerificationCodeAsync(values.email)
         setVerificationCode({
             disabled: true,
             tips: `{{ti}} 秒后重新获取`,
@@ -210,7 +214,7 @@ const Login = () => {
                                                 ]}>
                                                     <Input allowClear size="large" placeholder="请输入验证码!" prefix={<MailOutlined />} />
                                                 </Form.Item>
-                                                <Button disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>{t(verificationCode.tips,{ti : verificationCode.seconds})}</Button>
+                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>{t(verificationCode.tips,{ti : verificationCode.seconds})}</Button>
                                             </Flex>
                                         </>
                                     )

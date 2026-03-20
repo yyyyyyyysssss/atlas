@@ -51,14 +51,14 @@ public class NotificationRequest {
     /**
      * 以纯文本方式起手 (可选)
      */
-    public static NotificationOp text(String title, String content) {
+    public static ChannelOp text(String title, String content) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
         ctx.text = content;
         return new NotificationBuilder(ctx);
     }
 
-    public static NotificationOp text(String content) {
+    public static ChannelOp text(String content) {
 
         return text(null, content);
     }
@@ -67,12 +67,12 @@ public class NotificationRequest {
     /**
      * 以模板方式起手
      */
-    public static NotificationOp template(String code, Map<String, Object> params) {
+    public static ChannelOp template(String code, Map<String, Object> params) {
 
         return template(code, null, params);
     }
 
-    public static NotificationOp template(String code, String title, Map<String, Object> params) {
+    public static ChannelOp template(String code, String title, Map<String, Object> params) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.templateCode = code;
         ctx.title = title;
@@ -96,23 +96,25 @@ public class NotificationRequest {
                 '}';
     }
 
-    public interface NotificationOp {
+    public interface ChannelOp {
+        // 渠道开关与配置闭包 (唯一配置入口)
+        ConfigOp email(Consumer<MailConfig> config);
+        ConfigOp email();
+
+        ConfigOp sms(Consumer<SmsConfig> config);
+
+        ConfigOp sse(Consumer<SseConfig> config);
+        ConfigOp sse();
+    }
+
+    public interface ConfigOp extends ChannelOp{
 
         // 通用属性
-        NotificationOp title(String title);
+        ConfigOp title(String title);
 
-        NotificationOp withParam(String key, Object value);
+        ConfigOp withParam(String key, Object value);
 
-        NotificationOp withExt(String key, Object value);
-
-        // 渠道开关与配置闭包 (唯一配置入口)
-        NotificationOp email(Consumer<MailConfig> config);
-        NotificationOp email();
-
-        NotificationOp sms(Consumer<SmsConfig> config);
-
-        NotificationOp sse(Consumer<SseConfig> config);
-        NotificationOp sse();
+        ConfigOp withExt(String key, Object value);
 
         TargetOp to();
 
@@ -146,57 +148,57 @@ public class NotificationRequest {
         NotificationDTO build();
     }
 
-    private record NotificationBuilder(NotificationRequest ctx) implements NotificationOp {
+    private record NotificationBuilder(NotificationRequest ctx) implements ChannelOp,ConfigOp {
 
         @Override
-        public NotificationOp title(String title) {
+        public ConfigOp title(String title) {
             ctx.title = title;
             return this;
         }
 
         @Override
-        public NotificationOp withParam(String key, Object value) {
+        public ConfigOp withParam(String key, Object value) {
             ctx.params = ensureMutable(ctx.params);
             ctx.params.put(key, value);
             return this;
         }
 
         @Override
-        public NotificationOp withExt(String key, Object value) {
+        public ConfigOp withExt(String key, Object value) {
             ctx.ext = ensureMutable(ctx.ext);
             ctx.ext.put(key, value);
             return this;
         }
 
         @Override
-        public NotificationOp email(Consumer<MailConfig> config) {
+        public ConfigOp email(Consumer<MailConfig> config) {
             enableChannel(ChannelType.EMAIL);
             config.accept(new MailConfig(this));
             return this;
         }
 
         @Override
-        public NotificationOp email() {
+        public ConfigOp email() {
             enableChannel(ChannelType.EMAIL);
             return this;
         }
 
         @Override
-        public NotificationOp sms(Consumer<SmsConfig> config) {
+        public ConfigOp sms(Consumer<SmsConfig> config) {
             enableChannel(ChannelType.SMS);
             config.accept(new SmsConfig(this));
             return this;
         }
 
         @Override
-        public NotificationOp sse(Consumer<SseConfig> config) {
+        public ConfigOp sse(Consumer<SseConfig> config) {
             enableChannel(ChannelType.SSE);
             config.accept(new SseConfig(this));
             return this;
         }
 
         @Override
-        public NotificationOp sse() {
+        public ConfigOp sse() {
             enableChannel(ChannelType.SSE);
             return this;
         }
@@ -206,7 +208,7 @@ public class NotificationRequest {
             return new TargetOpBuilder(ctx);
         }
 
-        private NotificationOp enableChannel(ChannelType type) {
+        private ConfigOp enableChannel(ChannelType type) {
             ctx.channels = ensureMutable(ctx.channels);
             if (!ctx.channels.contains(type)) {
                 ctx.channels.add(type);

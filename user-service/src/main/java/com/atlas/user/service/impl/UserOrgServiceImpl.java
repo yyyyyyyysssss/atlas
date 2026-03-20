@@ -120,6 +120,14 @@ public class UserOrgServiceImpl extends ServiceImpl<UserOrgMapper, UserOrg> impl
         this.saveOrUpdateBatch(finalEntities);
     }
 
+    @Override
+    public void updateUserOrg(UserOrgDTO userOrgDTO){
+        Long id = userOrgDTO.getId();
+        UserOrg userOrg = userOrgMapper.selectById(id);
+        UserOrgMapping.INSTANCE.updateUserOrg(userOrgDTO,userOrg);
+        userOrgMapper.updateById(userOrg);
+    }
+
     public UserOrg findUserOrgMain(Long userId){
 
         return this.lambdaQuery()

@@ -363,6 +363,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
             userVO.setRoleIds(roleIds);
         }
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(id);
+        if(userOrgMain != null){
+            userVO.setOrgId(userOrgMain.getOrgId());
+        }
         return userVO;
     }
 

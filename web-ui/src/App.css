@@ -1,3 +1,37 @@
 #nprogress .bar {
   background: var(--color-primary) !important;
 }
+
+
+/* --- 基础浮动原子类 --- */
+.atlas-float-trigger {
+  /* 必须属性：确保位移平滑且无边框干扰 */
+  border: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  cursor: pointer;
+}
+
+/* 悬浮态：多层柔和阴影 + 位移 */
+.atlas-float-trigger:hover {
+  transform: translateY(-4px);
+  /* 亮色模式下的层次感阴影 */
+  box-shadow: 
+    0 12px 24px -10px rgba(0, 0, 0, 0.08), 
+    0 8px 16px -8px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 点击态：物理压感反馈 */
+.atlas-float-trigger:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px -5px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.1s !important; /* 点击反馈要快 */
+}
+
+/* --- 暗色模式适配 (至关重要) --- */
+/* 当 antd 切换到暗色算法时，阴影需要更深且范围更大 */
+[data-theme='dark'] .atlas-float-trigger:hover {
+  box-shadow: 
+    0 16px 32px -8px rgba(0, 0, 0, 0.5), 
+    0 8px 16px -8px rgba(0, 0, 0, 0.4) !important;
+}

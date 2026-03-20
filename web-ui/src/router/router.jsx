@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { House, Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText } from "lucide-react";
+import { House, Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -10,7 +10,8 @@ import ServerError from "../pages/ServerError";
 import Success from "../pages/Success";
 
 const AppLayout = lazy(() => import('../layouts'))
-const Home = lazy(() => import('../pages/home'))
+const Workbench = lazy(() => import('../pages/workbench'))
+const Overview = lazy(() => import('../pages/dashboard/overview'))
 const Login = lazy(() => import('../pages/login'))
 const OrgManage = lazy(() => import('../pages/system-manage/org-manage'))
 const UserManage = lazy(() => import('../pages/system-manage/user-manage'))
@@ -35,13 +36,28 @@ export const routes = [
         children: [
             {
                 path: '',
-                element: <Navigate to="/home" />,
+                element: <Navigate to="/workbench" />,
             },
             {
-                path: 'home',
-                breadcrumbName: '主页',
-                defaultIcon: <House size={18} />,
-                element: <Home />,
+                path: 'workbench',
+                breadcrumbName: '工作台',
+                defaultIcon: <AppWindow size={18} />,
+                element: <Workbench />,
+            },
+            {
+                path: 'dashboard',
+                breadcrumbName: '仪表盘',
+                defaultIcon: <Gauge size={18} />,
+                children: [
+                    {
+                        path: 'overview',
+                        element: <Overview />,
+                        breadcrumbName: '总览',
+                        defaultIcon: <LayoutDashboard size={18} />,
+                        protected: true,
+                        requiredPermissions: ['dashboard:overview']
+                    }
+                ]
             },
             {
                 path: 'system',
@@ -83,14 +99,14 @@ export const routes = [
                         breadcrumbName: '角色',
                         hideOperationMode: false
                     },
-                    // {
-                    //     path: 'position',
-                    //     element: <PositionManage />,
-                    //     breadcrumbName: '岗位管理',
-                    //     defaultIcon: <ShieldCheck size={18} />,
-                    //     protected: true,
-                    //     requiredPermissions: ['system:position']
-                    // },
+                    {
+                        path: 'position',
+                        element: <PositionManage />,
+                        breadcrumbName: '岗位管理',
+                        defaultIcon: <ShieldCheck size={18} />,
+                        protected: true,
+                        requiredPermissions: ['system:position']
+                    },
                     {
                         path: 'menu',
                         element: <MenuManage />,

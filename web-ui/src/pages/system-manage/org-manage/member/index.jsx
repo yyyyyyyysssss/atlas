@@ -1,7 +1,7 @@
 import { useRequest } from "ahooks"
 import { Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { addOrgMembers, fetchOrgMembers, orgMemberMainCheck, removeOrgMembers } from "../../../../services/SystemService"
+import { addOrgMembers, fetchOrgMembers, fetchPositionByOrgId, orgMemberMainCheck, removeOrgMembers } from "../../../../services/SystemService"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from 'react-i18next';
 import UserTransfer from "../../../../components/UserTransfer"
@@ -11,6 +11,7 @@ import EditableTable from "../../../../components/smart-table/EditableTable"
 import {
     ArrowDownOutlined
 } from '@ant-design/icons';
+import OptionSelect from "../../../../components/OptionSelect"
 
 const OrgMember = ({ orgId, orgName, orgType }) => {
 
@@ -344,6 +345,34 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
             }
         },
         {
+            key: 'posId',
+            title: '岗位',
+            dataIndex: 'posId',
+            align: 'center',
+            editable: true,
+            inputType: 'custom',
+            required: true,
+            editRender: ({ value, onChange }) => {
+                return (
+                    <OptionSelect
+                        loadData={() => fetchPositionByOrgId(orgId)}
+                        fieldNames={{
+                            value: 'id',
+                            label: 'posName',
+                        }}
+                        value={value}
+                        onChange={onChange}
+                        placeholder="请选择岗位"
+                    />
+                )
+            },
+            render: (_, { posName }) => {
+
+                return posName
+            }
+            
+        },
+        {
             key: 'isMain',
             title: '主部门',
             dataIndex: 'isMain',
@@ -377,7 +406,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
     const updateOrgMember = async (_, rowIndex) => {
         const formValues = await orgMemberForm.validateFields()
         const om = formValues.orgMembers[rowIndex]
-
+        console.log('om',om)
     }
 
     const deleteOrgMember = async (_, rowIndex) => {
@@ -447,7 +476,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
                             mode='single-edit'
                             loading={fetchOrgMemberLoading || addOrgMemberLoading || removeOrgMemberLoading || orgMemberMainCheckLoading}
                             fields={fields}
-                            editPermission={'no-show'}
+                            editPermission={'system:org:write'}
                             addPermission={'no-show'}
                             deletePermission={'system:org:delete'}
                             add={add}

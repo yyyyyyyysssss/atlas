@@ -19,6 +19,7 @@ public interface UserOrgService extends IService<UserOrg> {
 
     void addUserOrg(List<UserOrgDTO> list);
 
+    void updateUserOrg(UserOrgDTO userOrgDTO);
 
     UserOrg findUserOrgMain(Long userId);
 

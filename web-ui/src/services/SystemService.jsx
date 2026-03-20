@@ -430,6 +430,11 @@ export const fetchPositionDetails = async (positionId) => {
     return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/position/${positionId}`))
 }
 
+// 根据组织查询岗位
+export const fetchPositionByOrgId = async (orgId) => {
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/position/orgId/${orgId}`))
+}
+
 // 绑定岗位权限
 export const bindAuthorityByPositionId = async (positionId, authorityIds) => {
     const req = {

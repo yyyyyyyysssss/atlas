@@ -70,7 +70,13 @@ public class OptionService {
             return Collections.emptyList();
         }
         List<OptionVO<Long>> optionList = organizationTree.stream().map(m -> {
-            OptionVO<Long> optionVO = OptionVO.of(m.getOrgName(), m.getId(),m.getParentId());
+            String[] parts = m.getOrgPathName().split("/");
+            String result = Arrays.stream(parts)
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .skip(1) // 跳过第一层（集团）
+                    .collect(Collectors.joining(" / "));
+            OptionVO<Long> optionVO = OptionVO.of(m.getOrgName(),result, m.getId(),m.getParentId());
             optionVO.setSelectable(OrganizationType.DEPT.equals(m.getOrgType()) || OrganizationType.TEAM.equals(m.getOrgType()));
             return optionVO;
         }).toList();

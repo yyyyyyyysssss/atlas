@@ -2,19 +2,14 @@ package com.atlas.user.service;
 
 
 import com.atlas.user.domain.dto.OrganizationCreateDTO;
-import com.atlas.user.domain.dto.OrganizationQueryDTO;
 import com.atlas.user.domain.dto.OrganizationUpdateDTO;
 import com.atlas.user.domain.dto.UserOrgDTO;
 import com.atlas.user.domain.entity.Organization;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.OrganizationVO;
-import com.atlas.user.enums.OrganizationType;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.github.pagehelper.PageInfo;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 /**
@@ -30,6 +25,8 @@ public interface OrganizationService extends IService<Organization> {
     List<OrganizationVO> findSubUnits(Long id, String organizationType);
 
     List<OrgMemberVO> findMembers(Long id, String mode);
+
+    void updateMembers(Long id, UserOrgDTO userOrgDTO);
 
     List<OrganizationVO> findAll();
 

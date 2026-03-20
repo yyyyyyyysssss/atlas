@@ -25,6 +25,8 @@ public class OptionVO<T extends Serializable> {
 
     private String label;
 
+    private String fullLabel;
+
     private T value;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -40,12 +42,17 @@ public class OptionVO<T extends Serializable> {
     }
 
     public static <T extends Serializable> OptionVO<T> of(String label, T value) {
-        return OptionVO.of(label, value, null);
+        return OptionVO.of(label,label, value, null);
     }
 
     public static <T extends Serializable> OptionVO<T> of(String label, T value, T parentId) {
+        return OptionVO.of(label,label, value, parentId);
+    }
+
+    public static <T extends Serializable> OptionVO<T> of(String label,String fullLabel, T value, T parentId) {
         return OptionVO.<T>builder()
                 .label(label)
+                .fullLabel(fullLabel)
                 .value(value)
                 .parentId(parentId)
                 .build();

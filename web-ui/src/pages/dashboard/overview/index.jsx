@@ -5,7 +5,7 @@ import { ExclamationCircleOutlined, CaretUpFilled, CaretDownFilled } from '@ant-
 import { Column, Pie, Line } from '@ant-design/plots';
 import { Tiny } from '@ant-design/plots';
 import { format } from 'fecha';
-import FullScreenButton from '../../components/FullScreenButton';
+import FullScreenButton from '../../../components/FullScreenButton';
 
 
 const RankingList = ({ title, data }) => (
@@ -35,7 +35,7 @@ const RankingList = ({ title, data }) => (
   />
 )
 
-const Home = () => {
+const Overview = () => {
 
   const { token } = theme.useToken()
 
@@ -613,4 +613,4 @@ const Home = () => {
   )
 }
 
-export default Home
+export default Overview

@@ -9,5 +9,5 @@ export const LoginRoute = ({ children }) => {
 
   if (isLoginIn === null) return <Loading fullscreen />
 
-  return isLoginIn ? <Navigate to="/home" replace /> : children
+  return isLoginIn ? <Navigate to="/" replace /> : children
 }

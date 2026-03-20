@@ -218,6 +218,7 @@ const OptionTreeSelect = <T extends any>({
                 {...restProps}
                 // 核心属性
                 treeData={mappedTreeData}
+                treeNodeLabelProp="fullLabel"
                 value={safeValue}
                 onChange={handleChange}
                 // 搜索过滤逻辑适配映射后的 title

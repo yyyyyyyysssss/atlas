@@ -168,6 +168,12 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     @Override
+    public void updateMembers(Long id, UserOrgDTO userOrgDTO) {
+        checkAndResult(id);
+        userOrgService.updateUserOrg(userOrgDTO);
+    }
+
+    @Override
     public List<OrganizationVO> findAll() {
         QueryWrapper<Organization> organizationQueryWrapper = new QueryWrapper<>();
         organizationQueryWrapper
@@ -178,6 +184,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                         Organization::getOrgName,
                         Organization::getOrgType,
                         Organization::getStatus,
+                        Organization::getOrgPathName,
                         Organization::getOrgPath)
                 .eq(Organization::getStatus, OrganizationStatus.ACTIVE.getCode())
                 .orderByAsc(Organization::getSort)

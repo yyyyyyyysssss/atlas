@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.NumberSerializer;
 import io.lettuce.core.api.StatefulConnection;
 import jakarta.annotation.Resource;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -191,6 +193,12 @@ public class AtlasRedisAutoConfiguration {
 
     private ObjectMapper createRedisObjectMapper(ObjectMapper objectMapper) {
         ObjectMapper mapper = objectMapper.copy();
+
+        SimpleModule longModule = new SimpleModule();
+        // 使用内置的 NumberSerializer 替换 ToStringSerializer
+        longModule.addSerializer(Long.class, NumberSerializer.instance);
+        longModule.addSerializer(Long.TYPE, NumberSerializer.instance);
+        mapper.registerModule(longModule);
 
         // 禁止将日期转为时间戳（保持 pattern 格式）
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);

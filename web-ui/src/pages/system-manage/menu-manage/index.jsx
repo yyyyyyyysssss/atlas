@@ -189,8 +189,8 @@ const MenuManage = () => {
             const parentMenuItem = flattenTreeRef.current.find(f => f.id === menuItem.parentId)
             setSelectedMenu({
                 id: null,
-                parentId: parentMenuItem.id,
-                parentCode: parentMenuItem.code,
+                parentId: menuItem.parentId,
+                parentCode: parentMenuItem?.code,
                 operationMode: OperationMode.ADD.value
             })
         }

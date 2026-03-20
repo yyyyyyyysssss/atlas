@@ -62,8 +62,8 @@ const Sider = () => {
     }
 
     const goHome = () => {
-        navigate('home')
-        dispatch(setActiveKey({ path: '/home' }))
+        navigate('/workbench')
+        dispatch(setActiveKey({ path: '/workbench' }))
     }
 
     const formatMenuItems = (items) => {

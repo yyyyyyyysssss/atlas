@@ -86,6 +86,12 @@ public class OrganizationController {
         return ResultGenerator.ok(orgMemberList);
     }
 
+    @PatchMapping("/{id}/members")
+    public Result<Void> updateMembers(@PathVariable("id") Long id,@RequestBody  UserOrgDTO userOrgDTO) {
+        organizationService.updateMembers(id,userOrgDTO);
+        return ResultGenerator.ok();
+    }
+
     @GetMapping("/{id}/main-check")
     public Result<OrganizationVO> orgMemberMainCheck(@PathVariable("id") Long id, @RequestParam("userId")Long userId) {
         OrganizationVO organizationVO = organizationService.orgMemberMainCheck(id, userId);

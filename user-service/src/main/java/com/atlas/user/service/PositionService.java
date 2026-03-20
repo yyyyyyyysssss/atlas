@@ -9,6 +9,8 @@ import com.atlas.user.domain.vo.PositionVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
+import java.util.List;
+
 /**
  * (Position)表服务接口
  *
@@ -20,6 +22,8 @@ public interface PositionService extends IService<Position> {
     PageInfo<PositionVO> queryList(PositionQueryDTO queryDTO);
 
     PositionVO findById(Long id);
+
+    List<PositionVO> findByOrgId(Long orgId);
 
     Long createPosition(PositionCreateDTO createDTO);
 

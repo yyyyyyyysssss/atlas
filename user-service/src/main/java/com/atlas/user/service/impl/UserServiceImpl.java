@@ -8,6 +8,7 @@ import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.user.config.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
+import com.atlas.user.domain.dto.UserOrgDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.Authority;
@@ -21,7 +22,6 @@ import com.atlas.user.enums.DataScope;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
-import com.atlas.user.utils.AvatarGeneratorUtils;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -37,17 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestClient;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -83,13 +79,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
         queryWrapper
                 .lambda()
-                .eq(User::getUsername,username)
+                .eq(User::getUsername, username)
                 .or()
-                .eq(User::getId,username)
+                .eq(User::getId, username)
                 .or()
-                .eq(User::getPhone,username)
+                .eq(User::getPhone, username)
                 .or()
-                .eq(User::getEmail,username);
+                .eq(User::getEmail, username);
         User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在: " + username);
@@ -112,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 用户所属组织
         UserOrg userOrgMain = userOrgService.findUserOrgMain(user.getId());
-        if(userOrgMain != null){
+        if (userOrgMain != null) {
             userAuthDTO.setOrgId(userOrgMain.getOrgId());
         }
 
@@ -132,12 +128,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return userAuthDTO;
         }
         List<Authority> authorities = authorityService.listByIds(authorityIds);
-        if(CollectionUtils.isEmpty(authorities)){
+        if (CollectionUtils.isEmpty(authorities)) {
             return userAuthDTO;
         }
         List<RoleAuthDTO> list = new ArrayList<>();
         for (Authority authority : authorities) {
-            list.add(new RoleAuthDTO(authority.getCode(),authority.getUrls()));
+            list.add(new RoleAuthDTO(authority.getCode(), authority.getUrls()));
         }
         userAuthDTO.setAuthorities(list);
         return userAuthDTO;
@@ -179,7 +175,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Object first = identifiers.iterator().next();
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        if(first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))){
+        if (first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))) {
             queryWrapper.in(User::getId, identifiers);
         } else {
             // 否则走账号查询
@@ -198,13 +194,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public List<UserDTO> findByEmail(Collection<String> emails) {
 
-        return findListBy(User::getEmail,emails.toArray());
+        return findListBy(User::getEmail, emails.toArray());
     }
 
     @Override
     public List<UserDTO> findByPhone(Collection<String> phones) {
 
-        return findListBy(User::getPhone,phones);
+        return findListBy(User::getPhone, phones);
     }
 
     // 根据角色查询用户
@@ -240,9 +236,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptPassword = passwordEncoder.encode(password);
         user.setPassword(encryptPassword);
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
-//            String defaultAvatar = generateDefaultAvatar(user.getFullName());
-//            user.setAvatar(defaultAvatar);
+            String defaultAvatar = generateDefaultAvatar(user.getUsername());
+            user.setAvatar(defaultAvatar);
         }
+        // 添加用户所属组织
+        addUserOrg(user.getId(),userCreateDTO.getOrgId(),userCreateDTO.getPosId());
         int row = userMapper.insert(user);
         if (row <= 0) {
             throw new BusinessException("创建用户失败");
@@ -270,8 +268,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserMapping.INSTANCE.updateUser(userUpdateDTO, user);
         }
         if (user.getAvatar() == null || user.getAvatar().isEmpty()) {
-//            String defaultAvatar = generateDefaultAvatar(user.getFullName());
-//            user.setAvatar(defaultAvatar);
+            String defaultAvatar = generateDefaultAvatar(user.getUsername());
+            user.setAvatar(defaultAvatar);
+        }
+        if(userUpdateDTO.getOrgId() != null){
+            addUserOrg(user.getId(),userUpdateDTO.getOrgId(),userUpdateDTO.getPosId());
         }
         int i = userMapper.updateById(user);
         if (i <= 0) {
@@ -287,28 +288,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
 
-    private String generateDefaultAvatar(String name) {
-        String filename = UUID.randomUUID().toString().replace("-", "");
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            BufferedImage bufferedImage = AvatarGeneratorUtils.generateAvatar(name);
-            ImageIO.write(bufferedImage, "png", os);
-            MockMultipartFile mockMultipartFile = new MockMultipartFile(
-                    "file",
-                    filename + ".png",
-                    "image/png",
-                    os.toByteArray()
-            );
-            log.info("上传生成的默认头像: {}", filename);
-            Result<String> result = fileApi.uploadSimple(mockMultipartFile);
-            if (result == null || !result.isSucceed()) {
-                log.error("调用上传头像失败: {}", result != null ? result.getMessage() : "Response is null");
-                return null;
-            }
-            return result.getData();
-        } catch (IOException e) {
-            log.error("生成默认头像异常: {}", e.getMessage());
-            return null;
+    private String generateDefaultAvatar(String username){
+        Result<String> result = fileApi.generateAvatar(username);
+        if(result.isSucceed()){
+           return result.getData();
         }
+        return null;
+    }
+
+    private void addUserOrg(Long userId, Long orgId, Long posId) {
+        UserOrgDTO userOrgDTO = new UserOrgDTO();
+        userOrgDTO.setUserId(userId);
+        userOrgDTO.setOrgId(orgId);
+        userOrgDTO.setPosId(posId);
+        userOrgDTO.setIsMain(Boolean.TRUE);
+        userOrgService.addUserOrg(List.of(userOrgDTO));
     }
 
     @Override
@@ -364,8 +358,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userVO.setRoleIds(roleIds);
         }
         UserOrg userOrgMain = userOrgService.findUserOrgMain(id);
-        if(userOrgMain != null){
+        if (userOrgMain != null) {
             userVO.setOrgId(userOrgMain.getOrgId());
+            userVO.setPosId(userOrgMain.getPosId());
         }
         return userVO;
     }
@@ -455,7 +450,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         List<User> users = userMapper.selectList(Wrappers.lambdaQuery(User.class)
                 .in(column, values));
-        if(CollectionUtils.isEmpty(users)){
+        if (CollectionUtils.isEmpty(users)) {
             return Collections.emptyList();
         }
         return UserMapping.INSTANCE.toUserDTO(users);

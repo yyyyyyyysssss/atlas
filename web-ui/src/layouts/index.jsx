@@ -10,9 +10,10 @@ import './index.css';
 import Sider from './sider';
 import TopMenuTab from './top-tab';
 import { SwitchTransition, CSSTransition } from 'react-transition-group';
-import { setUserInfo } from '../redux/slices/authSlice';
+import { setUserInfo } from '../redux/slices/userSlice';
+import { setAuthInfo } from '../redux/slices/authSlice';
 import { loadMenuItems } from '../redux/slices/layoutSlice';
-import { fetchUserInfo } from '../services/UserProfileService';
+import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
 
 
 const { Header: LayoutHeader, Content: LayoutContent, Sider: LayoutSider } = Layout;
@@ -40,8 +41,10 @@ const AppLayout = () => {
         const fetchData = async () => {
             try {
                 const userInfo = await fetchUserInfo()
+                const authInfo = await fetchAuthInfo()
                 dispatch(setUserInfo({ userInfo }))
-                dispatch(loadMenuItems({ menuItems: userInfo.menuTree }))
+                dispatch(setAuthInfo({ authInfo }))
+                dispatch(loadMenuItems({ menuItems: authInfo.menus }))
             } finally {
                 setLoading(false)
             }

@@ -3,7 +3,9 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { checkTokenValid, clearToken, saveToken } from '../services/LoginService';
 import { setGlobalSignout } from './auth';
 import reduxStore from '../redux/store';
-import { reset } from '../redux/slices/layoutSlice';
+import { reset as resetLayout } from '../redux/slices/layoutSlice';
+import { reset as resetUser } from '../redux/slices/userSlice';
+import { reset as resetAuth } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
 
 const AuthContext = createContext({
@@ -38,9 +40,14 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signout = async () => {
-        setIsLoginIn(false)
+        // 清理持久化存储
         clearToken()
-        reduxStore.dispatch(reset())
+        // 清理内存状态 (Redux)
+        reduxStore.dispatch(resetLayout())
+        reduxStore.dispatch(resetUser())
+        reduxStore.dispatch(resetAuth())
+        // 最后切换 Context 状态，触发 UI 跳转
+        setIsLoginIn(false)
     }
 
     if (isLoginIn === null) {

@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './slices/authSlice'
+import userReducer from './slices/userSlice'
 import layoutReducer, { initialState } from './slices/layoutSlice'
 
 const loadState = () => {
@@ -29,6 +30,7 @@ const reduxStore = configureStore({
         layout: loadedState === null ? initialState : { ...loadedState, menuItems: [], flattenMenuItems: [] }
     },
     reducer: {
+        user: userReducer,
         auth: authReducer,
         layout: layoutReducer
     },

@@ -1,9 +1,10 @@
 package com.atlas.user.domain.vo;
 
+import com.atlas.user.domain.entity.UserSetting;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * @Description
@@ -14,18 +15,20 @@ import java.util.List;
 @Setter
 public class UserInfoVO {
 
-    private Long id;
+    private Long userId;
 
-    private String username;
+    private Long orgId;
+
+    private Long posId;
 
     private String fullName;
 
+    private String orgName;
+
+    private String posName;
+
     private String avatar;
 
-    private List<String> roleCodes;
-
-    private List<MenuVO> menuTree;
-
-    private List<String> permissionCodes;
+    private UserSetting settings;
 
 }

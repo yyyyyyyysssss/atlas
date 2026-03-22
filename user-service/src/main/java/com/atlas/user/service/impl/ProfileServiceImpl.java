@@ -3,11 +3,8 @@ package com.atlas.user.service.impl;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
-import com.atlas.user.domain.entity.User;
-import com.atlas.user.domain.vo.AuthorityVO;
-import com.atlas.user.domain.vo.MenuVO;
-import com.atlas.user.domain.vo.RoleVO;
-import com.atlas.user.domain.vo.UserInfoVO;
+import com.atlas.user.domain.entity.*;
+import com.atlas.user.domain.vo.*;
 import com.atlas.user.service.*;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -20,10 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -45,25 +40,73 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final UserOrgService userOrgService;
+
+    private final OrganizationService organizationService;
+
+    private final PositionService positionService;
+
     @Override
     public UserInfoVO userInfo(Long userId) {
-        User user = userService.findByUserId(userId);
+        User user = userService
+                .lambdaQuery()
+                .select(User::getFullName, User::getAvatar, User::getSettings)
+                .eq(User::getId, userId)
+                .one();
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
         UserInfoVO userInfoVO = new UserInfoVO();
-        userInfoVO.setId(user.getId());
-        userInfoVO.setUsername(user.getUsername());
+        userInfoVO.setUserId(userId);
         userInfoVO.setFullName(user.getFullName());
         userInfoVO.setAvatar(user.getAvatar());
+        userInfoVO.setSettings(user.getSettings());
+        // 用户所属组织
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
+        if (userOrgMain != null) {
+            Long orgId = userOrgMain.getOrgId();
+            Long posId = userOrgMain.getPosId();
 
+            Organization organization = organizationService
+                    .lambdaQuery()
+                    .select(Organization::getOrgName, Organization::getOrgPathName)
+                    .eq(Organization::getId, orgId)
+                    .one();
+            if (organization != null) {
+                userInfoVO.setOrgId(orgId);
+                String orgPathName = organization.getOrgPathName();
+                String cleanPath = orgPathName.trim().replaceAll("/$", "");
+                String result = Arrays.stream(cleanPath.split("/"))
+                        .filter(s -> !s.isEmpty())
+                        .skip(1) // 跳过第一层级（集团）
+                        .collect(Collectors.joining("-"));
+                userInfoVO.setOrgName(result);
+            }
+
+            Position position = positionService
+                    .lambdaQuery()
+                    .select(Position::getPosName)
+                    .eq(Position::getId, posId)
+                    .one();
+            if (position != null) {
+                userInfoVO.setPosId(posId);
+                userInfoVO.setPosName(position.getPosName());
+            }
+        }
+
+        return userInfoVO;
+    }
+
+    @Override
+    public AuthInfoVO authInfo(Long userId) {
+        AuthInfoVO authInfoVO = new AuthInfoVO();
         // 用户角色
         List<RoleVO> roles = roleService.findByUserId(userId);
         if (!CollectionUtils.isEmpty(roles)) {
-            List<String> roleCodes = roles.stream().map(RoleVO::getCode).toList();
-            userInfoVO.setRoleCodes(roleCodes);
+            Set<String> roleCodes = roles.stream().map(RoleVO::getCode).collect(Collectors.toSet());
+            authInfoVO.setRoles(roleCodes);
         } else {
-            userInfoVO.setRoleCodes(Collections.emptyList());
+            authInfoVO.setRoles(Collections.emptySet());
         }
         List<Long> roleIds = Optional.ofNullable(roles).orElse(new ArrayList<>()).stream().map(RoleVO::getId).toList();
 
@@ -77,21 +120,31 @@ public class ProfileServiceImpl implements ProfileService {
                     MenuVO::setChildren,
                     0L
             );
-            userInfoVO.setMenuTree(menuTree);
+            authInfoVO.setMenus(menuTree);
         } else {
-            userInfoVO.setMenuTree(Collections.emptyList());
+            authInfoVO.setMenus(Collections.emptyList());
         }
 
         // 用户权限
         List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId);
         if (!CollectionUtils.isEmpty(authorityVOList)) {
-            List<String> permissionCodes = authorityVOList.stream().map(AuthorityVO::getCode).distinct().toList();
-            userInfoVO.setPermissionCodes(permissionCodes);
+            Set<String> permissionCodes = authorityVOList.stream().map(AuthorityVO::getCode).distinct().collect(Collectors.toSet());
+            authInfoVO.setPermissions(permissionCodes);
         } else {
-            userInfoVO.setPermissionCodes(Collections.emptyList());
+            authInfoVO.setPermissions(Collections.emptySet());
         }
+        return authInfoVO;
+    }
 
-        return userInfoVO;
+    @Override
+    public List<OrgMemberVO> getMyTeam(Long userId) {
+        // 用户所属组织
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
+        if (userOrgMain == null) {
+            return Collections.emptyList();
+        }
+        Long orgId = userOrgMain.getOrgId();
+        return organizationService.findMembers(orgId, "CHILDREN");
     }
 
     @Override
@@ -127,5 +180,33 @@ public class ProfileServiceImpl implements ProfileService {
                 .set(User::getAvatar, avatarUrl)
                 .eq(User::getId, userId);
         return userService.update(userUpdateWrapper);
+    }
+
+    @Override
+    public void updateShortcuts(Long userId, List<String> shortcuts) {
+        User user = userService.
+                lambdaQuery()
+                .select(User::getId, User::getSettings)
+                .eq(User::getId, userId)
+                .one();
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        UserSetting settings = user.getSettings();
+        if (settings == null) {
+            settings = new UserSetting();
+        }
+        WorkbenchConfig workbench = settings.getWorkbench();
+        if (workbench == null) {
+            workbench = new WorkbenchConfig();
+        }
+        workbench.setShortcuts(shortcuts);
+        user.setSettings(settings);
+
+        User updateWrapper = new User();
+        updateWrapper.setId(userId);
+        updateWrapper.setSettings(user.getSettings());
+
+        userService.updateById(updateWrapper);
     }
 }

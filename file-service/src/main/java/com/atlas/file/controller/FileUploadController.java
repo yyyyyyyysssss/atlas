@@ -26,7 +26,6 @@ import java.time.Duration;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
-
 public class FileUploadController {
 
     private final FileService fileService;

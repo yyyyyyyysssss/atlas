@@ -9,12 +9,18 @@ interface HasPermissionProps {
 }
 
 
+export const useIsSuperAdmin = (): boolean => {
+    // 假设你的角色存在这里
+    const roles = useSelector((state: any) => state.auth.authInfo?.roles || [], shallowEqual);
+    return useMemo(() => roles.includes('super_admin'), [roles]);
+}
+
 export const useHasPermission = (
     hasPermissions?: string | string[],
     requireAll: boolean = false
 ): boolean => {
 
-    const permissionCodes = useSelector((state: any) => state.auth.userInfo.permissionCodes || [], shallowEqual)
+    const permissionCodes = useSelector((state: any) => state.auth.authInfo.permissions || [], shallowEqual)
 
     const permissions = useMemo(() => {
         if (!hasPermissions) return []

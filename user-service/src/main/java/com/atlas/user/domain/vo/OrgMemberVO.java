@@ -29,6 +29,8 @@ public class OrgMemberVO {
 
     private String userFullName;
 
+    private String avatar;
+
     private String orgName;
 
     private OrganizationType orgType;

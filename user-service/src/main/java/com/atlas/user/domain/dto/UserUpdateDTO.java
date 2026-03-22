@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description
@@ -18,6 +19,10 @@ public class UserUpdateDTO {
 
     @NotNull(message = "id不能为空")
     private Long id;
+
+    private Long orgId;
+
+    private Long posId;
 
     private String password;
 

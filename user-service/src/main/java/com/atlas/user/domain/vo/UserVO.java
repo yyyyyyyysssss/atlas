@@ -1,9 +1,11 @@
 package com.atlas.user.domain.vo;
 
+import com.atlas.user.domain.entity.UserSetting;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description
@@ -17,6 +19,8 @@ public class UserVO {
     private Long id;
 
     private Long orgId;
+
+    private Long posId;
 
     private String username;
 
@@ -39,5 +43,7 @@ public class UserVO {
     private String updaterName;
 
     private List<Long> roleIds;
+
+    private UserSetting settings;
 
 }

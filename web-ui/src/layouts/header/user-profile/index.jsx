@@ -6,7 +6,6 @@ import { logout } from '../../../services/LoginService';
 import { useDispatch, useSelector } from 'react-redux';
 import { changeAvatar, changePassword } from '../../../services/UserProfileService';
 import { getMessageApi } from '../../../utils/MessageUtil';
-import { updateUserAvatar } from '../../../redux/slices/authSlice';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { simpleUploadFile } from '../../../services/FileService';
@@ -20,7 +19,7 @@ const UserProfile = () => {
 
     const { signout } = useAuth()
 
-    const { fullName, avatar } = useSelector(state => state.auth.userInfo)
+    const { fullName, avatar } = useSelector(state => state.user.userInfo)
 
     const language = useSelector(state => state.layout.language)
 
@@ -111,7 +110,6 @@ const UserProfile = () => {
     const handleUploadAvatarSuccess = (accessUrl) => {
         changeAvatarAsync(accessUrl)
             .then(() => {
-                dispatch(updateUserAvatar({ newAvatar: accessUrl }))
                 handleAvatarCropClose()
                 getMessageApi().success('修改成功')
             })

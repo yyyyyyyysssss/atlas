@@ -36,3 +36,7 @@ atlas:
 
 file:
   access-url: http://localhost:9090
+  avatar:
+    base-url: https://api.dicebear.com/9.x
+    default-type: avataaars
+    default-format: svg

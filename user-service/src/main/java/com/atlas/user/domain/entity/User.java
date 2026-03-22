@@ -3,7 +3,10 @@ package com.atlas.user.domain.entity;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
+
+import java.util.Map;
 
 /**
  * @Description
@@ -15,7 +18,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("user")
+@TableName(value = "user", autoResultMap = true)
 public class User extends BaseEntity {
 
     @TableField("username")
@@ -38,4 +41,7 @@ public class User extends BaseEntity {
 
     @TableField("phone")
     private String phone;
+
+    @TableField(value = "settings", typeHandler = JacksonTypeHandler.class)
+    private UserSetting settings;
 }

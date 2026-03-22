@@ -80,7 +80,8 @@ const UserManage = () => {
 
     useEffect(() => {
         if (bindRole && bindRole.open === true) {
-            bindRoleForm.setFieldsValue(bindRole.userItem)
+            const roleIds = bindRole?.userItem?.roleIds ?? []
+            bindRoleForm.setFieldsValue({ ...bindRole.userItem, roleIds: roleIds })
         }
     }, [bindRole])
 
@@ -523,6 +524,7 @@ const UserManage = () => {
                         <Button onClick={handleBindRoleClose}>{t('取消')}</Button>
                     </Space>
                 }
+                afterClose={() => bindRoleForm.resetFields()}
                 destroyOnHidden
             >
                 <Form

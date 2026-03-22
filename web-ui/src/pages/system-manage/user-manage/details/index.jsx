@@ -7,11 +7,12 @@ import useFullParams from '../../../../hooks/useFullParams';
 import { useTranslation } from 'react-i18next'
 import useBack from '../../../../hooks/useBack';
 import { useRequest } from 'ahooks';
-import { createUser, fetchOrgOptions, fetchUserDetails, updateUser } from '../../../../services/SystemService';
+import { createUser, fetchOrgOptions, fetchPositionByOrgId, fetchUserDetails, updateUser } from '../../../../services/SystemService';
 import { OperationMode } from '../../../../enums/common';
 import { getMessageApi } from '../../../../utils/MessageUtil';
 import Loading from '../../../../components/loading';
 import { useNavigate } from 'react-router-dom';
+import OptionSelect from '../../../../components/OptionSelect';
 
 const UserDetails = () => {
 
@@ -54,6 +55,9 @@ const UserDetails = () => {
                 break
             case OperationMode.ADD.value:
                 form.resetFields()
+                form.setFieldsValue({
+                    enabled: true
+                })
                 break
         }
 
@@ -63,15 +67,15 @@ const UserDetails = () => {
         const values = await form.validateFields()
         if (operationMode === OperationMode.ADD.value) {
             const result = await createUserAsync(values)
-            navigate('/success',{
-            state: {
-                title: '用户创建成功',
-                subTitle: '初始密码为',
-                code: result.initialPassword,
-                listRouterPath: '/system/user',
-                againRouterPath: '/system/user/details'
-            }
-        })
+            navigate('/success', {
+                state: {
+                    title: '用户创建成功',
+                    subTitle: '初始密码为',
+                    code: result.initialPassword,
+                    listRouterPath: '/system/user',
+                    againRouterPath: '/system/user/details'
+                }
+            })
         } else if (operationMode === OperationMode.EDIT.value) {
             await updateUserAsync(values)
             getMessageApi().success(t('操作成功'))
@@ -185,6 +189,39 @@ const UserDetails = () => {
                                     fetchData={fetchOrgOptions}
                                     multiple={false}
                                 />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={24}>
+                            <Form.Item
+                                noStyle
+                                dependencies={['orgId']}
+                            >
+                                {({ getFieldValue }) => {
+                                    const orgId = getFieldValue('orgId')
+                                    return orgId ? (
+                                        <Form.Item
+                                            label="岗位"
+                                            name="posId"
+                                            rules={[
+                                                {
+                                                    required: true,
+                                                    message: `岗位不能为空`,
+                                                },
+                                            ]}
+                                        >
+                                            <OptionSelect
+                                                loadData={() => fetchPositionByOrgId(orgId)}
+                                                fieldNames={{
+                                                    value: 'id',
+                                                    label: 'posName',
+                                                }}
+                                                placeholder="请选择岗位"
+                                            />
+                                        </Form.Item>
+                                    ) : null
+                                }}
                             </Form.Item>
                         </Col>
                     </Row>

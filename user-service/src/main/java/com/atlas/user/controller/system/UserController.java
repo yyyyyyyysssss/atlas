@@ -34,12 +34,6 @@ public class UserController {
         return ResultGenerator.ok(userCreateVO);
     }
 
-    @PutMapping
-    public Result<?> updateUser(@RequestBody @Validated(value = UserUpdateDTO.UpdateAll.class) UserUpdateDTO userUpdateDTO) {
-        Boolean b = userService.updateUser(userUpdateDTO,true);
-        return ResultGenerator.ok(b);
-    }
-
     @PatchMapping
     public Result<?> modifyUser(@RequestBody @Validated UserUpdateDTO userUpdateDTO) {
         Boolean b = userService.updateUser(userUpdateDTO,false);

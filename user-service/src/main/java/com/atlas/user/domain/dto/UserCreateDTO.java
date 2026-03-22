@@ -3,6 +3,7 @@ package com.atlas.user.domain.dto;
 
 import com.atlas.common.core.validation.OneNotBlank;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +18,13 @@ import java.util.List;
 @Setter
 @OneNotBlank(value = {"email", "phone"}, message = "邮箱或手机号至少填写一个")
 public class UserCreateDTO {
+
+
+    @NotNull(message = "所属组织不能为空")
+    private Long orgId;
+
+    @NotNull(message = "岗位不能为空")
+    private Long posId;
 
     @NotBlank(message = "账号不能为空")
     private String username;

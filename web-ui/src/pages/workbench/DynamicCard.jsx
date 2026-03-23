@@ -162,15 +162,31 @@ export const AnnouncementMarkdownView = ({ content }) => {
 
     // 5. 引用块 (Blockquote)
     blockquote: ({ children }) => (
-      <div style={{
-        padding: '8px 20px',
-        margin: '16px 0',
-        borderLeft: `4px solid ${token.colorPrimary}`,
-        background: token.colorFillAlter,
-        borderRadius: `0 ${token.borderRadiusSM}px ${token.borderRadiusSM}px 0`
-      }}>
-        {children}
-      </div>
+      <Flex
+        vertical
+        style={{
+          margin: '16px 0',
+          padding: `${token.paddingXS}px ${token.paddingLG}px`, // 使用 Token 定义间距
+          background: token.colorFillAlter,
+          borderLeft: `4px solid ${token.colorPrimaryBorder}`,
+          borderRadius: `0 ${token.borderRadiusSM}px ${token.borderRadiusSM}px 0`,
+        }}
+      >
+        <Typography.Paragraph
+          type="secondary"
+          style={{
+            margin: 0, // 覆盖 Paragraph 默认边距
+            fontSize: token.fontSize,
+            lineHeight: 1.8,
+            color: token.colorTextSecondary,
+          }}
+        >
+          {/* 注意：children 内部可能包含 markdown 渲染出的 p 标签
+        我们可以通过 CSS 变量或内联样式取消子元素的 margin
+      */}
+          <span>{children}</span>
+        </Typography.Paragraph>
+      </Flex>
     ),
 
     // 8. 任务列表适配

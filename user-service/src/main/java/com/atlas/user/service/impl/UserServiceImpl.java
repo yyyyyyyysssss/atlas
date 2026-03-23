@@ -371,7 +371,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userQueryWrapper
                 .lambda()
                 .select(User::getId, User::getFullName)
-                .eq(User::isEnabled, true)
+                .eq(User::getEnabled, true)
                 .orderByDesc(User::getCreateTime);
         if (name != null && !name.isEmpty()) {
             userQueryWrapper.lambda().like(User::getFullName, name);
@@ -434,7 +434,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userQueryWrapper
                 .lambda()
                 .select(User::getId, User::getFullName)
-                .eq(User::isEnabled, true)
+                .eq(User::getEnabled, true)
                 .orderByDesc(User::getCreateTime);
         List<User> users = userMapper.selectList(userQueryWrapper);
         if (users == null || users.isEmpty()) {

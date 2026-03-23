@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { House, Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -22,6 +22,10 @@ const MenuManage = lazy(() => import('../pages/system-manage/menu-manage'))
 const PositionManage = lazy(() => import('../pages/system-manage/pos-manage'))
 const DictManage = lazy(() => import('../pages/system-manage/dict-manage'))
 const DictItemManage = lazy(() => import('../pages/system-manage/dict-manage/dict-item'))
+
+const NotificationAnnouncement = lazy(() => import('../pages/notification-center/announcement'))
+const AnnouncementDetails = lazy(() => import('../pages/notification-center/announcement/details'))
+const NotificationMessage = lazy(() => import('../pages/notification-center/message'))
 export const routes = [
     {
         path: 'login',
@@ -128,6 +132,35 @@ export const routes = [
                         path: 'dict/:dictId',
                         element: <DictItemManage />,
                         breadcrumbName: '字典项',
+                    },
+                ]
+            },
+            {
+                path: 'notification',
+                breadcrumbName: '通知中心',
+                defaultIcon: <Bell size={18} />,
+                children: [
+                    {
+                        path: 'announcement',
+                        element: <NotificationAnnouncement />,
+                        breadcrumbName: '公告管理',
+                        defaultIcon: <Megaphone size={18} />,
+                        protected: true,
+                        requiredPermissions: ['notification:announcement']
+                    },
+                    {
+                        path: 'announcement/details',
+                        element: <AnnouncementDetails />,
+                        breadcrumbName: '公告',
+                        hideOperationMode: false
+                    },
+                    {
+                        path: 'message',
+                        element: <NotificationMessage />,
+                        breadcrumbName: '消息通知',
+                        defaultIcon: <Mail size={18} />,
+                        protected: true,
+                        requiredPermissions: ['notification:message']
                     },
                 ]
             },

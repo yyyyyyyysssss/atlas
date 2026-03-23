@@ -60,7 +60,7 @@ spring:
 
             # 消息通知服务
             - id: notification_route
-              uri: http://localhost:9090
+              uri: http://localhost:9099
               predicates:
                 - Path=/api/notification/**
               filters:

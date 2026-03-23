@@ -6,10 +6,12 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum ActivationStatus implements MybatisBaseEnum<String> {
+public enum AnnouncementType implements MybatisBaseEnum<String> {
 
-    ACTIVE("生效"),
-    INACTIVE("禁用"),
+    URGENT("紧急"),
+    RELEASE("发版"),
+    NOTICE("通知"),
+    MAINTAIN("维护"),
     ;
 
     private final String description;

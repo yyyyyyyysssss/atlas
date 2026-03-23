@@ -31,7 +31,7 @@ public class User extends BaseEntity {
     private String fullName;
 
     @TableField("enabled")
-    private boolean enabled;
+    private Boolean enabled;
 
     @TableField("avatar")
     private String avatar;

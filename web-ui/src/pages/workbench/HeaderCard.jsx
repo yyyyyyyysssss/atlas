@@ -56,7 +56,7 @@ const HeaderCard = () => {
   }
 
   return (
-    <Card bordered={false}>
+    <Card variant="borderless">
       <Flex align="center" justify="space-between" wrap="wrap" gap="middle">
         <Flex align="center" gap="large">
           <Badge dot color={token.colorSuccess}>

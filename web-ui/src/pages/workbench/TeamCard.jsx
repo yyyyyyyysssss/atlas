@@ -29,7 +29,7 @@ const TeamCard = () => {
   const visibleMembers = expanded ? memberData : memberData.slice(0, 6);
 
   return (
-    <Card title={<Space><Users size={16} /> 我的团队</Space>} bordered={false}>
+    <Card title={<Space><Users size={16} /> 我的团队</Space>} variant="borderless">
       <Flex vertical gap="large">
         <Row gutter={[16, 24]}>
           {visibleMembers.map((m) => (
@@ -54,8 +54,12 @@ const TeamCard = () => {
             style={{ color: token.colorTextSecondary, fontSize: '12px' }}
           >
             <Space size={4}>
-              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              {expanded ? '收起成员' : `展开更多 (${memberData.length - 6}+)`}
+              <Typography.Text type='secondary' style={{ fontSize: 12 }}>
+                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </Typography.Text>
+              <Typography.Text type='secondary' style={{ fontSize: 12 }}>
+                {expanded ? '收起成员' : `展开更多 (${memberData.length - 6}+)`}
+              </Typography.Text>
             </Space>
           </Button>
         )}

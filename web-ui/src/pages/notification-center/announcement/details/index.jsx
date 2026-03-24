@@ -93,12 +93,12 @@ const AnnouncementDetails = () => {
       >
         {/* 左侧编辑表单 */}
         <Flex
-          flex={1}
           vertical
           style={{
             minHeight: '100vh',
             overflowY: 'auto',
             paddingRight: '10px',
+            flex: '0 0 50%',
           }}
         >
           <Form
@@ -201,22 +201,23 @@ const AnnouncementDetails = () => {
 
         {/* 右侧预览 */}
         <Flex
-          flex={1}
           vertical
           style={{
             minHeight: '100vh',
-            overflowY: 'auto',
             paddingLeft: '10px',
+            flex: '0 0 50%',
           }}
         >
           <Card
             title={<Text strong>Markdown 预览</Text>}
-            bordered={false}
+            variant="borderless"
             style={{ height: '100%' }}
-            bodyStyle={{
-              padding: '16px',
-              height: '100%',
-              overflowY: 'auto',
+            styles={{
+              body: {
+                padding: '16px',
+                height: '100vh',
+                overflowY: 'auto'
+              }
             }}
           >
             {contentValue ? (

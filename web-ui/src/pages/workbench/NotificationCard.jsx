@@ -11,7 +11,7 @@ const NotificationCard = ({ data, onReadAll }) => {
     <Card 
       title={<Space><Bell size={18} /> 消息通知</Space>} 
       extra={<Button type="link" onClick={onReadAll}>全部标记已读</Button>} 
-      bordered={false}
+      variant="borderless"
     >
       <List
         itemLayout="horizontal"

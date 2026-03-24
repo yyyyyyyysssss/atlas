@@ -97,7 +97,7 @@ const ShortcutCard = () => {
       <Card
         title={<Space><Zap size={18} fill={token.colorWarning} stroke={token.colorWarning} /> 快捷开始</Space>}
         extra={<Button type="link" size="small" onClick={handleOpenConfig}>配置</Button>}
-        bordered={false}
+        variant="borderless"
       >
         <Row gutter={[16, 16]}>
           {userShortcuts.map((item) => (

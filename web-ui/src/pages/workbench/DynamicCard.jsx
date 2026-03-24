@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Flex, Typography, Button, theme, Modal, Tag, Divider, Space, Checkbox, Table, Image } from 'antd';
-import { ArrowRight } from 'lucide-react';
+import { Card, Flex, Typography, Button, theme, Modal, Tag, Divider, Space, Checkbox, Table, Image, Badge, Drawer, List, Calendar } from 'antd';
+import { ArrowRight, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRequest } from 'ahooks';
-import { getAnnouncementLatest } from '../../services/NotificationService';
+import { fetchAnnouncementList, getAnnouncementLatest } from '../../services/NotificationService';
 import { AnnouncementType } from '../../enums/notification';
 
 const { Title, Text, Paragraph, Link } = Typography;
@@ -15,11 +15,26 @@ const DynamicCard = () => {
 
   const [modalOpen, setModalOpen] = useState(false)
 
-  const { data: latestData = {}, loading: latestLoading, run: fetchLatest } = useRequest(getAnnouncementLatest, { manual: true })
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const [selectedItem, setSelectedItem] = useState(null)
+
+  const { data: latestList = [], loading: latestLoading, run: fetchLatest } = useRequest(
+    () => getAnnouncementLatest(1),
+    { manual: true }
+  )
+
+  // 获取分页历史列表
+  const { data: historyData, loading: historyLoading, run: fetchHistory } = useRequest(
+    (params) => fetchAnnouncementList(params || { pageNum: 1, pageSize: 20 }),
+    { manual: true }
+  )
 
   useEffect(() => {
     fetchLatest()
   }, [])
+
+  const latestData = latestList[0] || {}
 
   const dynamicCardStyle = {
     background: `linear-gradient(135deg, ${token.colorPrimary}12 0%, ${token.colorBgContainer} 100%)`,
@@ -28,54 +43,91 @@ const DynamicCard = () => {
     boxShadow: 'none',
   };
 
-  const handleViewDetails = () => {
-    setModalOpen(true);
-  };
+  const handleViewDetails = (item) => {
+    setSelectedItem(item)
+    setModalOpen(true)
+  }
 
-  const typeConfig = AnnouncementType[latestData?.type] || { label: latestData?.type, color: 'default' };
+  const handleOpenHistory = () => {
+    setDrawerOpen(true);
+    fetchHistory()
+  }
 
   return (
     <>
       <Card
         title={
           <Flex justify="space-between" align="center" style={{ width: '100%' }}>
-            <Text strong style={{ color: token.colorPrimary }}>系统动态</Text>
-            <Tag color={typeConfig.color} variant="flat">{typeConfig.label}</Tag>
+            <Space size={4}>
+              <Text strong style={{ color: token.colorPrimary }}>系统动态</Text>
+              <Badge status="processing" color={token.colorPrimary} />
+            </Space>
+            <Button
+              type="text"
+              size="small"
+              icon={<Text type="secondary" style={{ fontSize: 12 }}><History size={14} /></Text>}
+              onClick={handleOpenHistory}
+            >
+              <Text type="secondary" style={{ fontSize: 12 }}>查看历史</Text>
+            </Button>
           </Flex>
         }
         variant="borderless"
         loading={latestLoading}
         style={dynamicCardStyle}
       >
-        <Flex vertical gap="middle">
-          <Flex vertical gap={4}>
-            <Text strong>{latestData.title}</Text>
-            <Text type="secondary" style={{ fontSize: token.fontSizeSM, lineHeight: 1.6 }}>
-              {latestData.description}
-            </Text>
-          </Flex>
-          <Button
-            type="primary"
-            block
-            variant="filled"
-            icon={<ArrowRight size={14} />}
-            onClick={handleViewDetails}
-          >
-            查看详情
-          </Button>
-        </Flex>
+        <AnnouncementCard
+          item={latestData}
+          isLatest={true}
+          onClick={handleViewDetails}
+        />
       </Card>
 
       {/* 详情模态框 */}
       <Modal
-        title={latestData.title}
+        title={selectedItem?.title}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         footer={null}
         width={700}
+        zIndex={1010}
       >
-        <AnnouncementDetailView data={latestData} />
+        {selectedItem && <AnnouncementDetailView data={selectedItem} />}
       </Modal>
+
+      <Drawer
+        title="系统动态历史"
+        placement="right"
+        width={400}
+        onClose={() => setDrawerOpen(false)}
+        open={drawerOpen}
+        loading={historyLoading}
+        styles={{ body: { background: token.colorFillAlter, padding: '12px 16px' } }}
+      >
+        <List
+          itemLayout="vertical"
+          dataSource={historyData?.list || []}
+          renderItem={(item) => (
+            <List.Item
+              className="atlas-float-trigger"
+              onClick={() => handleViewDetails(item)}
+              style={{
+                padding: '16px',
+                marginBottom: 12, // 利用外边距制造自然分界
+                background: token.colorBgContainer, // 纯白卡片
+                borderRadius: token.borderRadiusLG,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <AnnouncementCard
+                item={item}
+              />
+            </List.Item>
+          )}
+        />
+      </Drawer>
     </>
   );
 };
@@ -124,6 +176,47 @@ export const AnnouncementDetailView = ({ data }) => {
   );
 };
 
+
+const AnnouncementCard = ({ item, isLatest = false, onClick }) => {
+
+  const { token } = theme.useToken()
+
+  const typeConfig = AnnouncementType[item.type] || { label: item.type, color: 'default' }
+
+  return (
+    <Flex vertical gap="middle">
+      <Flex vertical gap={4}>
+        <Flex justify="space-between" align="center">
+          <Text strong>{item?.title || '暂无动态'}</Text>
+          <Tag color={typeConfig.color} variant="flat" style={{ marginRight: 0 }}>{typeConfig.label}</Tag>
+        </Flex>
+        <Text type="secondary" style={{ fontSize: token.fontSizeSM, lineHeight: 1.6 }}>
+          {item.description}
+        </Text>
+      </Flex>
+      {isLatest ? (
+        <Button
+          type="primary"
+          block
+          variant="filled"
+          icon={<ArrowRight size={14} />}
+          onClick={() => onClick(item)}
+        >
+          查看详情
+        </Button>
+      ) : (
+        <Flex justify="space-between" align="center" style={{ marginTop: 4 }}>
+          <Text type="secondary" style={{ fontSize: 12, opacity: 0.6 }}>
+            {item?.publishTime?.split(' ')[0]}
+          </Text>
+          {item?.version && (
+            <Text type="secondary" style={{ fontSize: 11 }}>{item.version}</Text>
+          )}
+        </Flex>
+      )}
+    </Flex>
+  )
+}
 
 export const AnnouncementMarkdownView = ({ content }) => {
 

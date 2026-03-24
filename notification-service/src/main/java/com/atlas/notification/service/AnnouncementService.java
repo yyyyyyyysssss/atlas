@@ -10,6 +10,8 @@ import com.atlas.notification.domain.dto.AnnouncementCreateDTO;
 import com.atlas.notification.domain.dto.AnnouncementUpdateDTO;
 import com.atlas.notification.domain.vo.AnnouncementVO;
 
+import java.util.List;
+
 
 /**
  * (Announcement)表服务接口
@@ -23,7 +25,7 @@ public interface AnnouncementService extends IService<Announcement> {
 
     AnnouncementVO findById(Long id);
 
-    AnnouncementVO getLatestPublished();
+    List<AnnouncementVO> getLatestPublished(Integer limit);
 
     Long createAnnouncement(AnnouncementCreateDTO createDTO);
 

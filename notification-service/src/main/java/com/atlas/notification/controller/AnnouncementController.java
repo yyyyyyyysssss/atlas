@@ -10,8 +10,11 @@ import com.atlas.notification.service.AnnouncementService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * (Announcement)表控制层
@@ -42,9 +45,9 @@ public class AnnouncementController {
     }
 
     @GetMapping("/latest")
-    public Result<AnnouncementVO> getLatest() {
-        AnnouncementVO vo = announcementService.getLatestPublished();
-        return ResultGenerator.ok(vo);
+    public Result<List<AnnouncementVO>> getLatest(@RequestParam(defaultValue = "1") Integer limit) {
+        List<AnnouncementVO> list = announcementService.getLatestPublished(limit);
+        return ResultGenerator.ok(list);
     }
 
     @PostMapping("/create")

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,19 +80,20 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     }
 
     @Override
-    public AnnouncementVO getLatestPublished() {
+    public List<AnnouncementVO> getLatestPublished(Integer limit) {
+        int count = (limit == null || limit <= 0) ? 1 : limit;
         // 构建查询：已发布状态 + 按发布时间降序
         LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
                 .eq(Announcement::getStatus, AnnouncementStatus.PUBLISHED) // 必须是已发布
                 .orderByDesc(Announcement::getPriority) // 优先级最高优先
                 .orderByDesc(Announcement::getPublishTime) // 时间最近优先
-                .last("LIMIT 1"); // 只取一条
+                .last("LIMIT " + count); // 动态传入限制条数
 
-        Announcement entity = announcementMapper.selectOne(wrapper);
-        if (entity == null) {
-            return null;
+        List<Announcement> entities = announcementMapper.selectList(wrapper);
+        if (CollectionUtils.isEmpty(entities)) {
+            return Collections.emptyList();
         }
-        return AnnouncementMapping.INSTANCE.toAnnouncementVO(entity);
+        return AnnouncementMapping.INSTANCE.toAnnouncementVO(entities);
     }
 
     @Override

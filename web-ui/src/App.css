@@ -14,18 +14,21 @@
 
 /* 悬浮态：多层柔和阴影 + 位移 */
 .atlas-float-trigger:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   /* 亮色模式下的层次感阴影 */
   box-shadow: 
     0 12px 24px -10px rgba(0, 0, 0, 0.08), 
     0 8px 16px -8px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* 点击态：物理压感反馈 */
+/* 点击态：模拟物理压实感 */
 .atlas-float-trigger:active {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px -5px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.1s !important; /* 点击反馈要快 */
+  /* 关键：不要回到 -1px，回到 0 或 1px 更有“踩实”的感觉 */
+  transform: translateY(1px) !important; 
+  /* 阴影瞬间收敛，模拟贴地感 */
+  box-shadow: 0 2px 5px -1px rgba(0, 0, 0, 0.1) !important;
+  /* 缩短过渡时间，让反馈更灵敏 */
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out !important;
 }
 
 /* --- 暗色模式适配 (至关重要) --- */

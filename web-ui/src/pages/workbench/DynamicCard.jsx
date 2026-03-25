@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRequest } from 'ahooks';
 import { fetchAnnouncementList, getAnnouncementLatest } from '../../services/NotificationService';
-import { AnnouncementType } from '../../enums/notification';
+import { AnnouncementStatus, AnnouncementType } from '../../enums/notification';
 
 const { Title, Text, Paragraph, Link } = Typography;
 
@@ -26,7 +26,7 @@ const DynamicCard = () => {
 
   // 获取分页历史列表
   const { data: historyData, loading: historyLoading, run: fetchHistory } = useRequest(
-    (params) => fetchAnnouncementList(params || { pageNum: 1, pageSize: 20 }),
+    (params) => fetchAnnouncementList(params || { pageNum: 1, pageSize: 20, status: AnnouncementStatus.PUBLISHED.value }),
     { manual: true }
   )
 

@@ -4,7 +4,6 @@
 export const AnnouncementStatus = Object.freeze({
     DRAFT: { value: 'DRAFT', label: '草稿', color: 'gray' },      // 默认灰色，代表未生效
     PUBLISHED: { value: 'PUBLISHED', label: '已发布', color: 'success' }, // 成功绿，代表在线
-    RECALLED: { value: 'RECALLED', label: '已撤回', color: 'warning' }  // 警告橙，代表曾发布但被下线
 })
 
 export const AnnouncementType = Object.freeze({

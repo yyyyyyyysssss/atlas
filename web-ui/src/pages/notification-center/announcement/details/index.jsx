@@ -168,10 +168,6 @@ const AnnouncementDetails = () => {
               </Col>
             </Row>
 
-            <Form.Item label="发布时间" name="publishTime">
-              <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: '100%' }} />
-            </Form.Item>
-
             <Form.Item
               label="内容（Markdown格式）"
               name="content"

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -101,6 +102,11 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     public Long createAnnouncement(AnnouncementCreateDTO createDTO){
         Announcement entity = AnnouncementMapping.INSTANCE.toAnnouncement(createDTO);
         entity.setId(IdGen.genId());
+        if(entity.getStatus().equals(AnnouncementStatus.PUBLISHED)){
+            entity.setPublishTime(LocalDateTime.now());
+        } else {
+            entity.setPublishTime(null);
+        }
         int row = announcementMapper.insert(entity);
         if (row <= 0) {
             throw new BusinessException("创建失败");
@@ -116,6 +122,11 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
             AnnouncementMapping.INSTANCE.overwriteAnnouncement(updateDTO, entity);
         } else {
             AnnouncementMapping.INSTANCE.updateAnnouncement(updateDTO, entity);
+        }
+        if(entity.getStatus().equals(AnnouncementStatus.PUBLISHED)){
+            entity.setPublishTime(LocalDateTime.now());
+        } else {
+            entity.setPublishTime(null);
         }
         int row = announcementMapper.updateById(entity);
         if (row <= 0) {

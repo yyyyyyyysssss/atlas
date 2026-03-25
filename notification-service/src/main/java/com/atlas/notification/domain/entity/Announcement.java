@@ -3,6 +3,7 @@ package com.atlas.notification.domain.entity;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.notification.enums.AnnouncementStatus;
 import com.atlas.notification.enums.AnnouncementType;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Builder;
@@ -57,7 +58,7 @@ public class Announcement extends BaseEntity {
     private Integer priority;
 
     // 发布时间 
-    @TableField("publish_time")
+    @TableField(value = "publish_time", updateStrategy = FieldStrategy.ALWAYS)
     private LocalDateTime publishTime;
 
 

@@ -50,6 +50,15 @@ public class AnnouncementController {
         return ResultGenerator.ok(list);
     }
 
+    @GetMapping("/latest/version")
+    public Result<String> getLatestGVersion() {
+        List<AnnouncementVO> list = announcementService.getLatestPublished(1);
+        if(CollectionUtils.isEmpty(list)){
+            return ResultGenerator.ok();
+        }
+        return ResultGenerator.ok(list.getFirst().getVersion());
+    }
+
     @PostMapping("/create")
     public Result<?> createAnnouncement(@RequestBody @Validated AnnouncementCreateDTO createDTO) {
         Long id = announcementService.createAnnouncement(createDTO);

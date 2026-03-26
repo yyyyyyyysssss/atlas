@@ -33,3 +33,31 @@ build/
 ### VS Code ###
 .vscode/
 .history
+
+### Python ###
+# 虚拟环境 (Virtual Environments)
+venv/
+.venv/
+env/
+ENV/
+auth_token.py
+.env
+
+# 字节码编译文件 (Byte-compiled / optimized / DLL files)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 分发与打包 (Distribution / packaging)
+dist/
+build/
+*.egg-info/
+lib/
+lib64/
+
+# 单元测试缓存
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/

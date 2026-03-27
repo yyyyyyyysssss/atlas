@@ -2,14 +2,14 @@
 spring:
   datasource:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
-    url: jdbc:shardingsphere:classpath:sharding.yaml
+    url: jdbc:shardingsphere:classpath:sharding.yaml?placeholder-type=environment
   cache:
     type: redis
   data:
     redis:
-      host: ys0921.sbs
-      port: 46379
-      password: Yan@136156
+      host: ${REDIS_HOST:}
+      port: ${REDIS_PORT:}
+      password: ${REDIS_PASSWORD:}
       lettuce:
         pool:
           min-idle: 10
@@ -19,10 +19,10 @@ spring:
 
 
 minio:
-  endpoint: http://ys0921.sbs:29000
+  endpoint: ${MINIO_ENDPOINT}
   bucketName: y-chat-bucket
-  accessKey: L4C2Tx0MZEqkV9M6JZt6
-  secretKey: CQYZaB36pyMHPbVyIO4wjWMTNeqSBbVJlMoLPTwI
+  accessKey: ${MINIO_ACCESS_KEY}
+  secretKey: ${MINIO_SECRET_KEY}
 
 atlas:
   user:

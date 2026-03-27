@@ -2,11 +2,12 @@
 spring:
   datasource:
     driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
-    url: jdbc:shardingsphere:classpath:sharding.yaml
+    url: jdbc:shardingsphere:classpath:sharding.yaml?placeholder-type=environment
   data:
     redis:
-      host: 10.245.3.193
-      port: 6379
+      host: ${REDIS_HOST:}
+      port: ${REDIS_PORT:}
+      password: ${REDIS_PASSWORD:}
       lettuce:
         pool:
           min-idle: 10

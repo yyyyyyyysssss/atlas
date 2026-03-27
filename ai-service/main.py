@@ -1,12 +1,11 @@
+import os
+
 import uvicorn
 from fastapi import FastAPI
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from sqlalchemy.sql.operators import truediv
 
 from api.announcement import router as ai_announcement_router
-
-# 加载.env
-load_dotenv()
 
 app = FastAPI(
     title='ai-service',
@@ -21,6 +20,9 @@ def read_root():
     return {"Hello": "Atlas AI User"}
 
 if __name__ == '__main__':
+    # 加载环境
+    load_dotenv(find_dotenv())
+    # 启动
     uvicorn.run(
         'main:app',
         host= 'localhost',

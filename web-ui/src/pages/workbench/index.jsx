@@ -9,12 +9,30 @@ import ShortcutCard from './ShortcutCard';
 import NotificationCard from './NotificationCard';
 import TeamCard from './TeamCard';
 import DynamicCard from './DynamicCard';
+import Cookies from 'js-cookie'
+import { useSse } from '../../hooks/useSse';
 
 const { Content } = Layout;
 
 const Workbench = () => {
 
   const { token } = theme.useToken()
+
+  const accessToken = Cookies.get("accessToken");
+
+  const sseUrl = `/api/notification/v1/notification/sse/subscribe?terminal=web&access_token=${accessToken}`;
+
+  const { status } = useSse(sseUrl, {
+    // 2. 处理业务消息 (对应后端的 message_event)
+    onMessage: (data) => {
+      console.log('收到 Atlas 实时消息:', data);
+    },
+
+    // 3. 连接成功后的逻辑
+    onConnected: () => {
+      console.log('通知服务已就绪，开始监听...');
+    }
+  });
 
 
   const notifications = [
@@ -32,7 +50,7 @@ const Workbench = () => {
           <Col xs={24} lg={16}>
             <Flex vertical gap={token.marginLG}>
               {/* 快捷开始 */}
-              <ShortcutCard/>
+              <ShortcutCard />
               {/* 消息通知 */}
               <NotificationCard
                 data={notifications}
@@ -43,7 +61,7 @@ const Workbench = () => {
           <Col xs={24} lg={8}>
             <Flex vertical gap={token.marginLG}>
               {/* 系统动态 */}
-              <DynamicCard/>
+              <DynamicCard />
               {/* 我的团队 */}
               <TeamCard />
             </Flex>

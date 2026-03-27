@@ -6,7 +6,7 @@ dataSources:
   master:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: $${DB_URL::}
+    jdbcUrl: jdbc:mysql://$${DB_HOST::}/atlas_file?useUnicode=true&allowPublicKeyRetrieval=true&useSSL=false&useLegacyDatetimeCode=false&allowMultiQueries=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: $${DB_USERNAME::}
     password: $${DB_PASSWORD::}
     autoCommit: true
@@ -27,8 +27,7 @@ dataSources:
   slave0:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-#    jdbcUrl: jdbc:mysql://ys0921.sbs:43306/atlas_file?useUnicode=true&allowPublicKeyRetrieval=true&useSSL=false&useLegacyDatetimeCode=false&allowMultiQueries=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    jdbcUrl: $${DB_URL::}
+    jdbcUrl: jdbc:mysql://$${DB_HOST::}/atlas_file?useUnicode=true&allowPublicKeyRetrieval=true&useSSL=false&useLegacyDatetimeCode=false&allowMultiQueries=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: $${DB_USERNAME::}
     password: $${DB_PASSWORD::}
     autoCommit: true

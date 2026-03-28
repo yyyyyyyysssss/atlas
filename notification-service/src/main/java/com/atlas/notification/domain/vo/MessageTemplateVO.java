@@ -2,7 +2,7 @@ package com.atlas.notification.domain.vo;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import lombok.Getter;
 import lombok.Setter;
 

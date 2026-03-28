@@ -2,7 +2,7 @@ package com.atlas.notification.service.render;
 
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.notification.domain.mode.*;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.stereotype.Component;
@@ -24,6 +24,7 @@ public class PlaceholderRenderStrategy extends AbstractRenderStrategy implements
 
         return displayType == DisplayType.TEXT
                 || displayType == DisplayType.CARD
+                || displayType == DisplayType.JSON
                 || displayType == DisplayType.MEDIA;
     }
 
@@ -44,6 +45,26 @@ public class PlaceholderRenderStrategy extends AbstractRenderStrategy implements
                 // 将原材料 content 渲染为最终成品 result
                 textPayload.setText(sub.replace(template.getContent()));
                 return textPayload;
+            case JSON:
+                JsonPayload jsonPayload = new JsonPayload();
+                jsonPayload.setTitle(renderedTitle);
+                if (template.getContent() instanceof String contentStr) {
+                    try {
+                        String renderedJson = sub.replace(contentStr);
+                        Object data = JsonUtils.parseObject(renderedJson, Object.class);
+                        jsonPayload.setData(data);
+                    }catch (Exception e){
+                        log.error("JSON Template Render Failed! Error: {}", e.getMessage());
+                        JsonPayload fallback = new JsonPayload();
+                        fallback.setTitle(renderedTitle);
+                        fallback.setData(sub.replace(template.getContent()));
+                        return fallback;
+                    }
+                }else {
+                    jsonPayload.setData(template.getContent());
+                }
+                return jsonPayload;
+
             case CARD:
                 try {
                     // JSON字符串

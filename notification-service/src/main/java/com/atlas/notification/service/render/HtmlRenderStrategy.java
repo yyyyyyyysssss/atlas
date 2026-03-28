@@ -3,7 +3,7 @@ package com.atlas.notification.service.render;
 import com.atlas.notification.domain.mode.HtmlPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -51,7 +51,7 @@ public class HtmlRenderStrategy extends AbstractRenderStrategy implements Render
         String renderedTitle = sub.replace(template.getTitle());
 
         // 渲染 HTML 内容
-        String content = template.getContent();
+        String content = (String) template.getContent();
         String renderedHtml;
         try {
             if(StringUtils.startsWith(content, CLASSPATH_PREFIX)){

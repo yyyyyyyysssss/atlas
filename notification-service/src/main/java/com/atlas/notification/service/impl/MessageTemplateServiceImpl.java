@@ -10,7 +10,7 @@ import com.atlas.notification.domain.dto.MessageTemplateUpdateDTO;
 import com.atlas.notification.domain.entity.MessageTemplate;
 import com.atlas.notification.domain.vo.MessageTemplateVO;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import com.atlas.notification.enums.NotificationErrorCode;
 import com.atlas.notification.mapper.MessageTemplateMapper;
 import com.atlas.notification.mapping.MessageTemplateMapping;

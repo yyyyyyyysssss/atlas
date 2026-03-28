@@ -7,7 +7,7 @@ import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
 import com.atlas.notification.domain.vo.MessageTemplateVO;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import com.atlas.notification.enums.NotificationErrorCode;
 import com.atlas.notification.service.render.RenderStrategy;
 import lombok.RequiredArgsConstructor;
@@ -112,12 +112,18 @@ public class NotificationService {
     }
 
     private MessageTemplateModel resolveTemplateModel(NotificationDTO ctx, ChannelType channelType) {
+        MessageTemplateModel.MessageTemplateModelBuilder builder = MessageTemplateModel
+                .builder()
+                .templateCode(ctx.getTemplateCode())
+                .title(ctx.getTitle())
+                .content(ctx.getContent())
+                .displayType(ctx.getDisplayType());
         if (StringUtils.isNotEmpty(ctx.getTemplateCode())) {
             MessageTemplateVO messageTemplateVO = messageTemplateService.resolveTemplate(ctx.getTemplateCode(),channelType);
             if (messageTemplateVO == null) {
                 throw new NotificationException(NotificationErrorCode.TEMPLATE_NOT_FOUND, "TemplateCode: " + ctx.getTemplateCode());
             }
-            return MessageTemplateModel.builder()
+            builder
                     .templateId(messageTemplateVO.getId())
                     .templateCode(messageTemplateVO.getCode())
                     // 数据库有标题用数据库的，没有用 Context 传入的（如代码直接指定的本地模板标题）
@@ -126,12 +132,8 @@ public class NotificationService {
                     .displayType(messageTemplateVO.getDisplayType())
                     .extTemplateCode(messageTemplateVO.getExtTemplateCode())
                     .build();
-        } else {
-            return MessageTemplateModel.builder()
-                    .title(ctx.getTitle())
-                    .content(ctx.getText())
-                    .displayType(DisplayType.TEXT)
-                    .build();
         }
+
+        return builder.build();
     }
 }

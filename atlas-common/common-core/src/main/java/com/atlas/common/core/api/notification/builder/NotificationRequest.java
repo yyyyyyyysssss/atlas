@@ -3,6 +3,7 @@ package com.atlas.common.core.api.notification.builder;
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
 import com.atlas.common.core.api.notification.dto.NotificationDTO;
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
@@ -32,10 +33,9 @@ public class NotificationRequest {
     // 可选标题
     private String title;
 
-    // 直接发送的原始文本
-    private String text;
+    private Object content;
 
-    private Object contentData;
+    private DisplayType displayType;
 
     // 接收目标
     private List<String> targets;
@@ -54,16 +54,17 @@ public class NotificationRequest {
     /**
      * 以纯文本方式起手 (可选)
      */
-    public static ChannelOp text(String title, String content) {
+    public static ChannelOp text(String title, String text) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
-        ctx.text = content;
+        ctx.content = text;
+        ctx.displayType = DisplayType.TEXT;
         return new NotificationBuilder(ctx);
     }
 
-    public static ChannelOp text(String content) {
+    public static ChannelOp text(String text) {
 
-        return text(null, content);
+        return text(null, text);
     }
 
 
@@ -86,9 +87,10 @@ public class NotificationRequest {
     /**
      * 以纯数据对象起手 (主要针对 SSE/WebSocket 场景)
      */
-    public static ChannelOp data(Object data) {
+    public static ChannelOp object(Object object) {
         NotificationRequest ctx = new NotificationRequest();
-        ctx.contentData = data;
+        ctx.content = object;
+        ctx.displayType = DisplayType.JSON;
         return new NotificationBuilder(ctx);
     }
 
@@ -268,8 +270,8 @@ public class NotificationRequest {
                     .builder()
                     .templateCode(ctx.templateCode)
                     .title(ctx.title)
-                    .text(ctx.text)
-                    .contentData(ctx.contentData)
+                    .content(ctx.content)
+                    .displayType(ctx.displayType)
                     .targets(ctx.targets)
                     .targetType(ctx.targetType)
                     .channels(ctx.channels)

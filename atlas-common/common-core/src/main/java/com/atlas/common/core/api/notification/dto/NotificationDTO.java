@@ -1,6 +1,7 @@
 package com.atlas.common.core.api.notification.dto;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -27,10 +28,9 @@ public class NotificationDTO {
     // 可选标题
     private String title;
 
-    // 直接发送的原始文本
-    private String text;
+    private Object content;
 
-    private Object contentData;
+    private DisplayType displayType;
 
     // 接收目标
     @NotEmpty(message = "接收人列表不能为空")

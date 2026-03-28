@@ -3,7 +3,7 @@ package com.atlas.notification.domain.entity;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;

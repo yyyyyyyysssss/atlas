@@ -1,6 +1,6 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.DisplayType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.atlas.notification.enums;
+package com.atlas.common.core.api.notification.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -122,7 +122,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
             notificationService.send(
                     NotificationRequest
-                            .text(JsonUtils.toJson(entity))
+                            .object(entity)
                             .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
                             .to()
                             .toAllUser()
@@ -151,16 +151,16 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (row <= 0) {
             throw new BusinessException("修改失败");
         }
-//        if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
+        if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
             notificationService.send(
                     NotificationRequest
-                            .text(JsonUtils.toJson(entity))
+                            .object(entity)
                             .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
                             .to()
                             .toAllUser()
                             .build()
             );
-//        }
+        }
     }
 
     @Override

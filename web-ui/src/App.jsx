@@ -14,6 +14,8 @@ import { AuthProvider } from './router/AuthProvider.jsx';
 import tinycolor from 'tinycolor2';
 import dayjs from 'dayjs'
 import NoDataEmpty from './components/NoDataEmpty.js';
+import Cookies from 'js-cookie'
+import { useSse } from './hooks/useSse.jsx';
 
 dayjs.locale('zh-cn')
 
@@ -30,6 +32,22 @@ const App = () => {
   const language = useSelector(state => state.layout.language)
 
   const themeValue = useSelector(state => state.layout.theme)
+
+
+  const accessToken = Cookies.get("accessToken")
+  const sseUrl = `/api/notification/v1/notification/sse/subscribe?terminal=web&access_token=${accessToken}`
+
+  const { status } = useSse(sseUrl, {
+    // 2. 处理业务消息 (对应后端的 message_event)
+    onMessage: (data) => {
+      console.log('message:', data);
+    },
+
+    // 3. 连接成功后的逻辑
+    onConnected: () => {
+      console.log('listener...');
+    }
+  });
 
   useEffect(() => {
     document.documentElement.style.setProperty('--color-primary', colorPrimary)
@@ -139,7 +157,7 @@ const App = () => {
           colorBgBase: '#1C1C1C',
         },
         Splitter: {
-          
+
         },
         Segmented: {
           itemHoverColor: 'rgba(0,0,0,0.88)',
@@ -202,7 +220,7 @@ const App = () => {
     <ConfigProvider
       locale={language === 'zh' ? zhCN : enUS}
       theme={themeConfig[themeValue]}
-      renderEmpty={() => (<NoDataEmpty/>)}
+      renderEmpty={() => (<NoDataEmpty />)}
     >
       <AuthProvider>
         {contextHolder}

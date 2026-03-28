@@ -19,6 +19,9 @@ public interface UserApi {
     @GetExchange("/username")
     Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
 
+    @GetExchange("/all")
+    Result<List<UserDTO>> findAll();
+
     @PostExchange("/identifiers")
     Result<List<UserDTO>> findByIdentifier(@RequestBody List<String> identifiers);
 

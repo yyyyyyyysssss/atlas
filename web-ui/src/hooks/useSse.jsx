@@ -6,8 +6,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
  * @param {object} options - 回调配置
  */
 export const useSse = (url, { onMessage, onConnected } = {}) => {
+
   const [status, setStatus] = useState('closed'); // connecting, opened, closed
   const sseRef = useRef(null);
+  const reconnectTimerRef = useRef(null); // 用于手动重连计时
+  const reconnectCountRef = useRef(0);    // 记录连续失败次数，用于退避算法
 
   // 使用 Ref 确保回调逻辑永远是最新的，且不会触发 connect 重新定义
   const onMessageRef = useRef(onMessage);
@@ -19,12 +22,14 @@ export const useSse = (url, { onMessage, onConnected } = {}) => {
   }, [onMessage, onConnected]);
 
   const connect = useCallback(() => {
+    // 清除任何现有的重连定时器
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     // 幂等处理：如果已有实例，先关闭
     if (sseRef.current) {
       sseRef.current.close();
     }
 
-    console.log('SSE: [Atlas] 开启原生连接监听:', url);
+    console.log('SSE Connecting');
     setStatus('connecting');
 
     const sse = new EventSource(url);
@@ -32,18 +37,19 @@ export const useSse = (url, { onMessage, onConnected } = {}) => {
 
     // 1. 连接建立成功
     sse.onopen = () => {
-      console.log('SSE: [Atlas] 连接已就绪');
+      console.log('SSE Connected');
       setStatus('opened');
+      reconnectCountRef.current = 0; // 连接成功，重置计数器
       onConnectedRef.current?.();
     };
 
     // 2. 监听业务自定义事件 (对应后端的 .name("message_event"))
-    sse.addEventListener('message_event', (e) => {
+    sse.addEventListener('announcement_event', (e) => {
       try {
         const payload = JSON.parse(e.data);
         onMessageRef.current?.(payload);
       } catch (err) {
-        console.error('SSE: 业务消息解析失败', err);
+        console.error('SSE: Business message parsing failed', err);
       }
     });
 
@@ -52,7 +58,17 @@ export const useSse = (url, { onMessage, onConnected } = {}) => {
       // 注意：这里不要 close()，也不要手动重连
       // 浏览器会自动根据后端下发的 retry 时间进行重连
       setStatus('closed');
-      console.warn('SSE: 连接暂时断开，浏览器正在尝试自动重连...');
+      sse.close(); // 关键：主动关闭旧实例，准备手动开启新实例
+      // 指数退避算法：防止后端挂掉时，前端疯狂请求导致浏览器卡顿
+      // 延迟时间 = min(1000 * 2^n, 30秒)
+      const delay = Math.min(1000 * Math.pow(2, reconnectCountRef.current), 30000);
+      console.warn(
+        `SSE: Connection lost. Reconnecting (attempt ${reconnectCountRef.current + 1}) in ${delay / 1000}s...`
+      );
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectCountRef.current += 1;
+        connect();
+      }, delay);
     };
   }, [url]);
 

@@ -24,4 +24,8 @@ public interface NotificationConstant {
         String EXT_TEMPLATE_CODE = "sms_ext_template_code"; // 对应外部服务商模板ID
     }
 
+    interface Sse {
+        String EVENT_NAME = "sse_event_name";
+    }
+
 }

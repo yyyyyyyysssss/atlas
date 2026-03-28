@@ -5,6 +5,8 @@ import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.user.domain.entity.User;
+import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,16 @@ public class UserInternalController {
     public Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username) {
         UserAuthDTO userAuthDTO = userService.loadUserByUsername(username);
         return ResultGenerator.ok(userAuthDTO);
+    }
+
+    @GetMapping("/all")
+    public Result<List<UserDTO>> all() {
+        List<User> users = userService
+                .lambdaQuery()
+                .select(User::getId, User::getEmail, User::getPhone)
+                .eq(User::getEnabled, true)
+                .list();
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(users));
     }
 
     @PostMapping("/identifiers")

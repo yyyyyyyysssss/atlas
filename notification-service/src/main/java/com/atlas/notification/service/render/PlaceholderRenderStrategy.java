@@ -47,7 +47,7 @@ public class PlaceholderRenderStrategy extends AbstractRenderStrategy implements
             case CARD:
                 try {
                     // JSON字符串
-                    String rawJson = template.getContent();
+                    String rawJson = (String) template.getContent();
                     // 执行占位符替换 (将 JSON 里的 ${var} 替换掉)
                     String renderedJson = sub.replace(rawJson);
                     CardPayload cardPayload = JsonUtils.parseObject(renderedJson, CardPayload.class);

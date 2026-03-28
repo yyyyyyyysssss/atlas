@@ -45,6 +45,7 @@ public class NotificationController {
     @GetMapping(value = "/sse/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@RequestParam("terminal") String terminal, HttpServletResponse response) {
         response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Content-Type", "text/event-stream");
         Long userId = UserContext.getRequiredUserId();
         log.info("SSE订阅, 用户ID: {}, 终端类型: {},", userId, terminal);
         return sseSessionManager.subscribe(userId, terminal);

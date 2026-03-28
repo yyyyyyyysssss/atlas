@@ -7,6 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum TargetType{
 
+    ALL,
+
     USER_ID,
 
     EMAIL,

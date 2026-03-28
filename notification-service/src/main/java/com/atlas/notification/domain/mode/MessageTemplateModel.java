@@ -23,7 +23,7 @@ public class MessageTemplateModel {
 
     private String title;
 
-    private String content;
+    private Object content;
 
     private DisplayType displayType;
 

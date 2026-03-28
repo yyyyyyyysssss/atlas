@@ -1,5 +1,6 @@
 package com.atlas.notification.sse;
 
+import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,13 +18,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
-public class SseSessionManager {
+public class SseSessionManager implements NotificationSubscriber{
 
     /**
      * 会话池：userId -> (terminal -> SseEmitter)
      * 使用两层 Map 是为了支持同一个用户在不同设备（Web、App、Pad）同时在线
      */
     private static final Map<Long, Map<String, SseEmitter>> SESSION_POOL = new ConcurrentHashMap<>();
+
+
 
 
     /**
@@ -41,7 +44,7 @@ public class SseSessionManager {
             remove(userId, terminal, oldEmitter, "新连接替换旧连接");
         }
         // 创建 Emitter，设置超时时间
-        SseEmitter emitter = new SseEmitter(30_000L);
+        SseEmitter emitter = new SseEmitter(3600_000L);
 
         // 注册回调：连接完成后移除
         emitter.onCompletion(() -> remove(userId, terminal, emitter, "Completion"));
@@ -56,7 +59,7 @@ public class SseSessionManager {
         log.info("SSE 连接成功: 用户={}, 终端={}, 当前总在线用户数={}", userId, terminal, getOnlineCount());
 
         // 建立连接后发送一个握手包，告知前端连接已就绪
-        send(userId, terminal, "connected", "ready");
+        send(userId, terminal, NotificationEventEnum.CONNECTED.getCode(), "ready");
 
         return emitter;
     }
@@ -144,11 +147,11 @@ public class SseSessionManager {
     @Scheduled(fixedRate = 15000)
     public void heartbeat() {
         if (SESSION_POOL.isEmpty()) return;
-        log.info("执行 SSE 心跳维持，当前在线用户数: {}", SESSION_POOL.size());
+        log.debug("执行 SSE 心跳维持，当前在线用户数: {}", SESSION_POOL.size());
         SESSION_POOL.forEach((userId, terminals) -> {
             terminals.forEach((terminal, emitter) -> {
                 try {
-                    emitter.send(SseEmitter.event().name("heartbeat").data("ping"));
+                    emitter.send(SseEmitter.event().name(NotificationEventEnum.HEARTBEAT.getCode()).data("ping"));
                 } catch (Exception e) {
                     remove(userId, terminal, emitter, "Heartbeat Failed");
                 }
@@ -165,4 +168,12 @@ public class SseSessionManager {
         return SESSION_POOL.values().stream().mapToInt(Map::size).sum();
     }
 
+    @Override
+    public void onMessage(Long userId, NotificationEventEnum eventName, Object data) {
+        if(userId == null){
+            broadcast(eventName.getCode(),data);
+        } else {
+            sendToUser(userId, eventName.getCode(), data);
+        }
+    }
 }

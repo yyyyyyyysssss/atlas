@@ -175,6 +175,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         Object first = identifiers.iterator().next();
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getEnabled, true);
         if (first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))) {
             queryWrapper.in(User::getId, identifiers);
         } else {
@@ -449,7 +450,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return Collections.emptyList();
         }
         List<User> users = userMapper.selectList(Wrappers.lambdaQuery(User.class)
-                .in(column, values));
+                .eq(User::getEnabled,true).in(column, values));
         if (CollectionUtils.isEmpty(users)) {
             return Collections.emptyList();
         }

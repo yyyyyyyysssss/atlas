@@ -46,7 +46,7 @@ public class AccountResolver {
     }
 
     public List<String> resolve(ChannelType channel, TargetType targetType, List<String> targets) {
-        if (CollectionUtils.isEmpty(targets)) {
+        if (CollectionUtils.isEmpty(targets) && !targetType.equals(TargetType.ALL)) {
             return Collections.emptyList();
         }
         // 渠道需要的目标类型
@@ -57,6 +57,8 @@ public class AccountResolver {
         }
 
         List<UserDTO> users = switch (targetType) {
+            case ALL ->
+                    Optional.ofNullable(userApi.findAll()).filter(Result::isSucceed).orElseThrow().getData();
             case USER_ID ->
                     Optional.ofNullable(userApi.findByIdentifier(targets)).filter(Result::isSucceed).orElseThrow().getData();
             case EMAIL ->

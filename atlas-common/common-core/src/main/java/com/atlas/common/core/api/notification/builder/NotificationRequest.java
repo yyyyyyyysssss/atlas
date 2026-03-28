@@ -3,6 +3,7 @@ package com.atlas.common.core.api.notification.builder;
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
 import com.atlas.common.core.api.notification.dto.NotificationDTO;
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import lombok.AccessLevel;
@@ -33,6 +34,8 @@ public class NotificationRequest {
 
     // 直接发送的原始文本
     private String text;
+
+    private Object contentData;
 
     // 接收目标
     private List<String> targets;
@@ -80,21 +83,15 @@ public class NotificationRequest {
         return new NotificationBuilder(ctx);
     }
 
-
-    @Override
-    public String toString() {
-        return "MessageContext{" +
-                "templateCode='" + templateCode + '\'' +
-                ", title='" + title + '\'' +
-                ", text='" + text + '\'' +
-                ", targetType=" + targetType +
-                ", targetCount=" + (targets != null ? targets.size() : 0) +
-                ", targets=" + (targetType == TargetType.USER_ID ? targets : "[PROTECTED]") +
-                ", channels=" + channels +
-                ", params=" + (params != null ? params.keySet() : null) +
-                ", ext=" + (ext != null ? ext.keySet() : null) +
-                '}';
+    /**
+     * 以纯数据对象起手 (主要针对 SSE/WebSocket 场景)
+     */
+    public static ChannelOp data(Object data) {
+        NotificationRequest ctx = new NotificationRequest();
+        ctx.contentData = data;
+        return new NotificationBuilder(ctx);
     }
+
 
     public interface ChannelOp {
         // 渠道开关与配置闭包 (唯一配置入口)
@@ -104,7 +101,7 @@ public class NotificationRequest {
         ConfigOp sms(Consumer<SmsConfig> config);
 
         ConfigOp sse(Consumer<SseConfig> config);
-        ConfigOp sse();
+        ConfigOp sse(NotificationEventEnum eventEnum);
     }
 
     public interface ConfigOp extends ChannelOp{
@@ -122,10 +119,15 @@ public class NotificationRequest {
 
     public interface TargetOp {
         // 锁定目标类型的方法
+        AllUserActionOp toAllUser();
         UserIdActionOp toUserIds(Long... userIds);
         UsernameActionOp toUsernames(String... usernames);
         EmailActionOp toEmails(String... emails);
         PhoneActionOp toPhones(String... phones);
+    }
+
+    public interface AllUserActionOp {
+        NotificationDTO build();
     }
 
     public interface UserIdActionOp {
@@ -198,8 +200,9 @@ public class NotificationRequest {
         }
 
         @Override
-        public ConfigOp sse() {
+        public ConfigOp sse(NotificationEventEnum eventEnum) {
             enableChannel(ChannelType.SSE);
+            withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
             return this;
         }
 
@@ -217,7 +220,14 @@ public class NotificationRequest {
         }
     }
 
-    private record TargetOpBuilder(NotificationRequest ctx) implements TargetOp,UserIdActionOp,UsernameActionOp,EmailActionOp,PhoneActionOp {
+    private record TargetOpBuilder(NotificationRequest ctx) implements TargetOp,AllUserActionOp,UserIdActionOp,UsernameActionOp,EmailActionOp,PhoneActionOp {
+
+        @Override
+        public AllUserActionOp toAllUser() {
+            ctx.targetType = TargetType.ALL;
+            ctx.targets = new ArrayList<>();
+            return this;
+        }
 
         @Override
         public UserIdActionOp toUserIds(Long... userIds) {
@@ -259,6 +269,7 @@ public class NotificationRequest {
                     .templateCode(ctx.templateCode)
                     .title(ctx.title)
                     .text(ctx.text)
+                    .contentData(ctx.contentData)
                     .targets(ctx.targets)
                     .targetType(ctx.targetType)
                     .channels(ctx.channels)
@@ -384,6 +395,11 @@ public class NotificationRequest {
 
         private SseConfig(NotificationBuilder builder) {
             this.builder = builder;
+        }
+
+        public SseConfig eventName(NotificationEventEnum eventEnum) {
+            builder.withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
+            return this;
         }
     }
 

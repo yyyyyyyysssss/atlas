@@ -30,6 +30,8 @@ public class NotificationDTO {
     // 直接发送的原始文本
     private String text;
 
+    private Object contentData;
+
     // 接收目标
     @NotEmpty(message = "接收人列表不能为空")
     private List<String> targets;

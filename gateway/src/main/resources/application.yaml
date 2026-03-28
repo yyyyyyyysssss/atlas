@@ -121,6 +121,7 @@ logging:
   level:
     org.springframework.security: info
     org.springframework.cloud.gateway: info
+    org.springframework.web: DEBUG
 
 
 

@@ -1,6 +1,8 @@
 package com.atlas.notification.service.impl;
 
+import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.notification.config.idwork.IdGen;
 import com.atlas.notification.domain.dto.AnnouncementCreateDTO;
 import com.atlas.notification.domain.dto.AnnouncementQueryDTO;
@@ -8,16 +10,19 @@ import com.atlas.notification.domain.dto.AnnouncementUpdateDTO;
 import com.atlas.notification.domain.entity.Announcement;
 import com.atlas.notification.domain.vo.AnnouncementVO;
 import com.atlas.notification.enums.AnnouncementStatus;
+import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.notification.mapper.AnnouncementMapper;
 import com.atlas.notification.mapping.AnnouncementMapping;
 import com.atlas.notification.service.AnnouncementService;
+import com.atlas.notification.service.NotificationService;
+import com.atlas.notification.sse.NotificationPublisher;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +32,6 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * (Announcement)表服务实现类
@@ -36,14 +40,18 @@ import java.util.stream.Collectors;
  * @since 2026-03-23 14:57:22
  */
 @Service("announcementService")
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Announcement> implements AnnouncementService {
-    
-    private AnnouncementMapper announcementMapper;
-    
+
+    private final AnnouncementMapper announcementMapper;
+
+    private final NotificationPublisher notificationPublisher;
+
+    private final NotificationService notificationService;
+
     @Override
-    public PageInfo<AnnouncementVO> queryList(AnnouncementQueryDTO queryDTO){
+    public PageInfo<AnnouncementVO> queryList(AnnouncementQueryDTO queryDTO) {
         // 开启分页 (继承自 PageQueryDTO 的 pageNum 和 pageSize)
         PageHelper.startPage(queryDTO.getPageNum(), queryDTO.getPageSize());
 
@@ -64,7 +72,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
         // 执行查询
         List<Announcement> list = announcementMapper.selectList(wrapper);
-        if(CollectionUtils.isEmpty(list)){
+        if (CollectionUtils.isEmpty(list)) {
             return new PageInfo<>();
         }
 
@@ -75,7 +83,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     }
 
     @Override
-    public AnnouncementVO findById(Long id){
+    public AnnouncementVO findById(Long id) {
         Announcement entity = checkAndResult(id);
         return AnnouncementMapping.INSTANCE.toAnnouncementVO(entity);
     }
@@ -99,10 +107,10 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
     @Override
     @Transactional
-    public Long createAnnouncement(AnnouncementCreateDTO createDTO){
+    public Long createAnnouncement(AnnouncementCreateDTO createDTO) {
         Announcement entity = AnnouncementMapping.INSTANCE.toAnnouncement(createDTO);
         entity.setId(IdGen.genId());
-        if(entity.getStatus().equals(AnnouncementStatus.PUBLISHED)){
+        if (entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
             entity.setPublishTime(LocalDateTime.now());
         } else {
             entity.setPublishTime(null);
@@ -111,19 +119,30 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (row <= 0) {
             throw new BusinessException("创建失败");
         }
+        if (entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
+            notificationService.send(
+                    NotificationRequest
+                            .text(JsonUtils.toJson(entity))
+                            .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                            .to()
+                            .toAllUser()
+                            .build()
+            );
+        }
         return entity.getId();
     }
 
     @Override
     @Transactional
-    public void updateAnnouncement(AnnouncementUpdateDTO updateDTO, boolean isFullUpdate){
+    public void updateAnnouncement(AnnouncementUpdateDTO updateDTO, boolean isFullUpdate) {
         Announcement entity = checkAndResult(updateDTO.getId());
-        if(isFullUpdate){
+        AnnouncementStatus oldStatus = entity.getStatus();
+        if (isFullUpdate) {
             AnnouncementMapping.INSTANCE.overwriteAnnouncement(updateDTO, entity);
         } else {
             AnnouncementMapping.INSTANCE.updateAnnouncement(updateDTO, entity);
         }
-        if(entity.getStatus().equals(AnnouncementStatus.PUBLISHED)){
+        if (entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
             entity.setPublishTime(LocalDateTime.now());
         } else {
             entity.setPublishTime(null);
@@ -132,15 +151,25 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (row <= 0) {
             throw new BusinessException("修改失败");
         }
+//        if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
+            notificationService.send(
+                    NotificationRequest
+                            .text(JsonUtils.toJson(entity))
+                            .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                            .to()
+                            .toAllUser()
+                            .build()
+            );
+//        }
     }
 
     @Override
     @Transactional
-    public void deleteAnnouncement(Long id){
+    public void deleteAnnouncement(Long id) {
         checkAndResult(id);
         announcementMapper.deleteById(id);
     }
-    
+
     private Announcement checkAndResult(Long id) {
         Announcement entity = announcementMapper.selectById(id);
         if (entity == null) {
@@ -148,6 +177,6 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         }
         return entity;
     }
-    
+
 }
 

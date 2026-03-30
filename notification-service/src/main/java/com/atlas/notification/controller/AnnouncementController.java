@@ -44,19 +44,13 @@ public class AnnouncementController {
         return ResultGenerator.ok(vo);
     }
 
-    @GetMapping("/latest")
-    public Result<List<AnnouncementVO>> getLatest(@RequestParam(defaultValue = "1") Integer limit) {
-        List<AnnouncementVO> list = announcementService.getLatestPublished(limit);
-        return ResultGenerator.ok(list);
-    }
-
     @GetMapping("/latest/version")
     public Result<String> getLatestGVersion() {
-        List<AnnouncementVO> list = announcementService.getLatestPublished(1);
-        if(CollectionUtils.isEmpty(list)){
-            return ResultGenerator.ok();
+        AnnouncementVO announcementVO = announcementService.getLatestPublished(1, null);
+        if(announcementVO == null){
+            return null;
         }
-        return ResultGenerator.ok(list.getFirst().getVersion());
+        return ResultGenerator.ok(announcementVO.getVersion());
     }
 
     @PostMapping("/create")

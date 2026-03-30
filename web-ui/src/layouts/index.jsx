@@ -1,5 +1,5 @@
 import { Flex, Layout, theme } from 'antd';
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
@@ -14,6 +14,8 @@ import { setUserInfo } from '../redux/slices/userSlice';
 import { setAuthInfo } from '../redux/slices/authSlice';
 import { loadMenuItems } from '../redux/slices/layoutSlice';
 import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
+import { useAuth } from '../router/AuthProvider';
+import { SseProvider } from '../sse/SseProvider';
 
 
 const { Header: LayoutHeader, Content: LayoutContent, Sider: LayoutSider } = Layout;
@@ -29,6 +31,15 @@ const AppLayout = () => {
     const themeValue = useSelector(state => state.layout.theme)
 
     const redirectTo = useSelector(state => state.layout.redirectTo)
+
+    const { accessToken } = useAuth()
+
+    const SSE_URL = useMemo(() => {
+        if (!accessToken) {
+            return null
+        }
+        return `/api/notification/v1/notification/sse/subscribe?terminal=web&access_token=${accessToken}`
+    }, [accessToken])
 
     const location = useLocation()
     const navigate = useNavigate()
@@ -71,73 +82,75 @@ const AppLayout = () => {
     }
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
-            {/* 侧边菜单 */}
-            <LayoutSider
-                width='240px'
-                theme={themeValue}
-                collapsible
-                collapsed={collapsed}
-                trigger={null}
-            >
-                <Sider />
-            </LayoutSider>
-            <Layout>
-                {/* 头部 */}
-                <LayoutHeader className='layout-header'
-                    style={{
-                        boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
-                    }}
+        <SseProvider url={SSE_URL}>
+            <Layout style={{ minHeight: '100vh' }}>
+                {/* 侧边菜单 */}
+                <LayoutSider
+                    width='240px'
+                    theme={themeValue}
+                    collapsible
+                    collapsed={collapsed}
+                    trigger={null}
                 >
-                    <Header />
-                </LayoutHeader>
-                {/* 主题内容 */}
-                <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
-                    {/* 顶部页签 */}
-                    <TopMenuTab style={{ height: '45px', width: '100%' }} />
-                    <div
-                        className='main-div'
+                    <Sider />
+                </LayoutSider>
+                <Layout>
+                    {/* 头部 */}
+                    <LayoutHeader className='layout-header'
                         style={{
-                            height: 'calc(100vh - 109px)',
-                            width: '100%',
-                            overflow: 'auto',
-                            padding: 20,
-                            borderRadius: borderRadius,
-                            background: colorBgContainer
+                            boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
                         }}
                     >
-                        <ErrorBoundary
-                            fallback={<ServerError />}
-                            resetKeys={[location.pathname]}
+                        <Header />
+                    </LayoutHeader>
+                    {/* 主题内容 */}
+                    <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
+                        {/* 顶部页签 */}
+                        <TopMenuTab style={{ height: '45px', width: '100%' }} />
+                        <div
+                            className='main-div'
+                            style={{
+                                height: 'calc(100vh - 109px)',
+                                width: '100%',
+                                overflow: 'auto',
+                                padding: 20,
+                                borderRadius: borderRadius,
+                                background: colorBgContainer
+                            }}
                         >
+                            <ErrorBoundary
+                                fallback={<ServerError />}
+                                resetKeys={[location.pathname]}
+                            >
 
-                            <SwitchTransition mode="out-in">
-                                <CSSTransition
-                                    key={location.pathname}
-                                    nodeRef={nodeRef}
-                                    appear={true}
-                                    timeout={300}
-                                    classNames="page"
-                                    unmountOnExit
-                                >
-                                    <Suspense
-                                        fallback={
-                                            <Flex style={{ height: '100%' }} justify='center' align='center'>
-                                                <Loading />
-                                            </Flex>
-                                        }
+                                <SwitchTransition mode="out-in">
+                                    <CSSTransition
+                                        key={location.pathname}
+                                        nodeRef={nodeRef}
+                                        appear={true}
+                                        timeout={300}
+                                        classNames="page"
+                                        unmountOnExit
                                     >
-                                        <div style={{ height: '100%', width: '100%'}} ref={nodeRef}>
-                                            {outlet}
-                                        </div>
-                                    </Suspense>
-                                </CSSTransition>
-                            </SwitchTransition>
-                        </ErrorBoundary>
-                    </div>
-                </LayoutContent>
-            </Layout>
-        </Layout >
+                                        <Suspense
+                                            fallback={
+                                                <Flex style={{ height: '100%' }} justify='center' align='center'>
+                                                    <Loading />
+                                                </Flex>
+                                            }
+                                        >
+                                            <div style={{ height: '100%', width: '100%' }} ref={nodeRef}>
+                                                {outlet}
+                                            </div>
+                                        </Suspense>
+                                    </CSSTransition>
+                                </SwitchTransition>
+                            </ErrorBoundary>
+                        </div>
+                    </LayoutContent>
+                </Layout>
+            </Layout >
+        </SseProvider>
     )
 }
 

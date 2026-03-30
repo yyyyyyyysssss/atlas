@@ -36,5 +36,18 @@ export const deleteAnnouncementById = async (announcementId) => {
 // 最新公告
 export const getAnnouncementLatest = async () => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/notification/announcement/latest`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/notification/user/announcement/latest`))
+}
+
+
+// 用户公告列表
+export const fetchAnnouncementUserList = async (queryParam) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/notification/user/announcement/list', queryParam))
+}
+
+// 用户公告详情
+export const getAnnouncementUserDetails = async (announcementId) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/notification/user/announcement/${announcementId}`))
 }

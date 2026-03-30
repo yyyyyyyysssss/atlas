@@ -16,13 +16,6 @@ const Workbench = () => {
 
   const { token } = theme.useToken()
 
-
-  const notifications = [
-    { id: 1, title: '系统升级：Atlas v2.6 核心模块已部署', time: '10:30', type: 'system', read: false },
-    { id: 2, title: '来自 张三 的站内信：请查收权限附件', time: '09:15', type: 'message', read: false },
-    { id: 3, title: '安全告警：账号在异地尝试登录', time: '昨天', type: 'alert', read: true },
-  ];
-
   return (
     <Content style={{ padding: token.paddingLG }}>
       <Flex vertical gap={token.marginLG}>
@@ -34,9 +27,7 @@ const Workbench = () => {
               {/* 快捷开始 */}
               <ShortcutCard />
               {/* 消息通知 */}
-              <NotificationCard
-                data={notifications}
-              />
+              <NotificationCard/>
             </Flex>
           </Col>
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 /**
- * 纯原生重连 SSE Hooks
+ * 
  * @param {string} url - 订阅地址
  * @param {object} options - 回调配置
  */

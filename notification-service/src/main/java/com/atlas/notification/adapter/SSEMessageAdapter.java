@@ -5,6 +5,7 @@ import com.atlas.common.core.api.notification.constant.NotificationConstant;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.enums.BaseEnum;
+import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.notification.domain.mode.CardPayload;
 import com.atlas.notification.domain.mode.JsonPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
@@ -12,7 +13,6 @@ import com.atlas.notification.domain.mode.TextPayload;
 import com.atlas.notification.sse.NotificationPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.infra.util.json.JsonUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -54,7 +54,7 @@ public class SSEMessageAdapter extends AbstractMessageAdapter implements Message
         // 统一序列化为字符串
         String dataString = (sendContent instanceof String str)
                 ? str
-                : JsonUtils.toJsonString(sendContent);
+                : JsonUtils.toJson(sendContent);
         // 提取事件名称
         Map<String, Object> ext = Optional.ofNullable(payload.getExt()).orElse(Collections.emptyMap());
 

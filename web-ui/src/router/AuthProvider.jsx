@@ -7,6 +7,7 @@ import { reset as resetLayout } from '../redux/slices/layoutSlice';
 import { reset as resetUser } from '../redux/slices/userSlice';
 import { reset as resetAuth } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
+import Cookies from 'js-cookie'
 
 const AuthContext = createContext({
     isLoginIn: null,
@@ -18,6 +19,8 @@ const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
 
     const [isLoginIn, setIsLoginIn] = useState(null)
+
+    const [accessToken, setAccessToken] = useState(null)
 
     useEffect(() => {
         const check = async () => {
@@ -34,7 +37,10 @@ export const AuthProvider = ({ children }) => {
 
     const signin = async (tokenInfo) => {
         if (tokenInfo) {
-            saveToken(tokenInfo)
+            saveToken(tokenInfo.access.token)
+            setAccessToken(tokenInfo.accessToken)
+        } else {
+            setAccessToken(Cookies.get("accessToken"))
         }
         setIsLoginIn(true)
     }
@@ -51,11 +57,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (isLoginIn === null) {
-        return <Flex justify='center' align='center' style={{width: '100vw',height: '100vh'}}><Loading fullscreen /></Flex>
+        return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
     }
 
     return (
-        <AuthContext.Provider value={{ isLoginIn, setIsLoginIn, signin, signout }}>
+        <AuthContext.Provider value={{ isLoginIn, accessToken, setIsLoginIn, signin, signout }}>
             {children}
         </AuthContext.Provider>
     )

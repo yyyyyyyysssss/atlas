@@ -23,9 +23,13 @@ public interface AnnouncementService extends IService<Announcement> {
 
     PageInfo<AnnouncementVO> queryList(AnnouncementQueryDTO queryDTO);
 
+    PageInfo<AnnouncementVO> queryUserList(AnnouncementQueryDTO queryDTO, Long userId);
+
     AnnouncementVO findById(Long id);
 
-    List<AnnouncementVO> getLatestPublished(Integer limit);
+    AnnouncementVO findUserById(Long id, Long userId);
+
+    AnnouncementVO getLatestPublished(Integer limit, Long userId);
 
     Long createAnnouncement(AnnouncementCreateDTO createDTO);
 

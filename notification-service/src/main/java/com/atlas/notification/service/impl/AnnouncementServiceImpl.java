@@ -1,27 +1,26 @@
 package com.atlas.notification.service.impl;
 
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
+import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.notification.config.idwork.IdGen;
 import com.atlas.notification.domain.dto.AnnouncementCreateDTO;
 import com.atlas.notification.domain.dto.AnnouncementQueryDTO;
 import com.atlas.notification.domain.dto.AnnouncementUpdateDTO;
 import com.atlas.notification.domain.entity.Announcement;
+import com.atlas.notification.domain.entity.AnnouncementRead;
 import com.atlas.notification.domain.vo.AnnouncementVO;
 import com.atlas.notification.enums.AnnouncementStatus;
-import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.notification.mapper.AnnouncementMapper;
 import com.atlas.notification.mapping.AnnouncementMapping;
+import com.atlas.notification.service.AnnouncementReadService;
 import com.atlas.notification.service.AnnouncementService;
 import com.atlas.notification.service.NotificationService;
-import com.atlas.notification.sse.NotificationPublisher;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +31,8 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * (Announcement)表服务实现类
@@ -46,9 +47,9 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
     private final AnnouncementMapper announcementMapper;
 
-    private final NotificationPublisher notificationPublisher;
-
     private final NotificationService notificationService;
+
+    private final AnnouncementReadService announcementReadService;
 
     @Override
     public PageInfo<AnnouncementVO> queryList(AnnouncementQueryDTO queryDTO) {
@@ -56,7 +57,9 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         PageHelper.startPage(queryDTO.getPageNum(), queryDTO.getPageSize());
 
         // 构建查询条件
-        LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class);
+        LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
+                .select(Announcement.class,fieldInfo -> !fieldInfo.getColumn().equals("content"))
+                .orderByDesc(Announcement::getPriority).orderByDesc(Announcement::getPublishTime);
 
         // 状态查询：如果枚举不为空，MyBatis-Plus 会自动调用枚举的 EnumTypeHandler
         wrapper.eq(queryDTO.getStatus() != null, Announcement::getStatus, queryDTO.getStatus());
@@ -66,9 +69,6 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
         // 标题模糊查询：使用 Condition 防止空字符串干扰
         wrapper.like(StringUtils.hasText(queryDTO.getTitle()), Announcement::getTitle, queryDTO.getTitle());
-
-        // 排序逻辑：按优先级降序，再按发布时间降序
-        wrapper.orderByDesc(Announcement::getPriority).orderByDesc(Announcement::getPublishTime);
 
         // 执行查询
         List<Announcement> list = announcementMapper.selectList(wrapper);
@@ -82,6 +82,27 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         return PageInfo.of(announcementVO);
     }
 
+
+    @Override
+    public PageInfo<AnnouncementVO> queryUserList(AnnouncementQueryDTO queryDTO, Long userId) {
+        // 强制过滤：用户只能看到“已发布”的公告
+        queryDTO.setStatus(AnnouncementStatus.PUBLISHED);
+        // 调用原有的逻辑获取分页数据 (复用逻辑)
+        PageInfo<AnnouncementVO> pageInfo = this.queryList(queryDTO);
+        List<AnnouncementVO> voList = pageInfo.getList();
+        if (CollectionUtils.isEmpty(voList)) {
+            return pageInfo;
+        }
+        //  增强逻辑：批量查询当前用户的已读记录
+        List<Long> annIds = voList.stream().map(AnnouncementVO::getId).toList();
+
+        Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, annIds);
+
+        voList.forEach(vo -> vo.setIsRead(readSet.contains(vo.getId())));
+
+        return pageInfo;
+    }
+
     @Override
     public AnnouncementVO findById(Long id) {
         Announcement entity = checkAndResult(id);
@@ -89,10 +110,24 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     }
 
     @Override
-    public List<AnnouncementVO> getLatestPublished(Integer limit) {
+    public AnnouncementVO findUserById(Long id, Long userId) {
+        AnnouncementVO announcementVO = this.findById(id);
+        Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
+        boolean isRead = readSet.contains(announcementVO.getId());
+        announcementVO.setIsRead(isRead);
+        // 设置已读
+        if(!isRead){
+            announcementReadService.markAsRead(id,userId);
+        }
+        return announcementVO;
+    }
+
+    @Override
+    public AnnouncementVO getLatestPublished(Integer limit, Long userId) {
         int count = (limit == null || limit <= 0) ? 1 : limit;
         // 构建查询：已发布状态 + 按发布时间降序
         LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
+                .select(Announcement::getId,Announcement::getTitle,Announcement::getType,Announcement::getDescription)
                 .eq(Announcement::getStatus, AnnouncementStatus.PUBLISHED) // 必须是已发布
                 .orderByDesc(Announcement::getPriority) // 优先级最高优先
                 .orderByDesc(Announcement::getPublishTime) // 时间最近优先
@@ -100,9 +135,13 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
         List<Announcement> entities = announcementMapper.selectList(wrapper);
         if (CollectionUtils.isEmpty(entities)) {
-            return Collections.emptyList();
+            return null;
         }
-        return AnnouncementMapping.INSTANCE.toAnnouncementVO(entities);
+        Announcement announcement = entities.getFirst();
+        AnnouncementVO announcementVO = AnnouncementMapping.INSTANCE.toAnnouncementVO(announcement);
+        Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
+        announcementVO.setIsRead(readSet.contains(announcementVO.getId()));
+        return announcementVO;
     }
 
     @Override
@@ -120,14 +159,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
             throw new BusinessException("创建失败");
         }
         if (entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
-            notificationService.send(
-                    NotificationRequest
-                            .object(entity)
-                            .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
-                            .to()
-                            .toAllUser()
-                            .build()
-            );
+            pushAnnouncement(entity);
         }
         return entity.getId();
     }
@@ -152,15 +184,24 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
             throw new BusinessException("修改失败");
         }
         if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
-            notificationService.send(
-                    NotificationRequest
-                            .object(entity)
-                            .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
-                            .to()
-                            .toAllUser()
-                            .build()
-            );
+            pushAnnouncement(entity);
         }
+    }
+
+    private void pushAnnouncement(Announcement entity){
+        AnnouncementVO announcementVO = new AnnouncementVO();
+        announcementVO.setId(entity.getId());
+        announcementVO.setTitle(entity.getTitle());
+        announcementVO.setDescription(entity.getDescription());
+        announcementVO.setType(entity.getType());
+        notificationService.send(
+                NotificationRequest
+                        .object(announcementVO)
+                        .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                        .to()
+                        .toAllUser()
+                        .build()
+        );
     }
 
     @Override

@@ -48,5 +48,7 @@ public class AnnouncementVO {
 
     private String updateTime;
 
+    private Boolean isRead;
+
 }
 

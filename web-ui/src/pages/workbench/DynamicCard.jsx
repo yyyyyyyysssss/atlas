@@ -4,8 +4,9 @@ import { ArrowRight, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useRequest } from 'ahooks';
-import { fetchAnnouncementList, getAnnouncementLatest } from '../../services/NotificationService';
-import { AnnouncementStatus, AnnouncementType } from '../../enums/notification';
+import { fetchAnnouncementUserList, getAnnouncementLatest, getAnnouncementUserDetails } from '../../services/NotificationService';
+import { AnnouncementType } from '../../enums/notification';
+import { useSseEvent } from '../../hooks/useSseEvent';
 
 const { Title, Text, Paragraph, Link } = Typography;
 
@@ -19,22 +20,36 @@ const DynamicCard = () => {
 
   const [selectedItem, setSelectedItem] = useState(null)
 
-  const { data: latestList = [], loading: latestLoading, run: fetchLatest } = useRequest(
-    () => getAnnouncementLatest(1),
-    { manual: true }
+  const [latestAnnouncement, setLatestAnnouncement] = useState({})
+
+  const { loading: latestLoading, run: fetchLatest } = useRequest(
+    getAnnouncementLatest,
+    {
+      manual: true,
+      onSuccess: (data) => {
+        // 初始请求成功后，同步到状态
+        if (data) {
+          setLatestAnnouncement(data)
+        }
+      }
+    }
   )
 
   // 获取分页历史列表
-  const { data: historyData, loading: historyLoading, run: fetchHistory } = useRequest(
-    (params) => fetchAnnouncementList(params || { pageNum: 1, pageSize: 20, status: AnnouncementStatus.PUBLISHED.value }),
+  const { data: historyData, loading: historyLoading, run: fetchHistory, mutate: setHistoryData } = useRequest(
+    (params) => fetchAnnouncementUserList(params || { pageNum: 1, pageSize: 20 }),
     { manual: true }
   )
+
+  const { runAsync: detailAsync, loading: detailLoading } = useRequest(getAnnouncementUserDetails, { manual: true })
 
   useEffect(() => {
     fetchLatest()
   }, [])
 
-  const latestData = latestList[0] || {}
+  useSseEvent('announcement_event', (data) => {
+    setLatestAnnouncement(data)
+  })
 
   const dynamicCardStyle = {
     background: `linear-gradient(135deg, ${token.colorPrimary}12 0%, ${token.colorBgContainer} 100%)`,
@@ -43,9 +58,21 @@ const DynamicCard = () => {
     boxShadow: 'none',
   };
 
-  const handleViewDetails = (item) => {
-    setSelectedItem(item)
+  const handleViewDetails = async (item) => {
     setModalOpen(true)
+    const details = await detailAsync(item.id)
+    setSelectedItem(details)
+    // 如果点击的是“最新卡片”，更新最新卡片的状态
+    if (latestAnnouncement?.id === item.id) {
+      setLatestAnnouncement(prev => ({ ...prev, isRead: true }))
+    }
+    // 如果历史列表已加载，同步更新历史列表中的那一项
+    if (historyData?.list) {
+      const newList = historyData.list.map(ann =>
+        ann.id === item.id ? { ...ann, isRead: true } : ann
+      );
+      setHistoryData({ ...historyData, list: newList });
+    }
   }
 
   const handleOpenHistory = () => {
@@ -60,7 +87,6 @@ const DynamicCard = () => {
           <Flex justify="space-between" align="center" style={{ width: '100%' }}>
             <Space size={4}>
               <Text strong style={{ color: token.colorPrimary }}>系统动态</Text>
-              <Badge status="processing" color={token.colorPrimary} />
             </Space>
             <Button
               type="text"
@@ -77,7 +103,7 @@ const DynamicCard = () => {
         style={dynamicCardStyle}
       >
         <AnnouncementCard
-          item={latestData}
+          item={latestAnnouncement}
           isLatest={true}
           onClick={handleViewDetails}
         />
@@ -89,6 +115,7 @@ const DynamicCard = () => {
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         footer={null}
+        loading={detailLoading}
         width={700}
         zIndex={1010}
       >
@@ -187,7 +214,14 @@ const AnnouncementCard = ({ item, isLatest = false, onClick }) => {
     <Flex vertical gap="middle">
       <Flex vertical gap={4}>
         <Flex justify="space-between" align="center">
-          <Text strong>{item?.title || '暂无动态'}</Text>
+          <Badge
+            dot={item?.isRead === false} // 注意后端返回的是 0(未读) 或 1(已读)
+            offset={[3, 0]}          // 微调位置：[向右偏移, 向下偏移]
+            status="processing"
+            color={token.colorPrimary}
+          >
+            <Text strong>{item?.title || '暂无动态'}</Text>
+          </Badge>
           <Tag color={typeConfig.color} variant="flat" style={{ marginRight: 0 }}>{typeConfig.label}</Tag>
         </Flex>
         <Text type="secondary" style={{ fontSize: token.fontSizeSM, lineHeight: 1.6 }}>

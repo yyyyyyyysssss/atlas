@@ -35,7 +35,7 @@ public class LoginController {
     private final NormalBearerTokenResolver normalBearerTokenResolver;
 
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Result<?> login(@RequestBody @Validated LoginDTO loginDTO) {
+    public Result<TokenResponse> login(@RequestBody @Validated LoginDTO loginDTO) {
         TokenResponse tokenResponse;
         switch (loginDTO.getLoginType()) {
             case NORMAL:

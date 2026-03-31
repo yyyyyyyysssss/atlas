@@ -39,4 +39,6 @@ public abstract class MessagePayload {
 
     protected abstract void doValidate();
 
+    public abstract String getContent();
+
 }

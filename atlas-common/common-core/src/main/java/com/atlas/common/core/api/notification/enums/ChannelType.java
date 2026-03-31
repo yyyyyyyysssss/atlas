@@ -14,7 +14,7 @@ public enum ChannelType{
 
     EMAIL,
 
-    SSE,
+    INBOX,
 
     SMS
     ;

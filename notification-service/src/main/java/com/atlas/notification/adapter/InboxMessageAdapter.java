@@ -28,33 +28,19 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SSEMessageAdapter extends AbstractMessageAdapter implements MessageAdapter {
+public class InboxMessageAdapter extends AbstractMessageAdapter implements MessageAdapter {
 
     private final NotificationPublisher notificationPublisher;
 
     @Override
     public boolean support(ChannelType channelType) {
-        return channelType == ChannelType.SSE;
+        return channelType == ChannelType.INBOX;
     }
 
     @Override
     public void send(MessagePayload payload, List<String> targets) {
-        Object sendContent;
-        if (payload instanceof JsonPayload jsonPayload) {
-            sendContent = jsonPayload.getData();
-        } else if (payload instanceof TextPayload textPayload) {
-            sendContent = textPayload.getText();
-        } else if (payload instanceof CardPayload cardPayload) {
-            // 如果是卡片，通常也是发整个卡片对象给前端渲染
-            sendContent = cardPayload;
-        } else {
-            log.warn("Unsupported payload type for SSE: {}", payload.getClass().getSimpleName());
-            return;
-        }
         // 统一序列化为字符串
-        String dataString = (sendContent instanceof String str)
-                ? str
-                : JsonUtils.toJson(sendContent);
+        String content = payload.getContent();
         // 提取事件名称
         Map<String, Object> ext = Optional.ofNullable(payload.getExt()).orElse(Collections.emptyMap());
 
@@ -63,7 +49,7 @@ public class SSEMessageAdapter extends AbstractMessageAdapter implements Message
         for (String target : targets) {
             try {
                 Long userId = Long.valueOf(target);
-                notificationPublisher.publish(userId, BaseEnum.fromCode(NotificationEventEnum.class,eventName),dataString);
+                notificationPublisher.publish(userId, BaseEnum.fromCode(NotificationEventEnum.class,eventName),content);
             } catch (Exception e) {
                 log.error("SSE publish failed for user: {}, error: {}", target, e.getMessage());
             }

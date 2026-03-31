@@ -197,7 +197,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         notificationService.send(
                 NotificationRequest
                         .object(announcementVO)
-                        .sse(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                        .inbox(NotificationEventEnum.ANNOUNCEMENT_EVENT)
                         .to()
                         .toAllUser()
                         .build()

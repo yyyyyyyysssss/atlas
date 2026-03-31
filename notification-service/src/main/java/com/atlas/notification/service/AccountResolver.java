@@ -38,7 +38,7 @@ public class AccountResolver {
         // 配置渠道需求
         CHANNEL_REQUIRED_TYPE_MAP.put(ChannelType.EMAIL, TargetType.EMAIL);
         CHANNEL_REQUIRED_TYPE_MAP.put(ChannelType.SMS, TargetType.PHONE);
-        CHANNEL_REQUIRED_TYPE_MAP.put(ChannelType.SSE, TargetType.USER_ID);
+        CHANNEL_REQUIRED_TYPE_MAP.put(ChannelType.INBOX, TargetType.USER_ID);
 
         FIELD_GETTER.put(TargetType.USER_ID, v -> String.valueOf(v.getId()));
         FIELD_GETTER.put(TargetType.EMAIL, UserDTO::getEmail);

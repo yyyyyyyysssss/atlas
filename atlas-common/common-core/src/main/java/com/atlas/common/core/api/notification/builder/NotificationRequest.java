@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -98,15 +99,17 @@ public class NotificationRequest {
     public interface ChannelOp {
         // 渠道开关与配置闭包 (唯一配置入口)
         ConfigOp email(Consumer<MailConfig> config);
+
         ConfigOp email();
 
         ConfigOp sms(Consumer<SmsConfig> config);
 
-        ConfigOp sse(Consumer<SseConfig> config);
-        ConfigOp sse(NotificationEventEnum eventEnum);
+        ConfigOp inbox(Consumer<InboxConfig> config);
+
+        ConfigOp inbox(NotificationEventEnum eventEnum);
     }
 
-    public interface ConfigOp extends ChannelOp{
+    public interface ConfigOp extends ChannelOp {
 
         // 通用属性
         ConfigOp title(String title);
@@ -122,9 +125,13 @@ public class NotificationRequest {
     public interface TargetOp {
         // 锁定目标类型的方法
         AllUserActionOp toAllUser();
+
         UserIdActionOp toUserIds(Long... userIds);
+
         UsernameActionOp toUsernames(String... usernames);
+
         EmailActionOp toEmails(String... emails);
+
         PhoneActionOp toPhones(String... phones);
     }
 
@@ -134,25 +141,29 @@ public class NotificationRequest {
 
     public interface UserIdActionOp {
         UserIdActionOp toUserIds(Long... userIds);   // 仅允许继续加用户
+
         NotificationDTO build();
     }
 
     public interface UsernameActionOp {
         UsernameActionOp toUsernames(String... usernames);   // 仅允许继续加用户
+
         NotificationDTO build();
     }
 
     public interface EmailActionOp {
         EmailActionOp toEmails(String... emails); // 仅允许继续加邮箱
+
         NotificationDTO build();
     }
 
     public interface PhoneActionOp {
         PhoneActionOp toPhones(String... phones); // 仅允许继续加手机
+
         NotificationDTO build();
     }
 
-    private record NotificationBuilder(NotificationRequest ctx) implements ChannelOp,ConfigOp {
+    private record NotificationBuilder(NotificationRequest ctx) implements ChannelOp, ConfigOp {
 
         @Override
         public ConfigOp title(String title) {
@@ -195,15 +206,15 @@ public class NotificationRequest {
         }
 
         @Override
-        public ConfigOp sse(Consumer<SseConfig> config) {
-            enableChannel(ChannelType.SSE);
-            config.accept(new SseConfig(this));
+        public ConfigOp inbox(Consumer<InboxConfig> config) {
+            enableChannel(ChannelType.INBOX);
+            config.accept(new InboxConfig(this));
             return this;
         }
 
         @Override
-        public ConfigOp sse(NotificationEventEnum eventEnum) {
-            enableChannel(ChannelType.SSE);
+        public ConfigOp inbox(NotificationEventEnum eventEnum) {
+            enableChannel(ChannelType.INBOX);
             withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
             return this;
         }
@@ -222,7 +233,8 @@ public class NotificationRequest {
         }
     }
 
-    private record TargetOpBuilder(NotificationRequest ctx) implements TargetOp,AllUserActionOp,UserIdActionOp,UsernameActionOp,EmailActionOp,PhoneActionOp {
+    private record TargetOpBuilder(
+            NotificationRequest ctx) implements TargetOp, AllUserActionOp, UserIdActionOp, UsernameActionOp, EmailActionOp, PhoneActionOp {
 
         @Override
         public AllUserActionOp toAllUser() {
@@ -354,9 +366,12 @@ public class NotificationRequest {
         // 内嵌图片到 HTML 正文中
         @SuppressWarnings("unchecked")
         public MailConfig inlineImage(String cid, Object src) {
-            if(src instanceof InputStream is){
+            if (src instanceof InputStream is) {
                 try (is) {
                     src = is.readAllBytes();
+                    if (((byte[])src).length > 1024 * 1024 * 20) {
+                        throw new NotificationException("图片 [" + cid + "] 超出限制: 20MB");
+                    }
                 } catch (IOException e) {
                     throw new NotificationException(e);
                 }
@@ -371,15 +386,34 @@ public class NotificationRequest {
             return this;
         }
 
+        public MailConfig attachment(File file) {
+            return attachment(file.getName(), file);
+        }
+
+        public MailConfig attachment(String name, byte[] data) {
+            return attachment(name, data);
+        }
+
+        // 在重载方法中立即“转成字节”（内存换安全）
+        public MailConfig attachment(String name, InputStream inputStream) {
+            byte[] bytes;
+            try (inputStream) {
+                bytes = inputStream.readAllBytes();
+                if (bytes.length > 1024 * 1024 * 20) {
+                    throw new NotificationException("附件 [" + name + "] 超出限制: 20MB");
+                }
+            } catch (IOException e) {
+                throw new NotificationException(e);
+            }
+            return attachment(name, bytes);
+        }
+
+        public MailConfig attachment(String name, String url) {
+            return attachment(name, url);
+        }
+
         @SuppressWarnings("unchecked")
         public MailConfig attachment(String name, Object src) {
-            if(src instanceof InputStream is){
-                try (is) {
-                    src = is.readAllBytes();
-                } catch (IOException e) {
-                    throw new NotificationException(e);
-                }
-            }
             // 确保 ext 整个 Map 不为 null 且可写
             builder.ctx.ext = ensureMutable(builder.ctx.getExt());
             // 获取或初始化附件 Map
@@ -391,15 +425,15 @@ public class NotificationRequest {
         }
     }
 
-    public static class SseConfig {
+    public static class InboxConfig {
 
         private final NotificationBuilder builder;
 
-        private SseConfig(NotificationBuilder builder) {
+        private InboxConfig(NotificationBuilder builder) {
             this.builder = builder;
         }
 
-        public SseConfig eventName(NotificationEventEnum eventEnum) {
+        public InboxConfig eventName(NotificationEventEnum eventEnum) {
             builder.withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
             return this;
         }

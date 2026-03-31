@@ -22,7 +22,10 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.client.RestClient;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -42,7 +45,7 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
     @Value("${spring.mail.from:''}")
     private String from;
 
-    private static final long MAX_RESOURCE_SIZE = 1024 * 1024 * 20;
+    public static final long MAX_RESOURCE_SIZE = 1024 * 1024 * 20;
 
     @Override
     public boolean support(ChannelType channelType) {
@@ -57,6 +60,7 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
         // 对目标地址进行简化展示，防止长列表刷屏
         String targetSummary = targets.size() > 5 ? targets.subList(0, 5) + "...total " + targets.size() : targets.toString();
         String logId = String.format("Subject: [%s] To: %s", subject, targetSummary);
+        String content = payload.getContent();
         try {
             // 阶段1: 设置邮件基础参数
             sw.start("Build-MimeMessage");
@@ -102,12 +106,12 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
 
             // 阶段3: 渲染正文与内嵌图片
             sw.start("Render-Content");
-            if (payload instanceof HtmlPayload htmlPayload) {
-                helper.setText(htmlPayload.getHtml(), true);
+            if (payload instanceof HtmlPayload) {
+                helper.setText(content, true);
                 // 处理正文内嵌的图片
                 processInlineImages(helper, getAsMap(ext, NotificationConstant.Mail.INLINE_IMAGES));
-            } else if (payload instanceof TextPayload textPayload) {
-                helper.setText(textPayload.getText(), false);
+            } else if (payload instanceof TextPayload) {
+                helper.setText(content, false);
             }
             sw.stop();
 
@@ -190,6 +194,28 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
             case byte[] bytes -> { // 字节数组
                 type = "Bytes-Array";
                 size = bytes.length;
+                validateSize(bytes.length, identifier, MAX_RESOURCE_SIZE);
+                yield new ByteArrayResource(bytes);
+            }
+            case InputStream is -> {
+                try (is) {
+                    byte[] data = is.readAllBytes();
+                    type = "InputStream";
+                    size = data.length;
+                    validateSize(size, identifier, MAX_RESOURCE_SIZE);
+                    yield new ByteArrayResource(data);
+                } catch (IOException e) {
+                    throw new NotificationException(NotificationErrorCode.NOTIFY_RESOURCE_UNAVAILABLE);
+                }
+            }
+            case File file -> {
+                type = "Local-File";
+                byte[] bytes;
+                try {
+                    bytes = Files.readAllBytes(file.toPath());
+                } catch (IOException e) {
+                    throw new NotificationException(NotificationErrorCode.NOTIFY_RESOURCE_UNAVAILABLE);
+                }
                 validateSize(bytes.length, identifier, MAX_RESOURCE_SIZE);
                 yield new ByteArrayResource(bytes);
             }

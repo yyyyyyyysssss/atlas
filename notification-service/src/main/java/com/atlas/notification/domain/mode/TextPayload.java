@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @Description
  * @Author ys
@@ -26,5 +29,11 @@ public class TextPayload extends MessagePayload{
         if (StringUtils.isBlank(text)) {
             throw new IllegalArgumentException("HTML内容不能为空");
         }
+    }
+
+    @Override
+    public String getContent() {
+
+        return this.text;
     }
 }

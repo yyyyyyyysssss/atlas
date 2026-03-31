@@ -216,7 +216,7 @@ const AnnouncementCard = ({ item, isLatest = false, onClick }) => {
         <Flex justify="space-between" align="center">
           <Badge
             dot={item?.isRead === false} // 注意后端返回的是 0(未读) 或 1(已读)
-            offset={[3, 0]}          // 微调位置：[向右偏移, 向下偏移]
+            offset={[5, 0]}          // 微调位置：[向右偏移, 向下偏移]
             status="processing"
             color={token.colorPrimary}
           >

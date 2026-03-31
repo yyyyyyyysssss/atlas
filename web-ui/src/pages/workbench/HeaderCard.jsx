@@ -59,7 +59,7 @@ const HeaderCard = () => {
     <Card variant="borderless">
       <Flex align="center" justify="space-between" wrap="wrap" gap="middle">
         <Flex align="center" gap="large">
-          <Badge dot color={token.colorSuccess}>
+          <Badge dot status="processing" color={token.colorPrimary}>
             <Avatar
               size={72}
               src={avatar}

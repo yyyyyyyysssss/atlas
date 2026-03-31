@@ -9,6 +9,17 @@ import { Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 
+const getMenuItems = (items, t) => {
+    return items.map(item => {
+        const route = findRouteByPath(item.routePath);
+        return {
+          key: item.id,
+          label: t(item.name),
+          icon: item.icon || route?.defaultIcon || <Square size={18} />,
+          children: item.children?.length > 0 ? getMenuItems(item.children, t) : undefined,
+        };
+    });
+};
 
 const Sider = () => {
 
@@ -66,23 +77,8 @@ const Sider = () => {
         dispatch(setActiveKey({ path: '/workbench' }))
     }
 
-    const formatMenuItems = (items) => {
-
-        return items.map(item => {
-            const route = findRouteByPath(item.routePath)
-            const defaultIcon = route?.defaultIcon
-            return {
-                key: item.id,
-                label: t(item.name),
-                icon: item.icon || defaultIcon || <Square size={18} />,
-                path: item.routePath,
-                children: item.children && item.children.length > 0 ? formatMenuItems(item.children) : undefined,
-            }
-        })
-    }
-
     const items = useMemo(() => {
-        return formatMenuItems(menuItems)
+        return getMenuItems(menuItems, t)
     }, [menuItems,t])
 
 
@@ -119,7 +115,7 @@ const Sider = () => {
 
             </Flex >
             <Menu
-                key={collapsed ? 'collapsed' : 'expanded'}
+                // key={collapsed ? 'collapsed' : 'expanded'}
                 style={{
                     maxHeight: 'calc(100vh - 64px)',
                     borderRight: 'none',

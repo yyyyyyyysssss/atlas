@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 public class JsonPayload extends MessagePayload{
 
-    private Object data;
+    private String json;
 
     @Override
     protected DisplayType getDisplayType() {
@@ -18,5 +18,11 @@ public class JsonPayload extends MessagePayload{
     @Override
     protected void doValidate() {
 
+    }
+
+    @Override
+    public String getContent() {
+        // 如果是标准 JSON 字符串，可以直接存入
+        return this.json;
     }
 }

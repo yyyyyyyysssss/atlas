@@ -13,6 +13,7 @@ import UserProfile from './user-profile';
 import SearchMenu from './search-menu';
 import ThemeColor from './theme-color';
 import LanguageSwitch from './language-switch';
+import Notification from './notification';
 
 
 const Header = () => {
@@ -68,6 +69,7 @@ const Header = () => {
                         { value: 'dark', icon: <MoonOutlined /> },
                     ]}
                 />
+                <Notification/>
                 <UserProfile />
             </Flex>
         </Flex>

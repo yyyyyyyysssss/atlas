@@ -49,19 +49,10 @@ public class PlaceholderRenderStrategy extends AbstractRenderStrategy implements
                 JsonPayload jsonPayload = new JsonPayload();
                 jsonPayload.setTitle(renderedTitle);
                 if (template.getContent() instanceof String contentStr) {
-                    try {
-                        String renderedJson = sub.replace(contentStr);
-                        Object data = JsonUtils.parseObject(renderedJson, Object.class);
-                        jsonPayload.setData(data);
-                    }catch (Exception e){
-                        log.error("JSON Template Render Failed! Error: {}", e.getMessage());
-                        JsonPayload fallback = new JsonPayload();
-                        fallback.setTitle(renderedTitle);
-                        fallback.setData(sub.replace(template.getContent()));
-                        return fallback;
-                    }
+                    String renderedJson = sub.replace(contentStr);
+                    jsonPayload.setJson(renderedJson);
                 }else {
-                    jsonPayload.setData(template.getContent());
+                    jsonPayload.setJson(JsonUtils.toJson(template.getContent()));
                 }
                 return jsonPayload;
 
@@ -85,7 +76,7 @@ public class PlaceholderRenderStrategy extends AbstractRenderStrategy implements
                 MediaPayload mediaPayload = new MediaPayload();
                 mediaPayload.setTitle(renderedTitle);
                 // 将原材料 content 渲染为最终成品 result
-                mediaPayload.setUrl(sub.replace(template.getContent()));
+                mediaPayload.setFileUrl(sub.replace(template.getContent()));
                 Object fileName = safeParams.getOrDefault("fileName", "file");
                 mediaPayload.setFileName(sub.replace(String.valueOf(fileName)));
                 return mediaPayload;

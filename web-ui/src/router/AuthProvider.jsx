@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
 
     const signin = async (tokenInfo) => {
         if (tokenInfo) {
-            saveToken(tokenInfo.access.token)
-            setAccessToken(tokenInfo.accessToken)
+            saveToken(tokenInfo)
+            setAccessToken(tokenInfo.access.token)
         } else {
             setAccessToken(Cookies.get("accessToken"))
         }

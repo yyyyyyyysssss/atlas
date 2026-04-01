@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class MessageTemplateUpdateDTO extends MessageTemplateCreateDTO {
+public class NotificationTemplateUpdateDTO extends NotificationTemplateCreateDTO {
 
     @NotNull(message = "id不能为空")
     private Long id;

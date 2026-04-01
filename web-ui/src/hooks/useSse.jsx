@@ -46,8 +46,7 @@ export const useSse = (url, { onMessage, onConnected } = {}) => {
     // 2. 监听业务自定义事件 (对应后端的 .name("message_event"))
     sse.addEventListener('announcement_event', (e) => {
       try {
-        const payload = JSON.parse(e.data);
-        onMessageRef.current?.(payload);
+        onMessageRef.current?.(e.data);
       } catch (err) {
         console.error('SSE: Business message parsing failed', err);
       }

@@ -4,6 +4,7 @@ import { Bell, Mail, Info, AlertCircle, ChevronRight, FileImage, Download } from
 import NoDataEmpty from '../../components/NoDataEmpty';
 import { downloadFile } from '../../utils/Download';
 import { formatFileSize } from '../../utils/format';
+import { useSseEvent } from '../../hooks/useSseEvent';
 
 const { Text, Paragraph } = Typography;
 
@@ -52,6 +53,10 @@ export const NotificationList = () => {
 
   const { token } = theme.useToken()
 
+  useSseEvent('notification_event', (data) => {
+    console.log('Received notification event:', data);
+  })
+
   // 根据业务类型获取图标配置
   const getTypeConfig = (type) => {
     const configs = {
@@ -89,14 +94,14 @@ export const NotificationList = () => {
             className="atlas-float-trigger"
             onClick={(e) => handleClick(e, item)}
             style={{
-                padding: '16px',
-                marginBottom: 12, // 利用外边距制造自然分界
-                background: token.colorBgContainer, // 纯白卡片
-                borderRadius: token.borderRadiusLG,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
+              padding: '16px',
+              marginBottom: 12, // 利用外边距制造自然分界
+              background: token.colorBgContainer, // 纯白卡片
+              borderRadius: token.borderRadiusLG,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              cursor: 'pointer',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
           >
             <List.Item.Meta
               avatar={

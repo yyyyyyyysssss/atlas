@@ -2,13 +2,13 @@ package com.atlas.notification.domain.vo;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.RenderType;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class MessageTemplateVO {
+public class NotificationTemplateVO {
 
 
     private Long id;
@@ -29,7 +29,7 @@ public class MessageTemplateVO {
     private String content;
 
     // 模板格式类型TEXT、HTML 
-    private DisplayType displayType;
+    private RenderType renderType;
 
     // 渠道类型
     private ChannelType channelType;

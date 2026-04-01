@@ -3,7 +3,7 @@ package com.atlas.notification.domain.entity;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.RenderType;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -20,12 +20,12 @@ import lombok.experimental.Tolerate;
  */
 @Getter
 @Setter
-@TableName(value = "message_template", autoResultMap = true)
+@TableName(value = "notification_template", autoResultMap = true)
 @Builder
-public class MessageTemplate extends BaseEntity {
+public class NotificationTemplate extends BaseEntity {
 
     @Tolerate
-    public MessageTemplate() {
+    public NotificationTemplate() {
     }
 
     // 模板名称 
@@ -49,9 +49,9 @@ public class MessageTemplate extends BaseEntity {
     private String content;
 
     // 模板格式类型TEXT、HTML 
-    @TableField("display_type")
+    @TableField("render_type")
     @EnumValue
-    private DisplayType displayType;
+    private RenderType renderType;
 
     // 发送渠道类型
     @TableField("channel_type")

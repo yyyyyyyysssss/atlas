@@ -3,7 +3,7 @@ package com.atlas.notification.service.render;
 
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 
 import java.util.Map;
 
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public interface RenderStrategy {
 
-    boolean support(DisplayType displayType);
+    boolean support(ContentType contentType);
 
     MessagePayload render(MessageTemplateModel template, Map<String, Object> params, Map<String, Object> ext);
 

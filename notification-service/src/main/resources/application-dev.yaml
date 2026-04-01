@@ -30,8 +30,8 @@ atlas:
 
 sms:
   aliyun:
-    accessKey: xxx
-    accessSecret: xxx
+    accessKey: ${SMS_ALIYUN_ACCESS_KEY}
+    accessSecret: ${SMS_ALIYUN_ACCESS_SECRET}
     endpoint: dypnsapi.aliyuncs.com
     signature: 速通互联验证码
     timeout: 10

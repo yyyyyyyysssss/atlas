@@ -3,7 +3,7 @@ package com.atlas.common.core.api.notification.builder;
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
 import com.atlas.common.core.api.notification.dto.NotificationDTO;
 import com.atlas.common.core.api.notification.enums.ChannelType;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
@@ -36,7 +36,7 @@ public class NotificationRequest {
 
     private Object content;
 
-    private DisplayType displayType;
+    private ContentType contentType;
 
     // 接收目标
     private List<String> targets;
@@ -55,15 +55,15 @@ public class NotificationRequest {
     /**
      * 以纯文本方式起手 (可选)
      */
-    public static ChannelOp text(String title, String text) {
+    public static TextChannelOp text(String title, String text) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
         ctx.content = text;
-        ctx.displayType = DisplayType.TEXT;
+        ctx.contentType = ContentType.TEXT;
         return new NotificationBuilder(ctx);
     }
 
-    public static ChannelOp text(String text) {
+    public static TextChannelOp text(String text) {
 
         return text(null, text);
     }
@@ -72,12 +72,12 @@ public class NotificationRequest {
     /**
      * 以模板方式起手
      */
-    public static ChannelOp template(String code, Map<String, Object> params) {
+    public static FullChannelOp template(String code, Map<String, Object> params) {
 
         return template(code, null, params);
     }
 
-    public static ChannelOp template(String code, String title, Map<String, Object> params) {
+    public static FullChannelOp template(String code, String title, Map<String, Object> params) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.templateCode = code;
         ctx.title = title;
@@ -88,10 +88,10 @@ public class NotificationRequest {
     /**
      * 以纯数据对象起手 (主要针对 SSE/WebSocket 场景)
      */
-    public static ChannelOp object(Object object) {
+    public static ObjectChannelOp object(Object object) {
         NotificationRequest ctx = new NotificationRequest();
         ctx.content = object;
-        ctx.displayType = DisplayType.JSON;
+        ctx.contentType = ContentType.JSON;
         return new NotificationBuilder(ctx);
     }
 
@@ -104,8 +104,37 @@ public class NotificationRequest {
 
         ConfigOp sms(Consumer<SmsConfig> config);
 
+        ConfigOp inbox();
+
         ConfigOp inbox(Consumer<InboxConfig> config);
 
+        ConfigOp inbox(NotificationEventEnum eventEnum);
+    }
+
+    /** 全量渠道：支持模板一信多发 */
+    public interface FullChannelOp extends ChannelOp {
+        ConfigOp email(Consumer<MailConfig> config);
+        ConfigOp email();
+        ConfigOp sms(Consumer<SmsConfig> config);
+        ConfigOp inbox();
+        ConfigOp inbox(Consumer<InboxConfig> config);
+        ConfigOp inbox(NotificationEventEnum eventEnum);
+    }
+
+    /** 文本渠道：限制不能发一些复杂的、需要结构化的渠道（或者根据需求定义） */
+    public interface TextChannelOp {
+        ConfigOp email(Consumer<MailConfig> config);
+        ConfigOp email();
+        ConfigOp sms(Consumer<SmsConfig> config);
+        ConfigOp inbox();
+        ConfigOp inbox(Consumer<InboxConfig> config);
+        ConfigOp inbox(NotificationEventEnum eventEnum);
+    }
+
+    /** 对象渠道：极致约束，仅限 SSE/WebSocket */
+    public interface ObjectChannelOp {
+        ConfigOp inbox();
+        ConfigOp inbox(Consumer<InboxConfig> config);
         ConfigOp inbox(NotificationEventEnum eventEnum);
     }
 
@@ -163,7 +192,7 @@ public class NotificationRequest {
         NotificationDTO build();
     }
 
-    private record NotificationBuilder(NotificationRequest ctx) implements ChannelOp, ConfigOp {
+    private record NotificationBuilder(NotificationRequest ctx) implements ChannelOp, ConfigOp,FullChannelOp,TextChannelOp,ObjectChannelOp {
 
         @Override
         public ConfigOp title(String title) {
@@ -203,6 +232,12 @@ public class NotificationRequest {
             enableChannel(ChannelType.SMS);
             config.accept(new SmsConfig(this));
             return this;
+        }
+
+        @Override
+        public ConfigOp inbox() {
+
+            return inbox(NotificationEventEnum.NOTIFICATION_EVENT);
         }
 
         @Override
@@ -283,7 +318,7 @@ public class NotificationRequest {
                     .templateCode(ctx.templateCode)
                     .title(ctx.title)
                     .content(ctx.content)
-                    .displayType(ctx.displayType)
+                    .contentType(ctx.contentType)
                     .targets(ctx.targets)
                     .targetType(ctx.targetType)
                     .channels(ctx.channels)

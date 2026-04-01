@@ -34,7 +34,7 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
         log.info("magic link: {}", magicLink);
         notificationApi.send(
                 NotificationRequest
-                        .template("ott-login-email", Map.of("loginUrl", magicLink))
+                        .template("ott_login", Map.of("loginUrl", magicLink))
                         .email()
                         .to()
                         .toUsernames(oneTimeToken.getUsername())

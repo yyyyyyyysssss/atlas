@@ -15,6 +15,8 @@ public enum NotificationEventEnum implements BaseEnum<String> {
 
     ANNOUNCEMENT_EVENT("announcement_event", "系统公告"),
 
+    NOTIFICATION_EVENT("notification_event", "消息通知"),
+
     ;
 
     private final String code;

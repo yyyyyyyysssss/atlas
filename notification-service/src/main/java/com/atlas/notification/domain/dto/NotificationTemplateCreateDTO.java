@@ -2,7 +2,7 @@ package com.atlas.notification.domain.dto;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.notification.enums.ActivationStatus;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.RenderType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class MessageTemplateCreateDTO {
+public class NotificationTemplateCreateDTO {
 
     // 模板名称
     @NotBlank(message = "模板名称不能为空")
@@ -32,8 +32,8 @@ public class MessageTemplateCreateDTO {
     private ChannelType channelType;
 
     // 模板格式类型TEXT、HTML
-    @NotNull(message = "模板格式类型不能为空")
-    private DisplayType displayType;
+    @NotNull(message = "模板渲染类型不能为空")
+    private RenderType renderType;
 
     // 模板状态：ACTIVE、INACTIVE 
     private ActivationStatus status;

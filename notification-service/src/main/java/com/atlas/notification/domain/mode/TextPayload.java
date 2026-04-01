@@ -1,12 +1,8 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @Description
@@ -20,20 +16,13 @@ public class TextPayload extends MessagePayload{
     private String text;
 
     @Override
-    protected DisplayType getDisplayType() {
-        return DisplayType.TEXT;
-    }
-
-    @Override
-    protected void doValidate() {
-        if (StringUtils.isBlank(text)) {
-            throw new IllegalArgumentException("HTML内容不能为空");
-        }
-    }
-
-    @Override
     public String getContent() {
 
         return this.text;
+    }
+
+    @Override
+    public ContentType getContentType() {
+        return ContentType.TEXT;
     }
 }

@@ -1,6 +1,6 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class MessageTemplateModel {
 
     private Object content;
 
-    private DisplayType displayType;
+    private ContentType contentType;
 
     // 外部对接
     private String extTemplateCode; // 第三方服务商 ID

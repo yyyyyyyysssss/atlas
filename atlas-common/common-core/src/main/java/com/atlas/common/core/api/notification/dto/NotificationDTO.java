@@ -1,7 +1,7 @@
 package com.atlas.common.core.api.notification.dto;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -30,7 +30,7 @@ public class NotificationDTO {
 
     private Object content;
 
-    private DisplayType displayType;
+    private ContentType contentType;
 
     // 接收目标
     @NotEmpty(message = "接收人列表不能为空")

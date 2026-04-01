@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class MessageTemplateQueryDTO extends PageQueryDTO {
+public class NotificationTemplateQueryDTO extends PageQueryDTO {
 
 }
 

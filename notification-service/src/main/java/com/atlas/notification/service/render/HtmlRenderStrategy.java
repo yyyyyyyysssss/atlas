@@ -3,7 +3,7 @@ package com.atlas.notification.service.render;
 import com.atlas.notification.domain.mode.HtmlPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -30,8 +30,8 @@ public class HtmlRenderStrategy extends AbstractRenderStrategy implements Render
     private static final String CLASSPATH_PREFIX = "classpath:";
 
     @Override
-    public boolean support(DisplayType displayType) {
-        return displayType == DisplayType.HTML;
+    public boolean support(ContentType contentType) {
+        return contentType == ContentType.HTML;
     }
 
     @Override

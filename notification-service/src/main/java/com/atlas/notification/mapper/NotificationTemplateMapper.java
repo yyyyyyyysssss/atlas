@@ -1,6 +1,6 @@
 package com.atlas.notification.mapper;
 
-import com.atlas.notification.domain.entity.MessageTemplate;
+import com.atlas.notification.domain.entity.NotificationTemplate;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Mapper;
  * @since 2026-01-30 10:26:11
  */
 @Mapper
-public interface MessageTemplateMapper extends BaseMapper<MessageTemplate> {
+public interface NotificationTemplateMapper extends BaseMapper<NotificationTemplate> {
     
 }
 

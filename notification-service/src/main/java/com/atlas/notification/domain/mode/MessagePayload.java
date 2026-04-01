@@ -1,6 +1,7 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.common.core.api.notification.enums.DisplayType;
+import com.atlas.common.core.api.notification.enums.ContentType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -20,25 +21,25 @@ public abstract class MessagePayload {
     protected String title;
 
     // 外部服务商模板编码
+    @JsonIgnore
     protected String extTemplateCode;
 
     // 渲染时使用的原始占位符变量
+    @JsonIgnore
     protected Map<String, Object> params = new HashMap<>();
 
     // 扩展字段
+    @JsonIgnore
     private Map<String, Object> ext = new HashMap<>();
 
     public void validate() {
         if (StringUtils.isNotEmpty(title) && title.length() > 100) {
             throw new IllegalArgumentException("消息标题过长");
         }
-        doValidate();
     }
 
-    protected abstract DisplayType getDisplayType();
-
-    protected abstract void doValidate();
-
     public abstract String getContent();
+
+    public abstract ContentType getContentType();
 
 }

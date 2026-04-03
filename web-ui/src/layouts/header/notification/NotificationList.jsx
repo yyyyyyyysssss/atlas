@@ -7,6 +7,7 @@ import TextRenderer from './renderers/TextRenderer';
 import FileRenderer from './renderers/FileRenderer';
 import { formatRelativeTime } from '../../../utils/format';
 import CardRenderer from './renderers/CardRenderer';
+import { NOTIFICATION_COMPONENTS } from './NotificationRegistry';
 
 
 const notifications = [

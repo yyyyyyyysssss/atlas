@@ -4,17 +4,14 @@ import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { EditOutlined, EyeOutlined } from '@ant-design/icons';
-import ActionDropdown from '../../../components/ActionDropdown';
 import HasPermission from '../../../components/HasPermission';
 import SmartTable from '../../../components/smart-table';
-import { getMessageApi } from '../../../utils/MessageUtil';
 import { OperationMode } from '../../../enums/common';
-import dayjs from 'dayjs';
 import './index.css';
 import { AnnouncementStatus, AnnouncementType } from '../../../enums/notification';
 import { fetchAnnouncementList, getAnnouncementDetails } from '../../../services/NotificationService';
 import OptionSelect from '../../../components/OptionSelect';
-import { AnnouncementDetailView } from '../../workbench/DynamicCard';
+import AnnouncementDetailModal from './components/AnnouncementDetailModal';
 
 const { Text } = Typography;
 
@@ -26,10 +23,7 @@ const NotificationAnnouncement = () => {
 
   const [searchForm] = Form.useForm()
 
-  const [viewModel, setViewModel] = useState({
-    open: false,
-    data: null
-  })
+  const [selectedId, setSelectedId] = useState(null)
 
   const [queryParam, setQueryParam] = useState({
     pageNum: 1,
@@ -41,7 +35,6 @@ const NotificationAnnouncement = () => {
 
   // API 请求 hooks
   const { runAsync: fetchListAsync, loading: listLoading } = useRequest(fetchAnnouncementList, { manual: true })
-  const { runAsync: detailsAsync, loading: detailsLoading } = useRequest(getAnnouncementDetails, { manual: true })
 
   const getData = async (params) => {
     return await fetchListAsync(params);
@@ -81,15 +74,7 @@ const NotificationAnnouncement = () => {
   };
 
   const handleView = async (id) => {
-    setViewModel({
-      open: true,
-      data: null
-    })
-    const data = await detailsAsync(id)
-    setViewModel({
-      open: true,
-      data: data
-    })
+    setSelectedId(id)
   };
 
   const columns = [
@@ -255,19 +240,7 @@ const NotificationAnnouncement = () => {
         />
 
       </Flex>
-      <Modal
-        title={viewModel?.data?.title}
-        open={viewModel.open}
-        onCancel={() => setViewModel({
-          open: false,
-          data: null
-        })}
-        footer={null}
-        loading={detailsLoading}
-        width={700}
-      >
-        <AnnouncementDetailView data={viewModel?.data} />
-      </Modal>
+      <AnnouncementDetailModal id={selectedId} onCancel={() => setSelectedId(null)} />
     </>
   );
 };

@@ -4,17 +4,14 @@ import useFullParams from '../../../../hooks/useFullParams';
 import { useTranslation } from 'react-i18next';
 import useBack from '../../../../hooks/useBack';
 import { useRequest } from 'ahooks';
-import { useNavigate } from 'react-router-dom';
 import { OperationMode } from '../../../../enums/common';
 import { getMessageApi } from '../../../../utils/MessageUtil';
 import Loading from '../../../../components/loading';
-import ReactMarkdown from 'react-markdown';
 import dayjs from 'dayjs';
-import remarkGfm from 'remark-gfm';
 import OptionSelect from '../../../../components/OptionSelect';
 import { AnnouncementStatus, AnnouncementType } from '../../../../enums/notification';
 import { createAnnouncement, getAnnouncementDetails, updateAnnouncement } from '../../../../services/NotificationService';
-import { AnnouncementMarkdownView } from '../../../workbench/DynamicCard';
+import AnnouncementMarkdownView from '../components/AnnouncementMarkdownView';
 
 const { Text, Paragraph, Title } = Typography;
 

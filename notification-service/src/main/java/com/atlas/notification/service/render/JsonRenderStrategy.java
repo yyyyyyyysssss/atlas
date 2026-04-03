@@ -35,6 +35,7 @@ public class JsonRenderStrategy extends AbstractRenderStrategy implements Render
         String renderedTitle = sub.replace(template.getTitle());
         JsonPayload jsonPayload = new JsonPayload();
         jsonPayload.setTitle(renderedTitle);
+        jsonPayload.setRenderType(template.getRenderType());
         if (template.getContent() instanceof String contentStr) {
             String renderedJson = sub.replace(contentStr);
             jsonPayload.setBody(renderedJson);

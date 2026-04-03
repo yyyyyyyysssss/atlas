@@ -127,7 +127,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         int count = (limit == null || limit <= 0) ? 1 : limit;
         // 构建查询：已发布状态 + 按发布时间降序
         LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
-                .select(Announcement::getId,Announcement::getTitle,Announcement::getType,Announcement::getDescription)
+                .select(Announcement::getId,Announcement::getVersion,Announcement::getTitle,Announcement::getType,Announcement::getDescription)
                 .eq(Announcement::getStatus, AnnouncementStatus.PUBLISHED) // 必须是已发布
                 .orderByDesc(Announcement::getPriority) // 优先级最高优先
                 .orderByDesc(Announcement::getPublishTime) // 时间最近优先
@@ -139,8 +139,11 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         }
         Announcement announcement = entities.getFirst();
         AnnouncementVO announcementVO = AnnouncementMapping.INSTANCE.toAnnouncementVO(announcement);
-        Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
-        announcementVO.setIsRead(readSet.contains(announcementVO.getId()));
+        if(userId != null){
+            Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
+            announcementVO.setIsRead(readSet.contains(announcementVO.getId()));
+        }
+
         return announcementVO;
     }
 
@@ -169,6 +172,11 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     public void updateAnnouncement(AnnouncementUpdateDTO updateDTO, boolean isFullUpdate) {
         Announcement entity = checkAndResult(updateDTO.getId());
         AnnouncementStatus oldStatus = entity.getStatus();
+        if(oldStatus.equals(AnnouncementStatus.PUBLISHED)){
+            if(updateDTO.getStatus() != null && updateDTO.getStatus().equals(AnnouncementStatus.DRAFT)){
+                throw new BusinessException("已发布的公告不允许退回至草稿状态，如需修改请直接编辑或撤回公告。");
+            }
+        }
         if (isFullUpdate) {
             AnnouncementMapping.INSTANCE.overwriteAnnouncement(updateDTO, entity);
         } else {
@@ -183,7 +191,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (row <= 0) {
             throw new BusinessException("修改失败");
         }
-        if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
+        if (!oldStatus.equals(entity.getStatus()) && !entity.getStatus().equals(AnnouncementStatus.DRAFT)) {
             pushAnnouncement(entity);
         }
     }
@@ -191,12 +199,13 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     private void pushAnnouncement(Announcement entity){
         AnnouncementVO announcementVO = new AnnouncementVO();
         announcementVO.setId(entity.getId());
+        announcementVO.setStatus(entity.getStatus());
         announcementVO.setTitle(entity.getTitle());
         announcementVO.setDescription(entity.getDescription());
         announcementVO.setType(entity.getType());
         notificationService.send(
                 NotificationRequest
-                        .object(announcementVO)
+                        .object(entity.getTitle(),announcementVO)
                         .inbox(NotificationEventEnum.ANNOUNCEMENT_EVENT)
                         .to()
                         .toAllUser()

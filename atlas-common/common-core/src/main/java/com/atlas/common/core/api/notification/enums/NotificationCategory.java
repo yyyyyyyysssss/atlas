@@ -5,12 +5,12 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum RenderType {
+public enum NotificationCategory{
 
-    TEXT,
-    HTML,
-    CARD,
-    FILE,
-    RAW,
+    SYSTEM,
+
+    SECURITY,
     ;
+
+
 }

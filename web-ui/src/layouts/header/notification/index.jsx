@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Badge, Drawer, Flex, theme } from 'antd';
 import { Bell } from 'lucide-react';
 import IconBox from '../../../components/icon-box';
-import { NotificationList } from '../../../pages/workbench/NotificationCard';
+import NotificationList from './NotificationList';
 
 
 const Notification = () => {
@@ -25,7 +25,7 @@ const Notification = () => {
       <Drawer
         title="消息通知"
         placement="right"
-        width={500}
+        width={600}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
         // loading={historyLoading}

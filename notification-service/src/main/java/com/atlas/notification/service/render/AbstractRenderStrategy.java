@@ -4,6 +4,7 @@ package com.atlas.notification.service.render;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,9 @@ public abstract class AbstractRenderStrategy implements RenderStrategy{
     public MessagePayload render(MessageTemplateModel template, Map<String, Object> params, Map<String, Object> ext) {
         // 执行具体的渲染逻辑（由子类实现）
         MessagePayload payload = doRender(template, params);
+
+        payload.setCategory(template.getCategory());
+        payload.setSendTime(LocalDateTime.now());
 
         // 填入外部编码
         payload.setExtTemplateCode(template.getExtTemplateCode());

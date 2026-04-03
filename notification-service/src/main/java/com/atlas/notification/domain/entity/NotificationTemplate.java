@@ -1,6 +1,7 @@
 package com.atlas.notification.domain.entity;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.notification.enums.ActivationStatus;
 import com.atlas.common.core.api.notification.enums.RenderType;
@@ -43,6 +44,10 @@ public class NotificationTemplate extends BaseEntity {
     // 标题模板 
     @TableField("title")
     private String title;
+
+    @TableField("category")
+    @EnumValue
+    private NotificationCategory category;
 
     // 正文模板 
     @TableField("content")

@@ -1,6 +1,7 @@
 package com.atlas.notification.domain.mode;
 
 import com.atlas.common.core.api.notification.enums.ContentType;
+import com.atlas.common.core.api.notification.enums.RenderType;
 import com.atlas.common.core.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.util.Map;
 @Setter
 public class JsonPayload extends MessagePayload{
 
-    private String renderType;
+    private RenderType renderType;
 
     private Object body;
 

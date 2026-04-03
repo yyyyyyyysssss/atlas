@@ -64,18 +64,14 @@ const AnnouncementDetails = () => {
       // 这里的 .format() 必须和你的 DatePicker 格式一致
       publishTime: values.publishTime ? values.publishTime.format('YYYY-MM-DD HH:mm:ss') : undefined,
     };
-    try {
-      if (operationMode === OperationMode.ADD.value) {
-        await createAsync(params);
-        getMessageApi().success(t('创建成功'));
-      } else {
-        await updateAsync(params);
-        getMessageApi().success(t('修改成功'));
-      }
-      goBack();
-    } catch (error) {
-      getMessageApi().error(error.message || t('操作失败'));
+    if (operationMode === OperationMode.ADD.value) {
+      await createAsync(params);
+      getMessageApi().success(t('创建成功'));
+    } else {
+      await updateAsync(params);
+      getMessageApi().success(t('修改成功'));
     }
+    goBack();
   };
 
   const handleFormValuesChange = (changedValues) => {

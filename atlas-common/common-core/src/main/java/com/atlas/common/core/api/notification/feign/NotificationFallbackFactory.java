@@ -1,9 +1,7 @@
 package com.atlas.common.core.api.notification.feign;
 
 import com.atlas.common.core.api.feign.factory.BaseFallbackFactory;
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
-import com.atlas.common.core.response.Result;
-import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

@@ -10,6 +10,7 @@ public enum AnnouncementStatus implements MybatisBaseEnum<String> {
 
     DRAFT("草稿"),
     PUBLISHED("已发布"),
+    RECALLED("撤回"),
     ;
 
     private final String description;

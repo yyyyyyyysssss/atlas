@@ -50,5 +50,10 @@ public class AnnouncementVO {
 
     private Boolean isRead;
 
+    public String getTypeName(){
+
+        return type != null ? type.getDescription() : null;
+    }
+
 }
 

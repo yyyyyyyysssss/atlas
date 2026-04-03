@@ -11,6 +11,7 @@ from langchain_community.chat_models import ChatTongyi
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage, SystemMessage, AIMessage
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, field_validator
 from langgraph.graph import StateGraph, END
 
@@ -214,12 +215,21 @@ def create_release_agent():
 
     # 这是 Agent 的“大脑”。
     def call_model(state: AgentState):
-        llm = ChatTongyi(
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-            model_name="qwen-max",
-            streaming=False,
+        # llm = ChatTongyi(
+        #     api_key=os.getenv("DASHSCOPE_API_KEY"),
+        #     model_name="qwen-max",
+        #     streaming=False,
+        #     temperature=0,
+        #     callbacks=[StreamingStdOutCallbackHandler()] # 直接输出到控制台
+        # )
+        llm = ChatOpenAI(
+            api_key=os.getenv("NVIDIA_API_KEY"),
+            # NVIDIA 提供的模型名称，例如 "meta/llama-3.1-405b-instruct" 或 "nvidia/llama-3.1-nemotron-70b-instruct"
+            # 具体名称请在 NVIDIA 官网复制
+            model="qwen/qwen3.5-122b-a10b",
+            base_url="https://integrate.api.nvidia.com/v1",  # 固定地址
             temperature=0,
-            callbacks=[StreamingStdOutCallbackHandler()] # 直接输出到控制台
+            streaming=True
         )
         # 绑定工具
         tools = [get_current_version, get_git_logs, submit_announcement]

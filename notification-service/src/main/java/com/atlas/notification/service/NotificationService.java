@@ -1,6 +1,6 @@
 package com.atlas.notification.service;
 
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import com.atlas.notification.domain.entity.Notification;
 import com.baomidou.mybatisplus.extension.service.IService;
 

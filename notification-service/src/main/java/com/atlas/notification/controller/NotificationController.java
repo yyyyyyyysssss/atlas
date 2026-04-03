@@ -1,6 +1,6 @@
 package com.atlas.notification.controller;
 
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -13,8 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * (MessageTemplate)表控制层

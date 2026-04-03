@@ -1,7 +1,9 @@
 package com.atlas.notification.service.impl;
 
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
+import com.atlas.common.core.api.notification.enums.RenderType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.notification.config.idwork.IdGen;
@@ -74,7 +76,6 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                         .channelType(channel)
                         .templateCode(ctx.getTemplateCode())
                         .status(NotificationStatus.SENDING)
-                        .sendTime(LocalDateTime.now())
                         .params(ctx.getParams())
                         .ext(ctx.getExt())
                         .build();
@@ -96,11 +97,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                             .filter(f -> f.support(messageTemplateModel.getContentType()))
                             .findFirst()
                             .orElseThrow(() -> new NotificationException(NotificationErrorCode.RENDER_STRATEGY_NOT_SUPPORT));
+
                     MessagePayload messagePayload = renderStrategy.render(messageTemplateModel, ctx.getParams(), ctx.getExt());
 
                     this.lambdaUpdate()
                             .set(Notification::getContent,messagePayload.getContent())
                             .set(Notification::getContentType, messagePayload.getContentType())
+                            .set(Notification::getCategory, messagePayload.getCategory())
+                            .set(Notification::getSendTime, messagePayload.getSendTime())
                             .eq(Notification::getId,notificationId)
                             .update();
 
@@ -155,24 +159,31 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                 .builder()
                 .templateCode(ctx.getTemplateCode())
                 .title(ctx.getTitle())
+                .category(ctx.getCategory())
                 .content(ctx.getContent())
                 .contentType(ctx.getContentType());
+        RenderType finalRenderType = ctx.renderType();
         if (StringUtils.isNotEmpty(ctx.getTemplateCode())) {
             NotificationTemplateVO messageTemplateVO = messageTemplateService.resolveTemplate(ctx.getTemplateCode(),channelType);
             if (messageTemplateVO == null) {
                 throw new NotificationException(NotificationErrorCode.TEMPLATE_NOT_FOUND, "TemplateCode: " + ctx.getTemplateCode());
+            }
+            // 如果 DSL 没指定 renderType，则使用模板里配置的
+            if (finalRenderType == null) {
+                finalRenderType = messageTemplateVO.getRenderType();
             }
             builder
                     .templateId(messageTemplateVO.getId())
                     .templateCode(messageTemplateVO.getCode())
                     // 数据库有标题用数据库的，没有用 Context 传入的（如代码直接指定的本地模板标题）
                     .title(StringUtils.defaultIfBlank(messageTemplateVO.getTitle(), ctx.getTitle()))
+                    .category(messageTemplateVO.getCategory())
                     .content(messageTemplateVO.getContent())
                     .contentType(ContentType.getContentType(channelType))
                     .extTemplateCode(messageTemplateVO.getExtTemplateCode())
                     .build();
         }
-
+        builder.renderType(finalRenderType);
         return builder.build();
     }
     

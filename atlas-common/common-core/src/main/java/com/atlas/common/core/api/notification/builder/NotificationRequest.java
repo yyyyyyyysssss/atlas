@@ -1,11 +1,9 @@
 package com.atlas.common.core.api.notification.builder;
 
+import com.atlas.common.core.api.notification.body.CardBody;
+import com.atlas.common.core.api.notification.body.FileBody;
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
-import com.atlas.common.core.api.notification.enums.ChannelType;
-import com.atlas.common.core.api.notification.enums.ContentType;
-import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
-import com.atlas.common.core.api.notification.enums.TargetType;
+import com.atlas.common.core.api.notification.enums.*;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -42,6 +40,8 @@ public class NotificationRequest {
     private List<String> targets;
 
     private TargetType targetType;
+
+    private NotificationCategory category = NotificationCategory.SYSTEM;
 
     // 发送渠道
     private List<ChannelType> channels;
@@ -85,13 +85,38 @@ public class NotificationRequest {
         return new NotificationBuilder(ctx);
     }
 
-    /**
-     * 以纯数据对象起手 (主要针对 SSE/WebSocket 场景)
-     */
-    public static ObjectChannelOp object(Object object) {
+
+    public static ObjectChannelOp object(String title, Object object) {
         NotificationRequest ctx = new NotificationRequest();
+        ctx.title = title;
         ctx.content = object;
         ctx.contentType = ContentType.JSON;
+        ctx.ext = ensureMutable(ctx.ext);
+        ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.RAW);
+        return new NotificationBuilder(ctx);
+    }
+
+    public static ObjectChannelOp card(String title, Consumer<CardBody.CardBodyBuilder> operator) {
+        CardBody.CardBodyBuilder builder = CardBody.builder();
+        operator.accept(builder);
+        NotificationRequest ctx = new NotificationRequest();
+        ctx.title = title;
+        ctx.content = builder.build();
+        ctx.contentType = ContentType.JSON;
+        ctx.ext = ensureMutable(ctx.ext);
+        ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.CARD);
+        return new NotificationBuilder(ctx);
+    }
+
+    public static ObjectChannelOp file(String title, Consumer<FileBody.FileBodyBuilder> operator) {
+        FileBody.FileBodyBuilder builder = FileBody.builder();
+        operator.accept(builder);
+        NotificationRequest ctx = new NotificationRequest();
+        ctx.title = title;
+        ctx.content = builder.build();
+        ctx.contentType = ContentType.JSON;
+        ctx.ext = ensureMutable(ctx.ext);
+        ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.FILE);
         return new NotificationBuilder(ctx);
     }
 
@@ -142,6 +167,9 @@ public class NotificationRequest {
 
         // 通用属性
         ConfigOp title(String title);
+
+        // 手动指定分类
+        ConfigOp category(NotificationCategory category);
 
         ConfigOp withParam(String key, Object value);
 
@@ -197,6 +225,12 @@ public class NotificationRequest {
         @Override
         public ConfigOp title(String title) {
             ctx.title = title;
+            return this;
+        }
+
+        @Override
+        public ConfigOp category(NotificationCategory category) {
+            ctx.category = category;
             return this;
         }
 
@@ -313,18 +347,18 @@ public class NotificationRequest {
             if (ctx.title == null || ctx.title.isBlank()) {
                 ctx.title = "系统通知";
             }
-            return NotificationDTO
-                    .builder()
-                    .templateCode(ctx.templateCode)
-                    .title(ctx.title)
-                    .content(ctx.content)
-                    .contentType(ctx.contentType)
-                    .targets(ctx.targets)
-                    .targetType(ctx.targetType)
-                    .channels(ctx.channels)
-                    .params(ctx.params)
-                    .ext(ctx.ext)
-                    .build();
+            return new NotificationDTO(
+                    ctx.templateCode,
+                    ctx.title,
+                    ctx.category,
+                    ctx.content,
+                    ctx.contentType,
+                    ctx.targets,
+                    ctx.targetType,
+                    ctx.channels,
+                    ctx.params,
+                    ctx.ext
+            );
         }
 
         private void checkTargetType(TargetType newType) {

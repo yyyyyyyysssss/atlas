@@ -2,7 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
-import com.atlas.common.core.api.notification.dto.NotificationDTO;
+import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
@@ -38,7 +38,7 @@ public class EmailVerificationService {
 
     public void send(String email) {
         Result<List<UserDTO>> result = userApi.findByEmails(Collections.singletonList(email));
-        if(!result.isSucceed() || CollectionUtils.isEmpty(result.getData())){
+        if (!result.isSucceed() || CollectionUtils.isEmpty(result.getData())) {
             throw new BusinessException("用户不存在");
         }
         // 生成并存入 Redis
@@ -48,18 +48,19 @@ public class EmailVerificationService {
         // 发送通知
         Map<String, Object> variable = new HashMap<>();
         variable.put("code", code);
-        NotificationDTO dto = NotificationRequest
-                .template("auth_code", "登录验证码", variable)
-                .email()
-                .withParam("min", 10)
-                .to()
-                .toEmails(email)
-                .build();
-        notificationApi.send(dto);
+        notificationApi.send(
+                NotificationRequest
+                        .template("auth_code", "登录验证码", variable)
+                        .email()
+                        .withParam("min", 10)
+                        .to()
+                        .toEmails(email)
+                        .build()
+        );
     }
 
     public boolean verify(String email, String inputCode) {
-        String cacheCode = redisHelper.getValue(CODE_PREFIX + email,String.class);
+        String cacheCode = redisHelper.getValue(CODE_PREFIX + email, String.class);
         if (cacheCode == null || !cacheCode.equals(inputCode)) {
             return false;
         }

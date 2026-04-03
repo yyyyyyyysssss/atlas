@@ -1,6 +1,7 @@
 package com.atlas.notification.domain.vo;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.atlas.notification.enums.ActivationStatus;
 import com.atlas.common.core.api.notification.enums.RenderType;
 import lombok.Getter;
@@ -24,6 +25,8 @@ public class NotificationTemplateVO {
 
     // 标题模板 
     private String title;
+
+    private NotificationCategory category;
 
     // 正文模板 
     private String content;

@@ -1,11 +1,13 @@
 package com.atlas.notification.domain.mode;
 
 import com.atlas.common.core.api.notification.enums.ContentType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +21,10 @@ import java.util.Map;
 public abstract class MessagePayload {
 
     protected String title;
+
+    private NotificationCategory category;
+
+    private LocalDateTime sendTime;
 
     // 外部服务商模板编码
     @JsonIgnore

@@ -4,7 +4,7 @@ public interface NotificationConstant {
 
     /** 通用扩展参数键 */
     interface Common {
-
+        String RENDER_TYPE = "render_type";
     }
 
     /** 邮件渠道专用 */

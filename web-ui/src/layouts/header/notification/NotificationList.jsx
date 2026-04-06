@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Card, List, Avatar, Button, Typography, Badge, Space, theme, Flex } from 'antd';
 import { Mail, Info, ShieldAlert } from 'lucide-react';
 import NoDataEmpty from '../../../components/NoDataEmpty';
@@ -7,7 +7,6 @@ import TextRenderer from './renderers/TextRenderer';
 import FileRenderer from './renderers/FileRenderer';
 import { formatRelativeTime } from '../../../utils/format';
 import CardRenderer from './renderers/CardRenderer';
-import { NOTIFICATION_COMPONENTS } from './NotificationRegistry';
 
 
 const notifications = [
@@ -32,7 +31,7 @@ const notifications = [
         body: '您的账号于 2026-04-02 在阜阳市尝试登录，若非本人操作请及时修改密码。',
     },
     {
-        "title": "Atlas 系统版本更新",
+        "title": "系统公告",
         "category": "SYSTEM", // 修改类别
         "sendTime": "2026-04-03 10:00:00",
         "isRead": false,
@@ -40,8 +39,10 @@ const notifications = [
         "body": {
             "subTitle": "Atlas v2.7.0 正式发布", // 突出版本号
             "content": "本次更新引入了全新的 AI 智能诊断引擎，大幅提升了基础设施的监控精度。同时修复了 12 个已知稳定性问题。",
-            "tagText": "新版本", // 标签改为状态
-            "tagType": "success",
+            "tagText": "新公告", // 标签改为状态
+            "tagType": "SUCCESS",
+            "link": "atlas://notification/announcement/details?id=255135072953032708",
+            // "imageUrl": "http://localhost:9090/file/y-chat-bucket/afec917daf6c4857a107bddcf743b043.svg",
             "fields": [
                 { "label": "版本号", "value": "v2.7.0 (Stable)", "highlight": true },
                 { "label": "更新类型", "value": "功能特性 & 安全补丁", "highlight": false },
@@ -49,19 +50,17 @@ const notifications = [
             ],
             "actions": [
                 {
-                    "label": "查看完整日志",
-                    "url": "/release/v2.7.0", // 这里的 URL 对应你设计的 Modal 路由
-                    "type": "default",
-                    "actionType": "URL"
-                },
-                {
-                    "label": "立即体验",
-                    "url": "/dashboard",
-                    "type": "primary",
-                    "actionType": "URL"
+                    "label": "查看",
+                    "path": "/api/notification/announcement/query",
+                    "theme": "PRIMARY",
+                    "confirmText": null,
+                    "actionType": "API",
+                    "extra": {
+                        "method": "POST",
+                        "data": { "pageNum": 1, "pageSize": 10 },
+                    }
                 }
             ],
-            "link": "/release/v2.7.0" // 点击卡片直接打开路由 Modal
         }
     }
 ];
@@ -69,7 +68,13 @@ const notifications = [
 
 const { Text } = Typography;
 
-const NotificationList = ({ limit = 10 }) => {
+const RENDERER_MAP = {
+    TEXT: TextRenderer,
+    FILE: FileRenderer,
+    CARD: CardRenderer,
+};
+
+const NotificationList = ({ limit = 10, closeDrawer }) => {
 
     const { token } = theme.useToken()
 
@@ -91,79 +96,81 @@ const NotificationList = ({ limit = 10 }) => {
         return configs[category] || configs.DEFAULT
     }
 
-    const handleItemClick = (e, item) => {
-        console.log('Clicked notification:', item);
-    }
+    const handleAction = useCallback(() => {
+        console.log('Action button clicked')
+    }, [])
 
-    const bodyRender = (item) => {
-        switch (item.renderType) {
-            case 'TEXT':
-                return <TextRenderer content={item.body} />
-            case 'FILE':
-                return <FileRenderer content={item.body} />
-            case 'CARD':
-                return <CardRenderer content={item.body} />
-            default:
-                return <Typography.Text type="secondary">未知</Typography.Text>
+    const bodyRender = useCallback((item) => {
+        const Renderer = RENDERER_MAP[item.renderType]
+        if (!Renderer) {
+            return <Text type="secondary">未知类型</Text>
         }
-    }
+        return (
+            <Renderer
+                content={item.body}
+                closeDrawer={closeDrawer}
+                // 关键：传给子组件的回调
+                onActionClick={(action) => handleAction(item, action)}
+            />
+        )
+    }, [closeDrawer, handleAction])
 
     return (
-        <List
-            itemLayout="horizontal"
-            dataSource={notifications}
-            locale={{ emptyText: <NoDataEmpty /> }}
-            renderItem={(item) => {
-                const { title, category, sendTime, isRead } = item
+        <>
+            <List
+                itemLayout="horizontal"
+                dataSource={notifications}
+                locale={{ emptyText: <NoDataEmpty /> }}
+                renderItem={(item) => {
+                    const { title, category, sendTime, isRead } = item
 
-                const categoryConfig = getCategoryIcon(category);
+                    const categoryConfig = getCategoryIcon(category);
 
-                return (
-                    <List.Item
-                        className="atlas-float-trigger"
-                        onClick={(e) => handleItemClick(e, item)}
-                        style={{
-                            padding: '16px',
-                            marginBottom: 12, // 利用外边距制造自然分界
-                            background: token.colorBgContainer, // 纯白卡片
-                            borderRadius: token.borderRadiusLG,
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        }}
-                    >
-                        <List.Item.Meta
-                            avatar={
-                                <Avatar style={{ backgroundColor: categoryConfig.bg, color: categoryConfig.color }} icon={categoryConfig.icon} />
-                            }
-                            title={
-                                <Flex justify="space-between" align="center">
-                                    <Badge
-                                        dot={isRead === false}
-                                        offset={[5, 0]}
-                                        status="processing"
-                                        color={token.colorPrimary}
-                                    >
-                                        <Flex>
-                                            <Text
-                                                strong
-                                            >
-                                                {categoryConfig.name}
-                                            </Text>
-                                            <Text strong={isRead === true}>
-                                                {title}
-                                            </Text>
-                                        </Flex>
-                                    </Badge>
-                                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>{formatRelativeTime(sendTime)}</Text>
-                                </Flex>
-                            }
-                            description={bodyRender(item)}
-                        />
-                    </List.Item>
-                );
-            }}
-        />
+                    return (
+                        <List.Item
+                            className="atlas-float-trigger"
+                            style={{
+                                padding: '16px',
+                                marginBottom: 12, // 利用外边距制造自然分界
+                                background: token.colorBgContainer, // 纯白卡片
+                                borderRadius: token.borderRadiusLG,
+                                border: `1px solid ${token.colorBorderSecondary}`,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
+                        >
+                            <List.Item.Meta
+                                avatar={
+                                    <Avatar style={{ backgroundColor: categoryConfig.bg, color: categoryConfig.color }} icon={categoryConfig.icon} />
+                                }
+                                title={
+                                    <Flex justify="space-between" align="center">
+                                        <Badge
+                                            dot={isRead === false}
+                                            offset={[5, 0]}
+                                            status="processing"
+                                            color={token.colorPrimary}
+                                        >
+                                            <Flex>
+                                                <Text
+                                                    strong
+                                                >
+                                                    {categoryConfig.name}
+                                                </Text>
+                                                <Text strong={isRead === true}>
+                                                    {title}
+                                                </Text>
+                                            </Flex>
+                                        </Badge>
+                                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>{formatRelativeTime(sendTime)}</Text>
+                                    </Flex>
+                                }
+                                description={bodyRender(item)}
+                            />
+                        </List.Item>
+                    );
+                }}
+            />
+        </>
     )
 }
 

@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 public class ThreadPoolConfig {
 
 
-    @Bean("notificationExecutor")
+    @Bean("taskExecutor")
     public ThreadPoolTaskExecutor notificationExecutor(NotificationThreadProperties notificationThreadProperties) {
         log.info("[ThreadPool-Config] Initializing notificationExecutor: core={}, max={}, queue={}",
                 notificationThreadProperties.getCoreSize(),

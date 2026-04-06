@@ -67,7 +67,7 @@ const NotificationAnnouncement = () => {
   const handleEdit = (id) => {
     navigate('/notification/announcement/details', {
       state: {
-        announcementId: id,
+        id: id,
         operationMode: OperationMode.EDIT.value
       }
     });

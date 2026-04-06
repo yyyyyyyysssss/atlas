@@ -1,5 +1,6 @@
 package com.atlas.notification.service.impl;
 
+import com.atlas.common.core.api.notification.body.CardBody;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.exception.BusinessException;
@@ -11,6 +12,7 @@ import com.atlas.notification.domain.entity.Announcement;
 import com.atlas.notification.domain.entity.AnnouncementRead;
 import com.atlas.notification.domain.vo.AnnouncementVO;
 import com.atlas.notification.enums.AnnouncementStatus;
+import com.atlas.notification.enums.AnnouncementType;
 import com.atlas.notification.mapper.AnnouncementMapper;
 import com.atlas.notification.mapping.AnnouncementMapping;
 import com.atlas.notification.service.AnnouncementReadService;
@@ -31,6 +33,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -58,7 +61,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
         // 构建查询条件
         LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
-                .select(Announcement.class,fieldInfo -> !fieldInfo.getColumn().equals("content"))
+                .select(Announcement.class, fieldInfo -> !fieldInfo.getColumn().equals("content"))
                 .orderByDesc(Announcement::getPriority).orderByDesc(Announcement::getPublishTime);
 
         // 状态查询：如果枚举不为空，MyBatis-Plus 会自动调用枚举的 EnumTypeHandler
@@ -111,14 +114,16 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
 
     @Override
     public AnnouncementVO findUserById(Long id, Long userId) {
-        AnnouncementVO announcementVO = this.findById(id);
+        Announcement announcement = checkAndResult(id);
+        AnnouncementVO announcementVO = AnnouncementMapping.INSTANCE.toAnnouncementVO(announcement);
         Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
         boolean isRead = readSet.contains(announcementVO.getId());
         announcementVO.setIsRead(isRead);
         // 设置已读
-        if(!isRead){
-            announcementReadService.markAsRead(id,userId);
+        if (!isRead) {
+            announcementReadService.markAsRead(id, userId);
         }
+        pushAnnouncement(announcement);
         return announcementVO;
     }
 
@@ -127,7 +132,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         int count = (limit == null || limit <= 0) ? 1 : limit;
         // 构建查询：已发布状态 + 按发布时间降序
         LambdaQueryWrapper<Announcement> wrapper = Wrappers.lambdaQuery(Announcement.class)
-                .select(Announcement::getId,Announcement::getVersion,Announcement::getTitle,Announcement::getType,Announcement::getDescription)
+                .select(Announcement::getId, Announcement::getVersion, Announcement::getTitle, Announcement::getType, Announcement::getDescription)
                 .eq(Announcement::getStatus, AnnouncementStatus.PUBLISHED) // 必须是已发布
                 .orderByDesc(Announcement::getPriority) // 优先级最高优先
                 .orderByDesc(Announcement::getPublishTime) // 时间最近优先
@@ -139,7 +144,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         }
         Announcement announcement = entities.getFirst();
         AnnouncementVO announcementVO = AnnouncementMapping.INSTANCE.toAnnouncementVO(announcement);
-        if(userId != null){
+        if (userId != null) {
             Set<Long> readSet = announcementReadService.getReadAnnouncementIds(userId, Collections.singletonList(announcementVO.getId()));
             announcementVO.setIsRead(readSet.contains(announcementVO.getId()));
         }
@@ -172,8 +177,8 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
     public void updateAnnouncement(AnnouncementUpdateDTO updateDTO, boolean isFullUpdate) {
         Announcement entity = checkAndResult(updateDTO.getId());
         AnnouncementStatus oldStatus = entity.getStatus();
-        if(oldStatus.equals(AnnouncementStatus.PUBLISHED)){
-            if(updateDTO.getStatus() != null && updateDTO.getStatus().equals(AnnouncementStatus.DRAFT)){
+        if (oldStatus.equals(AnnouncementStatus.PUBLISHED)) {
+            if (updateDTO.getStatus() != null && updateDTO.getStatus().equals(AnnouncementStatus.DRAFT)) {
                 throw new BusinessException("已发布的公告不允许退回至草稿状态，如需修改请直接编辑或撤回公告。");
             }
         }
@@ -196,7 +201,8 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         }
     }
 
-    private void pushAnnouncement(Announcement entity){
+    private void pushAnnouncement(Announcement entity) {
+        // 系统公告推送
         AnnouncementVO announcementVO = new AnnouncementVO();
         announcementVO.setId(entity.getId());
         announcementVO.setStatus(entity.getStatus());
@@ -205,8 +211,39 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         announcementVO.setType(entity.getType());
         notificationService.send(
                 NotificationRequest
-                        .object(entity.getTitle(),announcementVO)
+                        .object(entity.getTitle(), announcementVO)
                         .inbox(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                        .to()
+                        .toAllUser()
+                        .build()
+        );
+        // 公告消息卡片推送
+        notificationService.send(
+                NotificationRequest.card("系统公告", cardBodyBuilder -> cardBodyBuilder
+                                .subTitle(entity.getTitle())
+                                .content(entity.getDescription())
+                                .tagText("新公告")
+                                .tagType(CardBody.TargetType.SUCCESS)
+                                .link("atlas://notification/announcement/details?id=" + entity.getId())
+                                .field(CardBody.KVField.builder()
+                                        .label("公告类型")
+                                        .value(entity.getType().getDescription())
+                                        .highlight(true)
+                                        .build())
+                                .field(CardBody.KVField.builder()
+                                        .label("发布人")
+                                        .value(entity.getCreatorName())
+                                        .build())
+                                .action(CardBody.Action.builder()
+                                        .label("查看")
+                                        .path("/api/notification/announcement/query")
+                                        .theme(CardBody.ActionTheme.PRIMARY)
+                                        .actionType(CardBody.ActionType.API)
+                                        .extraInfo("method", "POST")
+                                        .extraInfo("data", Map.of("pageNum", "1", "pageSize", "10"))
+                                        .build())
+                        )
+                        .inbox(NotificationEventEnum.NOTIFICATION_EVENT)
                         .to()
                         .toAllUser()
                         .build()

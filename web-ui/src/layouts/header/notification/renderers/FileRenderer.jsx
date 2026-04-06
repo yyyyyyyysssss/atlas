@@ -7,7 +7,7 @@ import { downloadFile } from '../../../../utils/Download';
 const { Text } = Typography;
 
 
-const FileRenderer = ({ content, mode = 'list' }) => {
+const FileRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
 
     const { token } = theme.useToken()
 
@@ -96,6 +96,8 @@ const FileRenderer = ({ content, mode = 'list' }) => {
             </Flex>
         </Flex>
     )
-}
+}, (prev, next) => {
+    return prev.content === next.content && prev.onActionClick === next.onActionClick
+})
 
 export default FileRenderer

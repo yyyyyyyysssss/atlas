@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 
 const { Title, Text, Paragraph, Link } = Typography;
 
-const AnnouncementMarkdownView = ({ content }) => {
+const MarkdownView = ({ content }) => {
 
     const { token } = theme.useToken()
 
@@ -217,4 +217,4 @@ const MarkdownTable = ({ children }) => {
     );
 }
 
-export default AnnouncementMarkdownView
+export default MarkdownView

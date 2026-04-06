@@ -1,9 +1,7 @@
 package com.atlas.notification.service.impl;
 
 import com.atlas.common.core.api.notification.builder.NotificationDTO;
-import com.atlas.common.core.api.notification.enums.ChannelType;
-import com.atlas.common.core.api.notification.enums.NotificationCategory;
-import com.atlas.common.core.api.notification.enums.RenderType;
+import com.atlas.common.core.api.notification.enums.*;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.notification.config.idwork.IdGen;
@@ -11,7 +9,6 @@ import com.atlas.notification.domain.entity.Notification;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
 import com.atlas.notification.domain.vo.NotificationTemplateVO;
-import com.atlas.common.core.api.notification.enums.ContentType;
 import com.atlas.notification.enums.NotificationErrorCode;
 import com.atlas.notification.enums.NotificationStatus;
 import com.atlas.notification.mapper.NotificationMapper;
@@ -69,6 +66,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
             // 分发给匹配的适配器发送
             for (ChannelType channel : ctx.getChannels()) {
+                boolean shouldRecord = !channel.equals(ChannelType.INBOX) || NotificationEventEnum.NOTIFICATION_EVENT.getCode().equals(ctx.eventName());
                 Long notificationId = IdGen.genId();
                 Notification notification = Notification
                         .builder()
@@ -80,9 +78,8 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                         .ext(ctx.getExt())
                         .build();
                 notification.setId(notificationId);
-                notificationMapper.insert(notification);
-                try {
 
+                try {
                     // 根据渠道 TargetType 解析账号
                     List<String> accounts = accountResolver.resolve(channel, ctx.getTargetType(), ctx.getTargets());
                     if (accounts.isEmpty()) {
@@ -100,13 +97,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
                     MessagePayload messagePayload = renderStrategy.render(messageTemplateModel, ctx.getParams(), ctx.getExt());
 
-                    this.lambdaUpdate()
-                            .set(Notification::getContent,messagePayload.getContent())
-                            .set(Notification::getContentType, messagePayload.getContentType())
-                            .set(Notification::getCategory, messagePayload.getCategory())
-                            .set(Notification::getSendTime, messagePayload.getSendTime())
-                            .eq(Notification::getId,notificationId)
-                            .update();
+                    if (shouldRecord) {
+                        notification.setContent(messagePayload.getContent());
+                        notification.setContentType(messagePayload.getContentType());
+                        notification.setCategory(messagePayload.getCategory());
+                        notification.setSendTime(messagePayload.getSendTime());
+                        notificationMapper.insert(notification);
+                    }
+
 
                     // 分发路由
                     MessageAdapter adapter = dispatch(channel);
@@ -114,28 +112,28 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                     // 发送
                     adapter.send(messagePayload, accounts);
 
-                    this.lambdaUpdate()
-                            .set(Notification::getStatus,NotificationStatus.SENT)
-                            .eq(Notification::getId,notificationId)
-                            .update();
+                    if (shouldRecord) {
+                        this.lambdaUpdate()
+                                .set(Notification::getStatus, NotificationStatus.SENT)
+                                .eq(Notification::getId, notificationId)
+                                .update();
+                    }
+
                 } catch (Exception e) {
                     // 记录具体某个渠道的失败，不影响其他渠道
-                    log.error("[Notification-Engine] [{}] Send Failed {} Reason: {}", channel, logId, e.getMessage(),e);
-                    this.lambdaUpdate()
-                            .set(Notification::getStatus,NotificationStatus.FAILED)
-                            .set(Notification::getFailReason,e.getMessage())
-                            .eq(Notification::getId,notificationId)
-                            .update();
+                    log.error("[Notification-Engine] [{}] Send Failed {} Reason: {}", channel, logId, e.getMessage(), e);
+                    if (shouldRecord) {
+                        ensureRecordFailed(notification, e.getMessage());
+                    }
                 }
-
             }
         } catch (NotificationException e) {
             log.error("[Notification-Engine] Send Failed {} ErrorCode: {} Reason: {}", logId, e.getCode(), e.getDetail());
         } catch (Exception e) {
-            log.error("[Notification-Engine] Send Failed {} Reason: {}", logId, e.getMessage(),e);
+            log.error("[Notification-Engine] Send Failed {} Reason: {}", logId, e.getMessage(), e);
             // todo 修改或保存数据库
         } finally {
-            if(stopWatch.isRunning()){
+            if (stopWatch.isRunning()) {
                 stopWatch.stop();
             }
             log.info("[Notification-Engine] {} Cost: {}s", logId, String.format("%.3f", stopWatch.getTotalTimeSeconds()));
@@ -144,6 +142,19 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
             }
         }
 
+    }
+
+    private void ensureRecordFailed(Notification notification, String failReason) {
+        notification.setStatus(NotificationStatus.FAILED);
+        notification.setFailReason(failReason);
+        this.saveOrUpdate(notification);
+    }
+
+    private void updateStatus(Long notificationId, NotificationStatus status) {
+        this.lambdaUpdate()
+                .set(Notification::getStatus, status)
+                .eq(Notification::getId, notificationId)
+                .update();
     }
 
     private MessageAdapter dispatch(ChannelType channelType) {
@@ -164,7 +175,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                 .contentType(ctx.getContentType());
         RenderType finalRenderType = ctx.renderType();
         if (StringUtils.isNotEmpty(ctx.getTemplateCode())) {
-            NotificationTemplateVO messageTemplateVO = messageTemplateService.resolveTemplate(ctx.getTemplateCode(),channelType);
+            NotificationTemplateVO messageTemplateVO = messageTemplateService.resolveTemplate(ctx.getTemplateCode(), channelType);
             if (messageTemplateVO == null) {
                 throw new NotificationException(NotificationErrorCode.TEMPLATE_NOT_FOUND, "TemplateCode: " + ctx.getTemplateCode());
             }
@@ -186,6 +197,6 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         builder.renderType(finalRenderType);
         return builder.build();
     }
-    
+
 }
 

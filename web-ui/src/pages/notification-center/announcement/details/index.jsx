@@ -11,40 +11,48 @@ import dayjs from 'dayjs';
 import OptionSelect from '../../../../components/OptionSelect';
 import { AnnouncementStatus, AnnouncementType } from '../../../../enums/notification';
 import { createAnnouncement, getAnnouncementDetails, updateAnnouncement } from '../../../../services/NotificationService';
-import AnnouncementMarkdownView from '../components/AnnouncementMarkdownView';
+import MarkdownView from '../../../../components/MarkdownView';
 
 const { Text, Paragraph, Title } = Typography;
 
-const AnnouncementDetails = () => {
-  const { t } = useTranslation();
-  const { token } = theme.useToken();
-  const { announcementId, operationMode = OperationMode.ADD.value } = useFullParams();
-  const [form] = Form.useForm();
-  const { goBack } = useBack();
-  const [contentValue, setContentValue] = useState('');
+const AnnouncementDetails = (props) => {
+  const { t } = useTranslation()
 
-  const { runAsync: createAsync, loading: createLoading } = useRequest(createAnnouncement, { manual: true });
-  const { runAsync: updateAsync, loading: updateLoading } = useRequest(updateAnnouncement, { manual: true });
-  const { runAsync: detailAsync, loading: detailLoading } = useRequest(getAnnouncementDetails, { manual: true });
+  const { token } = theme.useToken()
+
+  const { id = props.id, operationMode = OperationMode.VIEW.value } = useFullParams()
+
+  const [form] = Form.useForm()
+
+  const { goBack } = useBack()
+
+  const [contentValue, setContentValue] = useState('')
+
+  const { runAsync: createAsync, loading: createLoading } = useRequest(createAnnouncement, { manual: true })
+  const { runAsync: updateAsync, loading: updateLoading } = useRequest(updateAnnouncement, { manual: true })
+  const { runAsync: detailAsync, loading: detailLoading } = useRequest(getAnnouncementDetails, { manual: true })
 
   const fetchData = async (id) => {
-    if (!id) return;
-    form.resetFields();
-    const data = await detailAsync(id);
+    if (!id) return
+    const data = await detailAsync(id)
+    form.resetFields()
     form.setFieldsValue({
       ...data,
       publishTime: data.publishTime ? dayjs(data.publishTime) : null,
-    });
-    setContentValue(data.content || '');
-  };
+    })
+    setContentValue(data.content || '')
+  }
 
   useEffect(() => {
     switch (operationMode) {
+      case OperationMode.VIEW.value:
+        fetchData(id)
+        break
       case OperationMode.EDIT.value:
-        fetchData(announcementId);
-        break;
+        fetchData(id)
+        break
       case OperationMode.ADD.value:
-        form.resetFields();
+        form.resetFields()
         form.setFieldsValue({
           status: 'PUBLISHED',
           priority: 10,
@@ -52,7 +60,7 @@ const AnnouncementDetails = () => {
         setContentValue('');
         break;
     }
-  }, [operationMode, announcementId]);
+  }, [operationMode, id])
 
   const saveAnnouncement = async () => {
     const values = await form.validateFields()
@@ -69,19 +77,23 @@ const AnnouncementDetails = () => {
       getMessageApi().success(t('修改成功'));
     }
     goBack();
-  };
+  }
 
   const handleFormValuesChange = (changedValues) => {
     if (changedValues.content !== undefined) {
       setContentValue(changedValues.content || '');
     }
-  };
+  }
 
   return (
     <Loading spinning={detailLoading || createLoading || updateLoading}>
       <Flex
         gap={20}
-        style={{ height: '100%', padding: '20px', background: token.colorBgContainer }}
+        style={{
+          height: '100%',
+          padding: '20px',
+          background: token.colorBgContainer,
+        }}
         vertical={false}
       >
         {/* 左侧编辑表单 */}
@@ -89,7 +101,6 @@ const AnnouncementDetails = () => {
           vertical
           style={{
             minHeight: '100vh',
-            overflowY: 'auto',
             paddingRight: '10px',
             flex: '0 0 50%',
           }}
@@ -98,6 +109,7 @@ const AnnouncementDetails = () => {
             form={form}
             layout="vertical"
             onValuesChange={handleFormValuesChange}
+            disabled={operationMode === OperationMode.VIEW.value}
           >
             <Form.Item name="id" hidden>
               <Input />
@@ -175,14 +187,17 @@ const AnnouncementDetails = () => {
           </Form>
 
           {/* 保存按钮 */}
-          <Flex justify="flex-end" gap={8} style={{ marginTop: '20px' }}>
-            <Button onClick={() => goBack()}>
-              {t('取消')}
-            </Button>
-            <Button type="primary" loading={createLoading || updateLoading} onClick={saveAnnouncement}>
-              {t('保存')}
-            </Button>
-          </Flex>
+          {operationMode !== OperationMode.VIEW.value && (
+            <Flex justify="flex-end" gap={8} style={{ marginTop: '20px' }}>
+              <Button onClick={() => goBack()}>
+                {t('取消')}
+              </Button>
+              <Button type="primary" loading={createLoading || updateLoading} onClick={saveAnnouncement}>
+                {t('保存')}
+              </Button>
+            </Flex>
+          )}
+
         </Flex>
 
         {/* 分隔线 */}
@@ -205,14 +220,11 @@ const AnnouncementDetails = () => {
               body: {
                 padding: '16px',
                 height: '100vh',
-                overflowY: 'auto'
               }
             }}
           >
             {contentValue ? (
-              <AnnouncementMarkdownView
-                content={contentValue}
-              />
+              <MarkdownView content={contentValue} />
             ) : (
               <Text type="secondary">在左侧编辑 Markdown 内容，这里会实时显示预览</Text>
             )}

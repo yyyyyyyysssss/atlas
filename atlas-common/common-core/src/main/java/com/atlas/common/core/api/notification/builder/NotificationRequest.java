@@ -284,7 +284,7 @@ public class NotificationRequest {
         @Override
         public ConfigOp inbox(NotificationEventEnum eventEnum) {
             enableChannel(ChannelType.INBOX);
-            withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
+            withExt(NotificationConstant.Inbox.EVENT_NAME, eventEnum.getCode());
             return this;
         }
 
@@ -503,7 +503,7 @@ public class NotificationRequest {
         }
 
         public InboxConfig eventName(NotificationEventEnum eventEnum) {
-            builder.withExt(NotificationConstant.Sse.EVENT_NAME, eventEnum.getCode());
+            builder.withExt(NotificationConstant.Inbox.EVENT_NAME, eventEnum.getCode());
             return this;
         }
     }

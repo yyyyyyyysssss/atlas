@@ -40,7 +40,7 @@ public class InboxMessageAdapter extends AbstractMessageAdapter implements Messa
         // 提取事件名称
         Map<String, Object> ext = Optional.ofNullable(payload.getExt()).orElse(Collections.emptyMap());
 
-        String eventName = getAsString(ext, NotificationConstant.Sse.EVENT_NAME);
+        String eventName = getAsString(ext, NotificationConstant.Inbox.EVENT_NAME);
 
         for (String target : targets) {
             try {

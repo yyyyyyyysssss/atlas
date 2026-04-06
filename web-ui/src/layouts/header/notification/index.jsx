@@ -11,6 +11,10 @@ const Notification = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  const closeDrawer = () => {
+    setDrawerOpen(false)
+  }
+
   return (
     <Flex>
       <IconBox onClick={() => setDrawerOpen(true)}>
@@ -26,12 +30,12 @@ const Notification = () => {
         title="消息通知"
         placement="right"
         width={600}
-        onClose={() => setDrawerOpen(false)}
+        onClose={closeDrawer}
         open={drawerOpen}
         // loading={historyLoading}
         styles={{ body: { background: token.colorFillAlter, padding: '12px 16px' } }}
       >
-        <NotificationList />
+        <NotificationList closeDrawer={closeDrawer} />
       </Drawer>
     </Flex>
   )

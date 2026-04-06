@@ -82,4 +82,11 @@ public class NotificationDTO {
         return null;
     }
 
+    public String eventName() {
+        if (ext == null) return null;
+        Object val = ext.get(NotificationConstant.Inbox.EVENT_NAME);
+        if (val instanceof String rt) return rt;
+        return null;
+    }
+
 }

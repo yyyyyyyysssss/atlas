@@ -5,22 +5,24 @@ import { FileImage, FileText, Download, FileArchive, FileCode } from 'lucide-rea
 const { Paragraph } = Typography;
 
 
-const TextRenderer = ({ content, mode = 'list' }) => {
+const TextRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
 
     return (
         <Paragraph
             type="secondary"
-            ellipsis={mode === 'list' ? { rows: 2 } : false}
+            ellipsis={{ rows: 2 }}
             style={{
                 fontSize: 13,
                 marginTop: 4,
                 marginBottom: 0,
-                whiteSpace: mode === 'detail' ? 'pre-wrap' : 'normal'
+                whiteSpace: 'pre-wrap'
             }}
         >
             {content}
         </Paragraph>
     )
-}
+}, (prev, next) => {
+    return prev.content === next.content && prev.onActionClick === next.onActionClick
+})
 
 export default TextRenderer

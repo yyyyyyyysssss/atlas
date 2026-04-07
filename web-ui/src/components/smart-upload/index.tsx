@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, Flex, Image, Progress, theme, Tooltip, Typography, Upload, UploadFile, UploadProps } from "antd"
+import { App, Button, ConfigProvider, Flex, Image, Progress, theme, Tooltip, Typography, Upload, UploadFile, UploadProps } from "antd"
 import { checkMD5, fetchAccessUrl, fetchUploadId, simpleUploadFile, uploadChunkFile } from "../../services/FileService";
 import {
     LoadingOutlined,
@@ -21,7 +21,6 @@ import {
     buildStyles
 } from "react-circular-progressbar";
 import 'react-circular-progressbar/dist/styles.css'
-import { getMessageApi } from "../../utils/MessageUtil";
 import { downloadFile } from "../../utils/Download";
 import { UploadFileStatus, UploadListType } from "antd/es/upload/interface";
 import { calculateMD5AsFile } from "../../utils/MD5Util";
@@ -60,6 +59,8 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
     const [previewImage, setPreviewImage] = useState('')
 
     const { token } = theme.useToken()
+
+    const { message } = App.useApp()
 
     const limitTask = useMemo(() => pLimit(2), [])
 
@@ -317,7 +318,7 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
         e.stopPropagation()
         const url = file.url || file.response
         if (!url) {
-            getMessageApi().warning('暂无可下载的文件')
+            message.warning('暂无可下载的文件')
             return
         }
         try {
@@ -325,7 +326,7 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
             await downloadFile({ url: url, filename: file.name })
         } catch (error) {
             console.error(error)
-            getMessageApi().error('下载失败')
+            message.error('下载失败')
         } finally {
             setDownloading(false)
         }

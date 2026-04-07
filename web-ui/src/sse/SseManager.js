@@ -66,8 +66,13 @@ class SseManager {
         // 使用 addEventListener 监听特定 type
         this.sse.addEventListener(eventName, (e) => {
             try {
+                const rawData = JSON.parse(e.data)
+                let finalData = rawData.content;
+                if (rawData.contentType === 'JSON') {
+                    finalData = JSON.parse(rawData.content);
+                }
                 const callbacks = this.listeners.get(eventName);
-                callbacks?.forEach(cb => cb(e.data));
+                callbacks?.forEach(cb => cb(finalData));
             } catch (err) {
                 console.error(`SSE: Parse error for [${eventName}]`, err);
             }

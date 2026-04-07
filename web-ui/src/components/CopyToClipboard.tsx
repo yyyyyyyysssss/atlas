@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { getMessageApi } from "../utils/MessageUtil";
-import { Button, Flex, theme, Tooltip, Typography } from "antd";
+import { App, Button, Flex, theme, Tooltip, Typography } from "antd";
 import { CopyOutlined } from '@ant-design/icons';
 
 interface CopyToClipboardProps {
@@ -13,9 +12,11 @@ const CopyToClipboard: React.FC<CopyToClipboardProps> = ({ text, children }) => 
 
     const { token } = theme.useToken()
 
+    const { message } = App.useApp()
+
     const handleCopy = () => {
         navigator.clipboard.writeText(text)
-        getMessageApi().success(t('已复制到剪贴板'))
+        message.success(t('已复制到剪贴板'))
     }
 
     return (

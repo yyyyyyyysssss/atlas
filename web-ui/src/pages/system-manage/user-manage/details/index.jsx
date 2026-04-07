@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import './index.css'
-import { Button, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
+import { App, Button, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
 import RoleSelect from '../../../../components/RoleSelect';
 import OptionTreeSelect from '../../../../components/OptionTreeSelect';
 import useFullParams from '../../../../hooks/useFullParams';
@@ -9,7 +9,6 @@ import useBack from '../../../../hooks/useBack';
 import { useRequest } from 'ahooks';
 import { createUser, fetchOrgOptions, fetchPositionByOrgId, fetchUserDetails, updateUser } from '../../../../services/SystemService';
 import { OperationMode } from '../../../../enums/common';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import Loading from '../../../../components/loading';
 import { useNavigate } from 'react-router-dom';
 import OptionSelect from '../../../../components/OptionSelect';
@@ -21,6 +20,8 @@ const UserDetails = () => {
     const { userId, operationMode = OperationMode.ADD.value } = useFullParams()
 
     const [form] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const navigate = useNavigate()
 
@@ -78,7 +79,7 @@ const UserDetails = () => {
             })
         } else if (operationMode === OperationMode.EDIT.value) {
             await updateUserAsync(values)
-            getMessageApi().success(t('操作成功'))
+            message.success(t('操作成功'))
             goBack()
         }
     }

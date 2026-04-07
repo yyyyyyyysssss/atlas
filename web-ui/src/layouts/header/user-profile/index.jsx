@@ -1,11 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../../router/AuthProvider';
-import { Avatar, Button, Divider, Drawer, Dropdown, Flex, Form, Image, Input, Modal, Tooltip, Typography, Upload } from 'antd';
+import { App, Avatar, Button, Divider, Drawer, Dropdown, Flex, Form, Image, Input, Modal, Tooltip, Typography, Upload } from 'antd';
 import { Lock, LogOut, Pencil, UserPen } from 'lucide-react';
 import { logout } from '../../../services/LoginService';
 import { useDispatch, useSelector } from 'react-redux';
 import { changeAvatar, changePassword } from '../../../services/UserProfileService';
-import { getMessageApi } from '../../../utils/MessageUtil';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css'
 import { simpleUploadFile } from '../../../services/FileService';
@@ -24,6 +23,8 @@ const UserProfile = () => {
     const language = useSelector(state => state.layout.language)
 
     const [profileForm] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const { runAsync: simpleUploadFileAsync, loading: simpleUploadFileLoading } = useRequest(simpleUploadFile, {
         manual: true
@@ -61,7 +62,7 @@ const UserProfile = () => {
                 (values) => {
                     const { originPassword, newPassword, confirmNewPassword } = values
                     if (newPassword !== confirmNewPassword) {
-                        getMessageApi().warning('两次输入密码不一致')
+                        message.warning('两次输入密码不一致')
                         return
                     }
                     const req = {
@@ -71,7 +72,7 @@ const UserProfile = () => {
                     changePassword(req)
                         .then(
                             () => {
-                                getMessageApi().success('修改成功')
+                                message.success('修改成功')
                                 handleClose()
                             }
                         )
@@ -111,7 +112,7 @@ const UserProfile = () => {
         changeAvatarAsync(accessUrl)
             .then(() => {
                 handleAvatarCropClose()
-                getMessageApi().success('修改成功')
+                message.success('修改成功')
             })
     }
 
@@ -190,7 +191,7 @@ const UserProfile = () => {
             type: 'image/png',
         })
         if (blob.size > 10 * 1024 * 1024) {
-            getMessageApi().error('上传失败：头像大小不能超过 10MB')
+            message.error('上传失败：头像大小不能超过 10MB')
             return
         }
         const file = new File([blob], 'newCropaAvatar.png', { type: 'image/png' })

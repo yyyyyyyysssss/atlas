@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Badge, Drawer, Flex, theme } from 'antd';
+import { App, Badge, Drawer, Flex, theme } from 'antd';
 import { Bell } from 'lucide-react';
 import IconBox from '../../../components/icon-box';
 import NotificationList from './NotificationList';
+import { useSseEvent } from '../../../hooks/useSseEvent';
+import MessageRenderer from './MessageRenderer';
 
 
 const Notification = () => {
@@ -11,7 +13,18 @@ const Notification = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const closeDrawer = () => {
+  const { notification } = App.useApp()
+
+  useSseEvent('notification_event', (data) => {
+    console.log('Received notification event:', data)
+    notification.open({
+      message: data.title,
+      description: <MessageRenderer content={data} />,
+      duration: 0,
+    })
+  })
+
+  const handleClose = () => {
     setDrawerOpen(false)
   }
 
@@ -30,12 +43,12 @@ const Notification = () => {
         title="消息通知"
         placement="right"
         width={600}
-        onClose={closeDrawer}
+        onClose={handleClose}
         open={drawerOpen}
         // loading={historyLoading}
         styles={{ body: { background: token.colorFillAlter, padding: '12px 16px' } }}
       >
-        <NotificationList closeDrawer={closeDrawer} />
+        <NotificationList onClose={handleClose} />
       </Drawer>
     </Flex>
   )

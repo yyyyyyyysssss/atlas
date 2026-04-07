@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Row, Col, Button, Flex, Typography, Space, theme, Modal, Transfer, List, Tooltip } from 'antd';
+import { Card, Row, Col, Button, Flex, Typography, Space, theme, Modal, Transfer, List, Tooltip, App } from 'antd';
 import { Zap, Plus, ArrowUp, X } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { findRouteByPath } from '../../router/router';
 import { useNavigate } from 'react-router-dom';
-import { getMessageApi } from '../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { changeWorkbenchShortcuts } from '../../services/UserProfileService';
 import { updateShortcuts } from '../../redux/slices/userSlice';
@@ -14,6 +13,8 @@ const { Text } = Typography;
 const ShortcutCard = () => {
 
   const { token } = theme.useToken()
+
+  const { message } = App.useApp()
 
   const { userInfo } = useSelector(state => state.user)
 
@@ -160,7 +161,7 @@ const ShortcutCard = () => {
           targetKeys={targetKeys}
           onChange={(nextTargetKeys) => {
             if (nextTargetKeys.length > 8) {
-              getMessageApi().warning('快捷入口最多设置 8 个')
+              message.warning('快捷入口最多设置 8 个')
               return
             }
             setTargetKeys(nextTargetKeys)

@@ -43,8 +43,7 @@ const DynamicCard = () => {
   }, [])
 
   useSseEvent('announcement_event', (data) => {
-    const payload = JSON.parse(data)
-    setLatestAnnouncement(payload.body)
+    setLatestAnnouncement(data.body)
   })
 
   const dynamicCardStyle = {

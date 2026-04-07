@@ -1,8 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography } from 'antd';
+import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App } from 'antd';
 import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined } from '@ant-design/icons';
 import './index.css'
-import { getMessageApi } from '../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
 import { login, sendEmailVerificationCode } from '../../services/LoginService';
@@ -15,6 +14,8 @@ const Login = () => {
     const { signin } = useAuth()
 
     const [form] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const { runAsync, loading } = useRequest(login, {
         manual: true
@@ -138,9 +139,9 @@ const Login = () => {
                 (error) => {
                     if (error.response && error.response.status === 401) {
                         if (error.response.data && error.response.data.code === 2201) {
-                            getMessageApi().error('账号已锁定，请联系系统管理员')
+                            message.error('账号已锁定，请联系系统管理员')
                         } else {
-                            getMessageApi().error('用户名或密码错误')
+                            message.error('用户名或密码错误')
                         }
 
                     }

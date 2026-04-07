@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Typography, Tag, Descriptions, Button, Space, Image, Flex, theme, Drawer, Modal } from 'antd';
+import { Card, Typography, Tag, Descriptions, Button, Space, Image, Flex, theme, Drawer, Modal, App } from 'antd';
 import { ArrowRight, ExternalLink, Maximize2, MousePointer2, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { findRouteByPath } from '../../../../router/router';
 import Loading from '../../../../components/loading';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import httpWrapper from '../../../../services/AxiosWrapper';
 
 const { Text, Paragraph } = Typography
@@ -16,13 +15,13 @@ const themeMap = {
     'text': 'text',
 }
 
-const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
+const CardRenderer = React.memo(({ content, onClose, onAction }) => {
 
     const { token } = theme.useToken()
 
     const navigate = useNavigate()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal, message } = App.useApp()
 
     const [routeDrawer, setRouteDrawer] = useState({
         visible: false,
@@ -63,8 +62,7 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
         return { path, params };
     }
 
-    const handleClick = (e, link) => {
-        e.stopPropagation()
+    const handleLinkClick = (link) => {
         if (!link) {
             return
         }
@@ -118,17 +116,7 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
         }
         switch (actionType) {
             case 'DRAWER':
-                const route = findRouteByPath(path)
-                if (route?.element) {
-                    setRouteDrawer({
-                        visible: true,
-                        component: route.element,
-                        params: { ...extra },
-                        title: label || route.breadcrumbName
-                    })
-                } else {
-                    getMessageApi().error('该页面不存在')
-                }
+                handleLinkClick(path)
                 break
             case 'API':
                 try {
@@ -142,7 +130,7 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
                         params: method === 'get' ? data : params,
                         data: method !== 'get' ? data : undefined,
                     })
-                    getMessageApi().success(`${label || '操作'}成功`)
+                    message.success(`${label || '操作'}成功`)
                     if (extra?.closeDrawer) {
                         setRouteDrawer(prev => ({ ...prev, visible: false }));
                     }
@@ -157,7 +145,7 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
             case 'ROUTE':
             default:
                 navigate(path, { state: extra })
-                closeDrawer?.()
+                onClose?.()
                 break
         }
     }
@@ -174,7 +162,10 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
                     cursor: link ? 'pointer' : 'default',
                 }}
                 // 如果有整体链接，点击卡片跳转
-                onClick={(e) => handleClick(e, link)}
+                onClick={(e) => {
+                    e.stopPropagation()
+                    handleLinkClick(link)
+                }}
                 title={subTitle &&
                     <Text
                         strong
@@ -293,7 +284,6 @@ const CardRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
                     })}
                 </React.Suspense>
             </Drawer>
-            {contextHolder}
         </>
     );
 }, (prev, next) => {

@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
 import './index.css'
 import useFullParams from '../../../../hooks/useFullParams';
-import { Button, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
+import { App, Button, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
 import { useRequest } from 'ahooks';
 import { createRole, fetchAuthorityTree, fetchOrgOptions, fetchRoleDetails, fetchSearchUser, updateRole } from '../../../../services/SystemService';
 import Loading from '../../../../components/loading';
 import { OperationMode } from '../../../../enums/common';
 import RemoteSearchSelect from '../../../../components/RemoteSearchSelect';
 import OptionTreeSelect from '../../../../components/OptionTreeSelect';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import useBack from '../../../../hooks/useBack';
 import { useTranslation } from 'react-i18next'
 import OptionSelect from '../../../../components/OptionSelect';
@@ -20,6 +19,8 @@ import { RoleDataScope } from '../../../../enums/system';
 const RoleDetails = () => {
 
     const { t } = useTranslation()
+
+    const { message } = App.useApp()
 
     const { roleId, operationMode } = useFullParams()
 
@@ -68,7 +69,7 @@ const RoleDetails = () => {
         } else if (operationMode === OperationMode.EDIT.value) {
             await updateRoleAsync(values)
         }
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         goBack()
     }
 

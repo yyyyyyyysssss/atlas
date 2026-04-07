@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import './index.css'
 import { bindAuthorityByRoleId, bindRoleUser, createRole, deleteRoleById, fetchAuthorityTree, fetchRoleDetails, fetchRoleList, fetchSearchUser, fetchUserIdByRoleId, updateRole, updateRoleEnabled } from '../../../services/SystemService'
-import { Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, Table, Typography } from 'antd'
+import { App, Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, Table, Typography } from 'antd'
 import AuthorityTreeSelect from '../../../components/AuthorityTreeSelect'
 import AuthorityTree from '../../../components/AuthorityTree'
 import Highlight from '../../../components/Highlight'
 import HasPermission from '../../../components/HasPermission'
-import { getMessageApi } from '../../../utils/MessageUtil'
 import { useRequest } from 'ahooks'
 import SmartTable from '../../../components/smart-table'
 import Loading from '../../../components/loading'
@@ -28,7 +27,7 @@ const RoleManage = () => {
 
     const navigate = useNavigate()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal, message } = App.useApp()
 
     const [searchForm] = Form.useForm()
 
@@ -128,9 +127,9 @@ const RoleManage = () => {
         try {
             await updateRoleEnabled(id, enabled)
             if (enabled) {
-                getMessageApi().success(t('启用成功'))
+                message.success(t('启用成功'))
             } else {
-                getMessageApi().success(t('停用成功'))
+                message.success(t('停用成功'))
             }
             handleRefresh()
         } finally {
@@ -142,7 +141,7 @@ const RoleManage = () => {
         deleteRoleByIdAsync(id)
             .then(
                 () => {
-                    getMessageApi().success(t('删除成功'))
+                    message.success(t('删除成功'))
                     handleRefresh()
                 }
             )
@@ -177,7 +176,7 @@ const RoleManage = () => {
                 bindAuthorityByRoleIdAsync(values.id, values.authorityIds)
                     .then(
                         () => {
-                            getMessageApi().success('分配权限成功')
+                            message.success('分配权限成功')
                             handleBindAuthorityClose()
                             handleRefresh()
                         }
@@ -217,7 +216,7 @@ const RoleManage = () => {
     const handleBindUserSave = async () => {
         const { userIds } = await bindUserForm.validateFields()
         await bindRoleUserAsync(bindUser.roleId, userIds)
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         handleBindUserClose()
     }
 
@@ -502,7 +501,6 @@ const RoleManage = () => {
                     </Skeleton>
                 </Form>
             </Drawer>
-            {contextHolder}
         </Flex>
     )
 }

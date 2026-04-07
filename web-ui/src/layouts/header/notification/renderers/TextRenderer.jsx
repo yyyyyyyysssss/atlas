@@ -5,7 +5,7 @@ import { FileImage, FileText, Download, FileArchive, FileCode } from 'lucide-rea
 const { Paragraph } = Typography;
 
 
-const TextRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
+const TextRenderer = React.memo(({ content, onClose, onAction }) => {
 
     return (
         <Paragraph

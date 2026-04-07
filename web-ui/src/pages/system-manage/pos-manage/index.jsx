@@ -1,21 +1,9 @@
 import { useEffect, useState } from 'react'
 import './index.css'
-import { bindPositionUser, createPosition, deletePositionById, fetchPositionDetails, fetchPositionList, fetchSearchUser, fetchUserIdByPositionId, updatePosition } from '../../../services/SystemService'
-import { Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Splitter, Switch, Table, Tree, Typography } from 'antd'
-import Highlight from '../../../components/Highlight'
-import HasPermission from '../../../components/HasPermission'
-import { getMessageApi } from '../../../utils/MessageUtil'
-import { useRequest } from 'ahooks'
-import SmartTable from '../../../components/smart-table'
-import RemoteSearchSelect from '../../../components/RemoteSearchSelect'
-import Loading from '../../../components/loading'
+import { Flex, Splitter } from 'antd'
 import { useTranslation } from 'react-i18next'
-import UserTransfer from '../../../components/UserTransfer'
-import OptionSelect from '../../../components/OptionSelect'
-import { PositionStatus } from '../../../enums/system'
 import OrgTree from '../../../components/OrgTree'
 import PositionDetails from './details'
-
 
 
 const PositionManage = () => {

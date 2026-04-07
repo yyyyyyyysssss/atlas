@@ -1,19 +1,16 @@
-import { Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, theme, Tooltip, Typography } from 'antd'
+import { App, Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, theme, Tooltip, Typography } from 'antd'
 import './index.css'
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { bindRoleByUserId, createUser, deleteUserById, fetchOrgOptions, fetchUserDetails, fetchUserList, resetPassword, updateUser, updateUserEnabled } from '../../../services/SystemService';
 import { CopyOutlined } from '@ant-design/icons';
 import Highlight from '../../../components/Highlight';
-import { getMessageApi } from '../../../utils/MessageUtil';
 import RoleSelect from '../../../components/RoleSelect';
 import HasPermission from '../../../components/HasPermission';
 import { useRequest } from 'ahooks';
 import SmartTable from '../../../components/smart-table';
 import ActionDropdown from '../../../components/ActionDropdown';
-import Loading from '../../../components/loading';
 import { useTranslation } from 'react-i18next';
-import OptionTreeSelect from '../../../components/OptionTreeSelect';
 import { OperationMode } from '../../../enums/common';
 
 
@@ -30,7 +27,7 @@ const UserManage = () => {
 
     const { token } = theme.useToken()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal, message } = App.useApp()
 
     const navigate = useNavigate()
 
@@ -149,7 +146,7 @@ const UserManage = () => {
                                                         icon={<Tooltip title={t('复制')}><CopyOutlined /></Tooltip>}
                                                         onClick={() => {
                                                             navigator.clipboard.writeText(newPassword);
-                                                            getMessageApi().success(t('已复制到剪贴板'));
+                                                            message.success(t('已复制到剪贴板'));
                                                         }}
                                                     />
                                                 </Flex>
@@ -162,7 +159,7 @@ const UserManage = () => {
                         updateUserAsync(values)
                             .then(
                                 () => {
-                                    getMessageApi().success(t('修改成功'))
+                                    message.success(t('修改成功'))
                                     handleClose()
                                     handleRefresh()
                                 }
@@ -178,9 +175,9 @@ const UserManage = () => {
         try {
             await updateUserEnabled(id, enabled)
             if (enabled) {
-                getMessageApi().success(t('启用成功'))
+                message.success(t('启用成功'))
             } else {
-                getMessageApi().success(t('停用成功'))
+                message.success(t('停用成功'))
             }
             handleRefresh()
         } finally {
@@ -206,7 +203,7 @@ const UserManage = () => {
                             icon={<Tooltip title={t('复制')}><CopyOutlined /></Tooltip>}
                             onClick={() => {
                                 navigator.clipboard.writeText(newPassword);
-                                getMessageApi().success(t('已复制到剪贴板'));
+                                message.success(t('已复制到剪贴板'));
                             }}
                         />
                     </Flex>
@@ -217,7 +214,7 @@ const UserManage = () => {
 
     const handleDelete = async (id) => {
         await deleteUserByIdAsync(id)
-        getMessageApi().success('删除成功')
+        message.success('删除成功')
         handleRefresh()
 
     }
@@ -251,7 +248,7 @@ const UserManage = () => {
                 bindRoleByUserIdAsync(values.id, values.roleIds)
                     .then(
                         () => {
-                            getMessageApi().success(t('操作成功'))
+                            message.success(t('操作成功'))
                             handleBindRoleClose()
                             handleRefresh()
                         }
@@ -542,7 +539,6 @@ const UserManage = () => {
                     </Skeleton>
                 </Form>
             </Drawer>
-            {contextHolder}
         </Flex>
     )
 }

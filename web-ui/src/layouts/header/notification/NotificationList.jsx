@@ -1,12 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Card, List, Avatar, Button, Typography, Badge, Space, theme, Flex } from 'antd';
+import { Card, List, Avatar, App, Typography, Badge, Space, theme, Flex } from 'antd';
 import { Mail, Info, ShieldAlert } from 'lucide-react';
 import NoDataEmpty from '../../../components/NoDataEmpty';
-import { useSseEvent } from '../../../hooks/useSseEvent';
-import TextRenderer from './renderers/TextRenderer';
-import FileRenderer from './renderers/FileRenderer';
 import { formatRelativeTime } from '../../../utils/format';
-import CardRenderer from './renderers/CardRenderer';
+import MessageRenderer from './MessageRenderer';
 
 
 const notifications = [
@@ -68,19 +65,9 @@ const notifications = [
 
 const { Text } = Typography;
 
-const RENDERER_MAP = {
-    TEXT: TextRenderer,
-    FILE: FileRenderer,
-    CARD: CardRenderer,
-};
-
-const NotificationList = ({ limit = 10, closeDrawer }) => {
+const NotificationList = ({ limit = 10, onClose }) => {
 
     const { token } = theme.useToken()
-
-    useSseEvent('notification_event', (data) => {
-        console.log('Received notification event:', data);
-    })
 
     // 根据业务类型获取图标配置
     const getCategoryIcon = (category) => {
@@ -101,19 +88,15 @@ const NotificationList = ({ limit = 10, closeDrawer }) => {
     }, [])
 
     const bodyRender = useCallback((item) => {
-        const Renderer = RENDERER_MAP[item.renderType]
-        if (!Renderer) {
-            return <Text type="secondary">未知类型</Text>
-        }
+
         return (
-            <Renderer
-                content={item.body}
-                closeDrawer={closeDrawer}
-                // 关键：传给子组件的回调
-                onActionClick={(action) => handleAction(item, action)}
+            <MessageRenderer
+                content={item}
+                onClose={onClose}
+                onAction={handleAction}
             />
         )
-    }, [closeDrawer, handleAction])
+    }, [onClose, handleAction])
 
     return (
         <>

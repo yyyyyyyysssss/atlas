@@ -1,11 +1,10 @@
 import { useRequest } from "ahooks"
-import { Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
+import { App, Button, Checkbox, Flex, Form, Input, Modal, Select, Space, Switch, Table, Tag, Typography } from "antd"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { addOrgMembers, fetchOrgMembers, fetchPositionByOrgId, orgMemberMainCheck, removeOrgMembers, updateOrgMembers } from "../../../../services/SystemService"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from 'react-i18next';
 import UserTransfer from "../../../../components/UserTransfer"
-import { getMessageApi } from "../../../../utils/MessageUtil"
 import { OrganizationType } from "../../../../enums/system"
 import EditableTable from "../../../../components/smart-table/EditableTable"
 import {
@@ -17,7 +16,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
 
     const { t } = useTranslation()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal, message } = App.useApp()
 
     const [addOrgMemberForm] = Form.useForm()
 
@@ -193,7 +192,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
                 ),
                 onOk: async () => {
                     await removeOrgMemberAsync(orgId, selectedRowKeys)
-                    getMessageApi().success(t('操作成功'))
+                    message.success(t('操作成功'))
                     refreshOrgMember()
                 },
             })
@@ -209,7 +208,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
             orgId: orgId
         }))
         await addOrgMemberAsync(orgId, req)
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         closeOrgMember()
         refreshOrgMember()
     }
@@ -225,7 +224,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
     const handleSetMain = async (record, checked) => {
         const org = await orgMemberMainCheckAsync(orgId, record.userId)
         if ((org === null || org === undefined) && checked === false) {
-            getMessageApi().error('该用户必须保留至少一个主组织归属，无法取消。')
+            message.error('该用户必须保留至少一个主组织归属，无法取消。')
             return
         } else {
             modal.confirm({
@@ -271,7 +270,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
                         isMain: checked
                     }]
                     await addOrgMemberAsync(orgId, req)
-                    getMessageApi().success(t('操作成功'))
+                    message.success(t('操作成功'))
                     refreshOrgMember()
                 },
             })
@@ -418,7 +417,7 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
         const formValues = await orgMemberForm.validateFields()
         const om = formValues.orgMembers[rowIndex]
         await removeOrgMemberAsync(orgId, [om.id])
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         refreshOrgMember()
     }
 
@@ -540,7 +539,6 @@ const OrgMember = ({ orgId, orgName, orgType }) => {
                     </Form.Item>
                 </Form>
             </Modal>
-            {contextHolder}
         </Flex>
     )
 }

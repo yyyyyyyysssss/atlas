@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './index.css'
-import { Button, Checkbox, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Splitter, Switch, Table, Tag, Tree, Typography } from 'antd'
+import { App, Button, Checkbox, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Splitter, Switch, Table, Tag, Tree, Typography } from 'antd'
 import { useRequest } from 'ahooks'
 import { createPosition, deletePositionById, fetchPositionList, fetchSearchUser, updatePosition } from '../../../../services/SystemService'
 import { OperationMode } from '../../../../enums/common'
@@ -9,8 +9,6 @@ import { OrganizationType, PositionStatus, PositionType } from '../../../../enum
 import { useTranslation } from 'react-i18next'
 import SmartTable from '../../../../components/smart-table'
 import HasPermission from '../../../../components/HasPermission'
-import RemoteSearchSelect from '../../../../components/RemoteSearchSelect'
-import { getMessageApi } from '../../../../utils/MessageUtil'
 
 const PositionDetails = ({ orgId, orgType, orgPath }) => {
 
@@ -25,7 +23,7 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
         includeChildren: true
     }
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { message } = App.useApp()
 
     const [searchForm] = Form.useForm()
 
@@ -128,7 +126,7 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
         } else {
             await updatePositionAsync(positionData)
         }
-        getMessageApi().success(t('新增成功'))
+        message.success(t('新增成功'))
         handleClose()
         handleRefresh()
     }
@@ -392,36 +390,6 @@ const PositionDetails = ({ orgId, orgType, orgPath }) => {
                 </Form>
 
             </Modal>
-            {/* <Modal
-                title={bindUser.title}
-                width={600}
-                centered
-                open={bindUser.open}
-                onOk={handleBindUserSave}
-                onCancel={handleBindUserClose}
-                onClose={handleBindUserClose}
-                confirmLoading={bindPositionUserLoading}
-                maskClosable={false}
-                destroyOnHidden
-                okText={t('保存')}
-                cancelText={t('取消')}
-                afterClose={() => bindUserForm.resetFields()}
-                okButtonProps={{
-                    disabled: getUserIdByPositionIdLoading
-                }}
-            >
-
-                <Form
-                    form={bindUserForm}
-                >
-                    <Loading spinning={getUserIdByPositionIdLoading}>
-                        <Form.Item name="userIds">
-                            <UserTransfer />
-                        </Form.Item>
-                    </Loading>
-                </Form>
-            </Modal> */}
-            {contextHolder}
         </Flex>
     )
 }

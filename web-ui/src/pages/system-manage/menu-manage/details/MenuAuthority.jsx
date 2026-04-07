@@ -1,4 +1,4 @@
-import { Button, Col, Drawer, Flex, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Table, Tag, Typography } from "antd"
+import { App, Button, Col, Drawer, Flex, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Table, Tag, Typography } from "antd"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from "react-i18next"
 import { AuthorityType, OperationMode, RequestMethod } from "../../../../enums/common"
@@ -6,7 +6,6 @@ import { useRequest } from "ahooks"
 import { addAuthority, deleteAuthorityById, fetchAuthorityByMenuId, updateAuthority, updateAuthorityUrlsById } from "../../../../services/SystemService"
 import { useEffect, useState } from "react"
 import EditableTable from "../../../../components/smart-table/EditableTable"
-import { getMessageApi } from "../../../../utils/MessageUtil"
 import AuthorityUrl from "./AuthorityUrl"
 
 
@@ -15,6 +14,8 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
     const { t } = useTranslation()
 
     const [form] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const { runAsync: getAuthorityByMenuIdAsync, loading: getAuthorityByMenuIdLoading } = useRequest(fetchAuthorityByMenuId, {
         manual: true
@@ -77,10 +78,10 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
         }
         if (authorityModalOpen.operationMode === OperationMode.ADD.value) {
             await addAuthorityAsync(requestParam)
-            getMessageApi().success(t('新增成功'))
+            message.success(t('新增成功'))
         } else {
             await updateAuthorityAsync(requestParam)
-            getMessageApi().success(t('修改成功'))
+            message.success(t('修改成功'))
         }
         handleClose()
         fetchData(menuId)
@@ -106,7 +107,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
 
     const handleDeleteAuthority = async (authorityId) => {
         await deleteAuthorityByIdAsync(authorityId)
-        getMessageApi().success(t('删除成功'))
+        message.success(t('删除成功'))
         handleClose()
         fetchData(menuId)
     }
@@ -146,7 +147,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                 return item // 其他项保持不变
             })
         })
-        getMessageApi().success(t('修改成功'))
+        message.success(t('修改成功'))
     }
 
     const handleDrawerClose = () => {

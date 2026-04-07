@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './index.css'
-import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input } from 'antd'
+import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input, App } from 'antd'
 import { deleteMenu, fetchMenuTree, menuDrag } from '../../../services/SystemService'
 import { Plus, Trash2 } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
 import Highlight from '../../../components/Highlight';
 import HasPermission from '../../../components/HasPermission';
-import { getMessageApi } from '../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import MenuDetails from './details';
@@ -92,7 +91,7 @@ const MenuManage = () => {
 
     const { t } = useTranslation()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal, message } = App.useApp()
 
     const [menuData, setMenuData] = useState([])
 
@@ -171,7 +170,7 @@ const MenuManage = () => {
         menuDragAsync(dragKey, dropKey, position)
             .then(d => {
                 if (d === true) {
-                    getMessageApi().success(t('拖动成功'))
+                    message.success(t('拖动成功'))
                     refreshMenuTree({selectMenuId: selectedKeys?.[0]})
                 }
             })
@@ -214,7 +213,7 @@ const MenuManage = () => {
             confirmLoading: deleteMenuLoading,
             onOk: async () => {
                 await deleteMenuAsync(menuItem.id)
-                getMessageApi().success(t('删除成功'))
+                message.success(t('删除成功'))
                 const newMenuData = deleteTreeNode(menuData, menuItem.id)
                 setMenuData(newMenuData)
                 setSelectedKeys(null)
@@ -396,7 +395,6 @@ const MenuManage = () => {
                     />
                 </Splitter.Panel>
             </Splitter>
-            {contextHolder}
         </Flex>
     )
 }

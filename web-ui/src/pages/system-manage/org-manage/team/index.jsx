@@ -1,10 +1,9 @@
 
-import { Space, Flex, Form, Input, Button, Row, Col, InputNumber, Table, Modal, Tag, Typography, Drawer } from 'antd'
+import { Space, Flex, Form, Input, Button, Row, Col, InputNumber, Table, Modal, Tag, Typography, Drawer, App } from 'antd'
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useState } from 'react';
 import { createOrg, fetchOrgSubUnits, updateOrg } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
@@ -18,6 +17,8 @@ const OrgDeptTeam = ({ deptId }) => {
     const { t } = useTranslation()
 
     const [teamForm] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const [deptTeam, setDeptTeam] = useState([])
 
@@ -65,10 +66,10 @@ const OrgDeptTeam = ({ deptId }) => {
         }
         if (teams.type === 'add') {
             await createOrgDeptTeamAsync(req)
-            getMessageApi().success(t('新增成功'))
+            message.success(t('新增成功'))
         } else {
             await updateOrgDeptTeamAsync(req)
-            getMessageApi().success(t('修改成功'))
+            message.success(t('修改成功'))
         }
         fetchDeptTeam(deptId)
     }

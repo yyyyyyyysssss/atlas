@@ -1,6 +1,6 @@
 import React, { HtmlHTMLAttributes } from 'react'
 import { DownOutlined } from '@ant-design/icons';
-import { Dropdown, DropdownProps, MenuProps, Modal, ModalFuncProps, theme, Typography } from 'antd'
+import { App, Dropdown, DropdownProps, MenuProps, Modal, ModalFuncProps, theme, Typography } from 'antd'
 import { useTranslation } from 'react-i18next';
 
 
@@ -35,7 +35,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
 
     const { token } = theme.useToken()
 
-    const [modal, contextHolder] = Modal.useModal()
+    const { modal } = App.useApp()
 
     const menuItems: MenuProps['items'] = items.map(item => ({
         key: item.key,
@@ -69,7 +69,6 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
             <Dropdown menu={{ items: menuItems }} trigger={['click']} disabled={disabled}>
                 <Typography.Link style={{ whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>{t(triggerText)}<DownOutlined /></Typography.Link>
             </Dropdown>
-            {contextHolder}
         </>
     )
 }

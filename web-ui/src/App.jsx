@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import router from './router/router';
 import { RouterProvider } from 'react-router-dom';
-import { ConfigProvider, message } from 'antd';
+import { ConfigProvider, message, App as AntdApp } from 'antd';
 import { useSelector } from 'react-redux';
 import 'antd/dist/reset.css';
 import zhCN from 'antd/locale/zh_CN';
@@ -115,7 +115,7 @@ const App = () => {
           // 菜单项背景色
           darkSubMenuItemBg: '#1f1f1f', // 菜单项背景色，深灰色
           darkItemSelectedBg: activeBgColor,
-          darkPopupBg: '#181818'
+          darkPopupBg: '#181818',
         },
         Dropdown: {
 
@@ -160,7 +160,7 @@ const App = () => {
         colorBgContainer: 'white',
         fontSize: 14,
         colorBorder: '#d9d9d9',
-        colorBorderSecondary: '#f0f0f0',
+        colorBorderSecondary: '#f0f0f0'
       },
       components: {
         Breadcrumb: {
@@ -191,7 +191,7 @@ const App = () => {
           cardBg: 'white'
         },
         Menu: {
-
+          itemActiveBg: 'rgba(0,0,0,0.05)'
         }
       }
     }

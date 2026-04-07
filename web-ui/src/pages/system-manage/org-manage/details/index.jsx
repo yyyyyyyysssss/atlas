@@ -1,10 +1,9 @@
 import './index.css'
-import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, Breadcrumb, Typography } from 'antd'
+import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, Breadcrumb, Typography, App } from 'antd'
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useMemo, useState } from 'react';
 import { createOrg, fetchOrgDetails, updateOrg } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import Loading from '../../../../components/loading';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +18,8 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
     const { t } = useTranslation()
 
     const [form] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const [orgData, setOrgData] = useState()
 
@@ -146,7 +147,7 @@ const OrgDetails = ({ orgId, parentId, parentCode, orgType, operationMode, chang
             await updateOrgAsync(orgInfo)
             orgId = orgInfo.id
         }
-        getMessageApi().success('保存成功')
+        message.success('保存成功')
         onSuccess(orgId, orgInfo.orgType)
     }
 

@@ -1,10 +1,9 @@
-import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber } from 'antd'
+import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, App } from 'antd'
 import { UploadOutlined } from '@ant-design/icons';
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useState } from 'react';
 import { createMenu, fetchMenuDetails, updateMenu } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import Loading from '../../../../components/loading';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +17,8 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
     const [form] = Form.useForm()
 
     const [menuData, setMenuData] = useState()
+
+    const { message } = App.useApp()
 
     const { runAsync: fetchMenuDetailsAsync, loading: fetchMenuDetailsLoading } = useRequest(fetchMenuDetails, {
         manual: true
@@ -78,7 +79,7 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
             await updateMenuAsync(menuInfo)
             menuId = menuInfo.id
         }
-        getMessageApi().success('保存成功')
+        message.success('保存成功')
         onSuccess(menuId)
     }
 

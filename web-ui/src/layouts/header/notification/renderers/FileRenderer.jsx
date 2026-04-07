@@ -7,7 +7,7 @@ import { downloadFile } from '../../../../utils/Download';
 const { Text } = Typography;
 
 
-const FileRenderer = React.memo(({ content, closeDrawer, onActionClick }) => {
+const FileRenderer = React.memo(({ content, onClose, onAction }) => {
 
     const { token } = theme.useToken()
 

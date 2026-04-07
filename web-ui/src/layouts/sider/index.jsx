@@ -13,10 +13,10 @@ const getMenuItems = (items, t) => {
     return items.map(item => {
         const route = findRouteByPath(item.routePath);
         return {
-          key: item.id,
-          label: t(item.name),
-          icon: item.icon || route?.defaultIcon || <Square size={18} />,
-          children: item.children?.length > 0 ? getMenuItems(item.children, t) : undefined,
+            key: item.id,
+            label: t(item.name),
+            icon: item.icon || route?.defaultIcon || <Square size={18} />,
+            children: item.children?.length > 0 ? getMenuItems(item.children, t) : undefined,
         };
     });
 };
@@ -43,25 +43,18 @@ const Sider = () => {
 
     const location = useLocation()
 
-    const [selectKey, setSelectKey] = useState(null)
-
     useEffect(() => {
         if (location.pathname && location.pathname !== '/' && flattenMenuItems && flattenMenuItems.length > 0) {
             dispatch(setActiveKey({ path: location.pathname }))
         }
 
-    }, [flattenMenuItems, location.pathname])
-
-    useEffect(() => {
-        setSelectKey(activeKey)
-    }, [activeKey])
+    }, [flattenMenuItems, location.pathname, dispatch])
 
     const handleOpenChange = useCallback((keys) => {
         dispatch(setOpenKeys({ keys: keys }))
     }, [])
 
     const switchMenu = (e) => {
-        setSelectKey(e.key)
         const menuItem = flattenMenuItems.find(item => item.id === e.key)
         if (!menuItem) {
             return
@@ -79,7 +72,7 @@ const Sider = () => {
 
     const items = useMemo(() => {
         return getMenuItems(menuItems, t)
-    }, [menuItems,t])
+    }, [menuItems, t])
 
 
     return (
@@ -108,14 +101,13 @@ const Sider = () => {
                                 src=''
                                 size={48}
                             />
-                            <Typography.Text style={{ fontSize: '20px'}}></Typography.Text>
+                            <Typography.Text style={{ fontSize: '20px' }}></Typography.Text>
                         </>
                     )
                 }
 
             </Flex >
             <Menu
-                // key={collapsed ? 'collapsed' : 'expanded'}
                 style={{
                     maxHeight: 'calc(100vh - 64px)',
                     borderRight: 'none',
@@ -124,7 +116,7 @@ const Sider = () => {
                 }}
                 theme={themeValue}
                 inlineCollapsed={collapsed}
-                selectedKeys={[selectKey]}
+                selectedKeys={activeKey ? [activeKey] : []}
                 openKeys={openKeys}
                 onOpenChange={handleOpenChange}
                 onClick={switchMenu}

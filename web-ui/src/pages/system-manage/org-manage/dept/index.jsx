@@ -1,10 +1,9 @@
 
-import { Space, Flex, Form, Input, Button, Row, Col, InputNumber, Table, Modal, Tag, Typography, Drawer } from 'antd'
+import { Space, Flex, Form, Input, Button, Row, Col, InputNumber, Table, Modal, Tag, Typography, Drawer, App } from 'antd'
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useState } from 'react';
 import { createOrg, fetchOrgSubUnits, updateOrg } from '../../../../services/SystemService';
 import HasPermission from '../../../../components/HasPermission';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import { useRequest } from 'ahooks';
 import { useTranslation } from 'react-i18next';
 import OptionSelect from '../../../../components/OptionSelect';
@@ -17,6 +16,8 @@ const OrgDept = ({ orgId }) => {
     const { t } = useTranslation()
 
     const [deptForm] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const [orgDept, setOrgDept] = useState([])
 
@@ -91,10 +92,10 @@ const OrgDept = ({ orgId }) => {
         }
         if (deptModal.operationMode === OperationMode.ADD.value) {
             await createOrgDeptAsync(req)
-            getMessageApi().success(t('新增成功'))
+            message.success(t('新增成功'))
         } else {
             await updateOrgDeptAsync(req)
-            getMessageApi().success(t('修改成功'))
+            message.success(t('修改成功'))
         }
         closeDeptModal()
         fetchDept(orgId)

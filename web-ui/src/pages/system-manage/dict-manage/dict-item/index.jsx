@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import useFullParams from '../../../../hooks/useFullParams'
 import './index.css'
-import { Button, Flex, Form, Input, InputNumber, Modal, Popconfirm, Radio, Select, Space, Switch, Table, Typography } from 'antd'
+import { App, Button, Flex, Form, Input, InputNumber, Modal, Popconfirm, Radio, Select, Space, Switch, Table, Typography } from 'antd'
 import { useTranslation } from 'react-i18next';
 import HasPermission from '../../../../components/HasPermission';
 import SmartTable from '../../../../components/smart-table';
@@ -9,7 +9,6 @@ import { batchDictItemChildren, createDictItem, deleteDictItemById, fetchDictIte
 import { useRequest } from 'ahooks';
 import Loading from '../../../../components/loading';
 import ActionDropdown from '../../../../components/ActionDropdown';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import Highlight from '../../../../components/Highlight';
 import { OperationMode } from '../../../../enums/common';
 import SmartUpload from '../../../../components/smart-upload';
@@ -22,6 +21,8 @@ const DictItem = () => {
     const { dictId } = useFullParams()
 
     const [searchForm] = Form.useForm()
+
+    const { message } = App.useApp()
 
     const initQueryParam = {
         pageNum: 1,
@@ -122,7 +123,7 @@ const DictItem = () => {
         } else {
             await updateDictItemAsync(editFormData)
         }
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         handleCloseModal()
         handleRefresh(false, expandedRowKeys)
     }
@@ -132,9 +133,9 @@ const DictItem = () => {
         try {
             await updateDictItemEnabledAsync(id, checked)
             if (checked) {
-                getMessageApi().success(t('启用成功'))
+                message.success(t('启用成功'))
             } else {
-                getMessageApi().success(t('停用成功'))
+                message.success(t('停用成功'))
             }
         } finally {
             setDictItemEnabledLoadingMap(prev => ({ ...prev, [id]: false }))
@@ -145,7 +146,7 @@ const DictItem = () => {
 
     const handleDeleteDictItem = async (dictItemId) => {
         await deleteDictItemByIdAsync(dictItemId)
-        getMessageApi().success('删除成功')
+        message.success('删除成功')
         handleRefresh(false, expandedRowKeys)
     }
 

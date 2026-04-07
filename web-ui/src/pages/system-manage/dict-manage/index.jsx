@@ -1,11 +1,10 @@
-import { Button, Flex, Form, Input, InputNumber, Modal, Popconfirm, Radio, Select, Space, Switch, Tooltip, Typography } from 'antd'
+import { App, Button, Flex, Form, Input, InputNumber, Modal, Popconfirm, Radio, Select, Space, Switch, Tooltip, Typography } from 'antd'
 import './index.css'
 import SmartTable from '../../../components/smart-table'
 import HasPermission from '../../../components/HasPermission'
 import { createDict, deleteDictById, fetchDictDetails, fetchDictList, updateDict, updateDictEnabled } from '../../../services/SystemService'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next';
-import { getMessageApi } from '../../../utils/MessageUtil'
 import { useRequest } from 'ahooks';
 import { OperationMode } from '../../../enums/common'
 import Loading from '../../../components/loading'
@@ -27,6 +26,8 @@ const DictManage = () => {
     const { t } = useTranslation()
 
     const navigate = useNavigate()
+
+    const { message } = App.useApp()
 
     const [searchForm] = Form.useForm()
 
@@ -91,7 +92,7 @@ const DictManage = () => {
         } else {
             await updateDictAsync(editFormData)
         }
-        getMessageApi().success(t('操作成功'))
+        message.success(t('操作成功'))
         handleCloseModal()
         handleRefresh()
     }
@@ -101,9 +102,9 @@ const DictManage = () => {
         try {
             await updateDictEnabled(id, enabled)
             if (enabled) {
-                getMessageApi().success(t('启用成功'))
+                message.success(t('启用成功'))
             } else {
-                getMessageApi().success(t('停用成功'))
+                message.success(t('停用成功'))
             }
             handleRefresh()
         } finally {
@@ -114,7 +115,7 @@ const DictManage = () => {
 
     const handleDelete = async (id) => {
         await deleteDictByIdAsync(id)
-        getMessageApi().success('删除成功')
+        message.success('删除成功')
         handleRefresh()
 
     }

@@ -1,11 +1,10 @@
-import { Button, ConfigProvider, Flex, Form, Popconfirm, Space, Table, Typography } from "antd"
+import { App, Button, ConfigProvider, Flex, Form, Popconfirm, Space, Table, Typography } from "antd"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import EditableRow from "./EditableRow"
 import EditableCell from "./EditableCell"
 import React from "react"
 import './editable.css'
 import IdGen from "../../utils/IdGen"
-import { getMessageApi } from "../../utils/MessageUtil"
 import HasPermission from '../../components/HasPermission';
 import Loading from "../loading"
 import { useTranslation } from 'react-i18next';
@@ -58,6 +57,8 @@ const EditableTable: React.FC<EditableTableProps> = ({
 
     const form = Form.useFormInstance()
 
+    const { message } = App.useApp()
+
     const { componentDisabled } = ConfigProvider.useConfig()
 
     const [editingKey, setEditingKey] = useState<string | null>(null)
@@ -108,7 +109,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
         const newKey = IdGen.nextId()
         if (mode === 'single-edit') {
             if (editingKey !== null) {
-                getMessageApi().warning(t('请先保存或取消当前正在编辑的行'))
+                message.warning(t('请先保存或取消当前正在编辑的行'))
                 return
             }
             setEditingKey(newKey)

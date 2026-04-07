@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Flex, Form, Input, Row, Space, theme, Divider, Select, InputNumber, DatePicker, Card, Typography } from 'antd';
+import { Button, Col, Flex, Form, Input, Row, Space, theme, Divider, Select, InputNumber, DatePicker, Card, Typography, App } from 'antd';
 import useFullParams from '../../../../hooks/useFullParams';
 import { useTranslation } from 'react-i18next';
 import useBack from '../../../../hooks/useBack';
 import { useRequest } from 'ahooks';
 import { OperationMode } from '../../../../enums/common';
-import { getMessageApi } from '../../../../utils/MessageUtil';
 import Loading from '../../../../components/loading';
 import dayjs from 'dayjs';
 import OptionSelect from '../../../../components/OptionSelect';
@@ -23,6 +22,8 @@ const AnnouncementDetails = (props) => {
   const { id = props.id, operationMode = OperationMode.VIEW.value } = useFullParams()
 
   const [form] = Form.useForm()
+
+  const { message } = App.useApp()
 
   const { goBack } = useBack()
 
@@ -71,10 +72,10 @@ const AnnouncementDetails = (props) => {
     };
     if (operationMode === OperationMode.ADD.value) {
       await createAsync(params);
-      getMessageApi().success(t('创建成功'));
+      message.success(t('创建成功'));
     } else {
       await updateAsync(params);
-      getMessageApi().success(t('修改成功'));
+      message.success(t('修改成功'));
     }
     goBack();
   }

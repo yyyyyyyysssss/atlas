@@ -259,9 +259,6 @@ const Overview = () => {
 
   return (
     <Flex ref={rootRef} className='home-root-flex' gap={20} flex={1} vertical>
-      <Flex justify='end'>
-        <FullScreenButton targetRef={rootRef} />
-      </Flex>
       <Flex gap={25}>
         {/* 总销售额 */}
         <Card

@@ -1,4 +1,4 @@
-import { App, Flex, Layout, theme } from 'antd';
+import { Affix, App, ConfigProvider, Flex, Layout, theme, Watermark } from 'antd';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSelector, useDispatch } from 'react-redux';
@@ -16,6 +16,7 @@ import { loadMenuItems } from '../redux/slices/layoutSlice';
 import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
 import { useAuth } from '../router/AuthProvider';
 import { SseProvider } from '../sse/SseProvider';
+import FullScreenButton from '../components/FullScreenButton';
 
 
 const { Header: LayoutHeader, Content: LayoutContent, Sider: LayoutSider } = Layout;
@@ -25,6 +26,8 @@ const AppLayout = () => {
     const outlet = useOutlet()
 
     const nodeRef = useRef(null)
+
+    const mainDivRef = useRef(null)
 
     const collapsed = useSelector(state => state.layout.menuCollapsed)
 
@@ -77,89 +80,120 @@ const AppLayout = () => {
         }
     } = theme.useToken()
 
+    const watermarkColor = useMemo(() => {
+        return themeValue === 'dark'
+            ? 'rgba(255, 255, 255, 0.05)'  // 暗色模式：白色半透明
+            : 'rgba(0, 0, 0, 0.08)'       // 亮色模式：黑色半透明
+    }, [themeValue])
+
     if (loading) {
         return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
     }
 
     return (
-        <App
-            notification={{
-                threshold: 3,
-                placement: 'topRight',
-                duration: 5,
-                top: 64,
+        <ConfigProvider
+            getPopupContainer={(node) => {
+                // 如果已经在全屏状态，挂载到 main-div
+                if (document.fullscreenElement) {
+                    return mainDivRef.current || document.body
+                }
+                return document.body;
             }}
         >
-            <SseProvider url={SSE_URL}>
-                <Layout style={{ minHeight: '100vh' }}>
-                    {/* 侧边菜单 */}
-                    <LayoutSider
-                        width='240px'
-                        theme={themeValue}
-                        collapsible
-                        collapsed={collapsed}
-                        trigger={null}
-                    >
-                        <Sider />
-                    </LayoutSider>
-                    <Layout>
-                        {/* 头部 */}
-                        <LayoutHeader className='layout-header'
-                            style={{
-                                boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
-                            }}
+            <App
+                notification={{
+                    threshold: 3,
+                    placement: 'topRight',
+                    duration: 5,
+                    top: 64,
+                }}
+            >
+                <SseProvider url={SSE_URL}>
+                    <Layout style={{ minHeight: '100vh' }}>
+                        {/* 侧边菜单 */}
+                        <LayoutSider
+                            width='240px'
+                            theme={themeValue}
+                            collapsible
+                            collapsed={collapsed}
+                            trigger={null}
                         >
-                            <Header />
-                        </LayoutHeader>
-                        {/* 主题内容 */}
-                        <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
-                            {/* 顶部页签 */}
-                            <TopMenuTab style={{ height: '45px', width: '100%' }} />
-                            <div
-                                className='main-div'
+                            <Sider />
+                        </LayoutSider>
+                        <Layout>
+                            {/* 头部 */}
+                            <LayoutHeader className='layout-header'
                                 style={{
-                                    height: 'calc(100vh - 109px)',
-                                    width: '100%',
-                                    overflow: 'auto',
-                                    padding: 20,
-                                    borderRadius: borderRadius,
-                                    background: colorBgContainer
+                                    boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
                                 }}
                             >
-                                <ErrorBoundary
-                                    fallback={<ServerError />}
-                                    resetKeys={[location.pathname]}
+                                <Header />
+                            </LayoutHeader>
+                            {/* 主题内容 */}
+                            <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
+                                {/* 顶部页签 */}
+                                <TopMenuTab style={{ height: '45px', width: '100%' }} />
+                                <div
+                                    ref={mainDivRef}
+                                    className='main-div'
+                                    style={{
+                                        position: 'relative',
+                                        height: 'calc(100vh - 109px)',
+                                        width: '100%',
+                                        overflow: 'auto',
+                                        padding: 20,
+                                        borderRadius: borderRadius,
+                                        background: colorBgContainer
+                                    }}
                                 >
-
-                                    <SwitchTransition mode="out-in">
-                                        <CSSTransition
-                                            key={location.pathname}
-                                            nodeRef={nodeRef}
-                                            appear={true}
-                                            timeout={300}
-                                            classNames="page"
-                                            unmountOnExit
+                                    <Watermark
+                                        content="Atlas"
+                                        gap={[120, 120]}
+                                        font={{ color: watermarkColor }}
+                                    >
+                                        <Affix
+                                            target={() => mainDivRef.current}
+                                            offsetTop={0}
+                                            style={{ position: 'absolute', top: 5, right: 5, zIndex: 1000 }}
                                         >
-                                            <Suspense
-                                                fallback={
-                                                    <Flex style={{ height: '100%' }} justify='center' align='center'>
-                                                        <Loading />
-                                                    </Flex>
-                                                }
-                                            >
-                                                <div style={{ height: '100%', width: '100%' }} ref={nodeRef}>
-                                                    {outlet}
-                                                </div>
-                                            </Suspense>
-                                        </CSSTransition>
-                                    </SwitchTransition>
-                                </ErrorBoundary>
-                            </div>
-                        </LayoutContent>
-                    </Layout>
-                </Layout >
-            </SseProvider>
-        </App>
+                                            <FullScreenButton targetRef={mainDivRef} />
+                                        </Affix>
+                                        <ErrorBoundary
+                                            fallback={<ServerError />}
+                                            resetKeys={[location.pathname]}
+                                        >
+
+                                            <SwitchTransition mode="out-in">
+                                                <CSSTransition
+                                                    key={location.pathname}
+                                                    nodeRef={nodeRef}
+                                                    appear={true}
+                                                    timeout={300}
+                                                    classNames="page"
+                                                    unmountOnExit
+                                                >
+                                                    <Suspense
+                                                        fallback={
+                                                            <Flex style={{ height: '100%' }} justify='center' align='center'>
+                                                                <Loading />
+                                                            </Flex>
+                                                        }
+                                                    >
+                                                        <div style={{ height: '100%', width: '100%' }} ref={nodeRef}>
+                                                            {outlet}
+                                                        </div>
+                                                    </Suspense>
+                                                </CSSTransition>
+                                            </SwitchTransition>
+                                        </ErrorBoundary>
+                                    </Watermark>
+                                </div>
+                            </LayoutContent>
+                        </Layout>
+                    </Layout >
+                </SseProvider>
+            </App>
+        </ConfigProvider>
     )
 }
 

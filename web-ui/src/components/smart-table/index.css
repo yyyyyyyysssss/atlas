@@ -29,3 +29,24 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+@media print {
+
+  /* 移除 Antd 容器的各种限制 */
+  .ant-table-container, 
+  .ant-table-content {
+    display: block !important;
+  }
+
+  /* 核心：强制剩下的列自适应 A4 纸宽度 */
+  table {
+    width: 100% !important;
+    table-layout: auto !important;
+  }
+
+  /* 隐藏那些虽然删了列但可能残留的 UI */
+  .ant-table-placeholder,
+  .ant-table-pagination {
+    display: none !important;
+  }
+}

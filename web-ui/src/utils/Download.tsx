@@ -40,6 +40,19 @@ export const downloadFileUsingXHR = async ({
     URL.revokeObjectURL(objectUrl)
 }
 
+/**
+ * 通用的 Blob 下载方法
+ * @param blob 文件的 Blob 对象
+ * @param filename 下载的文件名（带后缀）
+ */
+export const downloadFileByBlob = (blob: Blob, filename: string): void => {
+    // 1. 创建 Object URL
+    const objectUrl = URL.createObjectURL(blob);
+    
+    // 2. 调用你现有的触发器
+    triggerDownload(objectUrl, filename);
+}
+
 const triggerDownload = (url: string, filename: string) => {
     const a = document.createElement('a')
     a.href = url

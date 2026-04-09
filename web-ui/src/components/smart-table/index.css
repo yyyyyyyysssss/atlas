@@ -30,6 +30,17 @@
   text-overflow: ellipsis;
 }
 
+
+.react-resizable-handle {
+  position: absolute;
+  right: -5px; /* 向右偏移 */
+  bottom: 0;
+  z-index: 10;
+  width: 10px; /* 增加宽度，更容易被鼠标“抓住” */
+  height: 100%;
+  cursor: col-resize;
+}
+
 @media print {
 
   /* 移除 Antd 容器的各种限制 */

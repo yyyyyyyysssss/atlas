@@ -5,9 +5,10 @@ import IconBox from './icon-box';
 
 interface FullScreenButtonProps {
     targetRef: React.RefObject<HTMLElement>; // 外部传入的 ref
+    onStateChange?: (isFullScreen: boolean) => void;
 }
 
-const FullScreenButton: React.FC<FullScreenButtonProps> = ({ targetRef }) => {
+const FullScreenButton: React.FC<FullScreenButtonProps> = ({ targetRef, onStateChange }) => {
 
     const [isFullScreen, setIsFullScreen] = useState(false)
 
@@ -15,6 +16,7 @@ const FullScreenButton: React.FC<FullScreenButtonProps> = ({ targetRef }) => {
         const handleFullScreenChange = () => {
             const isFullScreen = document.fullscreenElement != null; // 判断是否为全屏
             setIsFullScreen(isFullScreen)
+            onStateChange?.(isFullScreen)
         }
 
         document.addEventListener('fullscreenchange', handleFullScreenChange)
@@ -29,7 +31,7 @@ const FullScreenButton: React.FC<FullScreenButtonProps> = ({ targetRef }) => {
             document.removeEventListener('mozfullscreenchange', handleFullScreenChange)
             document.removeEventListener('MSFullscreenChange', handleFullScreenChange)
         }
-    }, [])
+    }, [onStateChange])
 
     const enterFullScreen = () => {
         const element = targetRef.current as HTMLElement
@@ -76,7 +78,7 @@ const FullScreenButton: React.FC<FullScreenButtonProps> = ({ targetRef }) => {
                 onClick={toggleFullScreen}
             >
                 {!isFullScreen && (
-                    <Tooltip title='进入全屏'>
+                    <Tooltip title='进入专注'>
                         <FullscreenOutlined style={{ fontSize: '20px' }} />
                     </Tooltip>
                 )}

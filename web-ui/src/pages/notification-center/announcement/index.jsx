@@ -84,6 +84,7 @@ const NotificationAnnouncement = () => {
       key: 'title',
       align: 'center',
       visible: true,
+      ellipsis: true,
       render: (text) => (
         <Text
           ellipsis={{

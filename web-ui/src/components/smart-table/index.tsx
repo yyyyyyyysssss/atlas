@@ -274,16 +274,24 @@ const SmartTable = <T extends any>({
             })
     }, [tableColumns, t, isPrinting])
 
-    const handleResize = useCallback((key: string) => (e: React.SyntheticEvent, { size }: any) => {
-        setTableColumns((prev) => {
-            return prev.map((col) => {
-                if (col.key === key) {
-                    return { ...col, width: size.width }
-                }
-                return col
-            })
-        })
-    }, [])
+    const handleResize = useCallback(
+        (key: string) =>
+            (e: React.SyntheticEvent, { size }: { size: { width: number } }) => {
+                // 使用函数式更新，确保拿到最新的 state
+                setTableColumns((prevColumns) => {
+                    return prevColumns.map((col) => {
+                        if (col.key === key || col.dataIndex === key) {
+                            return {
+                                ...col,
+                                width: size.width, // 更新宽度
+                            }
+                        }
+                        return col
+                    });
+                });
+            },
+        [setTableColumns]
+    )
 
     const mergedColumns = useMemo(() => {
         return visibleColumns.map((col) => {
@@ -304,6 +312,7 @@ const SmartTable = <T extends any>({
                 width: parsedWidth,
                 onHeaderCell: (column: any) => ({
                     width: column.width,
+                    onResize: handleResize(column.key || column.dataIndex),
                 }),
             }
         })
@@ -545,6 +554,12 @@ const SmartTable = <T extends any>({
 
     }
 
+    const components = useMemo(() => ({
+        header: {
+            cell: ResizableTitle,
+        },
+    }), [])
+
     return (
         <Flex
             gap={10}
@@ -665,7 +680,8 @@ const SmartTable = <T extends any>({
             <div ref={contentRef} className="smart-table-printable">
                 <Table
                     className='w-full'
-                    columns={visibleColumns}
+                    columns={mergedColumns}
+                    components={components}
                     loading={loading}
                     scroll={data?.[listField]?.length > 10 ? { y: 600, x: 'max-content' } : { x: 'max-content' }}
                     dataSource={data?.[listField] || []}
@@ -687,6 +703,37 @@ const SmartTable = <T extends any>({
                 />
             </div>
         </Flex>
+    )
+}
+
+
+const ResizableTitle = (props: any) => {
+
+    const { onResize, width, ...restProps } = props
+
+    if (!width) {
+        return <th {...restProps} />;
+    }
+
+
+    return (
+        <Resizable
+            width={width}
+            height={0}    // 不需要调整高度，设为 0
+            onResize={onResize}
+            // 设置最小宽度为 80，最大宽度为 800 (高度设为 0 或无限大)
+            minConstraints={[80, 0]}
+            maxConstraints={[800, 0]}
+            handle={
+                // 点击并拖拽的区域
+                <span
+                    className="react-resizable-handle"
+                    onClick={(e) => e.stopPropagation()} // 防止触发排序等表头事件
+                />
+            }
+        >
+            <th {...restProps} />
+        </Resizable>
     )
 }
 

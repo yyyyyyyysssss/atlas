@@ -80,6 +80,8 @@ const AppLayout = () => {
         }
     } = theme.useToken()
 
+    const [isFS, setIsFS] = useState(false)
+
     const watermarkColor = useMemo(() => {
         return themeValue === 'dark'
             ? 'rgba(255, 255, 255, 0.05)'  // 暗色模式：白色半透明
@@ -138,55 +140,64 @@ const AppLayout = () => {
                                     className='main-div'
                                     style={{
                                         position: 'relative',
-                                        height: 'calc(100vh - 109px)',
+                                        height: isFS ? '100vh' : 'calc(100vh - 109px)',
                                         width: '100%',
                                         overflow: 'auto',
                                         padding: 20,
                                         borderRadius: borderRadius,
-                                        background: colorBgContainer
+                                        background: colorBgContainer,
                                     }}
                                 >
-                                    <Watermark
-                                        content="Atlas"
-                                        gap={[120, 120]}
-                                        font={{ color: watermarkColor }}
+                                    <Affix
+                                        target={() => mainDivRef.current}
+                                        offsetTop={0}
+                                        style={{ position: 'absolute', top: 0, right: 0, zIndex: 9999 }}
                                     >
-                                        <Affix
-                                            target={() => mainDivRef.current}
-                                            offsetTop={0}
-                                            style={{ position: 'absolute', top: 5, right: 5, zIndex: 1000 }}
-                                        >
-                                            <FullScreenButton targetRef={mainDivRef} />
-                                        </Affix>
-                                        <ErrorBoundary
-                                            fallback={<ServerError />}
-                                            resetKeys={[location.pathname]}
-                                        >
+                                        <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
+                                    </Affix>
+                                    <ErrorBoundary
+                                        fallback={<ServerError />}
+                                        resetKeys={[location.pathname]}
+                                    >
 
-                                            <SwitchTransition mode="out-in">
-                                                <CSSTransition
-                                                    key={location.pathname}
-                                                    nodeRef={nodeRef}
-                                                    appear={true}
-                                                    timeout={300}
-                                                    classNames="page"
-                                                    unmountOnExit
+                                        <SwitchTransition mode="out-in">
+                                            <CSSTransition
+                                                key={location.pathname}
+                                                nodeRef={nodeRef}
+                                                appear={true}
+                                                timeout={300}
+                                                classNames="page"
+                                                unmountOnExit
+                                            >
+                                                <Suspense
+                                                    fallback={
+                                                        <Flex style={{ height: '100%' }} justify='center' align='center'>
+                                                            <Loading />
+                                                        </Flex>
+                                                    }
                                                 >
-                                                    <Suspense
-                                                        fallback={
-                                                            <Flex style={{ height: '100%' }} justify='center' align='center'>
-                                                                <Loading />
-                                                            </Flex>
-                                                        }
+                                                    <div
+                                                        style={{
+                                                            width: '100%',
+                                                            margin: isFS ? 'auto 0' : 'unset',
+                                                            height: isFS ? 'auto' : '100%',
+                                                            flexShrink: 0,
+                                                        }}
+                                                        ref={nodeRef}
                                                     >
-                                                        <div style={{ height: '100%', width: '100%' }} ref={nodeRef}>
+                                                        <Watermark
+                                                            content="Atlas"
+                                                            gap={[120, 120]}
+                                                            font={{ color: watermarkColor }}
+                                                            style={{ width: '100%' }}
+                                                        >
                                                             {outlet}
-                                                        </div>
-                                                    </Suspense>
-                                                </CSSTransition>
-                                            </SwitchTransition>
-                                        </ErrorBoundary>
-                                    </Watermark>
+                                                        </Watermark>
+                                                    </div>
+                                                </Suspense>
+                                            </CSSTransition>
+                                        </SwitchTransition>
+                                    </ErrorBoundary>
                                 </div>
                             </LayoutContent>
                         </Layout>

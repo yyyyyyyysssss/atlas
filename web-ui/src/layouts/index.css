@@ -41,19 +41,22 @@ body {
   width: 6px !important;
   height: 6px !important;
 }
+
 .rc-virtual-list-scrollbar-track {
   border-radius: var(--ant-border-radius) !important;
 }
+
 .rc-virtual-list-scrollbar-thumb {
   background: var(--ant-control-item-bg-active) !important;
   /* 滑块背景色 */
   border-radius: var(--ant-border-radius) !important;
 }
+
 .rc-virtual-list-scrollbar-thumb:hover {
   background: var(--ant-control-item-bg-active-hover) !important;
 }
 
-.ant-splitter .ant-splitter-panel{
+.ant-splitter .ant-splitter-panel {
   scrollbar-width: unset !important;
   scrollbar-color: unset !important;
 }
@@ -91,4 +94,13 @@ body {
   opacity: 0;
   transform: scale(0.9);
   transition: opacity 300ms, transform 300ms;
+}
+
+
+.main-div:fullscreen {
+  display: flex !important;
+  flex-direction: column !important;
+  /* 确保内容纵向排列 */
+  overflow: auto !important;
+  /* 确保全屏模式下容器允许滚动 */
 }

@@ -33,7 +33,7 @@
 @media print {
 
   /* 移除 Antd 容器的各种限制 */
-  .ant-table-container, 
+  .ant-table-container,
   .ant-table-content {
     display: block !important;
   }
@@ -48,5 +48,37 @@
   .ant-table-placeholder,
   .ant-table-pagination {
     display: none !important;
+  }
+
+  .smart-table-printable .ant-table-container,
+  .smart-table-printable .ant-table-container table {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+
+  /* 针对表头的第一列和最后一列 */
+  .smart-table-printable .ant-table-thead>tr>th:first-child {
+    border-top-left-radius: 0 !important;
+  }
+
+  .smart-table-printable .ant-table-thead>tr>th:last-child {
+    border-top-right-radius: 0 !important;
+  }
+
+  /* 如果你的表格有边框 (bordered)，还需要处理边框容器 */
+  .smart-table-printable .ant-table-wrapper .ant-table-container {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+
+  @page {
+    margin: 0;
+    /* 移除浏览器默认边距 */
+    size: auto;
+  }
+
+  body {
+    margin: 1cm;
+    /* 手动设置一个整齐的页边距 */
   }
 }

@@ -41,16 +41,24 @@ export const downloadFileUsingXHR = async ({
 }
 
 /**
- * 通用的 Blob 下载方法
- * @param blob 文件的 Blob 对象
+ * 通用的文件下载方法 (支持 Blob 和 DataURL)
+ * @param source 文件的 Blob 对象或 DataURL 字符串
  * @param filename 下载的文件名（带后缀）
  */
-export const downloadFileByBlob = (blob: Blob, filename: string): void => {
-    // 1. 创建 Object URL
-    const objectUrl = URL.createObjectURL(blob);
-    
+export const downloadFileBySource = (source: Blob | string, filename: string): void => {
+    let url: string;
+    let isBlob = false;
+    if (source instanceof Blob) {
+        // 如果是 Blob，创建 Object URL
+        url = URL.createObjectURL(source);
+        isBlob = true;
+    } else {
+        // 如果是字符串 (DataURL)，直接使用
+        url = source;
+    }
+
     // 2. 调用你现有的触发器
-    triggerDownload(objectUrl, filename);
+    triggerDownload(url, filename);
 }
 
 const triggerDownload = (url: string, filename: string) => {

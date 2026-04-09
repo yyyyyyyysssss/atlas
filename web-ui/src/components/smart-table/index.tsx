@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import './index.css'
 import { Checkbox, CheckboxChangeEvent, Dropdown, Flex, List, Table, Tooltip, Typography } from 'antd'
 import { RotateCw, Settings, ArrowUpToLine, GripVertical, ArrowDownToLine, MoveVertical, Printer, Download } from 'lucide-react'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CSS } from '@dnd-kit/utilities'
 import type { TableProps, ColumnsType } from 'antd/es/table'
@@ -23,7 +23,10 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { useReactToPrint } from 'react-to-print'
-import { downloadFile, downloadFileByBlob } from '../../utils/Download'
+import { downloadFileBySource } from '../../utils/Download'
+import html2canvas from 'html2canvas'
+import Loading from '../loading'
+import { Resizable } from 'react-resizable';
 
 
 interface FieldNames {
@@ -170,6 +173,8 @@ const SmartTable = <T extends any>({
 
     const [isPrinting, setIsPrinting] = useState(false)
 
+    const [exporting, setExporting] = useState(false)
+
     const handlePrint = useReactToPrint({
         contentRef: contentRef,
         onBeforePrint: () => {
@@ -269,6 +274,41 @@ const SmartTable = <T extends any>({
             })
     }, [tableColumns, t, isPrinting])
 
+    const handleResize = useCallback((key: string) => (e: React.SyntheticEvent, { size }: any) => {
+        setTableColumns((prev) => {
+            return prev.map((col) => {
+                if (col.key === key) {
+                    return { ...col, width: size.width }
+                }
+                return col
+            })
+        })
+    }, [])
+
+    const mergedColumns = useMemo(() => {
+        return visibleColumns.map((col) => {
+            const isAction = col.title === t('操作') || col.key === 'operation'
+            // 如果是操作列，给它一个固定宽度，不注入拖拽逻辑
+            if (isAction) {
+                return {
+                    ...col,
+                    width: col.width || 180, // 必须给数字，防止被挤压
+                }
+            }
+            // 如果列没有配置初始宽度，为了能拖拽，给个默认值
+            const rawWidth = col.width;
+            const parsedWidth = typeof rawWidth === 'number' ? rawWidth : parseInt(String(rawWidth)) || 150;
+
+            return {
+                ...col,
+                width: parsedWidth,
+                onHeaderCell: (column: any) => ({
+                    width: column.width,
+                }),
+            }
+        })
+    }, [visibleColumns, handleResize])
+
     const handleCheckAllChange = (e: CheckboxChangeEvent) => {
         setTableColumns(prev => prev.map(col => ({ ...col, visible: e.target.checked })))
     }
@@ -287,7 +327,7 @@ const SmartTable = <T extends any>({
 
     const handleNotFixed = (key: string) => {
         setTableColumns(prev => {
-            const updated = prev.map(col => col.key === key ? { ...col, fixed: 'undefined' } : col)
+            const updated = prev.map(col => col.key === key ? { ...col, fixed: undefined } : col)
             return reorderColumnsForFixed(updated)
         })
     }
@@ -417,55 +457,92 @@ const SmartTable = <T extends any>({
         if (dataSource.length === 0) {
             return
         }
-        // 提取表头
-        const headers = visibleColumns
-            .filter(col => col.title && col.title !== t('操作') && col.dataIndex)
-            .map(col => col.title as string)
-        // 构建 CSV 内容
-        const csvRows = [
-            headers.join(','),
-            ...dataSource.map((record: any, index: number) => {
-                return visibleColumns
-                    .filter(col => col.title && col.title !== t('操作') && col.dataIndex)
-                    .map(col => {
-                        const rawValue = record[col.dataIndex as string] ?? ''
-                        let value = rawValue
-                        if (col.render) {
-                            const rendered = col.render(rawValue, record, index);
+        setExporting(true)
+        try {
+            // 提取表头
+            const headers = visibleColumns
+                .filter(col => col.title && col.title !== t('操作') && col.dataIndex)
+                .map(col => col.title as string)
+            // 构建 CSV 内容
+            const csvRows = [
+                headers.join(','),
+                ...dataSource.map((record: any, index: number) => {
+                    return visibleColumns
+                        .filter(col => col.title && col.title !== t('操作') && col.dataIndex)
+                        .map(col => {
+                            const rawValue = record[col.dataIndex as string] ?? ''
+                            let value = rawValue
+                            if (col.render) {
+                                const rendered = col.render(rawValue, record, index);
 
-                            if (React.isValidElement(rendered)) {
-                                // 关键点：如果 children 是字符串或数字，才取它；否则放弃赋值，保持原始值
-                                const child = (rendered.props as any).children;
-                                if (typeof child === 'string' || typeof child === 'number') {
-                                    value = child;
+                                if (React.isValidElement(rendered)) {
+                                    // 关键点：如果 children 是字符串或数字，才取它；否则放弃赋值，保持原始值
+                                    const child = (rendered.props as any).children;
+                                    if (typeof child === 'string' || typeof child === 'number') {
+                                        value = child;
+                                    }
+                                } else if (rendered !== null && typeof rendered === 'object') {
+                                    // 处理 antd 的 { children: ReactNode, props: {} }
+                                    const child = (rendered as any).children;
+                                    if (typeof child === 'string' || typeof child === 'number') {
+                                        value = child;
+                                    }
+                                } else if (typeof rendered === 'string' || typeof rendered === 'number') {
+                                    // 只有纯文本或数字才覆盖原始值
+                                    value = rendered;
                                 }
-                            } else if (rendered !== null && typeof rendered === 'object') {
-                                // 处理 antd 的 { children: ReactNode, props: {} }
-                                const child = (rendered as any).children;
-                                if (typeof child === 'string' || typeof child === 'number') {
-                                    value = child;
-                                }
-                            } else if (typeof rendered === 'string' || typeof rendered === 'number') {
-                                // 只有纯文本或数字才覆盖原始值
-                                value = rendered;
                             }
-                        }
-                        if (typeof value === 'object' && value !== null) {
-                            value = rawValue;
-                        }
-                        const finalValue = value ?? ''
-                        // 处理数据中的逗号、换行，防止破坏 CSV 结构
-                        const cellContent = `\t${String(finalValue).replace(/"/g, '""')}`
-                        return `"${cellContent}"`
-                    })
-                    .join(',')
-            })
-        ]
-        const csvString = csvRows.join('\n')
-        const BOM = '\uFEFF'
-        const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' })
-        const finalFileName = `${storageKey || 'export'}_${new Date().getTime()}.csv`;
-        downloadFileByBlob(blob, finalFileName)
+                            if (typeof value === 'object' && value !== null) {
+                                value = rawValue;
+                            }
+                            const finalValue = value ?? ''
+                            // 处理数据中的逗号、换行，防止破坏 CSV 结构
+                            const cellContent = `\t${String(finalValue).replace(/"/g, '""')}`
+                            return `"${cellContent}"`
+                        })
+                        .join(',')
+                })
+            ]
+            const csvString = csvRows.join('\n')
+            const BOM = '\uFEFF'
+            const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' })
+            const finalFileName = `${storageKey || 'export'}_${new Date().getTime()}.csv`;
+            downloadFileBySource(blob, finalFileName)
+        } finally {
+            setExporting(false)
+        }
+    }
+
+    const handleExportImage = async () => {
+        if (!contentRef.current) return
+        setExporting(true)
+        const tableElement = contentRef.current
+        // 延迟执行，给 Spin 渲染的时间
+        setTimeout(async () => {
+            try {
+                const canvas = await html2canvas(tableElement, {
+                    useCORS: true,
+                    scale: 2, // 提高清晰度
+                    backgroundColor: null,
+                    onclone: (clonedDoc) => {
+
+                    },
+                    ignoreElements: (element) => {
+                        // 过滤掉不需要出现在截图中的元素
+                        return element.classList.contains('ant-pagination');
+                    }
+                });
+
+                const dataUrl = canvas.toDataURL("image/png");
+                const finalFileName = `${STORAGE_KEY}_${new Date().getTime()}.png`
+                downloadFileBySource(dataUrl, finalFileName)
+            } catch (error) {
+                console.error('图片导出失败', error)
+            } finally {
+                setExporting(false)
+            }
+        }, 200)
+
     }
 
     return (
@@ -545,13 +622,34 @@ const SmartTable = <T extends any>({
                         </Tooltip>
                     </Dropdown>
                     <Tooltip title={t('导出当前页')}>
-                        <Typography.Text
-                            onClick={handleExportCSV}
-                            className='typography-text-icon'
-                            style={{ cursor: 'pointer', display: 'flex' }}
+                        <Dropdown
+                            trigger={['click']}
+                            disabled={exporting}
+                            menu={{
+                                items: [
+                                    {
+                                        key: 'export_csv',
+                                        label: '.csv',
+                                        onClick: handleExportCSV,
+                                        disabled: exporting, // 也可以双重保险，单独禁用 item
+                                    },
+                                    {
+                                        key: 'export_png',
+                                        label: '.png',
+                                        onClick: handleExportImage,
+                                        disabled: exporting,
+                                    }
+                                ]
+                            }}
                         >
-                            <Download size={18} />
-                        </Typography.Text>
+                            <Loading spinning={exporting} size='small'>
+                                <Typography.Text
+                                    className='typography-text-icon'
+                                >
+                                    <Download size={18} />
+                                </Typography.Text>
+                            </Loading>
+                        </Dropdown>
                     </Tooltip>
                     <Tooltip title={t('打印当前页')}>
                         <Typography.Text

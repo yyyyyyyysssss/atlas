@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class SseSessionManager implements NotificationSubscriber{
+public class SseSessionManager implements NotificationSubscriber, SmartLifecycle {
 
     /**
      * 会话池：userId -> (terminal -> SseEmitter)
@@ -35,8 +36,14 @@ public class SseSessionManager implements NotificationSubscriber{
 
     private final ApplicationEventPublisher eventPublisher;
 
-    private final AtomicBoolean isRunning = new AtomicBoolean(true);
+    private volatile boolean isRunning = false;
 
+
+    @Override
+    public void start() {
+        this.isRunning = true;
+        log.info("SSE Session Manager started.");
+    }
 
     /**
      * 创建并添加 SSE 连接
@@ -46,9 +53,9 @@ public class SseSessionManager implements NotificationSubscriber{
      * @return SseEmitter
      */
     public SseEmitter subscribe(Long userId, String terminal) {
-        if (!isRunning.get()) {
-            log.warn("系统正在停机，拒绝用户 {} 的 SSE 订阅请求", userId);
-            throw new IllegalStateException("Server is shutting down, please try again later.");
+        if (!this.isRunning) {
+            log.warn("Server is stopping, reject subscription for user: {}", userId);
+            throw new IllegalStateException("Server is shutting down");
         }
         // 获取旧连接
         SseEmitter oldEmitter = getSseEmitter(userId, terminal);
@@ -164,7 +171,7 @@ public class SseSessionManager implements NotificationSubscriber{
     // 心跳
     @Scheduled(fixedRate = 15000)
     public void heartbeat() {
-        if (!isRunning.get() || SESSION_POOL.isEmpty()) return;
+        if (!isRunning || SESSION_POOL.isEmpty()) return;
         log.debug("执行 SSE 心跳维持，当前在线用户数: {}", SESSION_POOL.size());
         SESSION_POOL.forEach((userId, terminals) -> {
             terminals.forEach((terminal, emitter) -> {
@@ -195,22 +202,26 @@ public class SseSessionManager implements NotificationSubscriber{
         }
     }
 
-
-    @PreDestroy
-    public void shutdown() {
-        if (!isRunning.compareAndSet(true, false)) {
-            return; // 避免重复触发
-        }
+    @Override
+    public void stop() {
+        this.isRunning = false;
+        log.info("SSE Session Manager stopping, closing {} connections...", getOnlineCount());
+        // 执行清理逻辑
         SESSION_POOL.forEach((userId, terminals) -> {
             terminals.forEach((terminal, emitter) -> {
                 try {
+                    // 告知前端服务器即将断开
+                    emitter.send(SseEmitter.event().name("shutdown").data("offline"));
                     emitter.complete();
-                } catch (Exception ignored) {
-                    // 停机阶段的异常直接忽略
-                }
+                } catch (Exception ignored) {}
             });
         });
         SESSION_POOL.clear();
-        log.info("SSE 停机钩子执行完毕。");
+        log.info("SSE Session Manager stopped.");
+    }
+
+    @Override
+    public boolean isRunning() {
+        return this.isRunning;
     }
 }

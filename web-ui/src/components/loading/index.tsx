@@ -24,6 +24,7 @@ const Loading: React.FC<LoadingProps> = ({
         return (
             <Flex
                 style={{
+                    flex: 1,
                     height: '100%',
                     width: '100%',
                 }}

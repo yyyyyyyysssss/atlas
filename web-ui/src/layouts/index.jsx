@@ -155,17 +155,24 @@ const AppLayout = () => {
                                     >
                                         <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
                                     </Affix>
-                                    <ErrorBoundary
-                                        fallback={<ServerError />}
-                                        resetKeys={[location.pathname]}
-                                    >
-                                        <AnimatePresence mode="wait">
-                                            <motion.div
-                                                key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
-                                                initial={{ opacity: 0, x: 20 }}    // 初始状态 (appear)
-                                                animate={{ opacity: 1, x: 0 }}     // 进入后的状态
-                                                exit={{ opacity: 0, x: -20 }}      // 退出时的状态
-                                                transition={{ duration: 0.3 }}     // 对应 timeout={300}
+
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
+                                            initial={{ opacity: 0, x: 20 }}    // 初始状态 (appear)
+                                            animate={{ opacity: 1, x: 0 }}     // 进入后的状态
+                                            exit={{ opacity: 0, x: -20 }}      // 退出时的状态
+                                            transition={{ duration: 0.3 }}     // 对应 timeout={300}
+                                            style={{
+                                                minHeight: '100%',
+                                                width: '100%',
+                                                display: 'flex', // 关键：让 motion.div 成为 flex 容器
+                                                flexDirection: 'column'
+                                            }}
+                                        >
+                                            <ErrorBoundary
+                                                fallback={<ServerError />}
+                                                resetKeys={[location.pathname]}
                                             >
                                                 <Suspense
                                                     fallback={
@@ -175,9 +182,9 @@ const AppLayout = () => {
                                                     <div
                                                         style={{
                                                             width: '100%',
+                                                            flex: 1,
+                                                            display: 'flex',
                                                             margin: isFS ? 'auto 0' : 'unset',
-                                                            height: isFS ? 'auto' : '100%',
-                                                            flexShrink: 0,
                                                         }}
                                                         ref={nodeRef}
                                                     >
@@ -185,15 +192,15 @@ const AppLayout = () => {
                                                             content="Atlas"
                                                             gap={[120, 120]}
                                                             font={{ color: watermarkColor }}
-                                                            style={{ width: '100%' }}
+                                                            style={{ width: '100%', flex: 1 }}
                                                         >
                                                             {outlet}
                                                         </Watermark>
                                                     </div>
                                                 </Suspense>
-                                            </motion.div>
-                                        </AnimatePresence>
-                                    </ErrorBoundary>
+                                            </ErrorBoundary>
+                                        </motion.div>
+                                    </AnimatePresence>
                                 </div>
                             </LayoutContent>
                         </Layout>

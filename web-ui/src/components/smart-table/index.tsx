@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import './index.css'
-import { Checkbox, CheckboxChangeEvent, Dropdown, Flex, List, Table, Tooltip, Typography } from 'antd'
+import { Button, Checkbox, CheckboxChangeEvent, Dropdown, Flex, Input, List, Space, Table, theme, Tooltip, Typography } from 'antd'
 import { RotateCw, Settings, ArrowUpToLine, GripVertical, ArrowDownToLine, MoveVertical, Printer, Download } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -27,17 +27,28 @@ import { downloadFileBySource } from '../../utils/Download'
 import html2canvas from 'html2canvas'
 import Loading from '../loading'
 import { Resizable } from 'react-resizable';
+import { SearchOutlined } from '@ant-design/icons';
 
 
 interface FieldNames {
     list?: string
+    summary?: string
     pageNum?: string
     pageSize?: string
     total?: string
 }
 
+type SummaryType = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'median' | 'distinctCount';
+
+interface SmartTableColumnType<T> extends ColumnsType<T> {
+    summaryType?: SummaryType;
+    precision?: number; // 精度控制
+    // 自定义渲染逻辑
+    summaryRender?: (data: T[]) => React.ReactNode;
+}
+
 interface SmartTableProps<T = any> extends TableProps<T> {
-    columns: ColumnsType<T>
+    columns: SmartTableColumnType<T>
     headerExtra?: React.ReactNode
     storageKey?: string
     fetchData: (queryParam: any) => Promise<any>
@@ -48,6 +59,8 @@ interface SmartTableProps<T = any> extends TableProps<T> {
     rowKey: string
     transformData?: (data: T[]) => T[]
     onDataChange?: (data: T[]) => T[]
+    searchable?: boolean // 是否开启列搜索
+    onSearch?: (value: string, dataIndex: string) => void
 }
 
 interface SortableItemProps {
@@ -73,6 +86,53 @@ const reorderColumnsForFixed = (columns: any[]) => {
 
     return [...left, ...middle, ...right]
 }
+
+const calculateSummary = (data: any[], dataIndex: string, type: SummaryType, precision: number = 2) => {
+    if (!data || data.length === 0) return type === 'count' ? 0 : null
+    if (type === 'count') return data.length
+    if (type === 'distinctCount') {
+        const uniqueValues = new Set(data.map(item => item[dataIndex]))
+        return uniqueValues.size
+    }
+    const values = data
+        .map(item => {
+            const val = item[dataIndex];
+            return typeof val === 'number' ? val : Number(val);
+        })
+        .filter(val => !isNaN(val) && isFinite(val))
+    if (values.length === 0) return null
+
+    switch (type) {
+        case 'sum':
+            return values.reduce((prev, curr) => prev + curr, 0).toFixed(precision)
+        case 'avg':
+            return (values.reduce((prev, curr) => prev + curr, 0) / values.length).toFixed(precision)
+        case 'min':
+            return Math.min(...values).toFixed(precision)
+        case 'max':
+            return Math.max(...values).toFixed(precision)
+        case 'median': {
+            // 中位数逻辑：需先排序
+            const sorted = [...values].sort((a, b) => a - b)
+            const lowMiddle = Math.floor((sorted.length - 1) / 2)
+            const highMiddle = Math.ceil((sorted.length - 1) / 2)
+            const median = (sorted[lowMiddle] + sorted[highMiddle]) / 2
+            return median.toFixed(precision)
+        }
+        default:
+            return null
+    }
+}
+
+const SUMMARY_LABEL_MAP: Record<any, string> = {
+    sum: '合计',
+    avg: '平均值',
+    min: '最小值',
+    max: '最大值',
+    count: '计数',
+    median: '中位数',
+    distinctCount: '去重数'
+};
 
 const SortableItem: React.FC<SortableItemProps> = ({
     item,
@@ -160,6 +220,8 @@ const SmartTable = <T extends any>({
     rowKey,
     transformData,
     onDataChange,
+    searchable,
+    onSearch,
     ...rest
 }: SmartTableProps<T>) => {
 
@@ -168,6 +230,8 @@ const SmartTable = <T extends any>({
     const { t } = useTranslation()
 
     const isDev = import.meta.env.MODE === 'dev'
+
+    const { token } = theme.useToken()
 
     const contentRef = useRef<HTMLDivElement>(null)
 
@@ -194,6 +258,7 @@ const SmartTable = <T extends any>({
 
     const {
         list: listField = 'list',
+        summary: summaryField = 'summary',
         pageNum: pageNumField = 'pageNum',
         pageSize: pageSizeField = 'pageSize',
         total: totalField = 'total'
@@ -293,6 +358,52 @@ const SmartTable = <T extends any>({
         [setTableColumns]
     )
 
+    const getColumnSearchProps = (dataIndex: string) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+            <div style={{ padding: 8 }} onKeyDown={e => e.stopPropagation()}>
+                <Input
+                    placeholder='搜索'
+                    value={selectedKeys[0]}
+                    onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => confirm({ closeDropdown: true })}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space size={8}>
+                    <Button
+                        type="primary"
+                        onClick={() => confirm({ closeDropdown: true })}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        搜索
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            clearFilters()
+                            confirm({ closeDropdown: true })
+                        }}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        重置
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? token.colorPrimary : undefined }} />
+        ),
+        onFilter: (value: any, record: any) => {
+            const recordValue = record[dataIndex];
+            if (recordValue === Array.isArray(recordValue)) return false; // 排除数组情况
+            return recordValue
+                ?.toString()
+                .toLowerCase()
+                .includes((value as string).toLowerCase());
+        },
+    })
+
     const mergedColumns = useMemo(() => {
         return visibleColumns.map((col) => {
             const isAction = col.title === t('操作') || col.key === 'operation'
@@ -305,9 +416,8 @@ const SmartTable = <T extends any>({
             }
             // 如果列没有配置初始宽度，为了能拖拽，给个默认值
             const rawWidth = col.width;
-            const parsedWidth = typeof rawWidth === 'number' ? rawWidth : parseInt(String(rawWidth)) || 150;
-
-            return {
+            const parsedWidth = typeof rawWidth === 'number' ? rawWidth : parseInt(String(rawWidth)) || 150
+            let newCol = {
                 ...col,
                 width: parsedWidth,
                 onHeaderCell: (column: any) => ({
@@ -315,6 +425,13 @@ const SmartTable = <T extends any>({
                     onResize: handleResize(column.key || column.dataIndex),
                 }),
             }
+            if (col.searchable && col.dataIndex) {
+                const searchProps = getColumnSearchProps(
+                    col.dataIndex as string,
+                )
+                newCol = { ...newCol, ...searchProps }
+            }
+            return newCol
         })
     }, [visibleColumns, handleResize])
 
@@ -554,6 +671,77 @@ const SmartTable = <T extends any>({
 
     }
 
+    const renderSummary = useCallback((pageData: readonly T[]) => {
+        const backendSummary = data?.[summaryField] || {}
+        const hasBackendData = Object.keys(backendSummary).length > 0
+        const hasSummaryConfig = mergedColumns.some(col => col.summaryType || col.summaryRender)
+        // 如果既没有配置前端统计，后端也没给数据，直接返回 null
+        if (!hasBackendData && !hasSummaryConfig) {
+            return null
+        }
+        return (
+            <Table.Summary fixed>
+                <Table.Summary.Row className="print-summary-row">
+                    {mergedColumns.map((col, index) => {
+                        const { summaryType, summaryRender, summaryKey, precision, align = 'center', key, dataIndex } = col
+
+                        let result: React.ReactNode = null;
+                        if (summaryRender) {
+                            // 优先级最高：自定义渲染逻辑
+                            result = summaryRender([...pageData], backendSummary)
+                        } else {
+                            // 尝试从后端汇总数据中取值
+                            // 优先用 summaryKey，没写就用 dataIndex，再没写就 null
+                            const targetKey = summaryKey || (dataIndex as string)
+                            const hasBackendValue = targetKey && backendSummary[targetKey] !== undefined
+                            if (hasBackendValue) {
+                                // 找到后端数据了，直接使用
+                                result = backendSummary[targetKey]
+                            } else if (summaryType && dataIndex) {
+                                // 兜底：如果后端没返回，且配置了统计类型，则前端根据当前页数据计算
+                                result = calculateSummary([...pageData], dataIndex as string, summaryType, precision);
+                            }
+                        }
+                        const cellKey = key || (dataIndex as string) || index
+                        return (
+                            <Table.Summary.Cell index={index} key={cellKey} align={align}>
+                                <Space
+                                    size={4}
+                                    direction="horizontal"
+                                    align="baseline"
+                                    style={{
+                                        width: '100%',
+                                        justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start'
+                                    }}
+                                >
+                                    {index === 0 && result === null && (
+                                        <Typography.Text strong>汇总</Typography.Text>
+                                    )}
+                                    {result !== null && result !== undefined ? (
+                                        <>
+                                            {summaryType && !summaryRender && (
+                                                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                                                    {SUMMARY_LABEL_MAP[summaryType]}:
+                                                </Typography.Text>
+                                            )}
+                                            {typeof result === 'string' || typeof result === 'number' ? (
+                                                <Typography.Text type="danger" strong>
+                                                    {result}
+                                                </Typography.Text>
+                                            ) : (
+                                                result
+                                            )}
+                                        </>
+                                    ) : null}
+                                </Space>
+                            </Table.Summary.Cell>
+                        )
+                    })}
+                </Table.Summary.Row>
+            </Table.Summary>
+        )
+    }, [mergedColumns, data])
+
     const components = useMemo(() => ({
         header: {
             cell: ResizableTitle,
@@ -681,6 +869,7 @@ const SmartTable = <T extends any>({
                 <Table
                     className='w-full'
                     columns={mergedColumns}
+                    summary={renderSummary}
                     components={components}
                     loading={loading}
                     scroll={data?.[listField]?.length > 10 ? { y: 600, x: 'max-content' } : { x: 'max-content' }}
@@ -694,9 +883,19 @@ const SmartTable = <T extends any>({
                         showSizeChanger: true,
                         pageSizeOptions: ['10', '20', '50', '100'],
                         showTotal: total => t('共 {{total}} 条', { total }),
-                        onChange: (pageNum, pageSize) => {
-                            const newQueryParam = { ...queryParam, [pageNumField]: pageNum, [pageSizeField]: pageSize }
-                            setQueryParam(newQueryParam)
+                        // onChange: (pageNum, pageSize) => {
+                        //     const newQueryParam = { ...queryParam, [pageNumField]: pageNum, [pageSizeField]: pageSize }
+                        //     setQueryParam(newQueryParam)
+                        // }
+                    }}
+                    onChange={(pagination, filters, sorter, extra) => {
+                        if (extra.action === 'paginate') {
+                            const newQueryParam = {
+                                ...queryParam,
+                                [pageNumField]: pagination.current,
+                                [pageSizeField]: pagination.pageSize
+                            };
+                            setQueryParam(newQueryParam);
                         }
                     }}
                     {...rest}

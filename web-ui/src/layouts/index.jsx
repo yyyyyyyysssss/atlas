@@ -107,7 +107,7 @@ const AppLayout = () => {
                     threshold: 3,
                     placement: 'topRight',
                     duration: 5,
-                    top: 64,
+                    top: 109,
                 }}
             >
                 <SseProvider url={SSE_URL}>

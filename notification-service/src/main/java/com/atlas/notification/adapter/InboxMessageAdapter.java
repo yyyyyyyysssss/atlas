@@ -40,6 +40,9 @@ public class InboxMessageAdapter extends AbstractMessageAdapter implements Messa
         Map<String, Object> ext = Optional.ofNullable(payload.getExt()).orElse(Collections.emptyMap());
 
         String eventName = getAsString(ext, NotificationConstant.Inbox.EVENT_NAME);
+        if (eventName == null) {
+            eventName = NotificationEventEnum.NOTIFICATION_EVENT.getCode(); // 默认事件
+        }
 
         Map<String, Object> data = new HashMap<>();
         data.put("content", content);

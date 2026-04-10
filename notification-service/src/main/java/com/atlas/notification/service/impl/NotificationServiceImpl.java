@@ -66,7 +66,6 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
             // 分发给匹配的适配器发送
             for (ChannelType channel : ctx.getChannels()) {
-                boolean shouldRecord = !channel.equals(ChannelType.INBOX) || NotificationEventEnum.NOTIFICATION_EVENT.getCode().equals(ctx.eventName());
                 Long notificationId = IdGen.genId();
                 Notification notification = Notification
                         .builder()
@@ -97,7 +96,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
                     MessagePayload messagePayload = renderStrategy.render(messageTemplateModel, ctx.getParams(), ctx.getExt());
 
-                    if (shouldRecord) {
+                    if (ctx.isRecord()) {
                         notification.setContent(messagePayload.getContent());
                         notification.setContentType(messagePayload.getContentType());
                         notification.setCategory(messagePayload.getCategory());
@@ -112,7 +111,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                     // 发送
                     adapter.send(messagePayload, accounts);
 
-                    if (shouldRecord) {
+                    if (ctx.isRecord()) {
                         this.lambdaUpdate()
                                 .set(Notification::getStatus, NotificationStatus.SENT)
                                 .eq(Notification::getId, notificationId)
@@ -122,7 +121,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                 } catch (Exception e) {
                     // 记录具体某个渠道的失败，不影响其他渠道
                     log.error("[Notification-Engine] [{}] Send Failed {} Reason: {}", channel, logId, e.getMessage(), e);
-                    if (shouldRecord) {
+                    if (ctx.isRecord()) {
                         ensureRecordFailed(notification, e.getMessage());
                     }
                 }

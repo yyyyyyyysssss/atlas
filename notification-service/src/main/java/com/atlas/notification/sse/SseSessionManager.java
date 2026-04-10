@@ -1,7 +1,11 @@
 package com.atlas.notification.sse;
 
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
+import com.atlas.notification.sse.event.SseDisconnectedEvent;
+import com.atlas.notification.sse.event.SseConnectedEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2026/3/27 14:34
  */
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class SseSessionManager implements NotificationSubscriber{
 
@@ -26,7 +31,7 @@ public class SseSessionManager implements NotificationSubscriber{
      */
     private static final Map<Long, Map<String, SseEmitter>> SESSION_POOL = new ConcurrentHashMap<>();
 
-
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -60,6 +65,9 @@ public class SseSessionManager implements NotificationSubscriber{
 
         // 建立连接后发送一个握手包，告知前端连接已就绪
         send(userId, terminal, NotificationEventEnum.CONNECTED.getCode(), "ready");
+
+        // 发布连接事件
+        eventPublisher.publishEvent(new SseConnectedEvent(userId, terminal));
 
         return emitter;
     }
@@ -132,6 +140,8 @@ public class SseSessionManager implements NotificationSubscriber{
                 if (userTerminals.isEmpty()) {
                     SESSION_POOL.remove(userId);
                 }
+                // 发布断连事件
+                eventPublisher.publishEvent(new SseDisconnectedEvent(userId, terminal,reason));
                 try {
                     emitter.complete(); // 优雅关闭
                 } catch (Exception ignored) {

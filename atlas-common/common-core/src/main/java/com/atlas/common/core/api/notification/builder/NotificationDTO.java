@@ -19,7 +19,7 @@ public class NotificationDTO {
 
 
     NotificationDTO(String templateCode, String title, NotificationCategory category, Object content, ContentType contentType,
-                    List<String> targets, TargetType targetType, List<ChannelType> channels,
+                    List<String> targets, TargetType targetType, List<ChannelType> channels,boolean record,
                     Map<String, Object> params, Map<String, Object> ext) {
         this.templateCode = templateCode;
         this.title = title;
@@ -29,6 +29,7 @@ public class NotificationDTO {
         this.targets = targets;
         this.targetType = targetType;
         this.channels = channels;
+        this.record = record;
         this.params = params;
         this.ext = ext;
     }
@@ -43,9 +44,10 @@ public class NotificationDTO {
             @JsonProperty("targets") List<String> targets,
             @JsonProperty("targetType") TargetType targetType,
             @JsonProperty("channels") List<ChannelType> channels,
+            @JsonProperty("record") boolean record,
             @JsonProperty("params") Map<String, Object> params,
             @JsonProperty("ext") Map<String, Object> ext) {
-        return new NotificationDTO(templateCode, title, category, content, contentType, targets, targetType, channels, params, ext);
+        return new NotificationDTO(templateCode, title, category, content, contentType, targets, targetType, channels,record, params, ext);
     }
 
     // 模板编码
@@ -67,6 +69,8 @@ public class NotificationDTO {
 
     // 发送渠道
     private final List<ChannelType> channels;
+
+    private boolean record = true;
 
     // 占位符变量
     private final Map<String, Object> params;

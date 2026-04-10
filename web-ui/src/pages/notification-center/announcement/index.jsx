@@ -85,6 +85,7 @@ const NotificationAnnouncement = () => {
       align: 'center',
       visible: true,
       ellipsis: true,
+      searchable: true,
       render: (text) => (
         <Text
           ellipsis={{
@@ -132,6 +133,8 @@ const NotificationAnnouncement = () => {
       key: 'priority',
       width: '80px',
       visible: true,
+      summaryType: 'median',
+      precision: 0,
       align: 'center',
       render: (priority) => <Text strong>{priority}</Text>,
     },

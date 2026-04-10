@@ -43,6 +43,9 @@ public class NotificationRequest {
 
     private NotificationCategory category = NotificationCategory.SYSTEM;
 
+    // 是否记录通知，默认记录
+    private boolean record = true;
+
     // 发送渠道
     private List<ChannelType> channels;
 
@@ -177,6 +180,9 @@ public class NotificationRequest {
 
         TargetOp to();
 
+        // 禁用持久化记录（不落库、不留存历史）
+        ConfigOp noRecord();
+
     }
 
     public interface TargetOp {
@@ -245,6 +251,12 @@ public class NotificationRequest {
         public ConfigOp withExt(String key, Object value) {
             ctx.ext = ensureMutable(ctx.ext);
             ctx.ext.put(key, value);
+            return this;
+        }
+
+        @Override
+        public ConfigOp noRecord() {
+            ctx.record = false; // 直接标记为不记录
             return this;
         }
 
@@ -356,6 +368,7 @@ public class NotificationRequest {
                     ctx.targets,
                     ctx.targetType,
                     ctx.channels,
+                    ctx.record,
                     ctx.params,
                     ctx.ext
             );

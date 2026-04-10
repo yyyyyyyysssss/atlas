@@ -123,7 +123,6 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (!isRead) {
             announcementReadService.markAsRead(id, userId);
         }
-        pushAnnouncement(announcement);
         return announcementVO;
     }
 
@@ -213,6 +212,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
                 NotificationRequest
                         .object(entity.getTitle(), announcementVO)
                         .inbox(NotificationEventEnum.ANNOUNCEMENT_EVENT)
+                        .noRecord()
                         .to()
                         .toAllUser()
                         .build()

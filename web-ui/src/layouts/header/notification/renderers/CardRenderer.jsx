@@ -54,32 +54,68 @@ const CardRenderer = React.memo(({ content, onClose, onAction }) => {
     }
 
     const resolveAtlasLink = (linkStr) => {
-        // 解析自定义协议链接
-        if (!linkStr || !linkStr.startsWith('atlas://')) return null
-        const url = new URL(linkStr.replace('atlas://', 'http://dummy/'))
-        const path = url.pathname
-        const params = Object.fromEntries(url.searchParams.entries())
-        return { path, params };
+        if (!linkStr) return null
+        // 处理 HTTP/HTTPS 链接 (外部链接)
+        if (linkStr.startsWith('http://') || linkStr.startsWith('https://')) {
+            return {
+                type: 'external',
+                path: linkStr,
+                openMode: '_blank' // 建议新窗口打开
+            }
+        }
+        if (linkStr.startsWith('atlas://')) {
+            try {
+                const url = new URL(linkStr.replace('atlas://', 'http://dummy/'));
+                const params = Object.fromEntries(url.searchParams.entries());
+                return {
+                    type: 'internal',
+                    path: url.pathname,
+                    params: params,
+                    // 允许通过链接参数动态控制打开方式，默认 drawer
+                    openMode: params.openMode || 'drawer'
+                };
+            } catch (e) {
+                console.error("Atlas Link Parse Error:", e);
+                return null;
+            }
+        }
+        return {
+            type: 'path',
+            path: linkStr,
+            openMode: 'router'
+        }
     }
 
     const handleLinkClick = (link) => {
-        if (!link) {
+        const resolvedLink = resolveAtlasLink(link)
+        if (!resolvedLink) {
             return
         }
-        const resolvedLink = resolveAtlasLink(link)
-        if (resolvedLink) {
-            const route = findRouteByPath(resolvedLink.path)
-            if (route && route.element) {
-                setRouteDrawer({
-                    visible: true,
-                    component: route.element,
-                    params: resolvedLink.params,
-                    title: route.breadcrumbName
-                })
-            } else {
+        const { type, path, params, openMode } = resolvedLink
+        switch (type) {
+            case 'external':
+                window.open(path, openMode)
+                break
+            case 'internal':
+                if (openMode === 'drawer') {
+                    const route = findRouteByPath(path)
+                    if (route && route.element) {
+                        setRouteDrawer({
+                            visible: true,
+                            component: route.element,
+                            params: params,
+                            title: route.breadcrumbName
+                        })
+                        return
+                    }
+                }
                 closeDrawer?.()
-                navigate(resolvedLink.path, { state: resolvedLink.params })
-            }
+                navigate({ pathname: path, search: new URLSearchParams(params).toString() })
+                break
+            default:
+                closeDrawer?.()
+                navigate(path)
+                break
         }
     }
 

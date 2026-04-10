@@ -16,7 +16,6 @@ const Notification = () => {
   const { notification } = App.useApp()
 
   useSseEvent('notification_event', (data) => {
-    console.log('Received notification event:', data)
     notification.open({
       message: data.title,
       description: <MessageRenderer content={data} />,

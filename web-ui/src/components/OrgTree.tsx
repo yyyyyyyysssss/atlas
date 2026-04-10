@@ -1,12 +1,12 @@
 import { useRequest } from "ahooks"
-import { forwardRef, Key, SetStateAction, useEffect, useImperativeHandle, useMemo, useState } from "react"
+import { Key, SetStateAction, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { fetchOrgTree } from "../services/SystemService"
 import { OrganizationType } from "../enums/system"
 import { Checkbox, Flex, Input, Tree, TreeProps, Typography } from "antd"
 import Loading from "./loading"
 import { useTranslation } from 'react-i18next';
 
-interface OrgTreeProps extends TreeProps{
+interface OrgTreeProps extends TreeProps {
     onSelect: (selectedKey: any | null, record: any) => void
     showAll?: boolean
     itemRender?: (record: any) => React.ReactNode
@@ -35,13 +35,14 @@ let allOrgTypes = Object.values(OrganizationType).map(item => item.value)
 
 let defaultOrgTypes = [OrganizationType.GROUP.value, OrganizationType.COMPANY.value]
 
-const OrgTree = forwardRef<OrgTreeAction, OrgTreeProps>(({
+const OrgTree = ({
     onSelect,
     showAll = false,
     itemRender,
     selectFirst = false,
+    ref, // 2. 直接从 props 中获取 ref
     ...restProps
-}, ref) => {
+}: OrgTreeProps & { ref?: React.Ref<OrgTreeAction> }) => {
 
     const { t } = useTranslation()
 
@@ -213,6 +214,6 @@ const OrgTree = forwardRef<OrgTreeAction, OrgTreeProps>(({
             </Loading>
         </Flex>
     )
-})
+}
 
 export default OrgTree

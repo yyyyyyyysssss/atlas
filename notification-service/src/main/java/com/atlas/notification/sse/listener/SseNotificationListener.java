@@ -3,6 +3,7 @@ package com.atlas.notification.sse.listener;
 import com.atlas.common.core.api.notification.body.CardBody;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
+import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.notification.service.NotificationService;
 import com.atlas.notification.sse.event.SseConnectedEvent;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,12 +30,21 @@ public class SseNotificationListener {
 
     private final NotificationService notificationService;
 
+    private final RedisHelper redisHelper;
+
+    private static final String REDIS_KEY_PREFIX = "notification:github_star:sent:";
+
     @EventListener
     public void onSseConnected(SseConnectedEvent event) {
-        log.debug("监听到 SSE 连接事件，准备执行上线后逻辑: userId={}", event.userId());
-        scheduler.schedule(() -> {
-            sendGitHubStarNotification(event.userId());
-        }, 5, TimeUnit.SECONDS);
+        Long userId = event.userId();
+        log.debug("监听到 SSE 连接事件，准备执行上线后逻辑: userId={}", userId);
+
+        String redisKey = REDIS_KEY_PREFIX + userId;
+        if(redisHelper.setIfAbsent(redisKey,"1", Duration.ofDays(1))){
+            scheduler.schedule(() -> {
+                sendGitHubStarNotification(userId);
+            }, 5, TimeUnit.SECONDS);
+        }
     }
 
     private void sendGitHubStarNotification(Long userId) {

@@ -9,7 +9,6 @@ import Header from './header';
 import './index.css';
 import Sider from './sider';
 import TopMenuTab from './top-tab';
-import { SwitchTransition, CSSTransition } from 'react-transition-group';
 import { setUserInfo } from '../redux/slices/userSlice';
 import { setAuthInfo } from '../redux/slices/authSlice';
 import { loadMenuItems } from '../redux/slices/layoutSlice';
@@ -17,6 +16,7 @@ import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
 import { useAuth } from '../router/AuthProvider';
 import { SseProvider } from '../sse/SseProvider';
 import FullScreenButton from '../components/FullScreenButton';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 const { Header: LayoutHeader, Content: LayoutContent, Sider: LayoutSider } = Layout;
@@ -159,21 +159,17 @@ const AppLayout = () => {
                                         fallback={<ServerError />}
                                         resetKeys={[location.pathname]}
                                     >
-
-                                        <SwitchTransition mode="out-in">
-                                            <CSSTransition
-                                                key={location.pathname}
-                                                nodeRef={nodeRef}
-                                                appear={true}
-                                                timeout={300}
-                                                classNames="page"
-                                                unmountOnExit
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
+                                                initial={{ opacity: 0, x: 20 }}    // 初始状态 (appear)
+                                                animate={{ opacity: 1, x: 0 }}     // 进入后的状态
+                                                exit={{ opacity: 0, x: -20 }}      // 退出时的状态
+                                                transition={{ duration: 0.3 }}     // 对应 timeout={300}
                                             >
                                                 <Suspense
                                                     fallback={
-                                                        <Flex style={{ height: '100%' }} justify='center' align='center'>
-                                                            <Loading />
-                                                        </Flex>
+                                                        <Loading full={true} />
                                                     }
                                                 >
                                                     <div
@@ -195,8 +191,8 @@ const AppLayout = () => {
                                                         </Watermark>
                                                     </div>
                                                 </Suspense>
-                                            </CSSTransition>
-                                        </SwitchTransition>
+                                            </motion.div>
+                                        </AnimatePresence>
                                     </ErrorBoundary>
                                 </div>
                             </LayoutContent>

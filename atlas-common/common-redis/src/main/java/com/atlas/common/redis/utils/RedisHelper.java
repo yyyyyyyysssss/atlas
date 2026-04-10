@@ -129,6 +129,19 @@ public class RedisHelper {
     }
 
     /**
+     * 如果 key 不存在，则设置 key 对应的值（SET if Not Absent）。
+     *
+     * @param key     Redis 键
+     * @param object  Redis 值
+     * @param duration 过期时间
+     * @return true 表示设置成功（说明之前不存在）；false 表示设置失败（说明已存在）。
+     */
+    public boolean setIfAbsent(String key, Object object, Duration duration) {
+        // Boolean.TRUE.equals 防止拆箱异常
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, object, duration));
+    }
+
+    /**
      * 获取字符串 key 对应的值
      */
     public Object getValue(String key) {

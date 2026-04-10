@@ -3,6 +3,7 @@ package com.atlas.notification.sse;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.notification.sse.event.SseDisconnectedEvent;
 import com.atlas.notification.sse.event.SseConnectedEvent;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -14,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @Description
@@ -33,6 +35,8 @@ public class SseSessionManager implements NotificationSubscriber{
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final AtomicBoolean isRunning = new AtomicBoolean(true);
+
 
     /**
      * 创建并添加 SSE 连接
@@ -42,6 +46,10 @@ public class SseSessionManager implements NotificationSubscriber{
      * @return SseEmitter
      */
     public SseEmitter subscribe(Long userId, String terminal) {
+        if (!isRunning.get()) {
+            log.warn("系统正在停机，拒绝用户 {} 的 SSE 订阅请求", userId);
+            throw new IllegalStateException("Server is shutting down, please try again later.");
+        }
         // 获取旧连接
         SseEmitter oldEmitter = getSseEmitter(userId, terminal);
         // 如果有旧的，先清理旧的
@@ -156,7 +164,7 @@ public class SseSessionManager implements NotificationSubscriber{
     // 心跳
     @Scheduled(fixedRate = 15000)
     public void heartbeat() {
-        if (SESSION_POOL.isEmpty()) return;
+        if (!isRunning.get() || SESSION_POOL.isEmpty()) return;
         log.debug("执行 SSE 心跳维持，当前在线用户数: {}", SESSION_POOL.size());
         SESSION_POOL.forEach((userId, terminals) -> {
             terminals.forEach((terminal, emitter) -> {
@@ -185,5 +193,24 @@ public class SseSessionManager implements NotificationSubscriber{
         } else {
             sendToUser(userId, eventName.getCode(), data);
         }
+    }
+
+
+    @PreDestroy
+    public void shutdown() {
+        if (!isRunning.compareAndSet(true, false)) {
+            return; // 避免重复触发
+        }
+        SESSION_POOL.forEach((userId, terminals) -> {
+            terminals.forEach((terminal, emitter) -> {
+                try {
+                    emitter.complete();
+                } catch (Exception ignored) {
+                    // 停机阶段的异常直接忽略
+                }
+            });
+        });
+        SESSION_POOL.clear();
+        log.info("SSE 停机钩子执行完毕。");
     }
 }

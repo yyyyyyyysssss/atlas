@@ -162,7 +162,7 @@ const AppLayout = () => {
                                             initial={{ opacity: 0, x: 20 }}    // 初始状态 (appear)
                                             animate={{ opacity: 1, x: 0 }}     // 进入后的状态
                                             exit={{ opacity: 0, x: -20 }}      // 退出时的状态
-                                            transition={{ duration: 0.3 }}     // 对应 timeout={300}
+                                            transition={{ duration: 0.2 }}     // 对应 timeout={200}
                                             style={{
                                                 minHeight: '100%',
                                                 width: '100%',

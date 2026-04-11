@@ -25,7 +25,7 @@ const Sider = () => {
 
     const { t } = useTranslation()
 
-    const themeValue = useSelector(state => state.layout.theme)
+    const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'dark')
 
     const menuItems = useSelector(state => state.layout.menuItems)
 

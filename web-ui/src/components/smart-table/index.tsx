@@ -298,11 +298,22 @@ const SmartTable = <T extends any>({
             })
             setTableColumns(merged)
         } else {
-            const updatedColumns = columns.map((col: any) => ({
-                ...col,
-                key: col.key || col.dataIndex, // 如果没有 key，则使用 dataIndex 作为 key
-            }))
-            setTableColumns(updatedColumns)
+            setTableColumns((prev) => {
+                // 如果 prev 为空（初次加载且没缓存），则直接映射 columns
+                return columns.map((col: any) => {
+                    const key = col.key || col.dataIndex
+                    // 尝试从当前的 state 中找到这一列，获取它被拉伸后的宽度
+                    const matchedPrevCol = prev.find((p) => (p.key || p.dataIndex) === key)
+
+                    return {
+                        ...col,
+                        ...matchedPrevCol,
+                        render: col.render,
+                        summaryRender: col.summaryRender,
+                        key,
+                    }
+                })
+            })
         }
     }, [columns])
 
@@ -340,23 +351,19 @@ const SmartTable = <T extends any>({
     }, [tableColumns, t, isPrinting])
 
     const handleResize = useCallback(
-        (key: string) =>
-            (e: React.SyntheticEvent, { size }: { size: { width: number } }) => {
-                // 使用函数式更新，确保拿到最新的 state
-                setTableColumns((prevColumns) => {
-                    return prevColumns.map((col) => {
-                        if (col.key === key || col.dataIndex === key) {
-                            return {
-                                ...col,
-                                width: size.width, // 更新宽度
-                            }
+        (key: string) => (e: React.SyntheticEvent, { size }: { size: { width: number } }) => {
+            setTableColumns((prevColumns) => {
+                return prevColumns.map((col) => {
+                    if (col.key === key || col.dataIndex === key) {
+                        return {
+                            ...col,
+                            width: size.width, // 更新宽度
                         }
-                        return col
-                    });
+                    }
+                    return col
                 });
-            },
-        [setTableColumns]
-    )
+            });
+        }, [])
 
     const getColumnSearchProps = (dataIndex: string) => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
@@ -422,7 +429,7 @@ const SmartTable = <T extends any>({
                 width: parsedWidth,
                 onHeaderCell: (column: any) => ({
                     width: column.width,
-                    onResize: handleResize(column.key || column.dataIndex),
+                    onResizeStop: handleResize(column.key || column.dataIndex),
                 }),
             }
             if (col.searchable && col.dataIndex) {
@@ -433,7 +440,7 @@ const SmartTable = <T extends any>({
             }
             return newCol
         })
-    }, [visibleColumns, handleResize])
+    }, [visibleColumns])
 
     const handleCheckAllChange = (e: CheckboxChangeEvent) => {
         setTableColumns(prev => prev.map(col => ({ ...col, visible: e.target.checked })))
@@ -872,9 +879,11 @@ const SmartTable = <T extends any>({
                     summary={renderSummary}
                     components={components}
                     loading={loading}
-                    scroll={data?.[listField]?.length > 10 ? { y: 600, x: 'max-content' } : { x: 'max-content' }}
+                    tableLayout="fixed"
+                    scroll={data?.[listField]?.length > 10 ? { y: 600, x: '100%' } : { x: '100%' }}
                     dataSource={data?.[listField] || []}
                     rowKey={rowKey || 'id'}
+
                     pagination={{
                         current: data?.[pageNumField],
                         pageSize: data?.[pageSizeField],
@@ -883,10 +892,6 @@ const SmartTable = <T extends any>({
                         showSizeChanger: true,
                         pageSizeOptions: ['10', '20', '50', '100'],
                         showTotal: total => t('共 {{total}} 条', { total }),
-                        // onChange: (pageNum, pageSize) => {
-                        //     const newQueryParam = { ...queryParam, [pageNumField]: pageNum, [pageSizeField]: pageSize }
-                        //     setQueryParam(newQueryParam)
-                        // }
                     }}
                     onChange={(pagination, filters, sorter, extra) => {
                         if (extra.action === 'paginate') {
@@ -905,29 +910,97 @@ const SmartTable = <T extends any>({
     )
 }
 
-
 const ResizableTitle = (props: any) => {
 
-    const { onResize, width, ...restProps } = props
+    const { onResizeStop, width, ...restProps } = props
 
-    if (!width) {
-        return <th {...restProps} />;
+    const { token } = theme.useToken()
+
+
+    const dragLineRef = React.useRef<HTMLDivElement | null>(null)
+    const startXRef = React.useRef(0)
+    const startWidthRef = React.useRef(0)
+
+    /** 创建拖拽线 */
+    const createLine = (x: number) => {
+        const line = document.createElement('div')
+
+        line.style.position = 'fixed'
+        line.style.top = `0px`
+        line.style.bottom = `0px`
+        line.style.width = '2px'
+
+        line.style.opacity = '0.20'
+        line.style.border = `1px dashed ${token.colorPrimary}`
+        line.style.zIndex = String(token.zIndexPopupBase ?? 9999)
+        line.style.pointerEvents = 'none'
+        line.style.left = `${x}px`
+
+        document.body.appendChild(line)
+        dragLineRef.current = line
     }
 
+    /** 移动拖拽线 */
+    const moveLine = (x: number) => {
+        if (dragLineRef.current) {
+            dragLineRef.current.style.left = `${x}px`
+        }
+    }
+
+    /** 删除拖拽线 */
+    const removeLine = () => {
+        if (dragLineRef.current) {
+            document.body.removeChild(dragLineRef.current)
+            dragLineRef.current = null
+        }
+    }
+
+    /** 拖动中（只移动线，不更新宽度） */
+    const handleResize = (e: any) => {
+        const clientX = e.clientX
+
+        if (!dragLineRef.current) {
+            // ⭐ 记录初始状态（关键）
+            startXRef.current = clientX
+            startWidthRef.current = width
+
+            createLine(clientX)
+            document.body.style.userSelect = 'none'
+        }
+
+        moveLine(clientX)
+    }
+
+    /** 拖动结束（自己计算宽度） */
+    const handleResizeStopInner = (e: any) => {
+        const clientX = e.clientX
+
+        const deltaX = clientX - startXRef.current
+        const newWidth = Math.max(80, Math.min(800, startWidthRef.current + deltaX))
+
+        removeLine()
+        document.body.style.userSelect = ''
+
+        // ❗ 不再用 react-resizable 的 size.width
+        onResizeStop?.(e, { size: { width: newWidth } })
+    }
+
+    if (!width) {
+        return <th {...restProps} />
+    }
 
     return (
         <Resizable
             width={width}
-            height={0}    // 不需要调整高度，设为 0
-            onResize={onResize}
-            // 设置最小宽度为 80，最大宽度为 800 (高度设为 0 或无限大)
+            height={0}
+            onResize={handleResize}
+            onResizeStop={handleResizeStopInner}
             minConstraints={[80, 0]}
             maxConstraints={[800, 0]}
             handle={
-                // 点击并拖拽的区域
                 <span
                     className="react-resizable-handle"
-                    onClick={(e) => e.stopPropagation()} // 防止触发排序等表头事件
+                    onClick={(e) => e.stopPropagation()}
                 />
             }
         >

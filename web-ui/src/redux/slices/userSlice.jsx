@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
+import { DEFAULT_PRIMARY_COLOR } from '../../layouts/header/theme-color'
 
 
 const initialState = {
@@ -6,6 +7,11 @@ const initialState = {
         settings: {
             workbench: {
                 shortcuts: []
+            },
+            appearance: {
+                theme: 'dark',
+                colorPrimary: DEFAULT_PRIMARY_COLOR,
+                language: 'zh'
             }
         }
     }
@@ -31,10 +37,25 @@ export const userSlice = createSlice({
                 state.userInfo.settings.workbench = {}
             }
             state.userInfo.settings.workbench.shortcuts = shortcuts
-        }
+        },
+        switchTheme: (state, action) => {
+            const { payload } = action
+            const { theme } = payload
+            state.userInfo.settings.appearance.theme = theme
+        },
+        switchColorPrimary: (state, action) => {
+            const { payload } = action
+            const { colorPrimary } = payload
+            state.userInfo.settings.appearance.colorPrimary = colorPrimary
+        },
+        switchLanguage: (state, action) => {
+            const { payload } = action
+            const { language } = payload
+            state.userInfo.settings.appearance.language = language
+        },
     }
 })
 
-export const { reset, setUserInfo, updateShortcuts } = userSlice.actions
+export const { reset, setUserInfo, updateShortcuts, switchTheme, switchColorPrimary, switchLanguage } = userSlice.actions
 
 export default userSlice.reducer

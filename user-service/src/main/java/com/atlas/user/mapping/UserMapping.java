@@ -7,6 +7,7 @@ import com.atlas.common.core.mapping.LocalDateMapper;
 import com.atlas.common.core.mapping.LocalDateTimeMapper;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
+import com.atlas.user.domain.entity.AppearanceSetting;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.domain.vo.UserVO;
 import org.mapstruct.*;
@@ -41,5 +42,8 @@ public interface UserMapping {
 
     @IterableMapping(elementTargetType = UserDTO.class)
     List<UserDTO> toUserDTO(List<User> users);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateAppearanceSetting(AppearanceSetting o, @MappingTarget AppearanceSetting t);
 
 }

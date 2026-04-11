@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Flex, Segmented } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
-import { menuCollapsed, switchTheme } from '../../redux/slices/layoutSlice';
+import { menuCollapsed } from '../../redux/slices/layoutSlice';
 import TopBreadcrumbTab from '../breadcrumb-tab';
 import './index.css';
 import UserProfile from './user-profile';
@@ -14,11 +14,10 @@ import SearchMenu from './search-menu';
 import ThemeColor from './theme-color';
 import LanguageSwitch from './language-switch';
 import Notification from './notification';
+import ThemeSwitch from './theme-switch';
 
 
 const Header = () => {
-
-    const themeValue = useSelector(state => state.layout.theme)
 
     const collapsed = useSelector(state => state.layout.menuCollapsed)
 
@@ -26,10 +25,6 @@ const Header = () => {
 
     const handleCollapsed = () => {
         dispatch(menuCollapsed())
-    }
-
-    const handleSwitchTheme = (themeValue) => {
-        dispatch(switchTheme({ theme: themeValue }))
     }
 
     return (
@@ -56,20 +51,11 @@ const Header = () => {
                 justify='center'
                 gap={10}
             >
-                <SearchMenu/>
-                <ThemeColor/>
-                <LanguageSwitch/>
-                <Segmented
-                    size='middle'
-                    shape="round"
-                    value={themeValue}
-                    onChange={handleSwitchTheme}
-                    options={[
-                        { value: 'light', icon: <SunOutlined /> },
-                        { value: 'dark', icon: <MoonOutlined /> },
-                    ]}
-                />
-                <Notification/>
+                <SearchMenu />
+                <ThemeColor />
+                <LanguageSwitch />
+                <ThemeSwitch/>
+                <Notification />
                 <UserProfile />
             </Flex>
         </Flex>

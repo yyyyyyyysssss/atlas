@@ -7,9 +7,6 @@ export const initialState = {
     tabItems: [],
     menuItems: [],
     flattenMenuItems: [],
-    theme: 'dark',
-    colorPrimary: '#1DA57A',
-    language: 'zh',
 }
 
 const findMenuByKey = (targetKey, menus) => {
@@ -64,21 +61,6 @@ export const layoutSlice = createSlice({
             if (menuItem) {
                 state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
             }
-        },
-        switchTheme: (state, action) => {
-            const { payload } = action
-            const { theme } = payload
-            state.theme = theme
-        },
-        switchColorPrimary: (state, action) => {
-            const { payload } = action
-            const { colorPrimary } = payload
-            state.colorPrimary = colorPrimary
-        },
-        switchLanguage: (state, action) => {
-            const { payload } = action
-            const { language } = payload
-            state.language = language
         },
         setTabIem: (state, action) => {
             const { payload } = action
@@ -195,6 +177,6 @@ export const layoutSlice = createSlice({
     }
 })
 
-export const { reset, setActiveKey, menuCollapsed, switchTheme, switchColorPrimary, switchLanguage, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems } = layoutSlice.actions
+export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems } = layoutSlice.actions
 
 export default layoutSlice.reducer

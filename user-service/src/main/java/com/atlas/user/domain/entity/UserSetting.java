@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class UserSetting {
 
-    private WorkbenchConfig workbench;
+    private WorkbenchSetting workbench;
+
+    private AppearanceSetting appearance;
 
 }

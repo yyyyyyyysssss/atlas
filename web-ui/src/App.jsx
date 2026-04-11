@@ -14,6 +14,7 @@ import { AuthProvider } from './router/AuthProvider.jsx';
 import tinycolor from 'tinycolor2';
 import dayjs from 'dayjs'
 import NoDataEmpty from './components/NoDataEmpty.js';
+import { DEFAULT_PRIMARY_COLOR } from './layouts/header/theme-color/index.jsx';
 
 dayjs.locale('zh-cn')
 
@@ -25,11 +26,11 @@ const App = () => {
 
   const [api, contextHolder] = message.useMessage()
 
-  const colorPrimary = useSelector(state => state.layout.colorPrimary)
+  const colorPrimary = useSelector(state => state.user.userInfo?.settings?.appearance?.colorPrimary || DEFAULT_PRIMARY_COLOR)
 
-  const language = useSelector(state => state.layout.language)
+  const language = useSelector(state => state.user.userInfo?.settings?.appearance?.language || 'zh')
 
-  const themeValue = useSelector(state => state.layout.theme)
+  const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'dark')
 
 
   useEffect(() => {

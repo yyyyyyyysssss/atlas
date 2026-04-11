@@ -5,14 +5,11 @@ import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.*;
+import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -184,6 +181,39 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void updateShortcuts(Long userId, List<String> shortcuts) {
+        UserSetting settings = getUserSetting(userId);
+        WorkbenchSetting workbench = settings.getWorkbench();
+        if (workbench == null) {
+            workbench = new WorkbenchSetting();
+        }
+        workbench.setShortcuts(shortcuts);
+
+        settings.setWorkbench(workbench);
+        User user = new User();
+        user.setId(userId);
+        user.setSettings(settings);
+        userService.updateById(user);
+    }
+
+    @Override
+    public void updateUserAppearance(Long userId, AppearanceSetting appearanceSetting) {
+        UserSetting settings = getUserSetting(userId);
+
+        AppearanceSetting appearance = settings.getAppearance();
+        if (appearance == null) {
+            appearance = new AppearanceSetting();
+        }
+        UserMapping.INSTANCE.updateAppearanceSetting(appearanceSetting, appearance);
+
+        settings.setAppearance(appearance);
+
+        User user = new User();
+        user.setId(userId);
+        user.setSettings(settings);
+        userService.updateById(user);
+    }
+
+    private UserSetting getUserSetting(Long userId) {
         User user = userService.
                 lambdaQuery()
                 .select(User::getId, User::getSettings)
@@ -196,17 +226,6 @@ public class ProfileServiceImpl implements ProfileService {
         if (settings == null) {
             settings = new UserSetting();
         }
-        WorkbenchConfig workbench = settings.getWorkbench();
-        if (workbench == null) {
-            workbench = new WorkbenchConfig();
-        }
-        workbench.setShortcuts(shortcuts);
-        user.setSettings(settings);
-
-        User updateWrapper = new User();
-        updateWrapper.setId(userId);
-        updateWrapper.setSettings(user.getSettings());
-
-        userService.updateById(updateWrapper);
+        return settings;
     }
 }

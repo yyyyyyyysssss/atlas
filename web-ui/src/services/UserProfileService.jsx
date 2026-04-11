@@ -38,3 +38,8 @@ export const changeWorkbenchShortcuts = async (shortcuts) => {
     }
     return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/workbench/shortcuts', req))
 }
+
+export const changeAppearance = async (appearance) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/appearance/settings', appearance))
+}

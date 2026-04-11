@@ -39,7 +39,7 @@ const AuthorityTree: React.FC<AuthorityTreeProps> = ({ value = [], onChange }) =
 
     const [autoExpandParent, setAutoExpandParent] = useState(true)
 
-    const flattenTreeRef = useRef<any>()
+    const flattenTreeRef = useRef<any>(null)
 
     const fetchData = async () => {
         if (loaded) return

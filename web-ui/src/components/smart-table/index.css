@@ -30,17 +30,18 @@
   text-overflow: ellipsis;
 }
 
+.react-resizable {
+  position: relative;
+}
 
 .react-resizable-handle {
   position: absolute;
-  right: -5px;
-  /* 向右偏移 */
-  bottom: 0;
-  z-index: 10;
+  right: 0;
+  top: 0;
   width: 10px;
-  /* 增加宽度，更容易被鼠标“抓住” */
   height: 100%;
   cursor: col-resize;
+  z-index: 1;
 }
 
 @media print {

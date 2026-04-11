@@ -192,7 +192,13 @@ const AppLayout = () => {
                                                             content="Atlas"
                                                             gap={[120, 120]}
                                                             font={{ color: watermarkColor }}
-                                                            style={{ width: '100%', flex: 1 }}
+                                                            style={{
+                                                                width: '100%',
+                                                                flex: 1,
+                                                                display: 'flex',
+                                                                flexDirection: 'column',
+                                                                justifyContent: isFS ? 'center' : 'flex-start'
+                                                            }}
                                                         >
                                                             {outlet}
                                                         </Watermark>

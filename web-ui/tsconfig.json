@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* 必须添加：JSX 支持 */
+    "jsx": "react-jsx", // 告诉 TS 自动处理 React 17+ 的 JSX 转换
+    "allowJs": true,    // 允许项目中有 JS 文件
+    "esModuleInterop": true, // 增强对 CommonJS 模块的兼容性
+    "isolatedModules": true, // Vite 必须要求开启，确保文件可以独立转译
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false, 
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true, // 建议开启，包含所有严格检查
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*", "src/**/*.d.ts"]
+}

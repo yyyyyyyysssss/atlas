@@ -7,10 +7,10 @@ import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.domain.dto.ChangeAvatarDTO;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
 import com.atlas.user.domain.dto.ShortcutUpdateDTO;
+import com.atlas.user.domain.entity.AppearanceSetting;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
-import com.atlas.user.domain.vo.UserVO;
 import com.atlas.user.service.ProfileService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +72,13 @@ public class ProfileController {
     public Result<?> updateShortcuts(@RequestBody @Validated ShortcutUpdateDTO shortcutUpdateDTO) {
         Long userId = UserContext.getRequiredUserId();
         profileService.updateShortcuts(userId,shortcutUpdateDTO.getShortcuts());
+        return ResultGenerator.ok();
+    }
+
+    @PutMapping("/appearance/settings")
+    public Result<?> updateAppearance(@RequestBody AppearanceSetting appearanceSetting) {
+        Long userId = UserContext.getRequiredUserId();
+        profileService.updateUserAppearance(userId,appearanceSetting);
         return ResultGenerator.ok();
     }
 

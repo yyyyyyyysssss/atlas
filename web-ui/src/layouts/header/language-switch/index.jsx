@@ -5,19 +5,28 @@ import './index.css'
 import { Languages } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import IconBox from '../../../components/icon-box';
-import { switchLanguage } from '../../../redux/slices/layoutSlice';
+import { switchLanguage } from '../../../redux/slices/userSlice';
+import { useRequest } from 'ahooks';
+import { changeAppearance } from '../../../services/UserProfileService';
 
 const LanguageSwitch = () => {
 
-    const language = useSelector(state => state.layout.language)
+    const language = useSelector(state => state.user.userInfo?.settings?.appearance?.language || 'zh')
 
     const dispatch = useDispatch()
 
     const { i18n } = useTranslation()
 
+    const { runAsync: changeAppearanceAsync, loading: changeAppearanceLoading } = useRequest(changeAppearance, {
+        manual: true
+    })
+
     const changeLanguage = (lng) => {
         dispatch(switchLanguage({ language: lng }))
         i18n.changeLanguage(lng)
+        changeAppearanceAsync({
+            language: lng
+        })
     }
 
     const languageOptions = [

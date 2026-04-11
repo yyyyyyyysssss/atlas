@@ -162,7 +162,7 @@ const NotificationAnnouncement = () => {
         <Space size="small">
           <Tooltip title={t('查看')}>
             <Button
-              type="text"
+              type="link"
               size="small"
               icon={<EyeOutlined />}
               onClick={() => handleView(record.id)}
@@ -171,7 +171,7 @@ const NotificationAnnouncement = () => {
           <HasPermission hasPermissions='system:announcement:write'>
             <Tooltip title={t('编辑')}>
               <Button
-                type="text"
+                type="link"
                 size="small"
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record.id)}
@@ -213,10 +213,10 @@ const NotificationAnnouncement = () => {
               </Col>
               <Col>
                 <Space>
-                  <Button type="primary" onClick={handleSearch} loading={listLoading}>
+                  <Button className="min-w-[88px]" type="primary" onClick={handleSearch} loading={listLoading}>
                     {t('查询')}
                   </Button>
-                  <Button onClick={handleReset} loading={listLoading}>
+                  <Button className="min-w-[88px]" onClick={handleReset} loading={listLoading}>
                     {t('重置')}
                   </Button>
                 </Space>

@@ -424,8 +424,8 @@ const RoleManage = () => {
                     </Form.Item>
                 </Form>
                 <Space>
-                    <Button style={{ width: '80px' }} type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
-                    <Button style={{ width: '80px' }} onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
+                    <Button className="min-w-[88px]" type="primary" onClick={handleSearch} loading={getRoleDataLoading}>{t('查询')}</Button>
+                    <Button className="min-w-[88px]" onClick={handleReset} loading={getRoleDataLoading}>{t('重置')}</Button>
                 </Space>
             </Flex>
             <SmartTable

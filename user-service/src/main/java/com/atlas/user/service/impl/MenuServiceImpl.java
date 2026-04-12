@@ -3,7 +3,7 @@ package com.atlas.user.service.impl;
 import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.MenuCreateDTO;
 import com.atlas.user.domain.dto.MenuDragDTO;
 import com.atlas.user.domain.dto.MenuQueryDTO;

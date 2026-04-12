@@ -4,7 +4,7 @@ import com.atlas.common.core.api.notification.body.CardBody;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.notification.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.notification.domain.dto.AnnouncementCreateDTO;
 import com.atlas.notification.domain.dto.AnnouncementQueryDTO;
 import com.atlas.notification.domain.dto.AnnouncementUpdateDTO;

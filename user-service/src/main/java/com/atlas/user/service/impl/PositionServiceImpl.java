@@ -3,7 +3,7 @@ package com.atlas.user.service.impl;
 import com.atlas.common.core.constant.BusinessSequenceConstant;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.SequenceGenerator;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.PositionCreateDTO;
 import com.atlas.user.domain.dto.PositionQueryDTO;
 import com.atlas.user.domain.dto.PositionUpdateDTO;

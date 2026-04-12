@@ -4,7 +4,7 @@ import com.atlas.common.core.api.notification.builder.NotificationDTO;
 import com.atlas.common.core.api.notification.enums.*;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.adapter.MessageAdapter;
-import com.atlas.notification.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.notification.domain.entity.Notification;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;

@@ -2,7 +2,7 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.AuthorityCreateDTO;
 import com.atlas.user.domain.dto.AuthorityUpdateDTO;
 import com.atlas.user.domain.entity.Authority;

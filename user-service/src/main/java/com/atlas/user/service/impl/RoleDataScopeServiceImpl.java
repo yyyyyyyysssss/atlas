@@ -1,7 +1,7 @@
 package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.RoleDataScopeDTO;
 import com.atlas.user.domain.entity.RoleDataScope;
 import com.atlas.user.mapper.RoleDataScopeMapper;

@@ -3,7 +3,7 @@ package com.atlas.notification.service.impl;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.notification.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.notification.domain.dto.NotificationTemplateCreateDTO;
 import com.atlas.notification.domain.dto.NotificationTemplateQueryDTO;
 import com.atlas.notification.domain.dto.NotificationTemplateUpdateDTO;

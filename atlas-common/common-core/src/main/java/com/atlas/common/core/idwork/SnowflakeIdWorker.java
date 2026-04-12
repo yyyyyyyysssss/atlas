@@ -52,27 +52,31 @@ public class SnowflakeIdWorker {
     }
 
     public long nextId() {
-        long currentTimestamp = currentTimestamp();
-        //如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过这个时候应当抛出异常
-        if (currentTimestamp < lastTimestamp) {
-            long offset = lastTimestamp - currentTimestamp;
-            if(offset <= allowedOffsetMillis){
-                try {
-                    Thread.sleep(offset);
-                    currentTimestamp = currentTimestamp();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }else {
-                throw new RuntimeException(
-                        String.format("Clock moved backwards.  Refusing to generate id for %d milliseconds", lastTimestamp - currentTimestamp));
-            }
-        }
+        lock.lock();
         try {
-            lock.lock();
+            long currentTimestamp = currentTimestamp();
+            // 处理时钟回拨
+            if (currentTimestamp < lastTimestamp) {
+                long offset = lastTimestamp - currentTimestamp;
+                if (offset <= allowedOffsetMillis) {
+                    try {
+                        Thread.sleep(offset);
+                        currentTimestamp = currentTimestamp();
+                        // 如果醒来发现还是回退的，说明回退严重，抛出异常
+                        if (currentTimestamp < lastTimestamp) {
+                            throw new RuntimeException("Clock still backwards after waiting.");
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    throw new RuntimeException(
+                            String.format("Clock moved backwards.  Refusing to generate id for %d milliseconds", lastTimestamp - currentTimestamp));
+                }
+            }
             //同一时间生成，进行序列递增,否则毫秒内序列重置
             if (currentTimestamp == lastTimestamp) {
-
                 //如果毫秒相同，则从0递增生成序列号
                 sequence = (sequence + 1) & sequenceMask;
                 //如果毫秒内序列溢出，则阻塞到下一毫秒，获取新的时间戳
@@ -83,12 +87,14 @@ public class SnowflakeIdWorker {
                 sequence = ThreadLocalRandom.current().nextLong(0, 5);
             }
             lastTimestamp = currentTimestamp;
+            // 位运算组合 ID
+            return ((currentTimestamp - this.epoch) << this.timestampLeftShift)
+                    | (this.workerId << this.workerIdShift)
+                    | this.sequence;
         } finally {
             lock.unlock();
         }
-        return ((currentTimestamp - this.epoch) << this.timestampLeftShift)
-                | (this.workerId << this.workerIdShift)
-                | this.sequence;
+
     }
 
 

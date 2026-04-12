@@ -1,7 +1,7 @@
 package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.DictionaryCreateDTO;
 import com.atlas.user.domain.dto.DictionaryQueryDTO;
 import com.atlas.user.domain.dto.DictionaryUpdateDTO;

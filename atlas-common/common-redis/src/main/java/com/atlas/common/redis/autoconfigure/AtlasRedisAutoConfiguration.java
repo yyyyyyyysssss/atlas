@@ -1,7 +1,11 @@
 package com.atlas.common.redis.autoconfigure;
 
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.idwork.SequenceGenerator;
+import com.atlas.common.core.idwork.SnowflakeIdWorker;
+import com.atlas.common.core.idwork.WorkIdService;
+import com.atlas.common.redis.idwork.RedisWorkIdService;
 import com.atlas.common.redis.sequence.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -163,6 +167,16 @@ public class AtlasRedisAutoConfiguration {
     public RedisHelper redisHelper(RedisTemplate<String, Object> redisTemplate, ObjectMapper redisObjectMapper) {
         return new RedisHelper(redisTemplate,redisObjectMapper);
     }
+
+    @Bean
+    public SnowflakeIdWorker snowflakeIdWorker(RedisHelper redisHelper){
+        WorkIdService workIdService = new RedisWorkIdService(redisHelper, applicationName);
+        SnowflakeIdWorker worker = new SnowflakeIdWorker(workIdService);
+        IdGen.init(worker);
+        return worker;
+    }
+
+
 
     @Bean("timeSequenceGenerator")
     public SequenceGenerator timeSequenceGenerator(RedisTemplate<String, Object> redisTemplate){

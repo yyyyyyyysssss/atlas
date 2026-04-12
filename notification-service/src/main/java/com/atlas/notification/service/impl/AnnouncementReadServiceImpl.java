@@ -1,6 +1,6 @@
 package com.atlas.notification.service.impl;
 
-import com.atlas.notification.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.notification.domain.entity.AnnouncementRead;
 import com.atlas.notification.mapper.AnnouncementReadMapper;
 import com.atlas.notification.service.AnnouncementReadService;

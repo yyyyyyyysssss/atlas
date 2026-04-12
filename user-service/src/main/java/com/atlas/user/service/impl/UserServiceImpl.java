@@ -6,7 +6,7 @@ import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserOrgDTO;
 import com.atlas.user.domain.dto.UserQueryDTO;

@@ -2,7 +2,7 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.user.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.DictionaryItemCreateDTO;
 import com.atlas.user.domain.dto.DictionaryItemQueryDTO;
 import com.atlas.user.domain.dto.DictionaryItemUpdateDTO;

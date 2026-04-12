@@ -3,7 +3,7 @@ package com.atlas.file.service;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.file.config.exception.FileException;
-import com.atlas.file.config.idwork.IdGen;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
 import com.atlas.file.domain.entity.FileRecord;

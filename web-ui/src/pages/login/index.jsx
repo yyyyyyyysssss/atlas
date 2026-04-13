@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App } from 'antd';
 import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined } from '@ant-design/icons';
 import './index.css'
@@ -31,12 +31,18 @@ const Login = () => {
     //验证码设置
     const [verificationCode, setVerificationCode] = useState({
         disabled: false,
-        tips: '获取验证码',
         time: 60,
         seconds: 0,
     })
 
     const timerRef = useRef()
+
+    useEffect(() => {
+        // 组件卸载时清理定时器
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current)
+        }
+    }, [])
 
     const switchLoginMethod = (loginMethod) => {
         form.resetFields()
@@ -73,21 +79,25 @@ const Login = () => {
 
     // 发送验证码
     const handleWithVerificationCode = async () => {
-        const values =await form.validateFields(['email'])
-        let ti = verificationCode.time;
+        const values = await form.validateFields(['email'])
+        // 调用接口
         await sendEmailVerificationCodeAsync(values.email)
-        setVerificationCode({
+        // 清理旧定时器
+        if (timerRef.current) clearInterval(timerRef.current)
+        let ti = verificationCode.time
+        setVerificationCode(prev => ({
+            ...prev,
             disabled: true,
-            tips: `{{ti}} 秒后重新获取`,
             seconds: ti,
-        });
+        }))
+
         timerRef.current = setInterval(() => {
-            if (--ti > 0) {
-                setVerificationCode({
-                    disabled: true,
-                    tips: `{{ti}} 秒后重新获取`,
+            ti--
+            if (ti > 0) {
+                setVerificationCode(prev => ({
+                    ...prev,
                     seconds: ti,
-                });
+                }))
             } else {
                 resetVerificationCode()
             }
@@ -100,7 +110,6 @@ const Login = () => {
         }
         setVerificationCode({
             disabled: false,
-            tips: '获取验证码',
             time: 60
         })
     }
@@ -157,7 +166,7 @@ const Login = () => {
         <Flex
             justify='end'
             align='center'
-            className="min-h-screen p-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400"
+            className="min-h-screen p-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-400"
         >
             <Flex
                 style={{ marginRight: '10%' }}
@@ -204,7 +213,7 @@ const Login = () => {
                                                     validator: emailVerification
                                                 }
                                             ]}>
-                                                <Input allowClear size="large" placeholder="邮箱" prefix={<MobileOutlined />} />
+                                                <Input allowClear size="large" placeholder="邮箱" prefix={<MailOutlined />} />
                                             </Form.Item>
                                             <Flex gap='small'>
                                                 <Form.Item name="verificationCode" rules={[
@@ -215,7 +224,11 @@ const Login = () => {
                                                 ]}>
                                                     <Input allowClear size="large" placeholder="请输入验证码!" prefix={<MailOutlined />} />
                                                 </Form.Item>
-                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>{t(verificationCode.tips,{ti : verificationCode.seconds})}</Button>
+                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                                    {verificationCode.disabled
+                                                        ? t('{{ti}} 秒后重新获取', { ti: verificationCode.seconds })
+                                                        : t('获取验证码')}
+                                                </Button>
                                             </Flex>
                                         </>
                                     )

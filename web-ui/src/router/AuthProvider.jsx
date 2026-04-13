@@ -24,12 +24,19 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const check = async () => {
-            const isValid = await checkTokenValid()
-            if (isValid) {
-                signin()
-            } else {
-                signout()
+            try {
+                const isValid = await checkTokenValid()
+                if (isValid) {
+                    await signin()
+                } else {
+                    await signout()
+                }
+            } catch (error) {
+                console.error("Token 校验失败:", error)
+                // 报错时也应该视为登录失效，允许用户进入登录页
+                await signout()
             }
+
         }
         check()
         setGlobalSignout(signout)

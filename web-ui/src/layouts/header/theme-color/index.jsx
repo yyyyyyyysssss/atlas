@@ -44,7 +44,7 @@ const ThemeColor = () => {
     const colorItems = useMemo(() => COLOR_PRIMARY_OPTIONS.map(option => ({
         key: option.color,
         label: (
-            <Tooltip title={option.label}>
+            <Tooltip title={option.label} placement='right'>
                 <div
                     onClick={() => switchColor(option.color)}
                     style={{

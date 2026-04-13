@@ -20,7 +20,7 @@ const UserProfile = () => {
 
     const { fullName, avatar } = useSelector(state => state.user.userInfo)
 
-    const language = useSelector(state => state.layout.language)
+    const language = useSelector(state => state.user.userInfo?.settings?.appearance?.language || 'zh')
 
     const [profileForm] = Form.useForm()
 

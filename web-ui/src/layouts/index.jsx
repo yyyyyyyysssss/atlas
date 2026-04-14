@@ -151,7 +151,7 @@ const AppLayout = () => {
                                     <Affix
                                         target={() => mainDivRef.current}
                                         offsetTop={0}
-                                        style={{ position: 'absolute', top: 0, right: 0, zIndex: 9999 }}
+                                        style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}
                                     >
                                         <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
                                     </Affix>

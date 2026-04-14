@@ -13,6 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
 
@@ -29,7 +30,7 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String password = JsonNodeUtils.findStringValue(root, "password");
         String fullName = JsonNodeUtils.findStringValue(root, "fullName");
         String tokenId = JsonNodeUtils.findStringValue(root, "tokenId");
-        String dataScope = JsonNodeUtils.findNumberValue(root, "dataScope");
+        Set<Integer> dataScopes = (Set<Integer>) mapper.readValue(this.readJsonNode(root, "dataScopes").traverse(mapper), new TypeReference<>() {});
         String orgId = JsonNodeUtils.findNumberValue(root, "orgId");
         List<? extends GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(root, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
         securityUser.setId(Long.parseLong(id));
@@ -37,7 +38,8 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         securityUser.setPassword(password);
         securityUser.setFullName(fullName);
         securityUser.setTokenId(tokenId);
-        securityUser.setDataScope(dataScope != null ? Integer.parseInt(dataScope) : null);
+
+        securityUser.setDataScopes(dataScopes);
         securityUser.setOrgId(orgId != null ? Long.parseLong(orgId) : null);
         securityUser.setAuthorities(authorities);
         return securityUser;

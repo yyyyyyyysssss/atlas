@@ -5,12 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 public class UserContext {
 
     private static final ThreadLocal<UserObject> USER_HOLDER = new ThreadLocal<>();
 
-    public static void setUser(String userId, String orgId, String fullName, String dataScope, String masking) {
-        USER_HOLDER.set(new UserObject(userId, orgId, fullName, dataScope, masking));
+    public static void setUser(String userId, String orgId, String fullName, Set<String> dataScopes, String masking) {
+        USER_HOLDER.set(new UserObject(userId, orgId, fullName, dataScopes, masking));
     }
 
     public static Long getRequiredUserId() {
@@ -31,14 +33,30 @@ public class UserContext {
         return user != null ? user.getOrgId() : null;
     }
 
+    public static Long getRequiredOrgId() {
+        Long orgId = getOrgId();
+        if (orgId == null) {
+            throw new BusinessException("用户未配置组织");
+        }
+        return orgId;
+    }
+
     public static String getFullName() {
         UserObject user = USER_HOLDER.get();
         return user != null ? user.getFullName() : null;
     }
 
-    public static Integer getDataScope() {
+    public static Set<String> getDataScopes() {
         UserObject user = USER_HOLDER.get();
-        return user != null ? user.getDataScope() : null;
+        return user != null ? user.getDataScopes() : null;
+    }
+
+    public static Set<String> getRequiredDataScope() {
+        Set<String> dataScopes = getDataScopes();
+        if (dataScopes == null) {
+            throw new BusinessException("用户未配置权限");
+        }
+        return dataScopes;
     }
 
     public static boolean isMasking() {
@@ -62,7 +80,7 @@ public class UserContext {
 
     @Data
     public static class UserObject implements Cloneable {
-        public UserObject(String userId, String orgId, String fullName, String dataScope, String masking){
+        public UserObject(String userId, String orgId, String fullName, Set<String> dataScopes, String masking){
             if(userId != null && !userId.isEmpty()){
                 this.userId = Long.parseLong(userId);
             }
@@ -72,8 +90,8 @@ public class UserContext {
             if(fullName != null && !fullName.isEmpty()){
                 this.fullName = fullName;
             }
-            if(dataScope != null && !dataScope.isEmpty()){
-                this.dataScope = Integer.parseInt(dataScope);
+            if(dataScopes != null && !dataScopes.isEmpty()){
+                this.dataScopes = dataScopes;
             }
             if(masking != null && !masking.isEmpty()){
                 this.masking = Boolean.parseBoolean(masking);
@@ -84,7 +102,7 @@ public class UserContext {
         private Long userId;
         private Long orgId;
         private String fullName;
-        private Integer dataScope;
+        private Set<String> dataScopes;
         private boolean masking;
 
         @Override

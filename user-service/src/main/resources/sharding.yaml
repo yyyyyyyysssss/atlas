@@ -37,8 +37,28 @@ dataSources:
     maxLifetime: 1800000
     minimumIdle: 5
     maximumPoolSize: 50
+  #  用于广播
+  atlas_notification:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://$${DB_HOST::}/atlas_notification?useUnicode=true&allowPublicKeyRetrieval=true&useSSL=false&useLegacyDatetimeCode=false&allowMultiQueries=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: $${DB_USERNAME::}
+    password: $${DB_PASSWORD::}
+    autoCommit: true
+    connectionTimeout: 30000
+    idleTimeout: 0
+    keepaliveTime: 300000
+    maxLifetime: 1800000
+    minimumIdle: 5
+    maximumPoolSize: 50
 
 rules:
+  # 广播表规则
+  - !BROADCAST
+    tables:
+      - organization    # 广播：数据权限基表
+      - role_data_scope # 广播：角色与组织的自定义关联表
+      - user_role       # 广播：用户与角色的关联表
   - !SINGLE
     tables:
       - "*.*"

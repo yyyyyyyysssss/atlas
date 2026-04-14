@@ -14,6 +14,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -32,8 +34,9 @@ public class GatewayHeaderHeaderPropagationFilter extends OncePerRequestFilter {
             if(securityUser.getOrgId() != null){
                 wrappedRequest.addHeader(CommonConstant.ORG_ID,securityUser.getOrgId().toString());
             }
-            if(securityUser.getDataScope() != null){
-                wrappedRequest.addHeader(CommonConstant.DATA_SCOPE,securityUser.getDataScope().toString());
+            if(securityUser.getDataScopes() != null && !securityUser.getDataScopes().isEmpty()){
+                String dataScopes = securityUser.getDataScopes().stream().map(Object::toString).collect(Collectors.joining(","));
+                wrappedRequest.addHeader(CommonConstant.DATA_SCOPE, dataScopes);
             }
             String fullName = securityUser.getFullName();
             if (fullName != null) {

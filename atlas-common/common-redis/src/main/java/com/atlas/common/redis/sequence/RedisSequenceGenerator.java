@@ -1,6 +1,7 @@
 package com.atlas.common.redis.sequence;
 
 import com.atlas.common.core.idwork.SequenceGenerator;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -14,12 +15,23 @@ public class RedisSequenceGenerator implements SequenceGenerator {
 
     private List<SequencePart> sequenceParts;
 
+    private String bizPrefix;
+
     public RedisSequenceGenerator(List<SequencePart> sequenceParts) {
+        this(null,sequenceParts);
+    }
+
+    public RedisSequenceGenerator(String bizPrefix, List<SequencePart> sequenceParts) {
+        this.bizPrefix = bizPrefix;
         this.sequenceParts = sequenceParts;
     }
 
     @Override
     public String generate(String bizPrefix) {
+        String prefix = bizPrefix;
+        if(StringUtils.isEmpty(prefix)){
+            prefix = this.bizPrefix;
+        }
         StringBuilder builder = new StringBuilder();
         // bizPrefix作为前缀
         builder.append(bizPrefix);

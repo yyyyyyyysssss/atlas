@@ -5,13 +5,14 @@ import com.atlas.user.domain.dto.RoleQueryDTO;
 import com.atlas.user.domain.dto.RoleUpdateDTO;
 import com.atlas.user.domain.entity.Role;
 import com.atlas.user.domain.vo.RoleVO;
-import com.atlas.user.enums.DataScope;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @Description
@@ -44,7 +45,7 @@ public interface RoleService extends IService<Role> {
 
     List<RoleVO> listRoleOptions();
 
-    DataScope getDataScope(List<Long> roleIds);
+    Set<Integer> getDataScope(List<Long> roleIds);
 
     void clearCache(Long userId);
 

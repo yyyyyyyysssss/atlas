@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App } from 'antd';
+import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App, Avatar } from 'antd';
 import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined } from '@ant-design/icons';
 import './index.css'
 import { useRequest } from 'ahooks';
@@ -166,89 +166,100 @@ const Login = () => {
         <Flex
             justify='end'
             align='center'
-            className="min-h-screen p-4 bg-linear-to-r from-gray-200 via-gray-300 to-gray-400"
+            className="min-h-screen p-4"
         >
             <Flex
                 style={{ marginRight: '10%' }}
                 vertical
             >
                 <Card variant="borderless" className="w-100 shadow-lg">
-                    <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
-                        <Tabs
-                            defaultActiveKey="1"
-                            centered
-                            onChange={(e) => switchLoginMethod(e)}
-                            items={[
-                                {
-                                    key: '1',
-                                    label: t('账号密码登录'),
-                                    children: (
-                                        <>
-                                            <Form.Item name="username" rules={[
-                                                {
-                                                    required: loginMethod === '1',
-                                                    message: '用户名不可为空'
-                                                }
-                                            ]}>
-                                                <Input allowClear size="large" placeholder="用户名" prefix={<UserOutlined />} />
-                                            </Form.Item>
-                                            <Form.Item name="password" rules={[
-                                                {
-                                                    required: loginMethod === '1',
-                                                    message: '密码不可为空'
-                                                }
-                                            ]}>
-                                                <Input.Password size="large" placeholder="密码" prefix={<LockOutlined />} />
-                                            </Form.Item>
-                                        </>
-                                    )
-                                },
-                                {
-                                    key: '2',
-                                    label: t('邮箱登录'),
-                                    children: (
-                                        <>
-                                            <Form.Item name="email" validateTrigger="onBlur" rules={[
-                                                {
-                                                    validator: emailVerification
-                                                }
-                                            ]}>
-                                                <Input allowClear size="large" placeholder="邮箱" prefix={<MailOutlined />} />
-                                            </Form.Item>
-                                            <Flex gap='small'>
-                                                <Form.Item name="verificationCode" rules={[
+                    <Flex
+                        justify='center'
+                        align='center'
+                        gap={30}
+                        vertical
+                    >
+                        <Flex justify='center' align='center' gap={15} vertical>
+                            <Avatar
+                                src={'/logo128.png'}
+                                size={48}
+                            />
+                            <Typography.Text style={{ fontSize: '25px' }} strong>登录Atlas</Typography.Text>
+                        </Flex>
+                        <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
+                            <Tabs
+                                defaultActiveKey="1"
+                                centered
+                                onChange={(e) => switchLoginMethod(e)}
+                                items={[
+                                    {
+                                        key: '1',
+                                        label: t('账号密码登录'),
+                                        children: (
+                                            <>
+                                                <Form.Item name="username" rules={[
                                                     {
-                                                        required: loginMethod === '2',
-                                                        message: '验证码不可为空'
+                                                        required: loginMethod === '1',
+                                                        message: '用户名不可为空'
                                                     }
                                                 ]}>
-                                                    <Input allowClear size="large" placeholder="请输入验证码!" prefix={<MailOutlined />} />
+                                                    <Input allowClear size="large" placeholder="用户名" prefix={<UserOutlined />} />
                                                 </Form.Item>
-                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
-                                                    {verificationCode.disabled
-                                                        ? t('{{ti}} 秒后重新获取', { ti: verificationCode.seconds })
-                                                        : t('获取验证码')}
-                                                </Button>
-                                            </Flex>
-                                        </>
-                                    )
-                                }
-                            ]}
-                        />
-                        <Form.Item>
-                            <Form.Item name="rememberMe" valuePropName="checked" initialValue={true} noStyle>
-                                <Checkbox>{t('记住密码')}</Checkbox>
+                                                <Form.Item name="password" rules={[
+                                                    {
+                                                        required: loginMethod === '1',
+                                                        message: '密码不可为空'
+                                                    }
+                                                ]}>
+                                                    <Input.Password size="large" placeholder="密码" prefix={<LockOutlined />} />
+                                                </Form.Item>
+                                            </>
+                                        )
+                                    },
+                                    {
+                                        key: '2',
+                                        label: t('邮箱登录'),
+                                        children: (
+                                            <>
+                                                <Form.Item name="email" validateTrigger="onBlur" rules={[
+                                                    {
+                                                        validator: emailVerification
+                                                    }
+                                                ]}>
+                                                    <Input allowClear size="large" placeholder="邮箱" prefix={<MailOutlined />} />
+                                                </Form.Item>
+                                                <Flex gap='small'>
+                                                    <Form.Item name="verificationCode" rules={[
+                                                        {
+                                                            required: loginMethod === '2',
+                                                            message: '验证码不可为空'
+                                                        }
+                                                    ]}>
+                                                        <Input allowClear size="large" placeholder="请输入验证码!" prefix={<MailOutlined />} />
+                                                    </Form.Item>
+                                                    <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                                        {verificationCode.disabled
+                                                            ? t('{{ti}} 秒后重新获取', { ti: verificationCode.seconds })
+                                                            : t('获取验证码')}
+                                                    </Button>
+                                                </Flex>
+                                            </>
+                                        )
+                                    }
+                                ]}
+                            />
+                            <Form.Item>
+                                <Typography.Link onClick={handleForgetPassword} style={{ float: 'right' }}>
+                                    {t('忘记密码')}
+                                </Typography.Link>
                             </Form.Item>
-                            <Typography.Link onClick={handleForgetPassword} style={{ float: 'right' }}>
-                                {t('忘记密码')}
-                            </Typography.Link>
-                        </Form.Item>
-                        <Form.Item>
-                            <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading}>
-                                {t('登录')}
-                            </Button>
-                        </Form.Item>
-                    </Form>
+                            <Form.Item>
+                                <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading}>
+                                    {t('登录')}
+                                </Button>
+                            </Form.Item>
+                        </Form>
+                    </Flex>
                 </Card>
             </Flex>
         </Flex>

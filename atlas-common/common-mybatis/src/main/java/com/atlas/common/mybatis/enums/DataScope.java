@@ -1,7 +1,5 @@
-package com.atlas.user.enums;
+package com.atlas.common.mybatis.enums;
 
-import com.atlas.common.mybatis.enums.MybatisBaseEnum;
-import com.baomidou.mybatisplus.annotation.EnumValue;
 import lombok.Getter;
 
 @Getter
@@ -14,7 +12,6 @@ public enum DataScope implements MybatisBaseEnum<Integer> {
     SELF(10, "本人"),
     ;
 
-    @EnumValue
     private final Integer code;
     private final String description;
 
@@ -24,4 +21,8 @@ public enum DataScope implements MybatisBaseEnum<Integer> {
         this.description = description;
     }
 
+    @Override
+    public Integer getCode() {
+        return code;
+    }
 }

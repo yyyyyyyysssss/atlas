@@ -1,33 +1,42 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './slices/authSlice'
-import userReducer from './slices/userSlice'
-import layoutReducer, { initialState } from './slices/layoutSlice'
+import userReducer, { initialState as initialUserState } from './slices/userSlice'
+import layoutReducer, { initialState as initialLayoutState } from './slices/layoutSlice'
+import { debounce } from 'lodash'
 
 const loadState = () => {
     try {
-        const serializedState = localStorage.getItem('layoutState')
+        const serializedState = localStorage.getItem('state')
         if (serializedState === null) {
             return null
         }
-        const layoutState = JSON.parse(serializedState)
-        if (layoutState && layoutState.menuCollapsed === true) {
-            layoutState.openKeys = []
-        }
-        return layoutState
+        const persistedData = JSON.parse(serializedState)
+
+        return persistedData
     } catch (e) {
         return null
     }
 }
 
 const saveState = (state) => {
-    const serializedState = JSON.stringify(state.layout)
-    localStorage.setItem('layoutState', serializedState)
+    const serializedState = JSON.stringify({
+        layoutState: {
+            tabItems: state.layout.tabItems
+        }
+    })
+    localStorage.setItem('state', serializedState)
 }
 
-const loadedState = loadState();
+const loadedState = loadState() || {}
+
+const { layoutState = {} } = loadedState
+
 const reduxStore = configureStore({
     preloadedState: {
-        layout: loadedState === null ? initialState : { ...loadedState, menuItems: [], flattenMenuItems: [] }
+        layout: {
+            ...initialLayoutState,
+            ...layoutState
+        }
     },
     reducer: {
         user: userReducer,
@@ -39,8 +48,12 @@ const reduxStore = configureStore({
     })
 })
 
+const debouncedSave = debounce((state) => {
+    saveState(state)
+}, 1000)
+
 reduxStore.subscribe(() => {
-    saveState(reduxStore.getState())
+    debouncedSave(reduxStore.getState())
 })
 
 export default reduxStore

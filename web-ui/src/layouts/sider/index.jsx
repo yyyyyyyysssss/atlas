@@ -90,18 +90,18 @@ const Sider = () => {
                 {collapsed ?
                     (
                         <Avatar
-                            src={null}
-                            size={32}
+                            src={'/logo128.png'}
+                            size={40}
                         />
                     )
                     :
                     (
                         <>
                             <Avatar
-                                src={null}
-                                size={48}
+                                src={'/logo128.png'}
+                                size={40}
                             />
-                            <Typography.Text style={{ fontSize: '20px' }}></Typography.Text>
+                            <Typography.Text style={{ fontSize: '20px' }}>Atlas</Typography.Text>
                         </>
                     )
                 }

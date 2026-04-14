@@ -40,22 +40,22 @@ public class LoginController {
         switch (loginDTO.getLoginType()) {
             case NORMAL:
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getCredential());
-                tokenResponse = loginService.login(authenticationToken, loginDTO.getClientType(),true, loginDTO.getRememberMe());
+                tokenResponse = loginService.login(authenticationToken, loginDTO.getClientType(),true, loginDTO.isRememberMe());
                 break;
             case EMAIL:
                 EmailAuthenticationToken emailAuthenticationToken = new EmailAuthenticationToken(loginDTO.getUsername(), loginDTO.getCredential());
-                tokenResponse = loginService.login(emailAuthenticationToken, loginDTO.getClientType(), true,loginDTO.getRememberMe());
+                tokenResponse = loginService.login(emailAuthenticationToken, loginDTO.getClientType(), true,loginDTO.isRememberMe());
                 break;
             case OTT:
                 OneTimeTokenAuthenticationToken oneTimeTokenAuthenticationToken = new OneTimeTokenAuthenticationToken(loginDTO.getCredential());
-                tokenResponse = loginService.login(oneTimeTokenAuthenticationToken, loginDTO.getClientType(), false, loginDTO.getRememberMe());
+                tokenResponse = loginService.login(oneTimeTokenAuthenticationToken, loginDTO.getClientType(), false, loginDTO.isRememberMe());
                 break;
             case REMEMBER_ME:
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                 if(!(authentication instanceof RememberMeAuthenticationToken)){
                     throw new BadCredentialsException("非法认证请求");
                 }
-                tokenResponse = loginService.login(authentication, loginDTO.getClientType(),true, loginDTO.getRememberMe());
+                tokenResponse = loginService.login(authentication, loginDTO.getClientType(),true, loginDTO.isRememberMe());
                 break;
             default:
                 throw new UnsupportedOperationException("不支持的登录方式:" + loginDTO.getLoginType());

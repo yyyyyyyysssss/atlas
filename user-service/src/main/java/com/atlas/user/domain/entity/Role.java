@@ -1,7 +1,7 @@
 package com.atlas.user.domain.entity;
 
 import com.atlas.common.mybatis.entity.BaseEntity;
-import com.atlas.user.enums.DataScope;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.enums.RoleType;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -42,7 +42,6 @@ public class Role extends BaseEntity {
     private RoleType type;
 
     @TableField("data_scope")
-    @EnumValue
     private DataScope dataScope;
 
     /**

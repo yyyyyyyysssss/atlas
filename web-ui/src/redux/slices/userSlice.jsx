@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 import { DEFAULT_PRIMARY_COLOR } from '../../layouts/header/theme-color'
 
 
-const initialState = {
+export const initialState = {
     userInfo: {
         settings: {
             workbench: {

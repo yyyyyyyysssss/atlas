@@ -1,6 +1,6 @@
 package com.atlas.user.domain.vo;
 
-import com.atlas.user.enums.DataScope;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.enums.RoleType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

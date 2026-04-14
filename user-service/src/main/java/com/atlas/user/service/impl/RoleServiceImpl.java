@@ -8,7 +8,7 @@ import com.atlas.user.domain.dto.RoleQueryDTO;
 import com.atlas.user.domain.dto.RoleUpdateDTO;
 import com.atlas.user.domain.entity.Role;
 import com.atlas.user.domain.vo.RoleVO;
-import com.atlas.user.enums.DataScope;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.enums.RoleType;
 import com.atlas.user.mapper.RoleMapper;
 import com.atlas.user.mapping.RoleMapping;
@@ -21,7 +21,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -295,17 +294,24 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    public DataScope getDataScope(List<Long> roleIds) {
-        return this
-                .lambdaQuery()
+    public Set<Integer> getDataScope(List<Long> roleIds) {
+        if (CollectionUtils.isEmpty(roleIds)) {
+            return Collections.singleton(DataScope.SELF.getCode());
+        }
+        Set<Integer> scopeSet = this.lambdaQuery()
                 .select(Role::getDataScope)
                 .in(Role::getId, roleIds)
                 .list()
                 .stream()
                 .map(Role::getDataScope)
                 .filter(Objects::nonNull)
-                .max(Comparator.comparingInt(DataScope::getCode))
-                .orElse(DataScope.SELF); // 兜底
+                .map(DataScope::getCode)
+                .collect(Collectors.toSet()); // 收集所有不同的权限等级
+        // 逻辑优化：如果集合里包含了 ALL（全部数据），其实就没必要留着其他的了
+        if (scopeSet.contains(DataScope.ALL.getCode())) {
+            return Collections.singleton(DataScope.ALL.getCode());
+        }
+        return scopeSet.isEmpty() ? Collections.singleton(DataScope.SELF.getCode()) : scopeSet;
     }
 
     @Caching(evict = {

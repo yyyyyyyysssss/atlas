@@ -29,6 +29,6 @@ public class LoginDTO {
     private ClientType clientType = ClientType.WEB;
 
     //是否勾选记住我 1 勾选  0未勾选
-    private Boolean rememberMe;
+    private boolean rememberMe;
 
 }

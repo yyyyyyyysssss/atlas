@@ -12,6 +12,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserContextFilter extends OncePerRequestFilter {
 
@@ -32,7 +35,8 @@ public class UserContextFilter extends OncePerRequestFilter {
                         logger.warn("UserContextFilter: fullName 解码失败: " + fullName);
                     }
                 }
-                UserContext.setUser(userId, orgId, decodedName, dataScope, masking);
+                Set<String> dataScopes = Arrays.stream(dataScope.split(",")).collect(Collectors.toSet());
+                UserContext.setUser(userId, orgId, decodedName, dataScopes, masking);
             }
             filterChain.doFilter(request, response);
         } finally {

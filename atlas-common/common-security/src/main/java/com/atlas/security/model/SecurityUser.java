@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,7 +26,7 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private boolean enabled;
 
-    private Integer dataScope;
+    private Set<Integer> dataScopes;
 
     private Long orgId;
 

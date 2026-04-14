@@ -36,7 +36,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         securityUser.setPassword(userAuthDTO.getPassword());
         securityUser.setFullName(userAuthDTO.getFullName());
         securityUser.setEnabled(userAuthDTO.isEnabled());
-        securityUser.setDataScope(userAuthDTO.getDataScope());
+        securityUser.setDataScopes(userAuthDTO.getDataScopes());
         securityUser.setOrgId(userAuthDTO.getOrgId());
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -21,7 +22,7 @@ public class UserAuthDTO {
 
     private List<RoleAuthDTO> authorities;
 
-    private Integer dataScope;
+    private Set<Integer> dataScopes;
 
     private Long orgId;
 

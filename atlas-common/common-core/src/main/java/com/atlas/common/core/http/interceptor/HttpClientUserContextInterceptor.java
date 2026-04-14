@@ -11,6 +11,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 public class HttpClientUserContextInterceptor implements HttpRequestInterceptor {
 
@@ -28,11 +29,9 @@ public class HttpClientUserContextInterceptor implements HttpRequestInterceptor 
                 String encodedName = URLEncoder.encode(user.getFullName(), StandardCharsets.UTF_8);
                 httpRequest.addHeader(CommonConstant.USER_FULL_NAME, encodedName);
             }
-            if (user.getDataScope() != null) {
-                httpRequest.addHeader(CommonConstant.DATA_SCOPE, user.getDataScope());
-            }
-            if(user.getDataScope() != null){
-                httpRequest.addHeader(CommonConstant.DATA_SCOPE, user.getDataScope());
+            if(user.getDataScopes() != null && !user.getDataScopes().isEmpty()){
+                String dataScopes = user.getDataScopes().stream().map(Object::toString).collect(Collectors.joining(","));
+                httpRequest.addHeader(CommonConstant.DATA_SCOPE, dataScopes);
             }
             httpRequest.addHeader(CommonConstant.DATA_MASKING, user.isMasking());
         }

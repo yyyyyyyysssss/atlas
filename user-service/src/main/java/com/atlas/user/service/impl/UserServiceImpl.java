@@ -18,7 +18,7 @@ import com.atlas.user.domain.entity.UserRole;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
-import com.atlas.user.enums.DataScope;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
@@ -42,7 +42,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestClient;
 
 import java.io.Serializable;
 import java.util.*;
@@ -115,12 +114,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<Long> roleIds = userRoleService.findRoleIdByUserId(user.getId());
         if (CollectionUtils.isEmpty(roleIds)) {
             userAuthDTO.setAuthorities(Collections.emptyList());
-            userAuthDTO.setDataScope(DataScope.SELF.getCode());
+            userAuthDTO.setDataScopes(Collections.singleton(DataScope.SELF.getCode()));
             return userAuthDTO;
         }
         // 角色关联的数据权限
-        DataScope dataScope = roleService.getDataScope(roleIds);
-        userAuthDTO.setDataScope(dataScope.getCode());
+        Set<Integer> dataScopes = roleService.getDataScope(roleIds);
+        userAuthDTO.setDataScopes(dataScopes);
         // 角色关联的权限
         List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
         if (CollectionUtils.isEmpty(authorityIds)) {

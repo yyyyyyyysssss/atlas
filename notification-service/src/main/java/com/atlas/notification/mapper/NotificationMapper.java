@@ -1,8 +1,12 @@
 package com.atlas.notification.mapper;
 
 import com.atlas.notification.domain.entity.Notification;
+import com.atlas.notification.domain.vo.UserNotificationVO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * (NtfNotification)表数据库访问层
@@ -12,6 +16,8 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface NotificationMapper extends BaseMapper<Notification> {
+
+    List<UserNotificationVO> selectUserNotifications(@Param("userId") Long userId);
     
 }
 

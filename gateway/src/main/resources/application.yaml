@@ -104,7 +104,8 @@ security:
       - /api/user/profile/**
       - /api/user/option/**
       - /api/notification/user/announcement/**
-      - /api/notification/v1/notification/sse/*
+      - /api/notification/v1/notification/sse/**
+      - /api/notification/user/notification/**
   # 基于请求头的身份认证
   requestHeadAuthentications:
     - antPath: /api/internal/**

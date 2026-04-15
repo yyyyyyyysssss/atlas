@@ -51,3 +51,11 @@ export const getAnnouncementUserDetails = async (announcementId) => {
 
     return apiRequestWrapper(() => httpWrapper.get(`/api/notification/user/announcement/${announcementId}`))
 }
+
+
+export const fetchUserNotificationList = async (pageNum, pageSize) => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/notification/user/notification/list', {
+        params: { pageNum, pageSize }
+    }))
+}

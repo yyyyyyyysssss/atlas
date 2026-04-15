@@ -15,7 +15,7 @@ const themeMap = {
     'text': 'text',
 }
 
-const CardRenderer = React.memo(({ content, onClose, onAction }) => {
+const CardRenderer = React.memo(({ content, onClose }) => {
 
     const { token } = theme.useToken()
 
@@ -199,7 +199,7 @@ const CardRenderer = React.memo(({ content, onClose, onAction }) => {
                 }}
                 // 如果有整体链接，点击卡片跳转
                 onClick={(e) => {
-                    e.stopPropagation()
+                    // e.stopPropagation()
                     handleLinkClick(link)
                 }}
                 title={subTitle &&
@@ -229,7 +229,7 @@ const CardRenderer = React.memo(({ content, onClose, onAction }) => {
                                 lineHeight: 0, // 消除图片底部空隙
                                 cursor: 'default'
                             }}
-                            onClick={(e) => e.stopPropagation()}
+                        // onClick={(e) => e.stopPropagation()}
                         >
                             <Image
                                 src={imageUrl}
@@ -293,7 +293,7 @@ const CardRenderer = React.memo(({ content, onClose, onAction }) => {
                                         danger={action.theme?.toLowerCase() === 'danger'}
                                         icon={getActionIcon(action.actionType)}
                                         onClick={(e) => {
-                                            e.stopPropagation()
+                                            // e.stopPropagation()
                                             handleActionExecute(action, index)
                                         }}
                                     >
@@ -305,25 +305,25 @@ const CardRenderer = React.memo(({ content, onClose, onAction }) => {
                     )}
                 </Flex>
             </Card>
-            <Drawer
-                title={routeDrawer.title}
-                width="80%"
-                open={routeDrawer.visible}
-                onClose={() => setRouteDrawer(prev => ({ ...prev, visible: false }))}
-                destroyOnHidden
-                styles={{ body: { padding: 24 } }}
-            >
-                <React.Suspense fallback={<Loading full />}>
-                    {routeDrawer.component && React.cloneElement(routeDrawer.component, {
-                        // 1. 透传解析出来的 URL 参数（如 id, type 等）
-                        ...routeDrawer.params,
-                    })}
-                </React.Suspense>
-            </Drawer>
+            <Flex onClick={(e) => e.stopPropagation()}>
+                <Drawer
+                    title={routeDrawer.title}
+                    width="80%"
+                    open={routeDrawer.visible}
+                    onClose={() => setRouteDrawer(prev => ({ ...prev, visible: false }))}
+                    destroyOnHidden
+                    styles={{ body: { padding: 24 } }}
+                >
+                    <React.Suspense fallback={<Loading full />}>
+                        {routeDrawer.component && React.cloneElement(routeDrawer.component, {
+                            // 1. 透传解析出来的 URL 参数（如 id, type 等）
+                            ...routeDrawer.params,
+                        })}
+                    </React.Suspense>
+                </Drawer>
+            </Flex>
         </>
     );
-}, (prev, next) => {
-    return prev.content === next.content && prev.onActionClick === next.onActionClick;
 })
 
 export default CardRenderer;

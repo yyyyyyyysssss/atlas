@@ -6,26 +6,35 @@ import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.notification.domain.entity.Notification;
+import com.atlas.notification.domain.entity.NotificationReceiver;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
+import com.atlas.notification.domain.mode.ResolvedTarget;
 import com.atlas.notification.domain.vo.NotificationTemplateVO;
+import com.atlas.notification.domain.vo.UserNotificationVO;
 import com.atlas.notification.enums.NotificationErrorCode;
 import com.atlas.notification.enums.NotificationStatus;
 import com.atlas.notification.mapper.NotificationMapper;
 import com.atlas.notification.service.AccountResolver;
+import com.atlas.notification.service.NotificationReceiverService;
 import com.atlas.notification.service.NotificationTemplateService;
 import com.atlas.notification.service.NotificationService;
 import com.atlas.notification.service.render.RenderStrategy;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * (NtfNotification)表服务实现类
@@ -47,6 +56,8 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     private final AccountResolver accountResolver;
 
     private final NotificationMapper notificationMapper;
+
+    private final NotificationReceiverService notificationReceiverService;
 
     @Async
     @Override
@@ -80,7 +91,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
                 try {
                     // 根据渠道 TargetType 解析账号
-                    List<String> accounts = accountResolver.resolve(channel, ctx.getTargetType(), ctx.getTargets());
+                    List<ResolvedTarget> accounts = accountResolver.resolve(channel, ctx.getTargetType(), ctx.getTargets());
                     if (accounts.isEmpty()) {
                         throw new NotificationException(NotificationErrorCode.RECIPIENT_NOT_FOUND);
                     }
@@ -102,6 +113,11 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                         notification.setCategory(messagePayload.getCategory());
                         notification.setSendTime(messagePayload.getSendTime());
                         notificationMapper.insert(notification);
+
+                        saveNotificationReceivers(notification.getId(), ctx.getTargetType(), accounts);
+
+                        // 设置消息id
+                        messagePayload.setNotificationId(notification.getId());
                     }
 
 
@@ -109,7 +125,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                     MessageAdapter adapter = dispatch(channel);
 
                     // 发送
-                    adapter.send(messagePayload, accounts);
+                    adapter.send(messagePayload, accounts.stream().map(ResolvedTarget::getAccount).toList());
 
                     if (ctx.isRecord()) {
                         this.lambdaUpdate()
@@ -126,11 +142,6 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                     }
                 }
             }
-        } catch (NotificationException e) {
-            log.error("[Notification-Engine] Send Failed {} ErrorCode: {} Reason: {}", logId, e.getCode(), e.getDetail());
-        } catch (Exception e) {
-            log.error("[Notification-Engine] Send Failed {} Reason: {}", logId, e.getMessage(), e);
-            // todo 修改或保存数据库
         } finally {
             if (stopWatch.isRunning()) {
                 stopWatch.stop();
@@ -147,13 +158,6 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         notification.setStatus(NotificationStatus.FAILED);
         notification.setFailReason(failReason);
         this.saveOrUpdate(notification);
-    }
-
-    private void updateStatus(Long notificationId, NotificationStatus status) {
-        this.lambdaUpdate()
-                .set(Notification::getStatus, status)
-                .eq(Notification::getId, notificationId)
-                .update();
     }
 
     private MessageAdapter dispatch(ChannelType channelType) {
@@ -195,6 +199,42 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         }
         builder.renderType(finalRenderType);
         return builder.build();
+    }
+
+
+    private void saveNotificationReceivers(Long notificationId, TargetType targetType, List<ResolvedTarget> resolvedTargets) {
+        if (CollectionUtils.isEmpty(resolvedTargets)) {
+            log.warn("[Notification-Engine] No resolved targets to save for notificationId: {}", notificationId);
+            return;
+        }
+        List<NotificationReceiver> receivers = resolvedTargets.stream().map(target -> {
+            NotificationReceiver receiver = new NotificationReceiver();
+            receiver.setId(IdGen.genId());
+            receiver.setNotificationId(notificationId);
+            receiver.setTargetType(targetType);
+            receiver.setReceiverId(target.getUserId() != null ? target.getUserId() : null);
+            receiver.setReceiverAccount(target.getAccount());
+            receiver.setIsRead(false);
+            receiver.setReceiveTime(LocalDateTime.now());
+            return receiver;
+        }).collect(Collectors.toList());
+        // 执行批量插入
+        try {
+            notificationReceiverService.saveBatch(receivers);
+            log.info("[Notification-Engine] Successfully saved {} receiver records for notificationId: {}",
+                    receivers.size(), notificationId);
+        } catch (Exception e) {
+            // 记录异常，但不建议抛出，以免影响已经触发的发送动作
+            log.error("[Notification-Engine] Failed to save receiver records for notificationId: {}. Reason: {}",
+                    notificationId, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public PageInfo<UserNotificationVO> userNotificationList(Long userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum,pageSize);
+        List<UserNotificationVO> userNotificationVOS = notificationMapper.selectUserNotifications(userId);
+        return PageInfo.of(userNotificationVOS);
     }
 
 }

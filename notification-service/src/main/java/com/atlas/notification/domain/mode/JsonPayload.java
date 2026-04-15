@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -22,8 +23,12 @@ public class JsonPayload extends MessagePayload{
     @Override
     @JsonIgnore
     public String getContent() {
+        Map<String, Object> content = new HashMap<>();
+        content.put("renderType", renderType.name());
+        content.put("body", body);
+        content.put("extra", extra);
         // 如果是标准 JSON 字符串，可以直接存入
-        return JsonUtils.toJson(this);
+        return JsonUtils.toJson(content);
     }
 
     @Override

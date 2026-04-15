@@ -45,8 +45,12 @@ public class InboxMessageAdapter extends AbstractMessageAdapter implements Messa
         }
 
         Map<String, Object> data = new HashMap<>();
-        data.put("content", content);
+        data.put("notificationId", payload.getNotificationId());
+        data.put("title", payload.getTitle());
+        data.put("category", payload.getCategory());
+        data.put("receiveTime", payload.getSendTime());
         data.put("contentType", contentType.name());
+        data.put("content", content);
         for (String target : targets) {
             try {
                 Long userId = Long.valueOf(target);

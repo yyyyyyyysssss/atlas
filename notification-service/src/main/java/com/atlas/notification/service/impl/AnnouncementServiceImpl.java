@@ -195,7 +195,7 @@ public class AnnouncementServiceImpl extends ServiceImpl<AnnouncementMapper, Ann
         if (row <= 0) {
             throw new BusinessException("修改失败");
         }
-        if (!oldStatus.equals(entity.getStatus()) && !entity.getStatus().equals(AnnouncementStatus.DRAFT)) {
+        if (!oldStatus.equals(entity.getStatus()) && entity.getStatus().equals(AnnouncementStatus.PUBLISHED)) {
             pushAnnouncement(entity);
         }
     }

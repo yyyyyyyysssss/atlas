@@ -7,14 +7,14 @@ import { downloadFile } from '../../../../utils/Download';
 const { Text } = Typography;
 
 
-const FileRenderer = React.memo(({ content, onClose, onAction }) => {
+const FileRenderer = React.memo(({ content, onClose }) => {
 
     const { token } = theme.useToken()
 
     const [downloading, setDownloading] = useState(false)
 
     const handleDownload = async (e, url, name) => {
-        e.stopPropagation()
+        // e.stopPropagation()
         if (downloading) {
             return
         }
@@ -96,8 +96,6 @@ const FileRenderer = React.memo(({ content, onClose, onAction }) => {
             </Flex>
         </Flex>
     )
-}, (prev, next) => {
-    return prev.content === next.content && prev.onActionClick === next.onActionClick
 })
 
 export default FileRenderer

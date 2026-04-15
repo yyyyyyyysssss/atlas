@@ -7,7 +7,7 @@ import { AnnouncementType } from '../../enums/notification';
 import { useSseEvent } from '../../hooks/useSseEvent';
 import AnnouncementDetailModal from '../notification-center/announcement/components/AnnouncementDetailModal';
 
-const { Text} = Typography;
+const { Text } = Typography;
 
 
 const DynamicCard = () => {
@@ -43,7 +43,11 @@ const DynamicCard = () => {
   }, [])
 
   useSseEvent('announcement_event', (data) => {
-    setLatestAnnouncement(data.body)
+    let { contentType, content } = data
+    if (contentType === 'JSON') {
+      content = JSON.parse(content)
+    }
+    setLatestAnnouncement(content.body)
   })
 
   const dynamicCardStyle = {
@@ -101,7 +105,7 @@ const DynamicCard = () => {
           onClick={handleViewDetails}
         />
       </Card>
-      <AnnouncementDetailModal id={selectedId} onCancel={() => setSelectedId(null)}/>
+      <AnnouncementDetailModal id={selectedId} onCancel={() => setSelectedId(null)} />
       <Drawer
         title="系统动态历史"
         placement="right"

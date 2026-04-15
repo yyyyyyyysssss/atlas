@@ -16,9 +16,13 @@ const Notification = () => {
   const { notification } = App.useApp()
 
   useSseEvent('notification_event', (data) => {
+    let { notificationId, contentType, content } = data
+    if (contentType === 'JSON') {
+      content = JSON.parse(content)
+    }
     notification.open({
       message: data.title,
-      description: <MessageRenderer content={data} />,
+      description: <MessageRenderer notificationId={notificationId} content={content} />,
       duration: 0,
     })
   })
@@ -44,7 +48,7 @@ const Notification = () => {
         width={600}
         onClose={handleClose}
         open={drawerOpen}
-        // loading={historyLoading}
+        destroyOnHidden
         styles={{ body: { background: token.colorFillAlter, padding: '12px 16px' } }}
       >
         <NotificationList onClose={handleClose} />

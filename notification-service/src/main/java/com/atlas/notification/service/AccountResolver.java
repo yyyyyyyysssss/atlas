@@ -7,8 +7,10 @@ import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
+import com.atlas.notification.domain.mode.ResolvedTarget;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -45,35 +47,37 @@ public class AccountResolver {
         FIELD_GETTER.put(TargetType.PHONE, UserDTO::getPhone);
     }
 
-    public List<String> resolve(ChannelType channel, TargetType targetType, List<String> targets) {
+    public List<ResolvedTarget> resolve(ChannelType channel, TargetType targetType, List<String> targets) {
         if (CollectionUtils.isEmpty(targets) && !targetType.equals(TargetType.ALL)) {
             return Collections.emptyList();
         }
         // 渠道需要的目标类型
         TargetType requiredType = getRequiredType(channel);
-        // 匹配则直发
-        if (targetType == requiredType) {
-            return targets;
-        }
 
         List<UserDTO> users = switch (targetType) {
-            case ALL ->
-                    Optional.ofNullable(userApi.findAll()).filter(Result::isSucceed).orElseThrow().getData();
-            case USER_ID ->
-                    Optional.ofNullable(userApi.findByIdentifier(targets)).filter(Result::isSucceed).orElseThrow().getData();
-            case EMAIL ->
-                    Optional.ofNullable(userApi.findByEmails(targets)).filter(Result::isSucceed).orElseThrow().getData();
-            case PHONE ->
-                    Optional.ofNullable(userApi.findByPhones(targets)).filter(Result::isSucceed).orElseThrow().getData();
+            case ALL -> safeGetData(userApi.findAll());
+            case USER_ID -> safeGetData(userApi.findByIdentifier(targets));
+            case EMAIL -> safeGetData(userApi.findByEmails(targets));
+            case PHONE -> safeGetData(userApi.findByPhones(targets));
         };
+        // 转换已存在系统的用户
         Function<UserDTO, String> getter = getGetter(requiredType);
-        return users.stream()
-                .map(getter)
-                .filter(Objects::nonNull)
-                .map(String::valueOf)
-                .filter(s -> !s.isBlank())
+        List<ResolvedTarget> resolvedList = new ArrayList<>(users.stream()
+                .map(u -> new ResolvedTarget(u.getId(), getter.apply(u)))
+                .filter(rt -> StringUtils.isNotBlank(rt.getAccount()))
                 .distinct()
-                .collect(Collectors.toList());
+                .toList());
+        // 处理匿名/外部目标
+        if (targetType == requiredType && !targetType.equals(TargetType.ALL)) {
+            Set<String> resolvedAccounts = resolvedList.stream()
+                    .map(ResolvedTarget::getAccount)
+                    .collect(Collectors.toSet());
+            targets.stream()
+                    .filter(t -> !resolvedAccounts.contains(t))
+                    .forEach(t -> resolvedList.add(new ResolvedTarget(null, t)));
+        }
+
+        return resolvedList.stream().distinct().collect(Collectors.toList());
     }
 
     public static TargetType getRequiredType(ChannelType channel) {
@@ -90,6 +94,11 @@ public class AccountResolver {
             throw new NotificationException("未配置目标类型的数据提取规则: " + type);
         }
         return getter;
+    }
+
+    private List<UserDTO> safeGetData(Result<List<UserDTO>> result) {
+        return (result != null && result.isSucceed() && result.getData() != null)
+                ? result.getData() : Collections.emptyList();
     }
 
 }

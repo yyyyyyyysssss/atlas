@@ -20,6 +20,8 @@ import java.util.Map;
 @Setter
 public abstract class MessagePayload {
 
+    private Long notificationId;
+
     protected String title;
 
     private NotificationCategory category;

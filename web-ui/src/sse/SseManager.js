@@ -67,12 +67,8 @@ class SseManager {
         this.sse.addEventListener(eventName, (e) => {
             try {
                 const rawData = JSON.parse(e.data)
-                let finalData = rawData.content;
-                if (rawData.contentType === 'JSON') {
-                    finalData = JSON.parse(rawData.content);
-                }
                 const callbacks = this.listeners.get(eventName);
-                callbacks?.forEach(cb => cb(finalData));
+                callbacks?.forEach(cb => cb(rawData));
             } catch (err) {
                 console.error(`SSE: Parse error for [${eventName}]`, err);
             }

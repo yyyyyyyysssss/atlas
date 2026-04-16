@@ -3,15 +3,14 @@ package com.atlas.notification.controller;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.notification.domain.dto.UserNotificationMarkAsReadDTO;
 import com.atlas.notification.domain.vo.UserNotificationVO;
 import com.atlas.notification.service.NotificationService;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @Description
@@ -34,6 +33,27 @@ public class UserNotificationController {
         Long userId = UserContext.getRequiredUserId();
         PageInfo<UserNotificationVO> pageInfo = notificationService.userNotificationList(userId, pageNum, pageSize);
         return ResultGenerator.ok(pageInfo);
+    }
+
+    @GetMapping("/unread-count")
+    public Result<Integer> getUnreadCount() {
+        Long userId = UserContext.getRequiredUserId();
+        Integer count = notificationService.countUnread(userId);
+        return ResultGenerator.ok(count);
+    }
+
+    @PutMapping("/read")
+    public Result<?> markAsRead(@RequestBody @Validated UserNotificationMarkAsReadDTO userNotificationMarkAsReadDTO){
+        Long userId = UserContext.getRequiredUserId();
+        notificationService.markAsRead(userId,userNotificationMarkAsReadDTO.getNotificationId());
+        return ResultGenerator.ok();
+    }
+
+    @PutMapping("/read-all")
+    public Result<?> markAllAsRead(){
+        Long userId = UserContext.getRequiredUserId();
+        notificationService.markAllAsRead(userId);
+        return ResultGenerator.ok();
     }
 
 }

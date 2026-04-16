@@ -59,3 +59,20 @@ export const fetchUserNotificationList = async (pageNum, pageSize) => {
         params: { pageNum, pageSize }
     }))
 }
+
+export const fetchUserNotificationUnreadCount = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/notification/user/notification/unread-count'))
+}
+
+export const markAsRead = async (notificationId) => {
+    const req = {
+        notificationId: notificationId
+    }
+    return apiRequestWrapper(() => httpWrapper.put('/api/notification/user/notification/read',req))
+}
+
+export const markAllAsRead = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/notification/user/notification/read-all'))
+}

@@ -231,11 +231,41 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     }
 
     @Override
+    public Integer countUnread(Long userId) {
+        Long count = notificationReceiverService
+                .lambdaQuery()
+                .eq(NotificationReceiver::getReceiverId, userId)
+                .eq(NotificationReceiver::getIsRead, false)
+                .count();
+        return count == null ? 0 : count.intValue();
+    }
+
+    @Override
     public PageInfo<UserNotificationVO> userNotificationList(Long userId, Integer pageNum, Integer pageSize) {
-        PageHelper.startPage(pageNum,pageSize);
+        PageHelper.startPage(pageNum, pageSize);
         List<UserNotificationVO> userNotificationVOS = notificationMapper.selectUserNotifications(userId);
         return PageInfo.of(userNotificationVOS);
     }
 
+
+    @Override
+    public void markAsRead(Long userId, Long notificationId) {
+        notificationReceiverService
+                .lambdaUpdate()
+                .set(NotificationReceiver::getIsRead, true)
+                .eq(NotificationReceiver::getReceiverId, userId)
+                .eq(NotificationReceiver::getNotificationId, notificationId)
+                .update();
+    }
+
+    @Override
+    public void markAllAsRead(Long userId) {
+        notificationReceiverService
+                .lambdaUpdate()
+                .set(NotificationReceiver::getIsRead, true)
+                .eq(NotificationReceiver::getReceiverId, userId)
+                .eq(NotificationReceiver::getIsRead, false)
+                .update();
+    }
 }
 

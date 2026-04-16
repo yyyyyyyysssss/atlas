@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { Card, List, Avatar, App, Typography, Badge, Space, theme, Flex } from 'antd';
 import { Mail, Info, ShieldAlert } from 'lucide-react';
 import NoDataEmpty from '../../../components/NoDataEmpty';
@@ -10,7 +10,7 @@ import { fetchUserNotificationList } from '../../../services/NotificationService
 
 const { Text } = Typography;
 
-const NotificationList = ({ limit = 10, onClose }) => {
+const NotificationList = ({ limit = 10, onMarkRead, onClose, ref }) => {
 
     const { token } = theme.useToken()
 
@@ -32,6 +32,16 @@ const NotificationList = ({ limit = 10, onClose }) => {
         fetchData(1, limit)
     }, [limit])
 
+    const handleMarkAllAsRead = async () => {
+        setData(prev => prev.map(item => ({ ...item, isRead: true })))
+    }
+
+    useImperativeHandle(ref, () => ({
+        markAllRead: handleMarkAllAsRead,
+        // 你还可以暴露其他方法，比如手动刷新
+        refresh: () => fetchData(1, limit)
+    }))
+
     // 根据业务类型获取图标配置
     const getCategoryIcon = (category) => {
         const configs = {
@@ -46,8 +56,17 @@ const NotificationList = ({ limit = 10, onClose }) => {
         return configs[category] || configs.DEFAULT
     }
 
+    const markRead = useCallback((notificationId) => {
+        setData((prevData) =>
+            prevData.map((item) =>
+                item.notificationId === notificationId ? { ...item, isRead: true } : item
+            )
+        )
+        onMarkRead?.()
+    }, [])
+
     const bodyRender = useCallback((item) => {
-        let { notificationId, contentType, content } = item
+        let { notificationId, contentType, content, isRead } = item
         if (contentType === 'JSON') {
             content = JSON.parse(content)
         }
@@ -55,10 +74,12 @@ const NotificationList = ({ limit = 10, onClose }) => {
             <MessageRenderer
                 notificationId={notificationId}
                 content={content}
+                isRead={isRead}
+                onMarkRead={markRead}
                 onClose={onClose}
             />
         )
-    }, [onClose])
+    }, [onClose, markRead])
 
     return (
         <>

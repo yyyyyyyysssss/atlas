@@ -43,3 +43,23 @@ export const changeAppearance = async (appearance) => {
 
     return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/appearance/settings', appearance))
 }
+
+
+export const getUserWorkSchedule = async (startDate, endDate) => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/work/schedule/user/range', {
+        params: {
+            startDate, endDate
+        }
+    }))
+}
+
+export const createUserWorkSchedule = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/work/schedule/create', req))
+}
+
+export const updateUserWorkSchedule = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/work/schedule/update', req))
+}

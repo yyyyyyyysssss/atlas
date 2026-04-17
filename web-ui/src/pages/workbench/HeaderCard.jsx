@@ -22,7 +22,7 @@ const HeaderCard = () => {
 
   const { token } = theme.useToken()
 
-  const { fullName, avatar, orgName, posName } = useSelector(state => state.user.userInfo)
+  const { fullName, avatar, orgName, posName, todayTaskCount, notificationUnreadCount } = useSelector(state => state.user.userInfo)
 
   const isSuperAdmin = useIsSuperAdmin()
 
@@ -76,8 +76,8 @@ const HeaderCard = () => {
           </Flex>
         </Flex>
         <Flex gap={48}>
-          <Statistic title="待处理" value={3} suffix="项" />
-          <Statistic title="未读消息" value={12} valueStyle={{ color: token.colorPrimary }} />
+          <Statistic title="待处理" value={todayTaskCount} suffix="项" />
+          <Statistic title="未读消息" value={notificationUnreadCount} valueStyle={{ color: token.colorPrimary }} />
           <Statistic title="贡献度" value={95} prefix={<Trophy size={16} />} />
         </Flex>
       </Flex>

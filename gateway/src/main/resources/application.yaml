@@ -103,6 +103,7 @@ security:
       - /api/file/**
       - /api/user/profile/**
       - /api/user/option/**
+      - /api/user/work/schedule/**
       - /api/notification/user/announcement/**
       - /api/notification/v1/notification/sse/**
       - /api/notification/user/notification/**

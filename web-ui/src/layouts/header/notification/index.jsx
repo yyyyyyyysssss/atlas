@@ -8,11 +8,15 @@ import MessageRenderer from './MessageRenderer';
 import { useRequest } from 'ahooks';
 import { fetchUserNotificationUnreadCount, markAllAsRead } from '../../../services/NotificationService';
 import Loading from '../../../components/loading';
+import { useDispatch } from 'react-redux';
+import { setNotificationUnreadCount } from '../../../redux/slices/userSlice';
 
 
 const Notification = () => {
 
   const { token } = theme.useToken()
+
+  const dispatch = useDispatch()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -40,6 +44,10 @@ const Notification = () => {
   useEffect(() => {
     refreshUnreadCount()
   }, [])
+
+  useEffect(() => {
+    dispatch(setNotificationUnreadCount({ notificationUnreadCount: unreadCount }))
+  }, [unreadCount, dispatch])
 
   useSseEvent('notification_event', (data) => {
     let { notificationId, contentType, content } = data

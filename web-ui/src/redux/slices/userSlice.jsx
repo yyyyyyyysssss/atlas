@@ -13,7 +13,9 @@ export const initialState = {
                 colorPrimary: DEFAULT_PRIMARY_COLOR,
                 language: 'zh'
             }
-        }
+        },
+        todayTaskCount: 0,
+        notificationUnreadCount: 0
     }
 }
 
@@ -53,9 +55,19 @@ export const userSlice = createSlice({
             const { language } = payload
             state.userInfo.settings.appearance.language = language
         },
+        setTodayTaskCount: (state, action) => {
+            const { payload } = action
+            const { todayTaskCount } = payload
+            state.userInfo.todayTaskCount = todayTaskCount
+        },
+        setNotificationUnreadCount: (state, action) => {
+            const { payload } = action
+            const { notificationUnreadCount } = payload
+            state.userInfo.notificationUnreadCount = notificationUnreadCount
+        },
     }
 })
 
-export const { reset, setUserInfo, updateShortcuts, switchTheme, switchColorPrimary, switchLanguage } = userSlice.actions
+export const { reset, setUserInfo, updateShortcuts, switchTheme, switchColorPrimary, switchLanguage, setTodayTaskCount, setNotificationUnreadCount } = userSlice.actions
 
 export default userSlice.reducer

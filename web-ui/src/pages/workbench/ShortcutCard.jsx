@@ -132,7 +132,7 @@ const ShortcutCard = () => {
                 style={{ height: '60px', borderRadius: token.borderRadiusLG }}
               >
                 <Flex vertical align="center" justify="center" gap={4}>
-                  <Plus size={16} />
+                  <Text type="secondary"><Plus size={16} /></Text>
                   <Text type="secondary" style={{ fontSize: '12px' }}>添加</Text>
                 </Flex>
               </Button>

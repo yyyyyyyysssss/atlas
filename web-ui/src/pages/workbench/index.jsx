@@ -9,6 +9,7 @@ import ShortcutCard from './ShortcutCard';
 import NotificationCard from './NotificationCard';
 import TeamCard from './TeamCard';
 import DynamicCard from './DynamicCard';
+import WeeklyScheduleCard from './WeeklyScheduleCard';
 
 const { Content } = Layout;
 
@@ -26,8 +27,8 @@ const Workbench = () => {
             <Flex vertical gap={token.marginLG}>
               {/* 快捷开始 */}
               <ShortcutCard />
-              {/* 消息通知 */}
-              <NotificationCard/>
+              {/* 工作日程 */}
+              <WeeklyScheduleCard/>
             </Flex>
           </Col>
 

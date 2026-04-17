@@ -144,9 +144,24 @@ const App = () => {
 
         },
         Segmented: {
-          itemHoverColor: 'rgba(0,0,0,0.88)',
-          itemColor: 'rgba(0,0,0,0.65)'
-        }
+          // 1. 轨道背景色：比容器背景稍深或使用透明白
+          trackBg: 'rgba(255, 255, 255, 0.04)',
+
+          // 2. 选中滑块的背景色：建议用稍微亮一点的灰色
+          itemSelectedBg: 'rgba(255, 255, 255, 0.15)',
+
+          // 3. 默认文字颜色：使用你定义的 colorTextSecondary
+          itemColor: 'rgba(255, 255, 255, 0.65)',
+
+          // 4. 悬浮文字颜色：变得更亮
+          itemHoverColor: 'rgba(255, 255, 255, 0.88)',
+
+          // 5. 选中后的文字颜色：保持高亮
+          itemSelectedColor: '#ffffff',
+
+          // 6. 悬浮时的背景颜色
+          itemHoverBg: 'rgba(255, 255, 255, 0.08)',
+        },
       },
     },
     light: {

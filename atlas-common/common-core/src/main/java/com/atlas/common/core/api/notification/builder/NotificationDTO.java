@@ -1,7 +1,10 @@
 package com.atlas.common.core.api.notification.builder;
 
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
-import com.atlas.common.core.api.notification.enums.*;
+import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
+import com.atlas.common.core.api.notification.enums.RenderType;
+import com.atlas.common.core.api.notification.enums.TargetType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -18,14 +21,14 @@ import java.util.Map;
 public class NotificationDTO {
 
 
-    NotificationDTO(String templateCode, String title, NotificationCategory category, Object content, ContentType contentType,
+    NotificationDTO(String templateCode, String title, NotificationCategory category, Object content, RenderType renderType,
                     List<String> targets, TargetType targetType, List<ChannelType> channels,boolean record,
                     Map<String, Object> params, Map<String, Object> ext) {
         this.templateCode = templateCode;
         this.title = title;
         this.category = category;
         this.content = content;
-        this.contentType = contentType;
+        this.renderType = renderType;
         this.targets = targets;
         this.targetType = targetType;
         this.channels = channels;
@@ -40,14 +43,14 @@ public class NotificationDTO {
             @JsonProperty("title") String title,
             @JsonProperty("category") NotificationCategory category,
             @JsonProperty("content") Object content,
-            @JsonProperty("contentType") ContentType contentType,
+            @JsonProperty("renderType") RenderType renderType,
             @JsonProperty("targets") List<String> targets,
             @JsonProperty("targetType") TargetType targetType,
             @JsonProperty("channels") List<ChannelType> channels,
             @JsonProperty("record") boolean record,
             @JsonProperty("params") Map<String, Object> params,
             @JsonProperty("ext") Map<String, Object> ext) {
-        return new NotificationDTO(templateCode, title, category, content, contentType, targets, targetType, channels,record, params, ext);
+        return new NotificationDTO(templateCode, title, category, content, renderType, targets, targetType, channels,record, params, ext);
     }
 
     // 模板编码
@@ -60,7 +63,7 @@ public class NotificationDTO {
 
     private final Object content;
 
-    private final ContentType contentType;
+    private final RenderType renderType;
 
     // 接收目标
     private final List<String> targets;
@@ -77,14 +80,6 @@ public class NotificationDTO {
 
     // 扩展参数
     private final Map<String, Object> ext;
-
-    public RenderType renderType() {
-        if (ext == null) return null;
-        Object val = ext.get(NotificationConstant.Common.RENDER_TYPE);
-        if (val instanceof RenderType rt) return rt;
-        if (val instanceof String s) return RenderType.valueOf(s);
-        return null;
-    }
 
     public String eventName() {
         if (ext == null) return null;

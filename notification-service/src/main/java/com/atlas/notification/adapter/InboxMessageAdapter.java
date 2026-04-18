@@ -6,6 +6,7 @@ import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.enums.ContentType;
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
 import com.atlas.common.core.enums.BaseEnum;
+import com.atlas.notification.domain.entity.NotificationContent;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.sse.NotificationPublisher;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +35,7 @@ public class InboxMessageAdapter extends AbstractMessageAdapter implements Messa
     @Override
     public void send(MessagePayload payload, List<String> targets) {
         // 统一序列化为字符串
-        String content = payload.getContent();
-        ContentType contentType = payload.getContentType();
+        NotificationContent content = payload.getPayloadContent();
         // 提取事件名称
         Map<String, Object> ext = Optional.ofNullable(payload.getExt()).orElse(Collections.emptyMap());
 
@@ -48,8 +48,7 @@ public class InboxMessageAdapter extends AbstractMessageAdapter implements Messa
         data.put("notificationId", payload.getNotificationId());
         data.put("title", payload.getTitle());
         data.put("category", payload.getCategory());
-        data.put("receiveTime", payload.getSendTime());
-        data.put("contentType", contentType.name());
+        data.put("sendTime", payload.getSendTime());
         data.put("content", content);
         for (String target : targets) {
             try {

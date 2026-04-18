@@ -42,20 +42,6 @@ const NotificationList = ({ limit = 10, onMarkRead, onClose, ref }) => {
         refresh: () => fetchData(1, limit)
     }))
 
-    // 根据业务类型获取图标配置
-    const getCategoryIcon = (category) => {
-        const configs = {
-            SYSTEM: { icon: <Mail size={14} />, color: token.colorPrimary, bg: token.colorPrimaryBg, name: '系统通知：' },
-            SECURITY: { icon: <ShieldAlert size={14} />, color: token.colorError, bg: token.colorErrorBg, name: '安全告警：' },
-            DEFAULT: {
-                icon: <Info size={14} />,
-                color: token.colorTextSecondary,
-                bg: token.colorFillAlter
-            }
-        };
-        return configs[category] || configs.DEFAULT
-    }
-
     const markRead = useCallback((notificationId) => {
         setData((prevData) =>
             prevData.map((item) =>
@@ -65,22 +51,6 @@ const NotificationList = ({ limit = 10, onMarkRead, onClose, ref }) => {
         onMarkRead?.()
     }, [])
 
-    const bodyRender = useCallback((item) => {
-        let { notificationId, contentType, content, isRead } = item
-        if (contentType === 'JSON') {
-            content = JSON.parse(content)
-        }
-        return (
-            <MessageRenderer
-                notificationId={notificationId}
-                content={content}
-                isRead={isRead}
-                onMarkRead={markRead}
-                onClose={onClose}
-            />
-        )
-    }, [onClose, markRead])
-
     return (
         <>
             <List
@@ -89,10 +59,6 @@ const NotificationList = ({ limit = 10, onMarkRead, onClose, ref }) => {
                 loading={getUserNotificationLoading}
                 locale={{ emptyText: <NoDataEmpty /> }}
                 renderItem={(item) => {
-                    const { notificationId, title, category, receiveTime, isRead } = item
-
-                    const categoryConfig = getCategoryIcon(category);
-
                     return (
                         <List.Item
                             className="atlas-float-trigger"
@@ -105,33 +71,10 @@ const NotificationList = ({ limit = 10, onMarkRead, onClose, ref }) => {
                                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             }}
                         >
-                            <List.Item.Meta
-                                avatar={
-                                    <Avatar style={{ backgroundColor: categoryConfig.bg, color: categoryConfig.color }} icon={categoryConfig.icon} />
-                                }
-                                title={
-                                    <Flex justify="space-between" align="center">
-                                        <Badge
-                                            dot={isRead === false}
-                                            offset={[5, 0]}
-                                            status="processing"
-                                            color={token.colorPrimary}
-                                        >
-                                            <Flex>
-                                                <Text
-                                                    strong
-                                                >
-                                                    {categoryConfig.name}
-                                                </Text>
-                                                <Text strong={isRead === true}>
-                                                    {title}
-                                                </Text>
-                                            </Flex>
-                                        </Badge>
-                                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>{formatRelativeTime(receiveTime)}</Text>
-                                    </Flex>
-                                }
-                                description={bodyRender(item)}
+                            <MessageRenderer
+                                message={item}
+                                onMarkRead={markRead}
+                                onClose={onClose}
                             />
                         </List.Item>
                     );

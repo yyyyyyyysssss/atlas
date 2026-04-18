@@ -1,6 +1,6 @@
 package com.atlas.notification.domain.vo;
 
-import com.atlas.common.core.api.notification.enums.ContentType;
+import com.atlas.notification.domain.entity.NotificationContent;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,9 +25,7 @@ public class UserNotificationVO {
 
     private LocalDateTime sendTime;
 
-    private ContentType contentType;
-
-    private String content;
+    private NotificationContent content;
 
     private Boolean isRead;
 

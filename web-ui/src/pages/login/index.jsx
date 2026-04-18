@@ -6,6 +6,7 @@ import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
 import { login, sendEmailVerificationCode } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
 
@@ -16,6 +17,8 @@ const Login = () => {
     const [form] = Form.useForm()
 
     const { message } = App.useApp()
+
+    const navigate = useNavigate()
 
     const { runAsync, loading } = useRequest(login, {
         manual: true
@@ -158,8 +161,9 @@ const Login = () => {
             )
     }
 
-    const loginSuccessHandler = (data) => {
-        signin(data)
+    const loginSuccessHandler = async (data) => {
+        await signin(data)
+        navigate('/')
     }
 
     return (

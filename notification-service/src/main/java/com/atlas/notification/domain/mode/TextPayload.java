@@ -1,6 +1,7 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.common.core.api.notification.enums.ContentType;
+import com.atlas.common.core.api.notification.enums.RenderType;
+import com.atlas.notification.domain.entity.NotificationContent;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,13 +17,11 @@ public class TextPayload extends MessagePayload{
     private String text;
 
     @Override
-    public String getContent() {
-
-        return this.text;
-    }
-
-    @Override
-    public ContentType getContentType() {
-        return ContentType.TEXT;
+    public NotificationContent getPayloadContent() {
+        // 即使是文本，也包装成统一格式存入 content 字段
+        return NotificationContent.builder()
+                .renderType(RenderType.TEXT)
+                .body(this.text)
+                .build();
     }
 }

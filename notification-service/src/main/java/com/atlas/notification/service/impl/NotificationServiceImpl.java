@@ -101,15 +101,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
                     // 匹配并执行渲染
                     RenderStrategy renderStrategy = renderStrategies.stream()
-                            .filter(f -> f.support(messageTemplateModel.getContentType()))
+                            .filter(f -> f.support(messageTemplateModel.getRenderType()))
                             .findFirst()
                             .orElseThrow(() -> new NotificationException(NotificationErrorCode.RENDER_STRATEGY_NOT_SUPPORT));
 
                     MessagePayload messagePayload = renderStrategy.render(messageTemplateModel, ctx.getParams(), ctx.getExt());
 
                     if (ctx.isRecord()) {
-                        notification.setContent(messagePayload.getContent());
-                        notification.setContentType(messagePayload.getContentType());
+                        notification.setContent(messagePayload.getPayloadContent());
                         notification.setCategory(messagePayload.getCategory());
                         notification.setSendTime(messagePayload.getSendTime());
                         notificationMapper.insert(notification);
@@ -174,9 +173,8 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                 .templateCode(ctx.getTemplateCode())
                 .title(ctx.getTitle())
                 .category(ctx.getCategory())
-                .content(ctx.getContent())
-                .contentType(ctx.getContentType());
-        RenderType finalRenderType = ctx.renderType();
+                .content(ctx.getContent());
+        RenderType finalRenderType = ctx.getRenderType();
         if (StringUtils.isNotEmpty(ctx.getTemplateCode())) {
             NotificationTemplateVO messageTemplateVO = messageTemplateService.resolveTemplate(ctx.getTemplateCode(), channelType);
             if (messageTemplateVO == null) {

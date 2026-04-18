@@ -1,9 +1,9 @@
 package com.atlas.notification.service.render;
 
-import com.atlas.notification.domain.mode.JsonPayload;
+import com.atlas.common.core.api.notification.enums.RenderType;
+import com.atlas.notification.domain.mode.StructuredPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
-import com.atlas.common.core.api.notification.enums.ContentType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.stereotype.Component;
@@ -18,12 +18,12 @@ import java.util.Map;
  */
 @Component
 @Slf4j
-public class JsonRenderStrategy extends AbstractRenderStrategy implements RenderStrategy {
+public class StructuredRenderStrategy extends AbstractRenderStrategy implements RenderStrategy {
 
 
     @Override
-    public boolean support(ContentType contentType) {
-        return contentType.equals(ContentType.JSON);
+    public boolean support(RenderType renderType) {
+        return renderType != RenderType.TEXT && renderType != RenderType.HTML;
     }
 
     @Override
@@ -33,16 +33,16 @@ public class JsonRenderStrategy extends AbstractRenderStrategy implements Render
         // 支持默认值写法 ${var:default}
         sub.setEnableSubstitutionInVariables(true);
         String renderedTitle = sub.replace(template.getTitle());
-        JsonPayload jsonPayload = new JsonPayload();
-        jsonPayload.setTitle(renderedTitle);
-        jsonPayload.setRenderType(template.getRenderType());
+        StructuredPayload structuredPayload = new StructuredPayload();
+        structuredPayload.setTitle(renderedTitle);
+        structuredPayload.setRenderType(template.getRenderType());
         if (template.getContent() instanceof String contentStr) {
             String renderedJson = sub.replace(contentStr);
-            jsonPayload.setBody(renderedJson);
+            structuredPayload.setBody(renderedJson);
         } else {
-            jsonPayload.setBody(template.getContent());
+            structuredPayload.setBody(template.getContent());
         }
-        return jsonPayload;
+        return structuredPayload;
     }
 
 }

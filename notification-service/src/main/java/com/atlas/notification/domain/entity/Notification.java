@@ -1,9 +1,8 @@
 package com.atlas.notification.domain.entity;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
-import com.atlas.common.core.api.notification.enums.ContentType;
-import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.common.core.api.notification.enums.NotificationCategory;
+import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.notification.enums.NotificationStatus;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -47,12 +46,8 @@ public class Notification extends BaseEntity {
     private String templateCode;
 
     // 消息正文 
-    @TableField("content")
-    private String content;
-
-    @TableField("content_type")
-    @EnumValue
-    private ContentType contentType;
+    @TableField(value = "content", typeHandler = JacksonTypeHandler.class)
+    private NotificationContent content;
 
     // SENDING: 发送中, SENT: 已发出 FAILED: 发送失败 
     @TableField("status")

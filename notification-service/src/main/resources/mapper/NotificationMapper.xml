@@ -7,8 +7,7 @@
         <result property="title" column="title" jdbcType="VARCHAR"/>
         <result property="channelType" column="channel_type" jdbcType="VARCHAR"/>
         <result property="templateCode" column="template_code" jdbcType="VARCHAR"/>
-        <result property="content" column="content" jdbcType="VARCHAR"/>
-        <result property="contentType" column="content_type" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
         <result property="status" column="status" jdbcType="VARCHAR"/>
         <result property="category" column="category" jdbcType="VARCHAR"/>
         <result property="failReason" column="fail_reason" jdbcType="VARCHAR"/>
@@ -23,7 +22,17 @@
         <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
     </resultMap>
 
-    <select id="selectUserNotifications" resultType="com.atlas.notification.domain.vo.UserNotificationVO">
+    <resultMap id="UserNotificationMap" type="com.atlas.notification.domain.vo.UserNotificationVO">
+        <id property="id" column="id" />
+        <result property="notificationId" column="notification_id" />
+        <result property="isRead" column="is_read" />
+        <result property="title" column="title" />
+        <result property="category" column="category" />
+        <result property="sendTime" column="send_time" />
+        <result property="content" column="content" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" />
+    </resultMap>
+
+    <select id="selectUserNotifications" resultMap="UserNotificationMap">
         SELECT
             t.id,
             t.notification_id,
@@ -31,8 +40,7 @@
             f.title,
             f.category,
             f.send_time,
-            f.content,
-            f.content_type
+            f.content
         FROM
             ntf_notification_receiver t
         LEFT JOIN ntf_notification f ON t.notification_id = f.id

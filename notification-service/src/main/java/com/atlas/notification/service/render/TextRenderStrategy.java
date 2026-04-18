@@ -1,5 +1,6 @@
 package com.atlas.notification.service.render;
 
+import com.atlas.common.core.api.notification.enums.RenderType;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
 import com.atlas.notification.domain.mode.TextPayload;
@@ -22,8 +23,8 @@ public class TextRenderStrategy extends AbstractRenderStrategy implements Render
 
 
     @Override
-    public boolean support(ContentType contentType) {
-        return contentType.equals(ContentType.TEXT);
+    public boolean support(RenderType renderType) {
+        return renderType.equals(RenderType.TEXT);
     }
 
     @Override

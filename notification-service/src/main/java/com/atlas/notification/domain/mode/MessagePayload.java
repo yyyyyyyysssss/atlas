@@ -1,7 +1,7 @@
 package com.atlas.notification.domain.mode;
 
-import com.atlas.common.core.api.notification.enums.ContentType;
 import com.atlas.common.core.api.notification.enums.NotificationCategory;
+import com.atlas.notification.domain.entity.NotificationContent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,8 +46,6 @@ public abstract class MessagePayload {
         }
     }
 
-    public abstract String getContent();
-
-    public abstract ContentType getContentType();
+    public abstract NotificationContent getPayloadContent();
 
 }

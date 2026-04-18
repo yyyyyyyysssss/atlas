@@ -11,12 +11,15 @@ import { simpleUploadFile } from '../../../services/FileService';
 import { useRequest } from 'ahooks';
 import './index.css'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
 
     const { t } = useTranslation()
 
     const { signout } = useAuth()
+
+    const navigate = useNavigate()
 
     const { fullName, avatar } = useSelector(state => state.user.userInfo)
 
@@ -215,13 +218,10 @@ const UserProfile = () => {
         setCompletedCrop(null)
     }
 
-    const handleLogout = () => {
-        logout()
-            .then(
-                () => {
-                    signout()
-                }
-            )
+    const handleLogout = async () => {
+        await logout()
+        await signout()
+        navigate('/login')
     }
 
     return (

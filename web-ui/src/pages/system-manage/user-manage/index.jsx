@@ -12,6 +12,7 @@ import SmartTable from '../../../components/smart-table';
 import ActionDropdown from '../../../components/ActionDropdown';
 import { useTranslation } from 'react-i18next';
 import { OperationMode } from '../../../enums/common';
+import Loading from '../../../components/loading';
 
 
 const initQueryParam = {
@@ -69,18 +70,7 @@ const UserManage = () => {
 
     const [userEnabledLoadingMap, setUserEnabledLoadingMap] = useState({})
 
-    const [bindRole, setBindRole] = useState({
-        open: false,
-        title: null,
-        userItem: null,
-    })
-
-    useEffect(() => {
-        if (bindRole && bindRole.open === true) {
-            const roleIds = bindRole?.userItem?.roleIds ?? []
-            bindRoleForm.setFieldsValue({ ...bindRole.userItem, roleIds: roleIds })
-        }
-    }, [bindRole])
+    const [bindRole, setBindRole] = useState(false)
 
     const getData = async (queryParam) => {
         return await getUserDataAsync(queryParam)
@@ -219,27 +209,11 @@ const UserManage = () => {
 
     }
 
-    const handleBindRole = (userId) => {
-        setBindRole({
-            open: true,
-            title: t(`分配角色`),
-            userItem: null,
-        })
-        getUserDetailsAsync(userId)
-            .then(
-                (userData) => {
-                    setBindRole(prev => {
-                        if (prev.open) {
-                            return {
-                                ...prev,
-                                title: t(`分配角色`) + `[${userData.fullName}]`,
-                                userItem: userData
-                            }
-                        }
-                        return prev
-                    })
-                }
-            )
+    const handleBindRole = async (userId) => {
+        setBindRole(true)
+        bindRoleForm.resetFields()
+        const userData = await getUserDetailsAsync(userId)
+        bindRoleForm.setFieldsValue(userData)
     }
 
     const handleBindRoleSave = () => {
@@ -257,11 +231,7 @@ const UserManage = () => {
     }
 
     const handleBindRoleClose = () => {
-        setBindRole({
-            open: false,
-            title: null,
-            userItem: null,
-        })
+        setBindRole(false)
     }
 
     const columns = [
@@ -510,10 +480,9 @@ const UserManage = () => {
                 setQueryParam={setQueryParam}
             />
             <Drawer
-                title={bindRole.title}
-                closable={{ 'aria-label': 'Close Button' }}
+                title='分配角色'
                 onClose={handleBindRoleClose}
-                open={bindRole.open}
+                open={bindRole}
                 width={400}
                 footer={
                     <Space>
@@ -521,13 +490,12 @@ const UserManage = () => {
                         <Button onClick={handleBindRoleClose}>{t('取消')}</Button>
                     </Space>
                 }
-                afterClose={() => bindRoleForm.resetFields()}
                 destroyOnHidden
             >
-                <Form
-                    form={bindRoleForm}
-                >
-                    <Skeleton loading={getUserDetailsLoading} active>
+                <Loading spinning={getUserDetailsLoading || bindRoleByUserIdLoading}>
+                    <Form
+                        form={bindRoleForm}
+                    >
                         <Form.Item name="id" hidden>
                             <Input />
                         </Form.Item>
@@ -536,8 +504,8 @@ const UserManage = () => {
                         >
                             <RoleSelect type='checkbox' />
                         </Form.Item>
-                    </Skeleton>
-                </Form>
+                    </Form>
+                </Loading>
             </Drawer>
         </Flex>
     )

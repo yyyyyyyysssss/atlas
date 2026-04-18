@@ -17,6 +17,7 @@ import { createUserWorkSchedule, getUserWorkSchedule, updateUserWorkSchedule } f
 import Loading from '../../components/loading';
 import { useDispatch } from 'react-redux';
 import { setTodayTaskCount } from '../../redux/slices/userSlice';
+import IconBox from '../../components/icon-box';
 
 const { Text, Title } = Typography;
 
@@ -317,7 +318,9 @@ const WeeklyScheduleCard = () => {
                             </Flex>
                             {!isDatePast && (
                                 <Tooltip title="新增待办">
-                                    <Button onClick={() => showModal(null)} type="link" size="small" icon={<PlusOutlined />} />
+                                    <IconBox onClick={() => showModal(null)}>
+                                        <PlusOutlined style={{ fontSize: 12, color: token.colorPrimary }} />
+                                    </IconBox>
                                 </Tooltip>
                             )}
                         </Flex>
@@ -364,15 +367,14 @@ const WeeklyScheduleCard = () => {
                                                                 </Tag>
                                                             )}
                                                         </Flex>
-                                                        <Button
-                                                            type="text"
-                                                            size="small"
-                                                            icon={<EditOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+                                                        <IconBox
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 showModal(item)
                                                             }}
-                                                        />
+                                                        >
+                                                            <EditOutlined style={{ fontSize: 12, color: token.colorPrimary }} />
+                                                        </IconBox>
                                                     </Flex>
                                                     <Text type='secondary'>{item.content}</Text>
                                                 </Flex>

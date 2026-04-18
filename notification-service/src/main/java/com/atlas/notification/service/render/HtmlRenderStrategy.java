@@ -1,5 +1,6 @@
 package com.atlas.notification.service.render;
 
+import com.atlas.common.core.api.notification.enums.RenderType;
 import com.atlas.notification.domain.mode.HtmlPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.MessageTemplateModel;
@@ -30,8 +31,8 @@ public class HtmlRenderStrategy extends AbstractRenderStrategy implements Render
     private static final String CLASSPATH_PREFIX = "classpath:";
 
     @Override
-    public boolean support(ContentType contentType) {
-        return contentType == ContentType.HTML;
+    public boolean support(RenderType renderType) {
+        return renderType == RenderType.HTML;
     }
 
     @Override

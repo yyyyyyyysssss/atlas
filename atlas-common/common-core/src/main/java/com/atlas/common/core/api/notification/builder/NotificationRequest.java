@@ -36,6 +36,8 @@ public class NotificationRequest {
 
     private ContentType contentType;
 
+    private RenderType renderType;
+
     // 接收目标
     private List<String> targets;
 
@@ -55,6 +57,11 @@ public class NotificationRequest {
     // 扩展参数
     private Map<String, Object> ext;
 
+    public static TextChannelOp text(String text) {
+
+        return text(null, text);
+    }
+
     /**
      * 以纯文本方式起手 (可选)
      */
@@ -62,13 +69,8 @@ public class NotificationRequest {
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
         ctx.content = text;
-        ctx.contentType = ContentType.TEXT;
+        ctx.renderType = RenderType.TEXT;
         return new NotificationBuilder(ctx);
-    }
-
-    public static TextChannelOp text(String text) {
-
-        return text(null, text);
     }
 
 
@@ -93,7 +95,7 @@ public class NotificationRequest {
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
         ctx.content = object;
-        ctx.contentType = ContentType.JSON;
+        ctx.renderType = RenderType.RAW;
         ctx.ext = ensureMutable(ctx.ext);
         ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.RAW);
         return new NotificationBuilder(ctx);
@@ -102,10 +104,11 @@ public class NotificationRequest {
     public static ObjectChannelOp card(String title, Consumer<CardBody.CardBodyBuilder> operator) {
         CardBody.CardBodyBuilder builder = CardBody.builder();
         operator.accept(builder);
+        CardBody cardBody = builder.build();
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
-        ctx.content = builder.build();
-        ctx.contentType = ContentType.JSON;
+        ctx.content = cardBody;
+        ctx.renderType = cardBody.getRenderType();
         ctx.ext = ensureMutable(ctx.ext);
         ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.CARD);
         return new NotificationBuilder(ctx);
@@ -114,10 +117,11 @@ public class NotificationRequest {
     public static ObjectChannelOp file(String title, Consumer<FileBody.FileBodyBuilder> operator) {
         FileBody.FileBodyBuilder builder = FileBody.builder();
         operator.accept(builder);
+        FileBody fileBody = builder.build();
         NotificationRequest ctx = new NotificationRequest();
         ctx.title = title;
         ctx.content = builder.build();
-        ctx.contentType = ContentType.JSON;
+        ctx.renderType = fileBody.getRenderType();
         ctx.ext = ensureMutable(ctx.ext);
         ctx.ext.put(NotificationConstant.Common.RENDER_TYPE, RenderType.FILE);
         return new NotificationBuilder(ctx);
@@ -364,7 +368,7 @@ public class NotificationRequest {
                     ctx.title,
                     ctx.category,
                     ctx.content,
-                    ctx.contentType,
+                    ctx.renderType,
                     ctx.targets,
                     ctx.targetType,
                     ctx.channels,

@@ -5,23 +5,25 @@ import com.atlas.notification.domain.entity.NotificationContent;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * @Description
- * @Author ys
- * @Date 2026/1/30 9:37
- */
+import java.util.Map;
+
 @Getter
 @Setter
-public class HtmlPayload extends MessagePayload{
+public class StructuredPayload extends MessagePayload{
 
-    private String html;
+    private RenderType renderType;
+
+    private Object body;
+
+    private Map<String, Object> extra;
+
 
     @Override
     public NotificationContent getPayloadContent() {
-        // 即使是文本，也包装成统一格式存入 content 字段
         return NotificationContent.builder()
-                .renderType(RenderType.HTML)
-                .body(this.html)
+                .renderType(renderType)
+                .body(this.body)
+                .extra(this.extra)
                 .build();
     }
 }

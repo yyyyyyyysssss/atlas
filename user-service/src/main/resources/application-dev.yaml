@@ -18,6 +18,13 @@ spring:
           max-wait: 5000
 
 
+redisson:
+  config:
+    single-server-config:
+      database: 0
+      password: ${REDIS_PASSWORD:}
+      address: "redis://${REDIS_HOST:127.0.0.1}:${REDIS_PORT:6379}"
+
 atlas:
   user:
     server-url: http://localhost:9091

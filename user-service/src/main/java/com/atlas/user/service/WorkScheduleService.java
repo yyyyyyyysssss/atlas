@@ -2,6 +2,7 @@ package com.atlas.user.service;
 
 
 import com.atlas.user.domain.dto.WorkScheduleCreateDTO;
+import com.atlas.user.domain.dto.WorkScheduleTaskDTO;
 import com.atlas.user.domain.dto.WorkScheduleUpdateDTO;
 import com.atlas.user.domain.entity.WorkSchedule;
 import com.atlas.user.domain.vo.WorkScheduleVO;
@@ -26,5 +27,7 @@ public interface WorkScheduleService extends IService<WorkSchedule> {
     void updateWorkSchedule(Long userId,WorkScheduleUpdateDTO updateDTO, boolean isFullUpdate);
 
     void deleteWorkSchedule(Long userId,Long id);
+
+    void processScheduleRemind(WorkScheduleTaskDTO task);
 }
 

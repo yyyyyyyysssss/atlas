@@ -50,14 +50,12 @@ const Notification = () => {
   }, [unreadCount, dispatch])
 
   useSseEvent('notification_event', (data) => {
-    let { notificationId, contentType, content } = data
-    if (contentType === 'JSON') {
-      content = JSON.parse(content)
-    }
     notification.open({
-      message: data.title,
-      description: <MessageRenderer notificationId={notificationId} content={content} />,
+      description: <MessageRenderer message={data} />,
       duration: 0,
+      style: {
+        paddingTop: 30,
+      },
     })
     refreshUnreadCount()
   })

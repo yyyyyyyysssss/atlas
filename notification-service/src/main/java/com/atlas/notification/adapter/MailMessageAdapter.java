@@ -3,6 +3,7 @@ package com.atlas.notification.adapter;
 import com.atlas.common.core.api.notification.constant.NotificationConstant;
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
+import com.atlas.notification.domain.entity.NotificationContent;
 import com.atlas.notification.domain.mode.HtmlPayload;
 import com.atlas.notification.domain.mode.MessagePayload;
 import com.atlas.notification.domain.mode.TextPayload;
@@ -60,7 +61,7 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
         // 对目标地址进行简化展示，防止长列表刷屏
         String targetSummary = targets.size() > 5 ? targets.subList(0, 5) + "...total " + targets.size() : targets.toString();
         String logId = String.format("Subject: [%s] To: %s", subject, targetSummary);
-        String content = payload.getContent();
+        NotificationContent content = payload.getPayloadContent();
         try {
             // 阶段1: 设置邮件基础参数
             sw.start("Build-MimeMessage");
@@ -107,11 +108,11 @@ public class MailMessageAdapter extends AbstractMessageAdapter implements Messag
             // 阶段3: 渲染正文与内嵌图片
             sw.start("Render-Content");
             if (payload instanceof HtmlPayload) {
-                helper.setText(content, true);
+                helper.setText(content.getBody().toString(), true);
                 // 处理正文内嵌的图片
                 processInlineImages(helper, getAsMap(ext, NotificationConstant.Mail.INLINE_IMAGES));
             } else if (payload instanceof TextPayload) {
-                helper.setText(content, false);
+                helper.setText(content.getBody().toString(), false);
             }
             sw.stop();
 

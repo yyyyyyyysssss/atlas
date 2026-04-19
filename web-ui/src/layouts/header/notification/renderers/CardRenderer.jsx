@@ -229,7 +229,6 @@ const CardRenderer = React.memo(({ content, onClose }) => {
                                 lineHeight: 0, // 消除图片底部空隙
                                 cursor: 'default'
                             }}
-                        // onClick={(e) => e.stopPropagation()}
                         >
                             <Image
                                 src={imageUrl}

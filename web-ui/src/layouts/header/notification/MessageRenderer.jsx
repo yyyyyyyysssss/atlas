@@ -5,7 +5,7 @@ import TextRenderer from "./renderers/TextRenderer";
 import React from "react";
 import { markAllAsRead, markAsRead } from "../../../services/NotificationService";
 import { useRequest } from "ahooks";
-import { Info, Mail, ShieldAlert } from "lucide-react";
+import { ClipboardCheck, Info, Mail, ShieldAlert } from "lucide-react";
 import { formatRelativeTime } from "../../../utils/format";
 
 const { Text } = Typography
@@ -47,8 +47,24 @@ const MessageRenderer = ({ message, onMarkRead, onClose }) => {
 
     const getCategoryIcon = (category) => {
         const configs = {
-            SYSTEM: { icon: <Mail size={14} />, color: token.colorPrimary, bg: token.colorPrimaryBg, name: '系统通知：' },
-            SECURITY: { icon: <ShieldAlert size={14} />, color: token.colorError, bg: token.colorErrorBg, name: '安全告警：' },
+            SYSTEM: {
+                icon: <Mail size={14} />,
+                color: token.colorPrimary,
+                bg: token.colorPrimaryBg,
+                name: '系统通知：'
+            },
+            SECURITY: {
+                icon: <ShieldAlert size={14} />,
+                color: token.colorError,
+                bg: token.colorErrorBg,
+                name: '安全告警：'
+            },
+            TODO: {
+                icon: <ClipboardCheck size={14} />,
+                color: token.colorWarning,
+                bg: token.colorWarningBg,
+                name: '待办任务：'
+            },
             DEFAULT: {
                 icon: <Info size={14} />,
                 color: token.colorTextSecondary,

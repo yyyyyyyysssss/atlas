@@ -2,6 +2,7 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.utils.TransactionUtils;
@@ -92,15 +93,6 @@ public class WorkScheduleServiceImpl extends ServiceImpl<WorkScheduleMapper, Wor
         if (row <= 0) {
             throw new BusinessException("修改失败");
         }
-        notificationApi.send(
-                NotificationRequest
-                        .text(entity.getTitle(), entity.getContent())
-                        .inbox()
-                        .noRecord()
-                        .to()
-                        .toUserIds(entity.getUserId())
-                        .build()
-        );
         if (!oldStartTime.equals(entity.getStartTime())) {
             // 处理延迟提醒逻辑
             TransactionUtils.executeAfterCommit(() -> sendDelayNotify(entity));
@@ -154,6 +146,7 @@ public class WorkScheduleServiceImpl extends ServiceImpl<WorkScheduleMapper, Wor
                     NotificationRequest
                             .text(entity.getTitle(), entity.getContent())
                             .inbox()
+                            .category(NotificationCategory.TODO)
                             .noRecord()
                             .to()
                             .toUserIds(entity.getUserId())

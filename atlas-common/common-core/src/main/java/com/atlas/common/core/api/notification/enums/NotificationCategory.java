@@ -7,9 +7,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum NotificationCategory{
 
+    // 系统通知
     SYSTEM,
 
+    // SECURITY
     SECURITY,
+
+    // 待办任务
+    TODO,
     ;
 
 

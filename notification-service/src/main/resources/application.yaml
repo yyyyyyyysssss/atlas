@@ -28,11 +28,11 @@ spring:
   thymeleaf:
     cache: true
   mail:
-    host: localhost
-    port: 1025
+    host: ys0921.sbs
+    port: 31025
     username:
     password:
-    from: test@mail.com
+    from: ys0921@mail.com
     default-encoding: utf-8
   cloud:
     circuitbreaker:

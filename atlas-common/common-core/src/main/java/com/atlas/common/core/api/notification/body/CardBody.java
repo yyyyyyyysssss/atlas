@@ -13,6 +13,8 @@ import java.util.Map;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CardBody implements NotificationBody {
 
     private String subTitle;

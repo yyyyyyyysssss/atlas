@@ -1,9 +1,8 @@
 package com.atlas.notification.sse;
 
 import com.atlas.common.core.api.notification.enums.NotificationEventEnum;
-import com.atlas.notification.sse.event.SseDisconnectedEvent;
 import com.atlas.notification.sse.event.SseConnectedEvent;
-import jakarta.annotation.PreDestroy;
+import com.atlas.notification.sse.event.SseDisconnectedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,7 +15,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @Description
@@ -26,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class SseSessionManager implements NotificationSubscriber, SmartLifecycle {
+public class SseSessionManager implements SmartLifecycle {
 
     /**
      * 会话池：userId -> (terminal -> SseEmitter)
@@ -193,14 +191,6 @@ public class SseSessionManager implements NotificationSubscriber, SmartLifecycle
         return SESSION_POOL.values().stream().mapToInt(Map::size).sum();
     }
 
-    @Override
-    public void onMessage(Long userId, NotificationEventEnum eventName, Object data) {
-        if(userId == null){
-            broadcast(eventName.getCode(),data);
-        } else {
-            sendToUser(userId, eventName.getCode(), data);
-        }
-    }
 
     @Override
     public void stop() {

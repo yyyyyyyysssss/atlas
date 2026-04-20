@@ -1,8 +1,10 @@
 package com.atlas.common.core.api.notification.body;
 
 import com.atlas.common.core.api.notification.enums.RenderType;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * @Description
@@ -11,6 +13,8 @@ import lombok.Getter;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class FileBody implements NotificationBody {
 
     private String fileName;

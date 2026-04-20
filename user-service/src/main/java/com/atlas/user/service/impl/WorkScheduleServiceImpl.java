@@ -5,9 +5,9 @@ import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.common.core.queue.DelayMessagePublisher;
 import com.atlas.common.mybatis.utils.TransactionUtils;
-import com.atlas.common.redis.queue.DistributedDelayQueue;
-import com.atlas.user.consumer.WorkScheduleDelayConsumer;
+import com.atlas.user.consumer.handler.WorkScheduleDelayHandler;
 import com.atlas.user.domain.dto.WorkScheduleCreateDTO;
 import com.atlas.user.domain.dto.WorkScheduleTaskDTO;
 import com.atlas.user.domain.dto.WorkScheduleUpdateDTO;
@@ -43,7 +43,7 @@ public class WorkScheduleServiceImpl extends ServiceImpl<WorkScheduleMapper, Wor
     private WorkScheduleMapper workScheduleMapper;
 
     @Resource
-    private DistributedDelayQueue distributedDelayQueue;
+    private DelayMessagePublisher delayMessagePublisher;
 
     @Resource
     private NotificationApi notificationApi;
@@ -121,7 +121,7 @@ public class WorkScheduleServiceImpl extends ServiceImpl<WorkScheduleMapper, Wor
             WorkScheduleTaskDTO task = new WorkScheduleTaskDTO();
             task.setId(entity.getId());
             task.setStartTime(entity.getStartTime());
-            distributedDelayQueue.addJob(WorkScheduleDelayConsumer.SCHEDULE_NOTIFY_TOPIC, task, delay, TimeUnit.MILLISECONDS);
+            delayMessagePublisher.publish(WorkScheduleDelayHandler.TOPIC, task, delay, TimeUnit.MILLISECONDS);
         }
     }
 

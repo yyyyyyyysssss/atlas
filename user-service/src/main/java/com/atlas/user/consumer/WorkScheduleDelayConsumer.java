@@ -1,8 +1,8 @@
 package com.atlas.user.consumer;
 
 import com.atlas.common.redis.queue.AbstractDelayQueueConsumer;
+import com.atlas.user.consumer.handler.WorkScheduleDelayHandler;
 import com.atlas.user.domain.dto.WorkScheduleTaskDTO;
-import com.atlas.user.service.WorkScheduleService;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
@@ -11,22 +11,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkScheduleDelayConsumer extends AbstractDelayQueueConsumer<WorkScheduleTaskDTO> {
 
-    private final WorkScheduleService workScheduleService;
 
-    public static final String SCHEDULE_NOTIFY_TOPIC = "WORK_SCHEDULE_NOTIFY";
-
-    protected WorkScheduleDelayConsumer(RedissonClient redissonClient, WorkScheduleService workScheduleService) {
-        super(redissonClient, SCHEDULE_NOTIFY_TOPIC);
-        this.workScheduleService = workScheduleService;
+    public WorkScheduleDelayConsumer(RedissonClient redissonClient, WorkScheduleDelayHandler workScheduleDelayHandler) {
+        // 直接将 handler 传给父类，父类会自动获取 Topic 并开启监听
+        super(redissonClient, workScheduleDelayHandler);
     }
 
-    @Override
-    protected void execute(WorkScheduleTaskDTO task) {
-        log.info("收到日程提醒任务, id: {}", task.getId());
-        try {
-            workScheduleService.processScheduleRemind(task);
-        }catch (Exception e){
-            log.error("执行日程提醒失败, id: {}", task.getId(), e);
-        }
-    }
 }

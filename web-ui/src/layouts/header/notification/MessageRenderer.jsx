@@ -41,6 +41,9 @@ const MessageRenderer = ({ message, onMarkRead, onClose }) => {
         if (isRead && isRead === true) {
             return
         }
+        if(!notificationId){
+            return
+        }
         onMarkRead?.(notificationId)
         markAsReadAsync(notificationId)
     }

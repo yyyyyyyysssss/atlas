@@ -5,9 +5,6 @@ LABEL maintainer="Yan Shuai" \
       project="atlas" \
       module="gateway"
 
-# 设置时区
-RUN apk add --no-cache tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
-
 # 创建非 root 用户以增强生产安全性
 RUN addgroup -S app && adduser -S app -G app
 USER app:app
@@ -18,7 +15,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # 设置 JVM 运行参数
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
 
 EXPOSE 8080
 

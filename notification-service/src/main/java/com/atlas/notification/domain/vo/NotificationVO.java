@@ -2,6 +2,7 @@ package com.atlas.notification.domain.vo;
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
 import com.atlas.common.core.api.notification.enums.NotificationCategory;
+import com.atlas.notification.domain.entity.NotificationContent;
 import com.atlas.notification.enums.NotificationStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,7 @@ public class NotificationVO {
     private String templateCode;
 
     // 消息正文 
-    private String content;
+    private NotificationContent content;
 
     // SENDING: 发送中, SENT: 已发出 FAILED: 发送失败 
     private NotificationStatus status;

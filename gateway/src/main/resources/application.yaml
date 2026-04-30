@@ -141,3 +141,15 @@ http:
     insecureSkipVerify: true
     # HTTP 代理地址
     proxy:
+
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true # 显式开启 Liveness 和 Readiness 探针
+      show-details: always # 方便排查具体哪个组件挂了
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -183,23 +183,6 @@ resilience4j:
         # 公共线程池限制器: 线程池耗尽时进行降级
         base-config: default
 
-management:
-  health:
-    mail:
-      enabled: false
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-  info:
-    os:
-      enabled: true
-    env:
-      enabled: true
-
 pagehelper:
   helper-dialect: mysql
   reasonable: true

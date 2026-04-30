@@ -15,7 +15,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # 设置 JVM 运行参数
-ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+ENV JAVA_OPTS="-Xms768m -Xmx768m -XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
 
 EXPOSE 8080
 

@@ -91,11 +91,11 @@ spec:
           # 资源配额
           resources:
             requests:
-              cpu: "200m"
-              memory: "512Mi"
+              cpu: "500m"
+              memory: "768Mi"
             limits:
-              cpu: "1000m"
-              memory: "1024Mi"
+              cpu: "2000m"
+              memory: "1280Mi"
           volumeMounts:
             - name: log-path
               mountPath: /var/log

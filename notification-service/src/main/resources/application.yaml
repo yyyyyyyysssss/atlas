@@ -188,13 +188,13 @@ http:
 
 atlas:
   user:
-    server-url: http://user-service:8080
+    server-url: http://user-service
   auth:
-    server-url: http://auth-service:8080
+    server-url: http://auth-service
   file:
-    server-url: http://file-service:8080
+    server-url: http://file-service
   notification:
-    server-url: http://notification-service:8080
+    server-url: http://notification-service
 
 management:
   endpoint:

@@ -1,0 +1,106 @@
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-svc
+  namespace: atlas
+  labels:
+    app: gateway
+    project: atlas
+spec:
+  selector:
+    app: gateway
+    project: atlas
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80         # 集群内其他服务访问端口
+      targetPort: 8080 # 容器内 SpringBoot 监听端口
+  type: ClusterIP
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: atlas
+  labels:
+    app: gateway
+    project: atlas
+
+spec:
+  replicas: 1 # 生产环境建议至少 2 副本，保证高可用
+  revisionHistoryLimit: 5 # 保留最近 5 个历史版本用于回滚
+  selector:
+    matchLabels:
+      app: gateway
+      project: atlas
+  # 滚动更新策略：保证发布时服务不中断
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1       # 更新时允许超出期望副本数的数量
+      maxUnavailable: 0 # 保证更新过程中始终有可用副本
+  template:
+    metadata:
+      labels:
+        app: gateway
+        project: atlas
+    spec:
+      # 阿里云私有仓库拉取凭证
+      imagePullSecrets:
+        - name: aliyun-acr-secret
+      # 优雅停机配置：给应用 30 秒处理完剩余请求
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: gateway
+          image: ${IMAGE_TAG} # 由 Jenkins 动态替换
+          imagePullPolicy: Always
+          # 端口配置
+          ports:
+            - containerPort: 8080
+              name: http-port
+          # 环境变量
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          envFrom:
+            - configMapRef:
+                name: atlas-configmap
+            - secretRef:
+                name: atlas-secret
+          # 健康检查 (Liveness & Readiness)
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30 # 启动后 30s 开始检测
+            periodSeconds: 15       # 每隔 15 秒检查一次。
+            timeoutSeconds: 5       # 请求超时时间。如果 5 秒内接口没响应，视为一次失败。
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 25
+            periodSeconds: 10        # 每隔 10 秒检查一次。
+            successThreshold: 1      # 只要有 1 次成功，K8s 就认为这个 Pod 准备好了，开始分发流量。
+            failureThreshold: 3      # 连续 3 次失败才认为真的挂了（K8s 默认值通常是 3）。
+          # 资源配额
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          volumeMounts:
+            - name: log-path
+              mountPath: /var/log
+      volumes:
+        - name: log-path
+          emptyDir: {}
+
+

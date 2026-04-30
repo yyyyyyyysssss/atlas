@@ -189,3 +189,13 @@ http:
     insecureSkipVerify: true
     # HTTP 代理地址
     proxy:
+
+atlas:
+  user:
+    server-url: http://user-service:8080
+  auth:
+    server-url: http://auth-service:8080
+  file:
+    server-url: http://file-service:8080
+  notification:
+    server-url: http://notification-service:8080

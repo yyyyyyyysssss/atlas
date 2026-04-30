@@ -222,9 +222,6 @@ http:
 
 
 atlas:
-  aspect:
-    controller-log:
-      enabled: true
   user:
     server-url: http://user-service:8080
   auth:

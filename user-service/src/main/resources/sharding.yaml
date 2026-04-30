@@ -61,7 +61,7 @@ rules:
       - user_role       # 广播：用户与角色的关联表
   - !SINGLE
     tables:
-      - "master.*"
+      - "*.*"
   - !READWRITE_SPLITTING
     dataSourceGroups:
       readwrite_ds:

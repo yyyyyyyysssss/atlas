@@ -41,7 +41,7 @@ dataSources:
 rules:
   - !SINGLE
     tables:
-      - "master.*"
+      - "*.*"
   - !READWRITE_SPLITTING
     dataSourceGroups:
       readwrite_ds:

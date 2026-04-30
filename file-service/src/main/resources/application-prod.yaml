@@ -22,6 +22,3 @@ minio:
   bucketName: y-chat-bucket
   accessKey: ${MINIO_ACCESS_KEY}
   secretKey: ${MINIO_SECRET_KEY}
-
-file:
-  access-url: http://localhost:9097

@@ -71,11 +71,6 @@ security:
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 7d
 
-atlas:
-  aspect:
-    controller-log:
-      enabled: true
-
 logging:
   level:
     com.atlas.common.core.api: info
@@ -227,6 +222,9 @@ http:
 
 
 atlas:
+  aspect:
+    controller-log:
+      enabled: true
   user:
     server-url: http://user-service:8080
   auth:

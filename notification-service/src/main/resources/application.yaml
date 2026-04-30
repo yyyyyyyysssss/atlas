@@ -164,22 +164,6 @@ resilience4j:
         # 公共线程池限制器: 线程池耗尽时进行降级
         base-config: default
 
-management:
-  health:
-    mail:
-      enabled: false
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-  info:
-    os:
-      enabled: true
-    env:
-      enabled: true
 
 pagehelper:
   helper-dialect: mysql
@@ -211,3 +195,14 @@ atlas:
     server-url: http://file-service:8080
   notification:
     server-url: http://notification-service:8080
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true # 显式开启 Liveness 和 Readiness 探针
+      show-details: always # 方便排查具体哪个组件挂了
+  endpoints:
+    web:
+      exposure:
+        include: health

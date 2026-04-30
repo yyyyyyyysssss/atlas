@@ -32,7 +32,7 @@ spring:
           routes:
             # 用户服务
             - id: user_route
-              uri: http://localhost:9091
+              uri: http://user-service:8080
               predicates:
                 - Path=/api/user/** # 匹配以此路径开头的请求
               filters:
@@ -40,7 +40,7 @@ spring:
 
             # 认证服务
             - id: auth_route
-              uri: http://localhost:9096
+              uri: http://auth-service:8080
               predicates:
                 - Path=/api/auth/**
               filters:
@@ -48,19 +48,19 @@ spring:
 
             # 文件服务
             - id: file_route
-              uri: http://localhost:9097
+              uri: http://file-service:8080
               predicates:
                 - Path=/api/file/**
               filters:
                 - StripPrefix=2
             - id: file_access_route
-              uri: http://localhost:9097
+              uri: http://file-service:8080
               predicates:
                 - Path=/file/**
 
             # 消息通知服务
             - id: notification_route
-              uri: http://localhost:9099
+              uri: http://notification-service:8080
               predicates:
                 - Path=/api/notification/**
               filters:
@@ -70,7 +70,7 @@ spring:
 rate-limit:
   services:
     - serviceId: auth-service
-      uri: http://localhost:9096
+      uri: http://auth-service:8080
       stripPrefix: 2
       limits:
         - path: /api/auth/code/send-email

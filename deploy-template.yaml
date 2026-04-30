@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ${MODULE_NAME}-svc
+  name: ${MODULE_NAME}
   namespace: atlas
   labels:
     app: ${MODULE_NAME}

@@ -1,10 +1,15 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import http from 'node:http';
+import https from 'node:https';
 
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) }
   const apiUrl = process.env.VITE_API_BASE_URL
+  const isHttps = apiUrl.startsWith('https')
+  const agent = isHttps
+    ? new https.Agent({ keepAlive: true, keepAliveMsecs: 5000 })
+    : new http.Agent({ keepAlive: true, keepAliveMsecs: 5000 })
   return {
     build: {
       outDir: 'build',
@@ -17,17 +22,15 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: apiUrl,
           changeOrigin: true, // 修改请求头中的Origin字段
-          secure: false, // 如果使用的是 HTTPS，需要设置为 true
+          secure: isHttps, // 如果使用的是 HTTPS，需要设置为 true
           // rewrite: (path) => path.replace(/^\/api/, ''), // 重写路径
-          agent: new http.Agent({
-            keepAlive: true,
-            keepAliveMsecs: 5000 // 保持连接活跃
-          }),
+          agent: agent
         },
         '/file': {
           target: apiUrl,
           changeOrigin: true,
-          secure: false,
+          secure: isHttps,
+          agent: agent
         },
       }
     }

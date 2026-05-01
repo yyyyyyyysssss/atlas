@@ -46,6 +46,7 @@
   "scripts": {
     "dev": "vite --mode dev",
     "stg": "vite --mode stg",
+    "prod": "vite --mode prod",
     "build": "vite build --mode prod",
     "preview": "vite preview"
   },

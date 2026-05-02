@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import './index.css'
 import { Avatar, Flex, Menu, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -39,6 +39,8 @@ const Sider = () => {
 
     const dispatch = useDispatch()
 
+    const [isPending, startTransition] = useTransition();
+
     const navigate = useNavigate()
 
     const location = useLocation()
@@ -59,10 +61,10 @@ const Sider = () => {
         if (!menuItem) {
             return
         }
-        const targetPath = menuItem.routePath
-        if (location.pathname !== targetPath) {
-            navigate(targetPath)
-        }
+        startTransition(() => {
+            navigate(menuItem.routePath)
+        })
+
     }
 
     const goHome = () => {

@@ -337,11 +337,11 @@ const DictItem = () => {
             visible: true,
             render: (_, record) => {
                 return (
-                    <Space>
+                    <Space size={8} wrap={false} style={{ whiteSpace: 'nowrap' }}>
                         <HasPermission
                             hasPermissions='system:dict:write'
                         >
-                            <Space>
+                            <Space size={8}>
                                 <Typography.Link style={{ whiteSpace: 'nowrap' }} onClick={() => handleEditDictItem(record.id)}>
                                     {t('编辑')}
                                 </Typography.Link>

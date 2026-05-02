@@ -341,24 +341,26 @@ const RoleManage = () => {
             title: '操作',
             dataIndex: 'operation',
             align: 'center',
+            width: 220,
             fixed: 'right',
             render: (_, record) => {
                 return (
-                    <span>
+                    <Space size={8} wrap={false} style={{ whiteSpace: 'nowrap' }}>
                         <HasPermission hasPermissions='system:role:write'>
-                            <Typography.Link onClick={() => handleBindUser(record)} style={{ marginInlineEnd: 8 }}>
-                                {t('分配用户')}
-                            </Typography.Link>
-                            <Typography.Link onClick={() => handleBindAuthority(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('分配权限')}
-                            </Typography.Link>
-                            <Typography.Link onClick={() => handleEditRole(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('编辑')}
-                            </Typography.Link>
+                            <Space size={8}>
+                                <Typography.Link onClick={() => handleBindUser(record)}>
+                                    {t('分配用户')}
+                                </Typography.Link>
+                                <Typography.Link onClick={() => handleBindAuthority(record.id)}>
+                                    {t('分配权限')}
+                                </Typography.Link>
+                                <Typography.Link onClick={() => handleEditRole(record.id)}>
+                                    {t('编辑')}
+                                </Typography.Link>
+                            </Space>
                         </HasPermission>
                         <HasPermission hasPermissions='system:role:delete'>
                             <Typography.Link
-                                style={{ marginInlineEnd: 8 }}
                                 onClick={() => {
                                     modal.confirm({
                                         title: t('确定删除'),
@@ -380,7 +382,7 @@ const RoleManage = () => {
                                 {t('删除')}
                             </Typography.Link>
                         </HasPermission>
-                    </span>
+                    </Space>
                 )
             }
         }

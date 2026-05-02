@@ -291,19 +291,22 @@ const DictManage = () => {
             dataIndex: 'operation',
             align: 'center',
             fixed: 'right',
+            width: 220,
             visible: true,
             render: (_, record) => {
                 return (
-                    <Space>
+                    <Space size={8} wrap={false} style={{ whiteSpace: 'nowrap' }}>
                         <HasPermission
                             hasPermissions='system:dict:write'
                         >
-                            <Typography.Link onClick={() => handleEditDict(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('编辑')}
-                            </Typography.Link>
-                            <Typography.Link onClick={() => handleSettingDictItem(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('设置字典项')}
-                            </Typography.Link>
+                            <Space size={8}>
+                                <Typography.Link onClick={() => handleEditDict(record.id)}>
+                                    {t('编辑')}
+                                </Typography.Link>
+                                <Typography.Link onClick={() => handleSettingDictItem(record.id)}>
+                                    {t('设置字典项')}
+                                </Typography.Link>
+                            </Space>
                         </HasPermission>
                         <HasPermission
                             hasPermissions='system:dict:delete'

@@ -355,41 +355,43 @@ const UserManage = () => {
             dataIndex: 'operation',
             align: 'center',
             fixed: 'right',
+            width: 220,
             visible: true,
             render: (_, record) => {
                 return (
-                    <span>
+                    <Space size={8} wrap={false} style={{ whiteSpace: 'nowrap' }}>
                         <HasPermission
                             hasPermissions='system:user:write'
                         >
-                            <Typography.Link onClick={() => handleBindRole(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('分配角色')}
-                            </Typography.Link>
-                            <Typography.Link onClick={() => handleEditUser(record.id)} style={{ marginInlineEnd: 8 }}>
-                                {t('编辑')}
-                            </Typography.Link>
-                            <Typography.Link
-                                style={{ marginInlineEnd: 8 }}
-                                onClick={() => {
-                                    modal.confirm({
-                                        title: t('确定重置'),
-                                        okText: t('确定'),
-                                        cancelText: t('取消'),
-                                        maskClosable: false,
-                                        confirmLoading: resetPasswordLoading,
-                                        content: (
-                                            <>
-                                                是否重置 <Highlight>{record.fullName}</Highlight> 的密码？
-                                            </>
-                                        ),
-                                        onOk: async () => {
-                                            await handleResetPassword(record)
-                                        },
-                                    })
-                                }}
-                            >
-                                {t('重置密码')}
-                            </Typography.Link>
+                            <Space size={8}>
+                                <Typography.Link onClick={() => handleBindRole(record.id)}>
+                                    {t('分配角色')}
+                                </Typography.Link>
+                                <Typography.Link onClick={() => handleEditUser(record.id)}>
+                                    {t('编辑')}
+                                </Typography.Link>
+                                <Typography.Link
+                                    onClick={() => {
+                                        modal.confirm({
+                                            title: t('确定重置'),
+                                            okText: t('确定'),
+                                            cancelText: t('取消'),
+                                            maskClosable: false,
+                                            confirmLoading: resetPasswordLoading,
+                                            content: (
+                                                <>
+                                                    是否重置 <Highlight>{record.fullName}</Highlight> 的密码？
+                                                </>
+                                            ),
+                                            onOk: async () => {
+                                                await handleResetPassword(record)
+                                            },
+                                        })
+                                    }}
+                                >
+                                    {t('重置密码')}
+                                </Typography.Link>
+                            </Space>
                         </HasPermission>
                         <HasPermission
                             hasPermissions='system:user:delete'
@@ -416,7 +418,7 @@ const UserManage = () => {
                                 ]}
                             />
                         </HasPermission>
-                    </span>
+                    </Space>
                 )
             }
         }

@@ -156,13 +156,17 @@ const AppLayout = () => {
                                         <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
                                     </Affix>
 
-                                    <AnimatePresence mode="wait">
+                                    <AnimatePresence mode="popLayout" initial={false}>
                                         <motion.div
                                             key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
-                                            initial={{ opacity: 0, x: 20 }}    // 初始状态 (appear)
-                                            animate={{ opacity: 1, x: 0 }}     // 进入后的状态
-                                            exit={{ opacity: 0, x: -20 }}      // 退出时的状态
-                                            transition={{ duration: 0.2 }}     // 对应 timeout={200}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.99, x: 15 }}
+                                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                                            exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
+                                            transition={{
+                                                duration: 0.25,
+                                                ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
+                                            }}
                                             style={{
                                                 minHeight: '100%',
                                                 width: '100%',

@@ -287,15 +287,34 @@ const SmartTable = <T extends any>({
     useEffect(() => {
         const storageColums = localStorage.getItem(STORAGE_KEY)
         if (storageColums && !isDev) {
-            const parsedColums = JSON.parse(storageColums)
-            const merged = parsedColums.map((saved: any) => {
-                const col: any = columns.find((c) => c.key === (saved.key || saved.dataIndex))
+            const parsed = JSON.parse(storageColums); // 用户上次保存的列状态（数组）
+
+            // 1. 建立 Key 到 缓存位置(Index) 的映射表，提升 sort 性能
+            const orderMap = new Map();
+            parsed.forEach((item: any, index: number) => {
+                orderMap.set(item.key, index)
+            })
+
+            // 2. 以当前最新的 columns 为主体进行处理
+            const merged = columns.map((col: any) => {
+                const key = col.key || col.dataIndex
+                // 找到该列在缓存中的配置
+                const saved = parsed.find((p: any) => p.key === key)
+
                 return {
-                    ...col, // 最新配置
-                    ...saved, // 用户偏好
-                    key: col?.key || col?.dataIndex,
+                    ...col,   // 始终以最新代码里的配置为底（保证 render 等函数不丢失）
+                    ...saved, // 覆盖用户修改过的属性（如 visible, fixed, width）
+                    key,      // 确保 key 字段存在
                 }
             })
+
+            // 3. 排序：如果缓存里有顺序，按缓存排；如果没有（新加的列），排在最后
+            merged.sort((a, b) => {
+                const orderA = orderMap.has(a.key) ? orderMap.get(a.key) : Infinity;
+                const orderB = orderMap.has(b.key) ? orderMap.get(b.key) : Infinity;
+                return orderA - orderB;
+            })
+
             setTableColumns(merged)
         } else {
             setTableColumns((prev) => {

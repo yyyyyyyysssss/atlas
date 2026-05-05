@@ -19,6 +19,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @Description OncePerRequestFilter 一次请求中只会执行一次的过滤器
@@ -75,10 +76,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     // 忽略已配置放行的url
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        if (securityProperties == null || securityProperties.getAuthorize() == null || securityProperties.getAuthorize().getPermit() == null) {
+            return false;
+        }
         String requestUri = request.getRequestURI();
         return securityProperties.getAuthorize()
                 .getPermit()
                 .stream()
+                .filter(Objects::nonNull)
                 .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
     }
 }

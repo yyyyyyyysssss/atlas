@@ -84,7 +84,7 @@ security:
 
 logging:
   level:
-    org.springframework.security: trace
+    org.springframework.security: info
     com.atlas.common.core.api: info
 
 mybatis-plus:

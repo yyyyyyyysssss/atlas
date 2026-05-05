@@ -88,7 +88,12 @@ public class AtlasSecurityAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "security")
+    @ConditionalOnProperty(
+            prefix = "security.token-filter",
+            name = "enabled",
+            havingValue = "true",
+            matchIfMissing = true
+    )
     @ConditionalOnMissingBean
     public TokenAuthenticationFilter tokenAuthenticationFilter(
             TokenService tokenService,

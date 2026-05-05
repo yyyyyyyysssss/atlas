@@ -50,6 +50,9 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
+security:
+  token-filter:
+    enabled: false
 
 # 使用resilience4j 熔断降级配置
 resilience4j:

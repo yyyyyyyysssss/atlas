@@ -42,13 +42,14 @@ spring:
 
 
 security:
-  loginPage: http://localhost:3000/login
+  issuerUrl: https://atlas.ys0921.sbs:4443
+  uiUrl: https://atlas.ys0921.sbs:4443
   authorize:
     permit:
       - /login
       - /login/ott
       - /refreshToken
-      - /oauth2/client/**
+      - /oauth2/oidc/logout
       - /oauth2/consent
       - /oauth2/activate
       - /activated
@@ -70,9 +71,20 @@ security:
     secretKey: 209E335266556A586E3272357538782F413A4428472B4B6250645367566B5B76
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 7d
+  other-login:
+    google:
+      clientName: Google
+      clientId: 848791233261-gsq163m89ik7u9od9erunaudnvekf2r5.apps.googleusercontent.com
+      clientSecret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
+      redirectUrl: https://atlas.ys0921.sbs:4443/login
+      scope: https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile+openid
+      authCodeUrl: https://accounts.google.com/o/oauth2/v2/auth?client_id=${auth.other-login.google.clientId}&scope=${auth.other-login.google.scope}&response_type=code&access_type=offline&prompt=consent&state=Google&redirect_uri=${auth.other-login.github.redirectUrl}
+      tokenUrl: https://oauth2.googleapis.com/token
+      userInfoUrl: https://www.googleapis.com/oauth2/v3/userinfo
 
 logging:
   level:
+    org.springframework.security: trace
     com.atlas.common.core.api: info
 
 mybatis-plus:

@@ -5,11 +5,14 @@ import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.exception.SecurityExceptionAdvice;
+import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.jackson.AuthorityUrlMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
 import com.atlas.security.jackson.SecurityUserMixin;
 import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.model.SecurityUser;
+import com.atlas.security.oauth2.JwtGrantedScopeAuthoritiesConverter;
+import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.RedisSecurityContextRepository;
 import com.atlas.security.repository.SecurityContextStore;
@@ -38,9 +41,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.CoreJackson2Module;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
 
 /**
@@ -85,6 +88,16 @@ public class AtlasSecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public TokenAuthenticationFilter tokenAuthenticationFilter(
+            TokenService tokenService,
+            NormalBearerTokenResolver normalBearerTokenResolver,
+            SecurityProperties securityProperties){
+
+        return new TokenAuthenticationFilter(tokenService, normalBearerTokenResolver,securityProperties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public SecurityContextStore securityContextRepository(
             @Qualifier("securityRedisTemplate") RedisTemplate<String, SecurityContext> securityRedisTemplate,
             SecurityProperties securityProperties) {
@@ -93,6 +106,7 @@ public class AtlasSecurityAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public RedisTemplate<String, SecurityContext> securityRedisTemplate(RedisConnectionFactory redisConnectionFactory, @Qualifier("securityObjectMapper") ObjectMapper securityObjectMapper) {
         RedisTemplate<String, SecurityContext> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
@@ -144,6 +158,28 @@ public class AtlasSecurityAutoConfiguration {
     public JwtUtils jwtUtils(SecurityProperties securityProperties) {
 
         return new JwtUtils(securityProperties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        //自定义基于scope jwt解析器，设置解析出来的权限信息的前缀与在jwt中的key
+        JwtGrantedScopeAuthoritiesConverter jwtGrantedScopeAuthoritiesConverter = new JwtGrantedScopeAuthoritiesConverter();
+        // 设置解析权限信息的前缀，设置为空是去掉前缀
+        jwtGrantedScopeAuthoritiesConverter.setAuthorityPrefix("");
+
+        // 设置权限信息在jwt claims中的key
+        jwtGrantedScopeAuthoritiesConverter.setAuthoritiesClaimName("scope");
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedScopeAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OAuth2BearerTokenResolver oAuth2BearerTokenResolver() {
+
+        return new OAuth2BearerTokenResolver();
     }
 
 }

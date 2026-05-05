@@ -19,7 +19,9 @@ import java.util.stream.Stream;
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
 
-    private String loginPage;
+    private String issuerUrl;
+
+    private String uiUrl;
 
     private AuthorizeConfig authorize = new AuthorizeConfig();
 

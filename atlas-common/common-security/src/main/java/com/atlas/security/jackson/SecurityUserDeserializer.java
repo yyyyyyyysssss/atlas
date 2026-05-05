@@ -32,12 +32,18 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String tokenId = JsonNodeUtils.findStringValue(root, "tokenId");
         Set<Integer> dataScopes = (Set<Integer>) mapper.readValue(this.readJsonNode(root, "dataScopes").traverse(mapper), new TypeReference<>() {});
         String orgId = JsonNodeUtils.findNumberValue(root, "orgId");
+        String avatar = JsonNodeUtils.findStringValue(root, "avatar");
+        String email = JsonNodeUtils.findStringValue(root, "email");
+        String phone = JsonNodeUtils.findStringValue(root, "phone");
         List<? extends GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(root, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
         securityUser.setId(Long.parseLong(id));
         securityUser.setUsername(username);
         securityUser.setPassword(password);
         securityUser.setFullName(fullName);
         securityUser.setTokenId(tokenId);
+        securityUser.setAvatar(avatar);
+        securityUser.setEmail(email);
+        securityUser.setPhone(phone);
 
         securityUser.setDataScopes(dataScopes);
         securityUser.setOrgId(orgId != null ? Long.parseLong(orgId) : null);

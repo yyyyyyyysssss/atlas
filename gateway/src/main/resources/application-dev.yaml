@@ -55,6 +55,10 @@ spring:
                 - StripPrefix=2
 
 
+security:
+  issuerUrl: https://localhost:9090
+  uiUrl: https://localhost:3000
+
 rate-limit:
   services:
     - serviceId: auth-service

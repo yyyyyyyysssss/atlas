@@ -26,5 +26,11 @@ public class UserAuthDTO {
 
     private Long orgId;
 
+    private String avatar;
+
+    private String email;
+
+    private String phone;
+
 
 }

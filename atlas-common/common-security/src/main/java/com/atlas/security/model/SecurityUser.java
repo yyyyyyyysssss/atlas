@@ -30,6 +30,12 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private Long orgId;
 
+    private String avatar;
+
+    private String email;
+
+    private String phone;
+
     private List<? extends GrantedAuthority> authorities;
 
     @Override

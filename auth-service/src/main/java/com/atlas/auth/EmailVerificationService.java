@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;

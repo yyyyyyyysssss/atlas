@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,9 +21,11 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
         String userId = request.getHeader(CommonConstant.USER_ID);
         // 不为空则构造一个已认证的 Authentication 对象
         if (userId != null && !userId.isBlank()) {
-            UsernamePasswordAuthenticationToken authentication = UsernamePasswordAuthenticationToken.authenticated(userId, null, null);
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            UsernamePasswordAuthenticationToken authentication = UsernamePasswordAuthenticationToken.authenticated(userId, null, AuthorityUtils.NO_AUTHORITIES);
+            context.setAuthentication(authentication);
             // 存入上下文
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
         }
         filterChain.doFilter(request, response);
     }

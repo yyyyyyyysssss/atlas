@@ -80,7 +80,8 @@ rate-limit:
           keyResolverName: ipKeyResolver
 
 security:
-  loginPage: http://localhost:3000/login
+  issuerUrl: https://atlas.ys0921.sbs:4443
+  uiUrl: https://atlas.ys0921.sbs:4443
   authorize:
     permit:
       - /api/auth/login
@@ -88,9 +89,9 @@ security:
       - /api/auth/login/ott
       - /api/auth/ott/generate
       - /api/auth/refreshToken
-      - /api/auth/oauth2/client/**
-      - /api/auth/oauth2/consent
-      - /api/auth/oauth2/activate
+      - /api/auth/oauth2/**
+      - /api/auth/connect/logout
+      - /api/auth/userinfo
       - /api/auth/activated
       - /api/*/open/**
       - /actuator/**

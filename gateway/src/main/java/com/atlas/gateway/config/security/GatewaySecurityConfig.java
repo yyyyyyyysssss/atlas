@@ -5,7 +5,7 @@ import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathR
 import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
 import com.atlas.gateway.config.security.filter.FileCookieAuthenticationFilter;
 import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
-import com.atlas.gateway.config.security.filter.TokenAuthenticationFilter;
+import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
@@ -48,13 +48,14 @@ public class GatewaySecurityConfig {
     private SecurityProperties securityProperties;
 
     @Resource
+    private TokenAuthenticationFilter tokenAuthenticationFilter;
+
+    @Resource
     private TokenService tokenService;
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
 
-    @Resource
-    private NormalBearerTokenResolver normalBearerTokenResolver;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -95,7 +96,7 @@ public class GatewaySecurityConfig {
                             .anyRequest().access(requestPathAuthorizationManager());
                 })
                 // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
-                .addFilterBefore(tokenAuthenticationFilter(), SecurityContextHolderFilter.class)
+                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
                 // 用于文件访问的过滤器
                 .addFilterBefore(fileCookieAuthenticationFilter(), SecurityContextHolderFilter.class)
                 // 基于请求头apikey认证的过滤器
@@ -115,13 +116,6 @@ public class GatewaySecurityConfig {
                 .authenticationProvider(apikeyAuthenticationProvider())
                 .parentAuthenticationManager(null)
                 .build();
-    }
-
-    //token过滤器
-    @Bean
-    public TokenAuthenticationFilter tokenAuthenticationFilter() {
-
-        return new TokenAuthenticationFilter(tokenService, normalBearerTokenResolver,securityProperties);
     }
 
     @Bean

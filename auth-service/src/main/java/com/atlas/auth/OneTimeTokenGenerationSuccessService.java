@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
@@ -30,7 +30,7 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) {
-        String magicLink = securityProperties.getLoginPage() + "?ottToken=" + oneTimeToken.getTokenValue();
+        String magicLink = securityProperties.getIssuerUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
         log.info("magic link: {}", magicLink);
         notificationApi.send(
                 NotificationRequest

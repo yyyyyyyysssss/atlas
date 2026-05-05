@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 
 import com.atlas.security.enums.ClientType;
@@ -13,7 +13,6 @@ import com.atlas.security.token.RefreshAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;

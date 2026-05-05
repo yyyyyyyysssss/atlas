@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.constant.SecurityConstant;

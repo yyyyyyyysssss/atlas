@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -7,7 +7,6 @@ import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
 import jakarta.annotation.Resource;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;

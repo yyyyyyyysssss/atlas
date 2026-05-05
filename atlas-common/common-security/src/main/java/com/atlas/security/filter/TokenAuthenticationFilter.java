@@ -1,4 +1,4 @@
-package com.atlas.gateway.config.security.filter;
+package com.atlas.security.filter;
 
 
 import com.atlas.security.enums.TokenType;

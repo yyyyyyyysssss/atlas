@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth;
 
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
@@ -38,6 +38,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         securityUser.setEnabled(userAuthDTO.isEnabled());
         securityUser.setDataScopes(userAuthDTO.getDataScopes());
         securityUser.setOrgId(userAuthDTO.getOrgId());
+        securityUser.setAvatar(userAuthDTO.getAvatar());
+        securityUser.setEmail(userAuthDTO.getEmail());
+        securityUser.setPhone(userAuthDTO.getPhone());
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();
         for (RoleAuthDTO roleAuthDTO : authorities) {

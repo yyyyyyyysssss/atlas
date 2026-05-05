@@ -18,6 +18,10 @@ spring:
           max-wait: 5000
 
 
+security:
+  issuerUrl: http://localhost:9090
+  uiUrl: http://localhost:3000
+
 atlas:
   user:
     server-url: http://localhost:9091

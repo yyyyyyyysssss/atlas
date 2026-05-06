@@ -9,6 +9,8 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.gateway.server.mvc.common.MvcUtils;
+import org.springframework.cloud.gateway.server.mvc.filter.Bucket4jFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.servlet.function.*;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -130,5 +133,91 @@ public class RateLimiterConfig {
         return builder.build();
     }
 
+    @Bean
+    public HandlerFilterFunction<ServerResponse, ServerResponse> globalRateLimitFilter(RateLimitProperties rateLimitProperties, Map<String, Function<ServerRequest, String>> keyResolvers) {
+
+        return (request, next) -> {
+            // 1. 获取当前路由 ID
+            String routeId = request.attribute(MvcUtils.GATEWAY_ROUTE_ID_ATTR)
+                    .map(Object::toString).orElse(null);
+
+            if (routeId == null) {
+                return next.handle(request);
+            }
+
+            // 根据 routeId 匹配配置
+            var serviceConfig = rateLimitProperties.getServices().stream()
+                    .filter(s -> s.getServiceId().equals(routeId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (serviceConfig != null) {
+                // 匹配具体接口规则
+                var rule = serviceConfig.getLimits().stream()
+                        .filter(r -> request.path().equals(r.getPath()))
+                        .filter(r -> r.getMethods() == null || r.getMethods().contains(request.method().name()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (rule != null) {
+                    // 执行限流逻辑
+                    return executeRateLimit(request, next, rule, keyResolvers);
+                }
+            }
+
+            return next.handle(request);
+        };
+    }
+
+    /**
+     * 将 Filter 注册到所有路由
+     */
+    @Bean
+    public RouterFunction<ServerResponse> globalFilterRouter(
+            HandlerFilterFunction<ServerResponse, ServerResponse> globalRateLimitFilter) {
+        return RouterFunctions.route()
+                .route(RequestPredicates.all(), request -> null) // 定义一个全匹配谓词，但 Handler 设为 null，因为我们主要用 filter
+                .filter(globalRateLimitFilter)
+                .build();
+    }
+
+    private ServerResponse executeRateLimit(
+            ServerRequest request,
+            HandlerFunction<ServerResponse> next,
+            RateLimitProperties.LimitRule rule,
+            Map<String, Function<ServerRequest, String>> keyResolvers) throws Exception {
+
+        // 获取解析器 (默认 IP)
+        String resolverName = rule.getKeyResolverName() != null ? rule.getKeyResolverName() : "pathKeyResolver";
+        Function<ServerRequest, String> resolver = keyResolvers.getOrDefault(resolverName, keyResolvers.get("pathKeyResolver"));
+
+        // 利用原生 Bucket4j 过滤器
+        HandlerFilterFunction<ServerResponse, ServerResponse> rateLimiterFilter =
+                rateLimit(c -> c
+                        .setCapacity(rule.getCapacity())
+                        .setPeriod(Duration.ofSeconds(rule.getPeriodInSeconds()))
+                        .setKeyResolver(resolver)
+                );
+        ServerResponse response = rateLimiterFilter.filter(request, next);
+        // 判断是否触发限流
+        if (response.statusCode().value() == HttpStatus.TOO_MANY_REQUESTS.value()) {
+            log.warn("Rate limit triggered for path [{}], key [{}]", request.path(), resolver.apply(request));
+            return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(ResultGenerator.failed(new IErrorCode() {
+                                @Override
+                                public int getCode() {
+                                    return HttpStatus.TOO_MANY_REQUESTS.value();
+                                }
+
+                                @Override
+                                public String getMessage() {
+                                    return HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase();
+                                }
+                            })
+                    );
+        }
+        return response;
+    }
 
 }

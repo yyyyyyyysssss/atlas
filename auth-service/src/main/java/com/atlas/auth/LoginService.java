@@ -37,7 +37,7 @@ public class LoginService {
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
 
         // 会话控制
-        sessionControlService.kickOutExcessiveSessions(securityUser.getId());
+        sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
         // 发证
         TokenResponse tokenResponse = tokenService.createToken(securityUser, clientType, refresh, rememberMe);
@@ -50,7 +50,7 @@ public class LoginService {
         SecurityContextHolder.setContext(securityContext);
 
         // 注册会话
-        sessionControlService.registerSession(securityUser.getId(),tokenId,tokenResponse.access().expiresIn());
+        sessionControlService.registerSession(securityUser.getId(), tokenId, tokenResponse.access().expiresIn(), clientType);
         return tokenResponse;
     }
 

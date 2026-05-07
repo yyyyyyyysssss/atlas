@@ -3,11 +3,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { checkTokenValid, clearToken, saveToken } from '../services/LoginService';
 import { setGlobalSignout } from './auth';
 import reduxStore from '../redux/store';
-import { reset as resetLayout } from '../redux/slices/layoutSlice';
-import { reset as resetUser } from '../redux/slices/userSlice';
-import { reset as resetAuth } from '../redux/slices/authSlice';
+import { loadMenuItems, reset as resetLayout } from '../redux/slices/layoutSlice';
+import { reset as resetUser, setUserInfo } from '../redux/slices/userSlice';
+import { reset as resetAuth, setAuthInfo } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
 import Cookies from 'js-cookie'
+import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
+import { useDispatch } from 'react-redux';
 
 const AuthContext = createContext({
     isLoginIn: null,
@@ -21,6 +23,8 @@ export const AuthProvider = ({ children }) => {
     const [isLoginIn, setIsLoginIn] = useState(null)
 
     const [accessToken, setAccessToken] = useState(null)
+
+    const dispatch = useDispatch()
 
     useEffect(() => {
         const check = async () => {
@@ -49,6 +53,13 @@ export const AuthProvider = ({ children }) => {
         } else {
             setAccessToken(Cookies.get("accessToken"))
         }
+        const [userInfo, authInfo] = await Promise.all([
+            fetchUserInfo(),
+            fetchAuthInfo()
+        ])
+        dispatch(setUserInfo({ userInfo }))
+        dispatch(setAuthInfo({ authInfo }))
+        dispatch(loadMenuItems({ menuItems: authInfo.menus }))
         setIsLoginIn(true)
     }
 

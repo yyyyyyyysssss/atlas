@@ -17,6 +17,8 @@ public class UserInfoVO {
 
     private Long userId;
 
+    private String username;
+
     private Long orgId;
 
     private Long posId;

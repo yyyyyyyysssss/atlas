@@ -49,24 +49,6 @@ const AppLayout = () => {
 
     const dispatch = useDispatch()
 
-    const [loading, setLoading] = useState(true)
-
-    useLayoutEffect(() => {
-        const fetchData = async () => {
-            try {
-                const userInfo = await fetchUserInfo()
-                const authInfo = await fetchAuthInfo()
-                dispatch(setUserInfo({ userInfo }))
-                dispatch(setAuthInfo({ authInfo }))
-                dispatch(loadMenuItems({ menuItems: authInfo.menus }))
-            } finally {
-                setLoading(false)
-            }
-
-        }
-        fetchData()
-    }, [])
-
     useEffect(() => {
         if (redirectTo) {
             navigate(redirectTo)
@@ -87,10 +69,6 @@ const AppLayout = () => {
             ? 'rgba(255, 255, 255, 0.05)'  // 暗色模式：白色半透明
             : 'rgba(0, 0, 0, 0.08)'       // 亮色模式：黑色半透明
     }, [themeValue])
-
-    if (loading) {
-        return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
-    }
 
     return (
         <ConfigProvider
@@ -139,78 +117,96 @@ const AppLayout = () => {
                                     ref={mainDivRef}
                                     className='main-div'
                                     style={{
-                                        position: 'relative',
-                                        height: isFS ? '100vh' : 'calc(100vh - 109px)',
-                                        width: '100%',
-                                        overflow: 'auto',
-                                        padding: 20,
-                                        borderRadius: borderRadius,
                                         background: colorBgContainer,
+                                        borderRadius: isFS ? 0 : borderRadius,
                                     }}
                                 >
-                                    <Affix
-                                        target={() => mainDivRef.current}
-                                        offsetTop={0}
-                                        style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}
+                                    <Watermark
+                                        content="Atlas"
+                                        gap={[120, 120]}
+                                        font={{ color: watermarkColor }}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
                                     >
-                                        <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
-                                    </Affix>
-
-                                    <AnimatePresence mode="popLayout" initial={false}>
-                                        <motion.div
-                                            key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
-                                            layout
-                                            initial={{ opacity: 0, scale: 0.99, x: 15 }}
-                                            animate={{ opacity: 1, scale: 1, x: 0 }}
-                                            exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
-                                            transition={{
-                                                duration: 0.25,
-                                                ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
-                                            }}
+                                        <div
                                             style={{
-                                                minHeight: '100%',
+                                                position: 'relative',
+                                                height: isFS ? '100vh' : 'calc(100vh - 109px)',
                                                 width: '100%',
-                                                display: 'flex', // 关键：让 motion.div 成为 flex 容器
-                                                flexDirection: 'column'
+                                                overflow: 'auto',
+                                                padding: 20,
                                             }}
                                         >
-                                            <ErrorBoundary
-                                                fallback={<ServerError />}
-                                                resetKeys={[location.pathname]}
+
+                                            <Affix
+                                                target={() => mainDivRef.current}
+                                                offsetTop={0}
+                                                style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}
                                             >
-                                                <Suspense
-                                                    fallback={
-                                                        <Loading full={true} />
-                                                    }
+                                                <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
+                                            </Affix>
+                                            <AnimatePresence mode="popLayout" initial={false}>
+                                                <motion.div
+                                                    key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
+                                                    layout
+                                                    initial={{ opacity: 0, scale: 0.99, x: 15 }}
+                                                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                    exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
+                                                    transition={{
+                                                        duration: 0.25,
+                                                        ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
+                                                    }}
+                                                    style={{
+                                                        minHeight: '100%',
+                                                        width: '100%',
+                                                        display: 'flex', // 关键：让 motion.div 成为 flex 容器
+                                                        flexDirection: 'column'
+                                                    }}
                                                 >
-                                                    <div
-                                                        style={{
-                                                            width: '100%',
-                                                            flex: 1,
-                                                            display: 'flex',
-                                                            margin: isFS ? 'auto 0' : 'unset',
-                                                        }}
-                                                        ref={nodeRef}
+                                                    <ErrorBoundary
+                                                        fallback={<ServerError />}
+                                                        resetKeys={[location.pathname]}
                                                     >
-                                                        <Watermark
-                                                            content="Atlas"
-                                                            gap={[120, 120]}
-                                                            font={{ color: watermarkColor }}
-                                                            style={{
-                                                                width: '100%',
-                                                                flex: 1,
-                                                                display: 'flex',
-                                                                flexDirection: 'column',
-                                                                justifyContent: isFS ? 'center' : 'flex-start'
-                                                            }}
+                                                        <Suspense
+                                                            fallback={
+                                                                <Loading full={true} />
+                                                            }
                                                         >
-                                                            {outlet}
-                                                        </Watermark>
-                                                    </div>
-                                                </Suspense>
-                                            </ErrorBoundary>
-                                        </motion.div>
-                                    </AnimatePresence>
+                                                            <div
+                                                                style={{
+                                                                    width: '100%',
+                                                                    flex: 1,
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    justifyContent: isFS ? 'center' : 'flex-start',
+                                                                    margin: isFS ? 'auto 0' : 'unset',
+                                                                }}
+                                                                ref={nodeRef}
+                                                            >
+                                                                {/* <Watermark
+                                                                content="Atlas"
+                                                                gap={[120, 120]}
+                                                                font={{ color: watermarkColor }}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    flex: 1,
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    justifyContent: isFS ? 'center' : 'flex-start'
+                                                                }}
+                                                            > */}
+                                                                {outlet}
+                                                                {/* </Watermark> */}
+                                                            </div>
+                                                        </Suspense>
+                                                    </ErrorBoundary>
+                                                </motion.div>
+                                            </AnimatePresence>
+
+                                        </div>
+                                    </Watermark>
                                 </div>
                             </LayoutContent>
                         </Layout>

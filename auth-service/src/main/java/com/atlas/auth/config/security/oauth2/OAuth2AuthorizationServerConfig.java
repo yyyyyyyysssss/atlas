@@ -113,7 +113,7 @@ public class OAuth2AuthorizationServerConfig {
                                 })
                                 .deviceVerificationEndpoint(deviceVerificationEndpoint -> {
                                     deviceVerificationEndpoint.consentPage("/oauth2/consent?type=device");
-                                    deviceVerificationEndpoint.deviceVerificationResponseHandler(new SimpleUrlAuthenticationSuccessHandler("/activated"));
+                                    deviceVerificationEndpoint.deviceVerificationResponseHandler(new SimpleUrlAuthenticationSuccessHandler(securityProperties.getUiUrl() + "/oauth2/activated"));
                                 })
                 )
                 .authorizeHttpRequests((authorize) ->
@@ -190,7 +190,7 @@ public class OAuth2AuthorizationServerConfig {
 
             @Override
             public void save(OAuth2AuthorizationConsent authorizationConsent) {
-                jdbcOAuth2AuthorizationConsentService.save(authorizationConsent);
+//                jdbcOAuth2AuthorizationConsentService.save(authorizationConsent);
             }
 
             @Override

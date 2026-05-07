@@ -47,7 +47,7 @@ public class ProfileServiceImpl implements ProfileService {
     public UserInfoVO userInfo(Long userId) {
         User user = userService
                 .lambdaQuery()
-                .select(User::getFullName, User::getAvatar, User::getSettings)
+                .select(User::getUsername,User::getFullName, User::getAvatar, User::getSettings)
                 .eq(User::getId, userId)
                 .one();
         if (user == null) {
@@ -55,6 +55,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
         UserInfoVO userInfoVO = new UserInfoVO();
         userInfoVO.setUserId(userId);
+        userInfoVO.setUsername(user.getUsername());
         userInfoVO.setFullName(user.getFullName());
         userInfoVO.setAvatar(user.getAvatar());
         userInfoVO.setSettings(user.getSettings());

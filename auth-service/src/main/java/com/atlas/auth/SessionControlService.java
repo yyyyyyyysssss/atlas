@@ -2,6 +2,7 @@ package com.atlas.auth;
 
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.constant.SecurityConstant;
+import com.atlas.security.enums.ClientType;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.service.TokenService;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +29,12 @@ public class SessionControlService {
 
     private final RedisHelper redisHelper;
 
-    public void kickOutExcessiveSessions(Long userId){
+    public void kickOutExcessiveSessions(Long userId, ClientType clientType){
         Integer maxSessions = securityProperties.getCoexistToken();
         if (maxSessions <= 0){
             return;
         }
-        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId;
+        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId + ":" + clientType.name();
         // 先清理掉 ZSet 中已经过期的无效数据
         redisHelper.removeZSetByScore(limitKey, 0, System.currentTimeMillis());
         // 获取当前剩余的有效会话
@@ -55,8 +56,8 @@ public class SessionControlService {
         }
     }
 
-    public void registerSession(Long userId, String tokenId, long expiration) {
-        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId;
+    public void registerSession(Long userId, String tokenId, long expiration, ClientType clientType) {
+        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId + ":" + clientType;
         redisHelper.addZSet(limitKey, tokenId, (double) expiration);
     }
 

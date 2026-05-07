@@ -1,5 +1,5 @@
 import React, { lazy } from "react";
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath } from "react-router"
 import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
@@ -26,11 +26,34 @@ const DictItemManage = lazy(() => import('../pages/system-manage/dict-manage/dic
 const NotificationAnnouncement = lazy(() => import('../pages/notification-center/announcement'))
 const AnnouncementDetails = lazy(() => import('../pages/notification-center/announcement/details'))
 const NotificationMessage = lazy(() => import('../pages/notification-center/message'))
+
+const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'));
+const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'));
+
 export const routes = [
     {
         path: 'login',
         element: <LoginRoute><Login /></LoginRoute>,
         protected: false,
+    },
+    {
+        path: 'oauth2',
+        element: (
+            <div style={{height: '100vh', width: '100vm'}}>
+                <Outlet />
+            </div>
+        ),
+        protected: true,
+        children: [
+            {
+                path: 'consent',
+                element: <Oauth2Consent />,
+            },
+            {
+                path: 'activated',
+                element: <Oauth2Activated />,
+            }
+        ]
     },
     {
         path: '',

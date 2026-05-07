@@ -167,14 +167,17 @@ const Login = () => {
     const loginSuccessHandler = async (data) => {
         await signin(data)
         const targetUrl = searchParams.get('targetUrl')
-        if (targetUrl && targetUrl.startsWith('http')) {
-            const accessToken = data?.access?.token
-            const separator = targetUrl.includes('?') ? '&' : '?';
-            const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
-            window.location.href = finalUrl
-            return
+        let url = targetUrl || '/'
+        if (targetUrl) {
+            if (targetUrl.startsWith('http')) {
+                const accessToken = data?.access?.token
+                const separator = targetUrl.includes('?') ? '&' : '?';
+                const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
+                window.location.href = finalUrl
+                return
+            }
         }
-        navigate('/', { replace: true })
+        navigate(url, { replace: true })
     }
 
     return (
@@ -300,7 +303,7 @@ const Login = () => {
                                                 icon: <KeyOutlined />,
                                                 onClick: () => {
                                                     // 授权码模式跳转逻辑
-                                                    window.location.href = `${httpWrapper.getUri()}/api/auth/oauth2/authorize?client_id=32b00b1e89af-90d2e0e46d20ebb92f6c&response_type=code&scope=userInfo+openid&redirect_uri=http://localhost:3000/login`;
+                                                    window.location.href = `${httpWrapper.getUri()}/api/auth/oauth2/authorize?client_id=32b00b1e89af-90d2e0e46d20ebb92f6c&response_type=code&scope=profile+openid&redirect_uri=http://localhost:3000/login`;
                                                 }
                                             },
                                             {

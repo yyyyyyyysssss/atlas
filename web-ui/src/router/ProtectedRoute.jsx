@@ -14,9 +14,13 @@ export const ProtectedRoute = ({ children, requiredPermissions, fallback, requir
 
   // 未登录，跳转到登录页，并携带当前页面的 state 作为 targetUrl
   if (!isLoginIn) {
-    // 记录用户想要访问的原始路径和查询参数
+        // 记录用户想要访问的原始路径和查询参数
     const targetUrl = location.pathname + location.search;
-    return <Navigate to={`/login?targetUrl=${encodeURIComponent(targetUrl)}`} replace />;
+    const loginPath = (targetUrl && targetUrl !== '/') 
+      ? `/login?targetUrl=${encodeURIComponent(targetUrl)}` 
+      : '/login';
+    return <Navigate to={loginPath} replace />;
+
   }
 
   const isAllowed = useHasPermission(requiredPermissions, requireAll)

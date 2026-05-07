@@ -10,21 +10,12 @@ import { urlParamParse } from '../../../utils/UrlUtil'
 import { useSelector } from 'react-redux'
 import { useRequest } from 'ahooks'
 import Loading from '../../../components/loading'
-import { agreeAuthorize, agreeDeviceAuthorize } from '../../../services/Oauth2Service'
 
 const Consent = () => {
     //路由参数
     const params = useFullParams()
 
     const { username, fullName, avatar } = useSelector(state => state.user.userInfo)
-
-    const { loading: agreeAuthorizeLoading, runAsync: runAgreeAuthorize } = useRequest(agreeAuthorize, {
-        manual: true
-    })
-
-    const { loading: runAgreeDeviceAuthorizeLoading, runAsync: runAgreeDeviceAuthorize } = useRequest(agreeDeviceAuthorize, {
-        manual: true
-    })
 
     const { loading, run: runConsent } = useRequest(
         async () => {

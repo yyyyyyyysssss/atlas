@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from "./AuthProvider";
 import Forbidden from "../pages/Forbidden";
 import { useHasPermission } from "../components/HasPermission";
@@ -7,12 +7,17 @@ import Loading from "../components/loading";
 export const ProtectedRoute = ({ children, requiredPermissions, fallback, requireAll = false }) => {
 
   const { isLoginIn } = useAuth()
+  const location = useLocation()
   
   // 等待登录状态
   if (isLoginIn === null) return <Loading fullscreen />
 
-  // 未登录
-  if (!isLoginIn) return <Navigate to="/login" replace />
+  // 未登录，跳转到登录页，并携带当前页面的 state 作为 targetUrl
+  if (!isLoginIn) {
+    // 记录用户想要访问的原始路径和查询参数
+    const targetUrl = location.pathname + location.search;
+    return <Navigate to={`/login?targetUrl=${encodeURIComponent(targetUrl)}`} replace />;
+  }
 
   const isAllowed = useHasPermission(requiredPermissions, requireAll)
 

@@ -27,8 +27,9 @@ const NotificationAnnouncement = lazy(() => import('../pages/notification-center
 const AnnouncementDetails = lazy(() => import('../pages/notification-center/announcement/details'))
 const NotificationMessage = lazy(() => import('../pages/notification-center/message'))
 
-const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'));
-const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'));
+const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'))
+const Oauth2Activate = lazy(() => import('../pages/oauth2/activate'))
+const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'))
 
 export const routes = [
     {
@@ -48,6 +49,10 @@ export const routes = [
             {
                 path: 'consent',
                 element: <Oauth2Consent />,
+            },
+            {
+                path: 'activate',
+                element: <Oauth2Activate />,
             },
             {
                 path: 'activated',

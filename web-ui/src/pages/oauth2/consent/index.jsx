@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover } from "antd"
+import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover, theme } from "antd"
 import logo from '/favicon.ico'
 import Cookies from 'js-cookie'
 import './index.css'
@@ -12,6 +12,7 @@ import { useRequest } from 'ahooks'
 import Loading from '../../../components/loading'
 
 const Consent = () => {
+    const { token } = theme.useToken();
     //路由参数
     const params = useFullParams()
 
@@ -86,7 +87,7 @@ const Consent = () => {
 
     return (
 
-        <Flex style={{ height: '100%' }}>
+        <Flex style={{ minHeight: '100vh', backgroundColor: token.colorBgContainer }}>
             <Flex gap='middle' justify='center' align='center' vertical style={{ width: '100%' }}>
                 <Loading spinning={loading}>
                     <Card
@@ -96,13 +97,36 @@ const Consent = () => {
                                 <Typography.Title level={4} style={{ margin: 0 }}>使用Atlas账号登录</Typography.Title>
                             </Flex>
                         }
-                        style={{ width: '800px', height: '344px', overflow: 'hidden', borderRadius: "20px" }}
+                        style={{ width: '800px', height: '344px', overflow: 'hidden', borderRadius: "20px", boxShadow: token.boxShadowTertiary }}
                     >
                         <Flex gap='middle' style={{ height: '100%', width: '100%' }}>
                             {/* 左侧：应用身份区 */}
                             <Flex gap={10} style={{ width: '50%', height: '100%', paddingLeft: '10px' }} vertical>
                                 <Avatar src={params.logo_uri} size={48} />
                                 <Typography.Text style={{ fontSize: 30 }}>请选择账号</Typography.Text>
+                                {params.type === 'device' && params.user_code && (
+                                    <Alert
+                                        message={
+                                            <Flex vertical gap={4}>
+                                                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                                    请确认您设备上显示的码是否为：
+                                                </Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: 18, letterSpacing: '2px', color: token.colorPrimary }} copyable>
+                                                    {params.user_code}
+                                                </Typography.Text>
+                                            </Flex>
+                                        }
+                                        type="info"
+                                        showIcon
+                                        style={{
+                                            marginBottom: '10px',
+                                            width: 'fit-content',
+                                            borderRadius: '8px',
+                                            backgroundColor: token.colorFillAlter,
+                                            borderColor: token.colorBorderSecondary
+                                        }}
+                                    />
+                                )}
                                 <Typography.Paragraph
                                     style={{
                                         fontSize: 18,

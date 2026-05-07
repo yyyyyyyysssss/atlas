@@ -1,15 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App, Avatar } from 'antd';
-import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Flex, Tabs, Checkbox, Typography, App, Avatar, Divider, theme, Dropdown } from 'antd';
+import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined } from '@ant-design/icons';
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
 import { login, sendEmailVerificationCode } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import httpWrapper from '../../services/AxiosWrapper';
 
 const Login = () => {
 
+    const { token } = theme.useToken();
     const { t } = useTranslation()
 
     const { signin } = useAuth()
@@ -19,6 +21,7 @@ const Login = () => {
     const { message } = App.useApp()
 
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
 
     const { runAsync, loading } = useRequest(login, {
         manual: true
@@ -163,7 +166,15 @@ const Login = () => {
 
     const loginSuccessHandler = async (data) => {
         await signin(data)
-        navigate('/')
+        const targetUrl = searchParams.get('targetUrl')
+        if (targetUrl && targetUrl.startsWith('http')) {
+            const accessToken = data?.access?.token
+            const separator = targetUrl.includes('?') ? '&' : '?';
+            const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
+            window.location.href = finalUrl
+            return
+        }
+        navigate('/', { replace: true })
     }
 
     return (
@@ -257,11 +268,76 @@ const Login = () => {
                                     {t('忘记密码')}
                                 </Typography.Link>
                             </Form.Item>
-                            <Form.Item>
+                            <Form.Item style={{ marginBottom: 24 }}>
                                 <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading}>
                                     {t('登录')}
                                 </Button>
                             </Form.Item>
+
+                            <Divider plain>
+                                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                    {t('其他登录方式')}
+                                </Typography.Text>
+                            </Divider>
+
+                            <Flex justify="center" align="center" gap={32} style={{ marginBottom: 12 }}>
+                                <GithubOutlined
+                                    style={{
+                                        fontSize: 24,
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    title="GitHub"
+                                />
+                                <Dropdown
+                                    menu={{
+                                        items: [
+                                            {
+                                                key: 'auth_code',
+                                                label: '授权码登录',
+                                                icon: <KeyOutlined />,
+                                                onClick: () => {
+                                                    // 授权码模式跳转逻辑
+                                                    window.location.href = `${httpWrapper.getUri()}/api/auth/oauth2/authorize?client_id=32b00b1e89af-90d2e0e46d20ebb92f6c&response_type=code&scope=userInfo+openid&redirect_uri=http://localhost:3000/login`;
+                                                }
+                                            },
+                                            {
+                                                key: 'device_code',
+                                                label: '设备码登录',
+                                                icon: <ScanOutlined />,
+                                                onClick: () => navigate('/oauth2/activate')
+                                            }
+                                        ]
+                                    }}
+                                    trigger={['hover']}
+                                    placement="bottom"
+                                >
+                                    <Avatar
+                                        src="/logo128.png"
+                                        size={28}
+                                        style={{
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s',
+                                            border: `1px solid ${token.colorBorderSecondary}`
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    />
+                                </Dropdown>
+                                <GoogleOutlined
+                                    style={{
+                                        fontSize: 24,
+                                        color: '#EA4335',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    title="Google"
+                                />
+                            </Flex>
                         </Form>
                     </Flex>
                 </Card>

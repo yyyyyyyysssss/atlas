@@ -109,7 +109,7 @@ public class OAuth2AuthorizationServerConfig {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
                                 })
                                 .deviceAuthorizationEndpoint(deviceAuthorizationEndpoint -> {
-                                    deviceAuthorizationEndpoint.verificationUri("/oauth2/activate");
+                                    deviceAuthorizationEndpoint.verificationUri(securityProperties.getUiUrl() + "/oauth2/activate");
                                 })
                                 .deviceVerificationEndpoint(deviceVerificationEndpoint -> {
                                     deviceVerificationEndpoint.consentPage("/oauth2/consent?type=device");
@@ -122,7 +122,7 @@ public class OAuth2AuthorizationServerConfig {
                 // 当未登录时访问认证端点时重定向至login页面
                 .exceptionHandling((exceptions) -> exceptions
                         .defaultAuthenticationEntryPointFor(
-                                new LoginTargetAuthenticationEntryPoint(securityProperties.getUiUrl() + "/login"),
+                                new LoginTargetAuthenticationEntryPoint(securityProperties.getUiUrl() + "/login",securityProperties.getIssuerUrl() + "/api/auth"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);

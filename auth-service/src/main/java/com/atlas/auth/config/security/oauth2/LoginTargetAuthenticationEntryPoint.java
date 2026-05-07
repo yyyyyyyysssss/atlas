@@ -25,8 +25,11 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
 
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
-    public LoginTargetAuthenticationEntryPoint(String loginFormUrl) {
+    private final String issuerUrl;
+
+    public LoginTargetAuthenticationEntryPoint(String loginFormUrl, String issuerUrl) {
         super(loginFormUrl);
+        this.issuerUrl = issuerUrl;
     }
 
     @Override
@@ -38,6 +41,14 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
             super.commence(request, response, authException);
             return;
         }
+        // 拼接网关前缀
+        String uriWithPrefix = issuerUrl + request.getRequestURI();
+        StringBuilder targetPath = new StringBuilder(uriWithPrefix);
+        if (!ObjectUtils.isEmpty(request.getQueryString())) {
+            targetPath.append("?").append(request.getQueryString());
+        }
+
+
         StringBuffer requestUrl = request.getRequestURL();
         if (!ObjectUtils.isEmpty(request.getQueryString())) {
             requestUrl.append("?").append(request.getQueryString());
@@ -45,8 +56,8 @@ public class LoginTargetAuthenticationEntryPoint extends LoginUrlAuthenticationE
 
         //重定向地址添加nonce参数，该参数的值为sessionId
         // 绝对路径在重定向前添加target参数
-        String targetParameter = URLEncoder.encode(requestUrl.toString(), StandardCharsets.UTF_8);
-        String targetUrl = loginForm + "?target=" + targetParameter;
+        String targetParameter = URLEncoder.encode(targetPath.toString(), StandardCharsets.UTF_8);
+        String targetUrl = loginForm + "?targetUrl=" + targetParameter;
         log.info("重定向至前后端分离的登录页面：{}", targetUrl);
         this.redirectStrategy.sendRedirect(request, response, targetUrl);
     }

@@ -181,7 +181,7 @@ public class SecurityConfig {
         return new HeaderBasedRememberMeServices(secretKey,tokenService,userService);
     }
 
-    //三方登录认证
+    //邮箱登录认证
     @Bean
     public EmailAuthenticationProvider emailAuthenticationProvider() {
         return new EmailAuthenticationProvider(userService, emailVerificationService);

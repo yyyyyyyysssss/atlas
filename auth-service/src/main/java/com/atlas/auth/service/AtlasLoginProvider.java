@@ -5,7 +5,9 @@ import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
+import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.TokenResponse;
+import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,8 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
     private final JwtDecoder jwtDecoder;
 
     private final UserApi userApi;
+
+    private final LoginService loginService;
 
     @Override
     public String getProviderName() {
@@ -91,11 +95,11 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
                 throw new BusinessException("获取或注册用户失败: " + usernameResult.getMessage());
             }
             String username = usernameResult.getData();
-            log.info("username: {}", username);
+            ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(username, null);
+            return loginService.login(thirdPartyAuthenticationToken, ClientType.WEB, true, false);
         }catch (Exception e){
-
+            throw new BusinessException(e.getMessage());
         }
-        return null;
     }
 
     private record OAuth2TokenResponse(

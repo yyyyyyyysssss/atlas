@@ -1,20 +1,15 @@
 package com.atlas.user.service.impl;
 
 import com.atlas.common.core.api.file.FileApi;
+import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.idwork.IdGen;
-import com.atlas.user.domain.dto.UserCreateDTO;
-import com.atlas.user.domain.dto.UserOrgDTO;
-import com.atlas.user.domain.dto.UserQueryDTO;
-import com.atlas.user.domain.dto.UserUpdateDTO;
-import com.atlas.user.domain.entity.Authority;
-import com.atlas.user.domain.entity.User;
-import com.atlas.user.domain.entity.UserOrg;
-import com.atlas.user.domain.entity.UserRole;
+import com.atlas.user.domain.dto.*;
+import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
@@ -34,6 +29,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -73,23 +69,52 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final FileApi fileApi;
 
+    private final UserIdentityService userIdentityService;
+
+    private final String defaultRoleCode = "role_member";
+
     @Override
     public UserAuthDTO loadUserByUsername(String username) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
-        queryWrapper
-                .lambda()
-                .eq(User::getUsername, username)
-                .or()
-                .eq(User::getId, username)
-                .or()
-                .eq(User::getPhone, username)
-                .or()
-                .eq(User::getEmail, username);
-        User user = userMapper.selectOne(queryWrapper);
+        User user = this.findByUsername(username);
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在: " + username);
         }
         return getUserAuthDTO(user);
+    }
+
+    @Override
+    @Transactional
+    public String getOrRegisterUsername(ExternalIdentityDTO externalIdentityDTO) {
+        String provider = externalIdentityDTO.getProvider();
+        String sub = externalIdentityDTO.getSub();
+        UserIdentityDTO existingIdentity = userIdentityService.getByIdentity(provider, sub);
+        if (existingIdentity != null) {
+            // 如果身份已存在，直接返回关联的主表用户名
+            User user = this.getById(existingIdentity.getUserId());
+            return user.getUsername();
+        }
+        // 身份不存在，开始注册流程
+        UserCreateDTO userCreateDTO = new UserCreateDTO();
+        userCreateDTO.setUsername(generateUniqueUsername());
+        userCreateDTO.setFullName(externalIdentityDTO.getFullName());
+        userCreateDTO.setPassword(PasswordGeneratorUtils.generate(16));
+        userCreateDTO.setEmail(externalIdentityDTO.getEmail());
+        userCreateDTO.setPhone(externalIdentityDTO.getPhone());
+        userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
+        Role defaultRole = roleService.findByCode(defaultRoleCode);
+        userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
+        UserCreateVO userCreateVO = this.createUser(userCreateDTO);
+
+        // 创建身份关联记录
+        UserIdentityDTO userIdentityDTO = new UserIdentityDTO();
+        userIdentityDTO.setId(IdGen.genId());
+        userIdentityDTO.setIdentifier(externalIdentityDTO.getSub());
+        userIdentityDTO.setUserId(userCreateVO.getId());
+        userIdentityDTO.setVerified(true);
+        userIdentityDTO.setIdentityType(externalIdentityDTO.getProvider());
+        userIdentityService.addUserIdentity(userCreateVO.getId(), List.of(userIdentityDTO));
+
+        return userCreateVO.getUsername();
     }
 
     @Override
@@ -153,7 +178,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public User findByUsername(String username) {
-        Wrapper<User> queryWrapper = new QueryWrapper<User>().eq("username", username);
+        QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
+        queryWrapper
+                .lambda()
+                .eq(User::getUsername, username)
+                .or()
+                .eq(User::getId, username)
+                .or()
+                .eq(User::getPhone, username)
+                .or()
+                .eq(User::getEmail, username);
         User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
             throw new BusinessException("用户不存在: " + username);
@@ -240,7 +274,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setAvatar(defaultAvatar);
         }
         // 添加用户所属组织
-        addUserOrg(user.getId(),userCreateDTO.getOrgId(),userCreateDTO.getPosId());
+        if(userCreateDTO.getOrgId() != null){
+            addUserOrg(user.getId(),userCreateDTO.getOrgId(),userCreateDTO.getPosId());
+        }
         int row = userMapper.insert(user);
         if (row <= 0) {
             throw new BusinessException("创建用户失败");
@@ -250,6 +286,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         userCreateVO.setId(user.getId());
+        userCreateVO.setUsername(user.getUsername());
         return userCreateVO;
     }
 
@@ -454,5 +491,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return Collections.emptyList();
         }
         return UserMapping.INSTANCE.toUserDTO(users);
+    }
+
+    private String generateUniqueUsername() {
+        long id = IdGen.genId();
+        String shortId = Integer.toString((int)id, 32);
+        return "atlas_" + shortId;
     }
 }

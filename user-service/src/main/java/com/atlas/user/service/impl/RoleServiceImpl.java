@@ -16,6 +16,7 @@ import com.atlas.user.service.RoleAuthorityService;
 import com.atlas.user.service.RoleDataScopeService;
 import com.atlas.user.service.RoleService;
 import com.atlas.user.service.UserRoleService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -312,6 +313,17 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             return Collections.singleton(DataScope.ALL.getCode());
         }
         return scopeSet.isEmpty() ? Collections.singleton(DataScope.SELF.getCode()) : scopeSet;
+    }
+
+    @Override
+    public Role findByCode(String code) {
+        LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Role::getCode, code);
+        Role role = roleMapper.selectOne(wrapper);
+        if (role == null) {
+            throw new BusinessException("角色不存在");
+        }
+        return role;
     }
 
     @Caching(evict = {

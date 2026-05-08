@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.authentication.provider;
 
-import com.atlas.auth.EmailVerificationService;
+import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.security.token.EmailAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;

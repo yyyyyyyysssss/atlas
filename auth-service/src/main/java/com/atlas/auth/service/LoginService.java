@@ -1,4 +1,4 @@
-package com.atlas.auth;
+package com.atlas.auth.service;
 
 
 import com.atlas.security.enums.ClientType;

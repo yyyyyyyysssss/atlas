@@ -6,7 +6,7 @@ import com.atlas.security.enums.ClientType;
 import com.atlas.security.exception.TokenAuthenticationException;
 import com.atlas.security.token.EmailAuthenticationToken;
 import com.atlas.auth.domain.dto.LoginDTO;
-import com.atlas.auth.LoginService;
+import com.atlas.auth.service.LoginService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.TokenResponse;

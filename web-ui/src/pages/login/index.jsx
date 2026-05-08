@@ -8,6 +8,8 @@ import { login, sendEmailVerificationCode } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
+import { fetchAuthorizeUrl } from '../../services/Oauth2Service';
+import { useRedirect } from '../../hooks/useRedirect';
 
 const Login = () => {
 
@@ -23,11 +25,17 @@ const Login = () => {
     const navigate = useNavigate()
     const [searchParams] = useSearchParams()
 
+    const redirect = useRedirect()
+
     const { runAsync, loading } = useRequest(login, {
         manual: true
     })
 
     const { runAsync: sendEmailVerificationCodeAsync, loading: sendEmailVerificationCodeLoading } = useRequest(sendEmailVerificationCode, {
+        manual: true
+    })
+
+    const { runAsync: getAuthorizeUrlAsync, loading: getAuthorizeUrlLoading } = useRequest(fetchAuthorizeUrl, {
         manual: true
     })
 
@@ -124,6 +132,16 @@ const Login = () => {
 
     }
 
+    const authorizeCodeLogin = async () => {
+        const authorizeUrl = await getAuthorizeUrlAsync('atlas')
+        // 授权码模式跳转逻辑
+        window.location.href = authorizeUrl
+    }
+
+    const deviceCodeLogin = () => {
+
+    }
+
     const onFinish = (values) => {
         let loginReq;
         switch (loginMethod) {
@@ -166,18 +184,19 @@ const Login = () => {
 
     const loginSuccessHandler = async (data) => {
         await signin(data)
-        const targetUrl = searchParams.get('targetUrl')
-        let url = targetUrl || '/'
-        if (targetUrl) {
-            if (targetUrl.startsWith('http')) {
-                const accessToken = data?.access?.token
-                const separator = targetUrl.includes('?') ? '&' : '?';
-                const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
-                window.location.href = finalUrl
-                return
-            }
-        }
-        navigate(url, { replace: true })
+        redirect('/', data?.access?.token)
+        // const targetUrl = searchParams.get('targetUrl')
+        // let url = targetUrl || '/'
+        // if (targetUrl) {
+        //     if (targetUrl.startsWith('http')) {
+        //         const accessToken = data?.access?.token
+        //         const separator = targetUrl.includes('?') ? '&' : '?';
+        //         const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
+        //         window.location.href = finalUrl
+        //         return
+        //     }
+        // }
+        // navigate(url, { replace: true })
     }
 
     return (
@@ -272,7 +291,7 @@ const Login = () => {
                                 </Typography.Link>
                             </Form.Item>
                             <Form.Item style={{ marginBottom: 24 }}>
-                                <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading}>
+                                <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading || getAuthorizeUrlLoading}>
                                     {t('登录')}
                                 </Button>
                             </Form.Item>
@@ -301,16 +320,13 @@ const Login = () => {
                                                 key: 'auth_code',
                                                 label: '授权码登录',
                                                 icon: <KeyOutlined />,
-                                                onClick: () => {
-                                                    // 授权码模式跳转逻辑
-                                                    window.location.href = `${httpWrapper.getUri()}/api/auth/oauth2/authorize?client_id=32b00b1e89af-90d2e0e46d20ebb92f6c&response_type=code&scope=profile+openid&redirect_uri=http://localhost:3000/login`;
-                                                }
+                                                onClick: authorizeCodeLogin
                                             },
                                             {
                                                 key: 'device_code',
                                                 label: '设备码登录',
                                                 icon: <ScanOutlined />,
-                                                onClick: () => navigate('/oauth2/activate')
+                                                onClick: deviceCodeLogin
                                             }
                                         ]
                                     }}

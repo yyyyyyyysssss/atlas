@@ -1,6 +1,7 @@
 package com.atlas.common.core.api.user;
 
 
+import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
@@ -18,6 +19,9 @@ public interface UserApi {
 
     @GetExchange("/username")
     Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
+
+    @PostExchange("/getOrRegisterUsername")
+    Result<String> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO);
 
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();

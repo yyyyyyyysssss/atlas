@@ -47,6 +47,8 @@ public interface RoleService extends IService<Role> {
 
     Set<Integer> getDataScope(List<Long> roleIds);
 
+    Role findByCode(String code);
+
     void clearCache(Long userId);
 
 }

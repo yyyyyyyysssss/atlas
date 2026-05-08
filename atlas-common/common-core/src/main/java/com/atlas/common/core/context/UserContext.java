@@ -33,14 +33,6 @@ public class UserContext {
         return user != null ? user.getOrgId() : null;
     }
 
-    public static Long getRequiredOrgId() {
-        Long orgId = getOrgId();
-        if (orgId == null) {
-            throw new BusinessException("用户未配置组织");
-        }
-        return orgId;
-    }
-
     public static String getFullName() {
         UserObject user = USER_HOLDER.get();
         return user != null ? user.getFullName() : null;

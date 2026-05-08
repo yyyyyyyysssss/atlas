@@ -7,9 +7,9 @@ import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenti
 import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
-import com.atlas.auth.EmailVerificationService;
-import com.atlas.auth.LogoutService;
-import com.atlas.auth.OneTimeTokenGenerationSuccessService;
+import com.atlas.auth.service.EmailVerificationService;
+import com.atlas.auth.service.LogoutService;
+import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;

@@ -1,6 +1,7 @@
 package com.atlas.user.controller;
 
 
+import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
@@ -31,6 +32,12 @@ public class UserInternalController {
     public Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username) {
         UserAuthDTO userAuthDTO = userService.loadUserByUsername(username);
         return ResultGenerator.ok(userAuthDTO);
+    }
+
+    @PostMapping("/getOrRegisterUsername")
+    public Result<String> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
+        String username = userService.getOrRegisterUsername(externalIdentityDTO);
+        return ResultGenerator.ok(username);
     }
 
     @GetMapping("/all")

@@ -63,14 +63,14 @@ const OrgManage = () => {
             })
         }
         // 将选中的取消
-        setSelectedKeys([])
+        // setSelectedKeys([])
     }
 
     // 选中组织
     const handleSelectOrg = async (orgId, orgType = null) => {
         const selectedOrg = flattenTree.flattenList.find(f => f.id == orgId)
         // 不取消选中
-        setSelectedKeys([orgId])
+        // setSelectedKeys([orgId])
         setSelectedOrg({
             id: orgId,
             parentId: null,

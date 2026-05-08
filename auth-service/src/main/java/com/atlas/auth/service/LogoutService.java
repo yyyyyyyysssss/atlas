@@ -1,4 +1,4 @@
-package com.atlas.auth;
+package com.atlas.auth.service;
 
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;

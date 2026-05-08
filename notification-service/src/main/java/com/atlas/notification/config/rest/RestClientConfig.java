@@ -18,7 +18,7 @@ import org.springframework.web.client.RestClient;
 @Setter
 @Configuration
 @Slf4j
-public class RestConfig {
+public class RestClientConfig {
 
     @Bean
     public RestClient defaultRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory){

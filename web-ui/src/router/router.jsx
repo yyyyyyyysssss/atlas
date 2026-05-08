@@ -30,6 +30,7 @@ const NotificationMessage = lazy(() => import('../pages/notification-center/mess
 const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'))
 const Oauth2Activate = lazy(() => import('../pages/oauth2/activate'))
 const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'))
+const Oauth2Callback = lazy(() => import('../pages/oauth2/callback'))
 
 export const routes = [
     {
@@ -40,7 +41,7 @@ export const routes = [
     {
         path: 'oauth2',
         element: (
-            <div style={{height: '100vh', width: '100vm'}}>
+            <div style={{ height: '100vh', width: '100vm' }}>
                 <Outlet />
             </div>
         ),
@@ -59,6 +60,11 @@ export const routes = [
                 element: <Oauth2Activated />,
             }
         ]
+    },
+    {
+        path: 'oauth2/callback/:clientName',
+        element: <Oauth2Callback />,
+        protected: false,
     },
     {
         path: '',

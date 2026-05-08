@@ -1,0 +1,37 @@
+package com.atlas.common.core.api.user.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2026/5/8 16:13
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExternalIdentityDTO {
+
+    /** 唯一标识 (授权服务器返回的 sub) */
+    private String sub;
+
+    /** 平台标识 (如: atlas, google, github) */
+    private String provider;
+
+    /** 用户昵称/姓名 (从 id_token 中解析) */
+    private String fullName;
+
+    /** 头像地址 */
+    private String avatar;
+
+    /** 邮箱 (可选) */
+    private String email;
+
+    /** 手机号 (可选) */
+    private String phone;
+
+}

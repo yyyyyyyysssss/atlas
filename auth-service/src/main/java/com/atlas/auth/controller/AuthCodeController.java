@@ -1,7 +1,7 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.dto.EmailCodeDTO;
-import com.atlas.auth.EmailVerificationService;
+import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
 package com.atlas.user.service;
 
+import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.user.domain.dto.UserCreateDTO;
@@ -20,6 +21,8 @@ public interface UserService extends IService<User> {
     boolean saveOrUpdate(User user);
 
     UserAuthDTO loadUserByUsername(String username);
+
+    String getOrRegisterUsername(ExternalIdentityDTO externalIdentityDTO);
 
     UserAuthDTO loadUserByUserId(Long id);
 

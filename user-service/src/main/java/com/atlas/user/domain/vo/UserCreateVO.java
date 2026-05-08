@@ -18,6 +18,8 @@ public class UserCreateVO {
 
     private Long id;
 
+    private String username;
+
     private String initialPassword;
 
 }

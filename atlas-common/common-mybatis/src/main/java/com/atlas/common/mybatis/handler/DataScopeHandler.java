@@ -71,7 +71,7 @@ public class DataScopeHandler implements MultiDataPermissionHandler {
             return null;
         }
         Long userId = UserContext.getRequiredUserId();
-        Long orgId = UserContext.getRequiredOrgId();
+        Long orgId = UserContext.getOrgId();
         String tableAlias = table.getAlias() != null ? table.getAlias().getName() : table.getName();
 
         List<String> conditions = new ArrayList<>();

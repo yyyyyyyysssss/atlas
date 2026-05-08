@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OAuth2Controller {
 
+
     @GetMapping("/oidc/logout")
-    public Result<?> oidcLogout(@RequestParam("state") String state){
-        log.info("oidc logout code:{}",state);
+    public Result<?> oidcLogout(@RequestParam("state") String state) {
+        log.info("oauth2 oidc logout code:{}", state);
         return ResultGenerator.ok();
     }
 

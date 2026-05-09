@@ -34,7 +34,7 @@ public class SessionControlService {
         if (maxSessions <= 0){
             return;
         }
-        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId + ":" + clientType.name();
+        String limitKey = getLimitKey(userId,clientType);
         // 先清理掉 ZSet 中已经过期的无效数据
         redisHelper.removeZSetByScore(limitKey, 0, System.currentTimeMillis());
         // 获取当前剩余的有效会话
@@ -52,7 +52,7 @@ public class SessionControlService {
             // 执行注销
             tokenService.revoke(oldTokenId, expScore.longValue());
             // 从 ZSet 移除，防止脏数据
-            removeSession(userId,oldTokenId);
+            removeSession(userId,oldTokenId,clientType);
         }
     }
 
@@ -61,9 +61,14 @@ public class SessionControlService {
         redisHelper.addZSet(limitKey, tokenId, (double) expiration);
     }
 
-    public void removeSession(Long userId, String tokenId){
-        String limitKey = SecurityConstant.USER_TOKEN_LIMIT + userId;
+    public void removeSession(Long userId, String tokenId,  ClientType clientType){
+        String limitKey = getLimitKey(userId,clientType);
         redisHelper.removeZSet(limitKey,tokenId);
+    }
+
+    private String getLimitKey(Long userId,  ClientType clientType){
+
+        return SecurityConstant.USER_TOKEN_LIMIT + userId + ":" + clientType.name();
     }
 
 }

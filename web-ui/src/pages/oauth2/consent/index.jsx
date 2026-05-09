@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover, theme } from "antd"
 import logo from '/favicon.ico'
-import Cookies from 'js-cookie'
 import './index.css'
 import useFullParams from '../../../hooks/useFullParams'
 import httpWrapper from '../../../services/AxiosWrapper'
@@ -11,9 +10,12 @@ import { useSelector } from 'react-redux'
 import { useRequest } from 'ahooks'
 import Loading from '../../../components/loading'
 import ScopeConfirm from './components/ScopeConfirm'
+import { useAuth } from '../../../router/AuthProvider'
 
 const Consent = () => {
-    const { token } = theme.useToken();
+    const { token } = theme.useToken()
+
+    const { accessToken } = useAuth()
     //路由参数
     const params = useFullParams()
 
@@ -48,7 +50,7 @@ const Consent = () => {
                 redirect: "follow", // 改为 manual 以处理重定向或特殊逻辑
                 body: requestData,
                 headers: {
-                    'Authorization': `Bearer ${Cookies.get("accessToken")}`,
+                    'Authorization': `Bearer ${accessToken}`,
                 }
             });
         },

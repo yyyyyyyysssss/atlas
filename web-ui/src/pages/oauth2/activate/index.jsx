@@ -4,13 +4,15 @@
 import { Flex, Typography, Button, theme, Card, Input, Form, message } from "antd"
 import { MonitorOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
-import Cookies from 'js-cookie'
 import httpWrapper from '../../../services/AxiosWrapper'
 import useFullParams from "../../../hooks/useFullParams"
+import { useAuth } from "../../../router/AuthProvider"
 
 const Activate = () => {
 
     const { token } = theme.useToken()
+
+    const { accessToken } = useAuth()
 
     const { user_code } = useFullParams()
 
@@ -34,7 +36,7 @@ const Activate = () => {
         setLoading(true)
         // 设备码通常不区分大小写，统一转为大写处理
         const formattedCode = code.toUpperCase();
-        const requestUrl = `${httpWrapper.getUri()}/api/auth/oauth2/device_verification?user_code=${code}&access_token=${Cookies.get("accessToken")}`;
+        const requestUrl = `${httpWrapper.getUri()}/api/auth/oauth2/device_verification?user_code=${code}&access_token=${accessToken}`;
         window.location.href = requestUrl;
     };
 

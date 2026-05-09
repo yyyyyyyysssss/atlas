@@ -1,12 +1,16 @@
 import { useAuth } from "./AuthProvider"
 import { Navigate, useSearchParams } from 'react-router-dom';
 import Loading from "../components/loading";
-import Cookies from 'js-cookie'
+import { useEffect } from "react";
 
 
 export const LoginRoute = ({ children }) => {
-  const { isLoginIn } = useAuth()
+  const { isLoginIn, accessToken, signin, signout, checkAuth } = useAuth()
   const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
   if (isLoginIn === null) return <Loading fullscreen />
 
@@ -15,7 +19,6 @@ export const LoginRoute = ({ children }) => {
     if (targetUrl) {
       if (targetUrl.startsWith('http')) {
         const separator = targetUrl.includes('?') ? '&' : '?';
-        const accessToken = Cookies.get("accessToken")
         const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
         window.location.replace(finalUrl)
         return null

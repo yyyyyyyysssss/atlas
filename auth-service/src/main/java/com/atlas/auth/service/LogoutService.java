@@ -3,6 +3,7 @@ package com.atlas.auth.service;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.core.utils.JsonUtils;
+import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
@@ -40,9 +41,10 @@ public class LogoutService implements LogoutSuccessHandler {
         }
         String tokenId = tokenService.extractInfo(token, PayloadInfo::getId);
         String userId = tokenService.extractInfo(token, PayloadInfo::getSubject);
+        ClientType clientType = tokenService.extractInfo(token, PayloadInfo::getClientType);
         tokenService.revoke(token);
         // 移除会话
-        sessionControlService.removeSession(Long.parseLong(userId),tokenId);
+        sessionControlService.removeSession(Long.parseLong(userId),tokenId,clientType);
         // 清理本地上下文
         SecurityContextHolder.clearContext();
         // 返回标准响应

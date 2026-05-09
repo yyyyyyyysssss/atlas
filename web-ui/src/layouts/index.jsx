@@ -159,7 +159,7 @@ const AppLayout = () => {
                                                         ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
                                                     }}
                                                     style={{
-                                                        minHeight: '100%',
+                                                        height: '100%',
                                                         width: '100%',
                                                         display: 'flex', // 关键：让 motion.div 成为 flex 容器
                                                         flexDirection: 'column'
@@ -185,20 +185,7 @@ const AppLayout = () => {
                                                                 }}
                                                                 ref={nodeRef}
                                                             >
-                                                                {/* <Watermark
-                                                                content="Atlas"
-                                                                gap={[120, 120]}
-                                                                font={{ color: watermarkColor }}
-                                                                style={{
-                                                                    width: '100%',
-                                                                    flex: 1,
-                                                                    display: 'flex',
-                                                                    flexDirection: 'column',
-                                                                    justifyContent: isFS ? 'center' : 'flex-start'
-                                                                }}
-                                                            > */}
                                                                 {outlet}
-                                                                {/* </Watermark> */}
                                                             </div>
                                                         </Suspense>
                                                     </ErrorBoundary>

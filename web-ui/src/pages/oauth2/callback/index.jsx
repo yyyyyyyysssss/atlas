@@ -21,7 +21,7 @@ const OAuth2Callback = () => {
     useEffect(() => {
         if (!code) {
             message.error("无效的授权回调")
-            navigate('/login')
+            navigate('/login', { replace: true })
             return
         }
 
@@ -30,17 +30,16 @@ const OAuth2Callback = () => {
                 // 根据你后端的接口调整参数
                 const data = await runAsync(code, clientName)
                 console.log('data', data)
-                // await signin(data)
-                // redirect('/', data?.access?.token)
+                await signin(data)
+                redirect('/', data?.access?.token)
             } catch (error) {
                 console.error('OAuth2 回调处理失败:', error);
                 message.error("登录处理失败，请重试");
                 navigate('/login');
             }
         }
-
         handleAuth(code, clientName)
-    }, [code, clientName, navigate, signin, runAsync])
+    }, [code, clientName])
 
     return (
         <Loading fullscreen tip="正在完成登录..." />

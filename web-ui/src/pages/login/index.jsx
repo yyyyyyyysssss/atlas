@@ -185,18 +185,6 @@ const Login = () => {
     const loginSuccessHandler = async (data) => {
         await signin(data)
         redirect('/', data?.access?.token)
-        // const targetUrl = searchParams.get('targetUrl')
-        // let url = targetUrl || '/'
-        // if (targetUrl) {
-        //     if (targetUrl.startsWith('http')) {
-        //         const accessToken = data?.access?.token
-        //         const separator = targetUrl.includes('?') ? '&' : '?';
-        //         const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
-        //         window.location.href = finalUrl
-        //         return
-        //     }
-        // }
-        // navigate(url, { replace: true })
     }
 
     return (

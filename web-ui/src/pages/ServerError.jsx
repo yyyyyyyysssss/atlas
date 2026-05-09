@@ -11,7 +11,7 @@ const ServerError = () => {
     const { title = '500', subTitle = '抱歉，页面出了点问题，请稍后再试' } = location.state || {}
 
     const goHome = () => {
-        navigate('/home')
+        navigate('/')
     }
 
     return (

@@ -283,7 +283,7 @@ export const findRouteByHierarchy = (paths) => {
 const wrapProtectedRoute = (route) => {
     const wrappedRoute = {
         ...route,
-        element: route.protected ? (
+        element: route.protected === true ? (
             <ProtectedRoute requiredPermissions={route.requiredPermissions}>
                 {route.element}
             </ProtectedRoute>

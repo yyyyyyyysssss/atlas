@@ -15,7 +15,8 @@ const AuthContext = createContext({
     isLoginIn: null,
     setIsLoginIn: () => { },
     signin: async (tokenInfo) => { },
-    signout: async () => { }
+    signout: async () => { },
+    checkAuth: async () => { }
 })
 
 export const AuthProvider = ({ children }) => {
@@ -27,24 +28,25 @@ export const AuthProvider = ({ children }) => {
     const dispatch = useDispatch()
 
     useEffect(() => {
-        const check = async () => {
-            try {
-                const isValid = await checkTokenValid()
-                if (isValid) {
-                    await signin()
-                } else {
-                    await signout()
-                }
-            } catch (error) {
-                console.error("Token 校验失败:", error)
-                // 报错时也应该视为登录失效，允许用户进入登录页
-                await signout()
-            }
-
-        }
-        check()
         setGlobalSignout(signout)
     }, [])
+
+    const checkAuth = async () => {
+        if (isLoginIn !== null) {
+            return isLoginIn
+        }
+        try {
+            const isValid = await checkTokenValid()
+            if (isValid) {
+                await signin()
+                return true
+            }
+        } catch (error) {
+            console.error("Token 校验失败:", error)
+        }
+        setIsLoginIn(false)
+        return false
+    }
 
     const signin = async (tokenInfo) => {
         if (tokenInfo) {
@@ -74,12 +76,12 @@ export const AuthProvider = ({ children }) => {
         setIsLoginIn(false)
     }
 
-    if (isLoginIn === null) {
-        return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
-    }
+    // if (isLoginIn === null) {
+    //     return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
+    // }
 
     return (
-        <AuthContext.Provider value={{ isLoginIn, accessToken, setIsLoginIn, signin, signout }}>
+        <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth }}>
             {children}
         </AuthContext.Provider>
     )

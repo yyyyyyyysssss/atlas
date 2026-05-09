@@ -8,7 +8,7 @@ const Forbidden = () => {
     const navigate = useNavigate()
 
     const goHome = () => {
-        navigate('/home')
+        navigate('/')
     }
 
     return (

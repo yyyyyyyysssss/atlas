@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, Button, Card, Flex, Tabs, Typography, App, Avatar, Divider, Dropdown, ConfigProvider } from 'antd';
-import { UserOutlined, LockOutlined, MobileOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined } from '@ant-design/icons';
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
@@ -10,6 +10,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
 import { fetchAuthorizeUrl, fetchDeviceCode } from '../../services/Oauth2Service';
 import { useRedirect } from '../../hooks/useRedirect';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const Login = () => {
 
@@ -264,7 +265,7 @@ const Login = () => {
                     }}
                 >
                     <Flex vertical align="center" style={{ marginBottom: 32 }}>
-                        <Avatar src={'/logo128.png'} size={72} style={{ background: 'transparent' }} />
+                        <Avatar src={'/logo128_eclipse.svg'} size={80} style={{ background: 'transparent' }} />
                         <Typography.Title level={2} style={{ margin: '24px 0 8px 0', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
                             {t('登录 Atlas')}
                         </Typography.Title>
@@ -274,48 +275,53 @@ const Login = () => {
                     </Flex>
 
                     <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
-                        <Tabs
-                            defaultActiveKey="1"
-                            centered
-                            onChange={(e) => switchLoginMethod(e)}
-                            items={[
-                                {
-                                    key: '1',
-                                    label: t('账号'),
-                                    children: (
-                                        <div style={{ marginTop: 8 }}>
-                                            <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]}>
-                                                <Input allowClear size="large" placeholder="用户名" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                            </Form.Item>
-                                            <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]}>
-                                                <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                            </Form.Item>
-                                        </div>
-                                    )
-                                },
-                                {
-                                    key: '2',
-                                    label: t('邮箱'),
-                                    children: (
-                                        <div style={{ marginTop: 8 }}>
-                                            <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]}>
-                                                <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                            </Form.Item>
-                                            <Flex gap='small'>
-                                                <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1 }}>
-                                                    <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                                </Form.Item>
-                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
-                                                    {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
-                                                </Button>
-                                            </Flex>
-                                        </div>
-                                    )
-                                }
-                            ]}
-                        />
+                        {loginMethod === '1' ? (
+                            <motion.div
+                                key="password-login"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
+                                    <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                </Form.Item>
+                                <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
+                                    <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                </Form.Item>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="code-login"
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]} style={{ marginBottom: 20 }}>
+                                    <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                </Form.Item>
+                                <Flex gap='small' style={{ marginBottom: 20 }}>
+                                    <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
+                                        <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                    </Form.Item>
+                                    <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                        {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
+                                    </Button>
+                                </Flex>
+                            </motion.div>
+                        )}
 
-                        <Flex justify="end" align="center" style={{ marginBottom: 32 }}>
+                        <Flex justify="space-between" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
+                            <Typography.Link
+                                onClick={() => {
+                                    form.resetFields();
+                                    setLoginMethod(prev => prev === '1' ? '2' : '1');
+                                }}
+                                style={{ fontSize: 14, color: '#6b7280' }}
+                            >
+                                {loginMethod === '1' ? t('使用验证码登录') : t('使用密码登录')}
+                            </Typography.Link>
                             <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14, fontWeight: 500 }}>
                                 {t('忘记密码？')}
                             </Typography.Link>

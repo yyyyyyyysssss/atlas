@@ -7,6 +7,7 @@ import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.exception.SecurityExceptionAdvice;
 import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.jackson.AuthorityUrlMixin;
+import com.atlas.security.jackson.OneTimeTokenAuthenticationTokenMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
 import com.atlas.security.jackson.SecurityUserMixin;
 import com.atlas.security.model.RequestUrlAuthority;
@@ -39,6 +40,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -149,6 +151,7 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
         objectMapper.addMixIn(ThirdPartyAuthenticationToken.class, ThirdPartyAuthenticationToken.ThirdPartyAuthenticationTokenMixin.class);
         objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);
 
         // 3. 必须开启的配置：保留类型信息
         // 否则 Redis 反序列化时不知道要把 JSON 转成哪个具体的实现类

@@ -12,6 +12,11 @@ import org.springframework.security.authentication.ott.OneTimeToken;
 import org.springframework.security.web.authentication.ott.OneTimeTokenGenerationSuccessHandler;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -30,12 +35,19 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) {
-        String magicLink = securityProperties.getIssuerUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
+        String magicLink = securityProperties.getUiUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
         log.info("magic link: {}", magicLink);
+        LocalDateTime now = LocalDateTime.now();
+        Instant nowInstant = now.atZone(ZoneId.systemDefault()).toInstant();
+        Instant expiresAt = oneTimeToken.getExpiresAt();
+        long minutes = Duration.between(nowInstant, expiresAt).toMinutes();
         notificationApi.send(
                 NotificationRequest
-                        .template("ott_login", Map.of("loginUrl", magicLink))
+                        .template("ott_login", Map.of("magicLink", magicLink))
                         .email()
+                        .withParam("username",oneTimeToken.getUsername())
+                        .withParam("requestTime", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        .withParam("expireMinutes", minutes)
                         .to()
                         .toUsernames(oneTimeToken.getUsername())
                         .build()

@@ -4,13 +4,15 @@ import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutline
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
-import { login, sendEmailVerificationCode } from '../../services/LoginService';
+import { login, ottLogin, sendEmailVerificationCode } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
 import { fetchAuthorizeUrl, fetchDeviceCode } from '../../services/Oauth2Service';
 import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
+import useFullParams from '../../hooks/useFullParams';
+import Loading from '../../components/loading';
 
 const Login = () => {
 
@@ -23,11 +25,15 @@ const Login = () => {
     const { message } = App.useApp()
 
     const navigate = useNavigate()
-    const [searchParams] = useSearchParams()
+    const { ottToken } = useFullParams()
 
     const redirect = useRedirect()
 
     const { runAsync, loading } = useRequest(login, {
+        manual: true
+    })
+
+    const { runAsync: ottLoginAsync, loading: ottLoginLoading } = useRequest(ottLogin, {
         manual: true
     })
 
@@ -54,6 +60,7 @@ const Login = () => {
     })
 
     const timerRef = useRef()
+    const hasHandledOttRef = useRef(false) // 用于防止 StrictMode 下执行两次
 
     useEffect(() => {
         // 组件卸载时清理定时器
@@ -61,6 +68,26 @@ const Login = () => {
             if (timerRef.current) clearInterval(timerRef.current)
         }
     }, [])
+
+    useEffect(() => {
+        if (ottToken && !hasHandledOttRef.current) {
+            hasHandledOttRef.current = true
+            handleOttLogin(ottToken)
+        }
+    }, [ottToken])
+
+    const handleOttLogin = async (token) => {
+        try {
+            const data = await ottLoginAsync(token)
+            loginSuccessHandler(data)
+        } catch (error) {
+            message.error('快捷登录链接已失效或无效，请重新登录')
+            // 登录失败后清理 URL 中的 token，防止刷新再次触发
+            navigate('/login', { replace: true })
+            hasHandledOttRef.current = false
+        }
+    }
+
 
     const switchLoginMethod = (loginMethod) => {
         form.resetFields()
@@ -190,6 +217,10 @@ const Login = () => {
     const loginSuccessHandler = async (data) => {
         await signin(data)
         redirect('/', data?.access?.token)
+    }
+
+    if (ottLoginLoading) {
+        return <Loading fullscreen tip="正在通过快捷链接登录..." />
     }
 
     return (

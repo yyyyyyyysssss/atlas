@@ -1,58 +1,133 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <style type="text/css">
-        /* 邮件客户端兼容性处理 */
-        body { margin: 0; padding: 0; background-color: #f6f9fc; -webkit-text-size-adjust: 100%; }
-        .wrapper { width: 100%; table-layout: fixed; background-color: #f6f9fc; padding-bottom: 40px; }
-        .main-card {
-            max-width: 500px; margin: 40px auto; background-color: #ffffff;
-            border-radius: 12px; border: 1px solid #e6e9f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas - 验证码</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+            background-color: #ffffff;
+            color: #24292f;
+            -webkit-font-smoothing: antialiased;
         }
-        .header { background-color: #007bff; padding: 30px; text-align: center; }
-        .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-        .content { padding: 40px 30px; font-family: 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif; color: #444; line-height: 1.6; }
-        .code-container {
-            background-color: #f8fafd; border: 1px dashed #007bff; border-radius: 8px;
-            padding: 20px; margin: 25px 0; text-align: center;
+        .wrapper {
+            width: 100%;
+            background-color: #ffffff;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
-        .code-text {
-            font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 8px;
-            font-family: 'Courier New', Courier, monospace;
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: #ffffff;
         }
-        .footer { padding: 0 30px 30px; font-size: 12px; color: #999; text-align: center; line-height: 1.5; }
-        .warning { color: #ff4d4f; font-size: 13px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+        .header {
+            padding: 24px;
+            text-align: center;
+            background-color: #f6f8fa;
+            border-bottom: 1px solid #d0d7de;
+        }
+        .logo-text {
+            font-size: 24px;
+            font-weight: 600;
+            color: #24292f;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        .content {
+            padding: 32px 24px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: #24292f;
+        }
+        .desc {
+            font-size: 14px;
+            color: #24292f;
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+        }
+        .code-wrapper {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .code {
+            display: inline-block;
+            font-size: 32px;
+            font-weight: 600;
+            color: #24292f;
+            letter-spacing: 6px;
+            margin: 0;
+            padding: 16px 32px;
+            background-color: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        }
+        .warning {
+            font-size: 13px;
+            color: #57606a;
+            line-height: 1.5;
+            margin: 0;
+        }
+        .footer {
+            max-width: 500px;
+            margin: 24px auto 0;
+            text-align: center;
+            padding: 0 24px;
+        }
+        .footer p {
+            font-size: 12px;
+            color: #57606a;
+            margin: 8px 0;
+        }
+        .footer a {
+            color: #0969da;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 <div class="wrapper">
-    <div class="main-card">
+    <div class="container">
         <div class="header">
-            <h1>Atlas 系统安全验证</h1>
+            <div class="logo-text">Atlas</div>
         </div>
 
         <div class="content">
-            <p style="font-size: 16px; font-weight: bold; margin-top: 0;">尊敬的用户：</p>
-            <p>您正在进行登录/操作验证，请在验证码输入框中输入以下代码完成验证：</p>
+            <h2 class="title">验证您的设备或浏览器</h2>
+            <p class="desc">
+                您好，<br><br>
+                我们收到了在 Atlas 账号上的验证请求。请输入以下验证码以继续：
+            </p>
 
-            <div class="code-container">
-                <span class="code-text" th:text="${code}">888888</span>
+            <div class="code-wrapper">
+                <p class="code" th:text="${code}">{{code}}</p>
             </div>
 
-            <p>提示：该验证码将在 <strong th:text="${min}">5</strong> 分钟内有效。请勿将此验证码泄露给他人。</p>
-
-            <div class="warning">
-                如果您并未请求此验证码，请忽略此邮件。您的账号可能正面临风险，建议您及时检查账号安全状态。
-            </div>
-            <p>祝好，<br/>Atlas 团队</p>
+            <p class="warning">
+                验证码将在 <strong th:text="${min}">5</strong> 分钟 后失效。<br>
+                如果您没有发起此请求，请忽略此邮件。可能有人误输入了您的邮箱地址。
+            </p>
         </div>
+    </div>
 
-        <div class="footer">
-            此邮件由系统自动发送，请勿直接回复。
-        </div>
+    <div class="footer">
+        <p>这是一封自动发送的邮件，请勿直接回复。</p>
+        <p>如果您需要帮助，请联系 <a href="#">Atlas 支持</a></p>
+        <p>&copy; 2026 Atlas. 保留所有权利。</p>
     </div>
 </div>
 </body>

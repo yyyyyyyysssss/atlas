@@ -9,6 +9,11 @@ export const login = async (req) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/login', req))
 }
 
+export const ottLogin = async (ottToken) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/login/ott?ottToken=${ottToken}`))
+}
+
 // 登出
 export const logout = () => {
 
@@ -40,7 +45,7 @@ export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
 
 export const saveToken = (tokenInfo) => {
     Cookies.set('accessToken', tokenInfo.access.token)
-    Cookies.set('refreshToken', tokenInfo.refresh.token)
+    Cookies.set('refreshToken', tokenInfo?.refresh?.token)
     if (tokenInfo.rememberMe) {
         localStorage.setItem('rememberMeToken', tokenInfo.rememberMe.token)
     }

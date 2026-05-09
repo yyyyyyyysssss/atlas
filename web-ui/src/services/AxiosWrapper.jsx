@@ -51,7 +51,7 @@ httpWrapper.interceptors.response.use(
         const contentType = res.headers['content-type'] || ''
         if (contentType.includes('application/json')) {
             const result = res.data
-            if (result && result.code !== 0) {
+            if (result && result.code && result.code !== 0) {
                 getMessageApi().error(result.message)
                 return Promise.reject(new Error(result.message))
             }

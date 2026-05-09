@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition, memo } from 'react';
 import './index.css'
 import { Avatar, Flex, Menu, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { setActiveKey, setOpenKeys } from '../../redux/slices/layoutSlice';
 import { findRouteByPath } from '../../router/router';
 import { Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { createSelector } from '@reduxjs/toolkit';
 
 
 const getMenuItems = (items, t) => {
@@ -21,29 +22,36 @@ const getMenuItems = (items, t) => {
     });
 };
 
+
+const siderSelector = createSelector(
+    state => state.user.userInfo?.settings?.appearance?.theme || 'dark',
+    state => state.layout.menuItems,
+    state => state.layout.flattenMenuItems,
+    state => state.layout.menuCollapsed,
+    state => state.layout.activeKey,
+    state => state.layout.openKeys,
+    (themeValue, menuItems, flattenMenuItems, collapsed, activeKey, openKeys) => ({
+        themeValue,
+        menuItems,
+        flattenMenuItems,
+        collapsed,
+        activeKey,
+        openKeys,
+    })
+);
+
 const Sider = () => {
 
     const { t } = useTranslation()
 
-    const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'dark')
-
-    const menuItems = useSelector(state => state.layout.menuItems)
-
-    const flattenMenuItems = useSelector(state => state.layout.flattenMenuItems)
-
-    const collapsed = useSelector(state => state.layout.menuCollapsed)
-
-    const activeKey = useSelector(state => state.layout.activeKey)
-
-    const openKeys = useSelector(state => state.layout.openKeys)
+    const { themeValue, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
 
     const dispatch = useDispatch()
-
-    const [isPending, startTransition] = useTransition();
 
     const navigate = useNavigate()
 
     const location = useLocation()
+
 
     useEffect(() => {
         if (location.pathname && location.pathname !== '/' && flattenMenuItems && flattenMenuItems.length > 0) {
@@ -61,16 +69,13 @@ const Sider = () => {
         if (!menuItem) {
             return
         }
-        startTransition(() => {
-            navigate(menuItem.routePath)
-        })
-
+        navigate(menuItem.routePath)
     }
 
-    const goHome = () => {
-        navigate('/workbench')
-        dispatch(setActiveKey({ path: '/workbench' }))
-    }
+    const goHome = useCallback(() => {
+        navigate('/')
+        dispatch(setActiveKey({ path: '/' }))
+    }, [navigate, dispatch])
 
     const items = useMemo(() => {
         return getMenuItems(menuItems, t)
@@ -79,36 +84,7 @@ const Sider = () => {
 
     return (
         <>
-            <Flex
-                onClick={goHome}
-                gap={10}
-                justify='center'
-                align='center'
-                style={{
-                    height: '64px',
-                    cursor: 'pointer',
-                }}
-            >
-                {collapsed ?
-                    (
-                        <Avatar
-                            src={'/logo128.png'}
-                            size={40}
-                        />
-                    )
-                    :
-                    (
-                        <>
-                            <Avatar
-                                src={'/logo128.png'}
-                                size={40}
-                            />
-                            <Typography.Text style={{ fontSize: '20px' }}>Atlas</Typography.Text>
-                        </>
-                    )
-                }
-
-            </Flex >
+            <Logo collapsed={collapsed} goHome={goHome} />
             <Menu
                 style={{
                     maxHeight: 'calc(100vh - 64px)',
@@ -129,5 +105,22 @@ const Sider = () => {
 
     )
 }
+
+
+const Logo = memo(({ collapsed, goHome }) => (
+    <Flex
+        onClick={goHome}
+        gap={10}
+        justify='center'
+        align='center'
+        style={{
+            height: '64px',
+            cursor: 'pointer',
+        }}
+    >
+        <Avatar src={'/logo128.png'} size={40} />
+        {!collapsed && <Typography.Text style={{ fontSize: '20px' }}>Atlas</Typography.Text>}
+    </Flex>
+))
 
 export default Sider

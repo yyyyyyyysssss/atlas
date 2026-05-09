@@ -1,7 +1,6 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.TokenResponse;

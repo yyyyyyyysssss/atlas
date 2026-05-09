@@ -54,12 +54,13 @@ export const routes = [
             {
                 path: 'activate',
                 element: <Oauth2Activate />,
-            },
-            {
-                path: 'activated',
-                element: <Oauth2Activated />,
             }
         ]
+    },
+    {
+        path: 'oauth2/activated',
+        element: <Oauth2Activated />,
+        protected: false,
     },
     {
         path: 'oauth2/callback/:clientName',

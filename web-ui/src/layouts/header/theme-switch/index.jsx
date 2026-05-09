@@ -13,7 +13,7 @@ import { useState } from 'react';
 
 const ThemeSwitch = () => {
 
-    const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'dark')
+    const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'light')
 
     const dispatch = useDispatch()
 

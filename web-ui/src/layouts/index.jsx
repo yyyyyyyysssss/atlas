@@ -1,5 +1,5 @@
 import { Affix, App, ConfigProvider, Flex, Layout, theme, Watermark } from 'antd';
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
@@ -70,15 +70,16 @@ const AppLayout = () => {
             : 'rgba(0, 0, 0, 0.08)'       // 亮色模式：黑色半透明
     }, [themeValue])
 
+    const getPopupContainer = useCallback((node) => {
+        if (document.fullscreenElement) {
+            return mainDivRef.current || document.body
+        }
+        return document.body
+    }, [])
+
     return (
         <ConfigProvider
-            getPopupContainer={(node) => {
-                // 如果已经在全屏状态，挂载到 main-div
-                if (document.fullscreenElement) {
-                    return mainDivRef.current || document.body
-                }
-                return document.body;
-            }}
+            getPopupContainer={getPopupContainer}
         >
             <App
                 notification={{
@@ -150,7 +151,7 @@ const AppLayout = () => {
                                             <AnimatePresence mode="popLayout" initial={false}>
                                                 <motion.div
                                                     key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
-                                                    layout
+
                                                     initial={{ opacity: 0, scale: 0.99, x: 15 }}
                                                     animate={{ opacity: 1, scale: 1, x: 0 }}
                                                     exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}

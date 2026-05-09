@@ -218,40 +218,13 @@ const TopMenuTab = ({ style }) => {
                             const key = node.key
                             const tabIndex = panes.findIndex(p => p.key === key)
                             return (
-                                <SortableItem id={key}>
-                                    {({ ref, style, attributes, listeners, isDragging }) => (
-                                        <div
-                                            ref={ref}
-                                            style={{
-                                                ...style,
-                                                opacity: isDragging ? 0 : 1, // 原 Tab 隐藏
-                                            }}
-                                            {...attributes}
-                                            {...listeners}
-                                        >
-                                            <Dropdown
-                                                trigger={['contextMenu']}
-                                                menu={{
-                                                    items: [
-                                                        { key: 'closeOther', label: t('关闭其它') },
-                                                        { key: 'closeAll', label: t('关闭所有') },
-                                                        ...(tabIndex > 0
-                                                            ? [{ key: 'closeLeft', label: t('关闭左侧') }]
-                                                            : []),
-                                                        ...(tabIndex < panes.length - 1
-                                                            ? [{ key: 'closeRight', label: t('关闭右侧') }]
-                                                            : []),
-                                                    ],
-                                                    onClick: ({ key: actionKey }) => {
-                                                        handleMenuAction(actionKey, key, tabIndex)
-                                                    },
-                                                }}
-                                            >
-                                                {node}
-                                            </Dropdown>
-                                        </div>
-                                    )}
-                                </SortableItem>
+                                <MemoTabNode
+                                    node={node}
+                                    tabIndex={tabIndex}
+                                    panes={panes}
+                                    handleMenuAction={handleMenuAction}
+                                    t={t}
+                                />
                             );
                         }}
                     </DefaultTabBar>
@@ -294,5 +267,29 @@ const TopMenuTab = ({ style }) => {
         </div>
     )
 }
+
+
+const MemoTabNode = ({ node, tabIndex, panes, handleMenuAction, t }) => (
+    <SortableItem id={node.key}>
+        {({ ref, style, attributes, listeners, isDragging }) => (
+            <div ref={ref} style={{ ...style, opacity: isDragging ? 0 : 1 }} {...attributes} {...listeners}>
+                <Dropdown
+                    trigger={['contextMenu']}
+                    menu={{
+                        items: [
+                            { key: 'closeOther', label: t('关闭其它') },
+                            { key: 'closeAll', label: t('关闭所有') },
+                            ...(tabIndex > 0 ? [{ key: 'closeLeft', label: t('关闭左侧') }] : []),
+                            ...(tabIndex < panes.length - 1 ? [{ key: 'closeRight', label: t('关闭右侧') }] : []),
+                        ],
+                        onClick: ({ key: actionKey }) => handleMenuAction(actionKey, node.key, tabIndex),
+                    }}
+                >
+                    {node}
+                </Dropdown>
+            </div>
+        )}
+    </SortableItem>
+)
 
 export default TopMenuTab

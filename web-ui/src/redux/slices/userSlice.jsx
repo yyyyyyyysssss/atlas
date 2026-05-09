@@ -9,7 +9,7 @@ export const initialState = {
                 shortcuts: []
             },
             appearance: {
-                theme: 'dark',
+                theme: 'light',
                 colorPrimary: DEFAULT_PRIMARY_COLOR,
                 language: 'zh'
             }
@@ -28,7 +28,14 @@ export const userSlice = createSlice({
         setUserInfo: (state, action) => {
             const { payload } = action
             const { userInfo } = payload
-            state.userInfo = userInfo
+            state.userInfo = {
+                ...state.userInfo,
+                ...userInfo,
+                settings: {
+                    ...state.userInfo.settings,
+                    ...(userInfo.settings || {})
+                }
+            }
         },
         updateShortcuts: (state, action) => {
             const shortcuts = action.payload

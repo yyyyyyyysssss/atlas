@@ -1,3 +1,4 @@
+import React, { memo } from 'react';
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
@@ -62,4 +63,4 @@ const Header = () => {
     )
 }
 
-export default Header
+export default memo(Header)

@@ -198,24 +198,36 @@ const Login = () => {
                     colorBgContainer: '#ffffff',
                     colorText: '#1f2937',
                     colorTextSecondary: '#6b7280',
-                    colorBorder: '#d9d9d9',
+                    colorBorder: '#e5e7eb',
                     colorBgElevated: '#ffffff',
                     controlItemBgHover: '#f3f4f6',
-                    colorPrimary: '#1677ff',
-                    colorLink: '#1677ff',
-                    colorLinkHover: '#4096ff',
-                    colorLinkActive: '#0958d9',
+                    colorPrimary: '#4f46e5',
+                    colorLink: '#4f46e5',
+                    colorLinkHover: '#6366f1',
+                    colorLinkActive: '#4338ca',
+                    borderRadius: 12,
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                 },
                 components: {
                     Input: {
-                        colorBgContainer: '#ffffff',
+                        colorBgContainer: '#f9fafb',
                         colorText: '#1f2937',
                         colorTextPlaceholder: '#9ca3af',
+                        controlHeightLG: 48,
+                        colorBorder: 'transparent',
+                        activeBorderColor: '#4f46e5',
+                        hoverBorderColor: '#d1d5db',
+                    },
+                    Button: {
+                        controlHeightLG: 48,
+                        fontWeight: 600,
                     },
                     Tabs: {
-                        itemColor: '#6b7280',
-                        itemSelectedColor: '#1677ff',
-                        itemHoverColor: '#1677ff',
+                        itemColor: '#9ca3af',
+                        itemSelectedColor: '#1f2937',
+                        itemHoverColor: '#4f46e5',
+                        titleFontSize: 16,
+                        horizontalMargin: '0 0 24px 0',
                     }
                 }
             }}
@@ -225,40 +237,39 @@ const Login = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #f6f8fd 0%, #f1f5f9 100%)',
+                background: '#f3f4f6', // 非常干净的浅灰底色
                 padding: '20px',
                 position: 'relative',
                 overflow: 'hidden'
             }}>
-                {/* 现代感背景装饰圆 */}
+                {/* 极简现代的几何背景装饰 */}
                 <div style={{
-                    position: 'absolute', top: '-10%', left: '-5%', width: '40vw', height: '40vw',
-                    background: 'radial-gradient(circle, rgba(24,144,255,0.05) 0%, rgba(24,144,255,0) 70%)', borderRadius: '50%'
+                    position: 'absolute', top: '-20%', left: '-10%', width: '60vw', height: '60vw',
+                    background: 'linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(255,255,255,0) 60%)', borderRadius: '50%'
                 }} />
                 <div style={{
-                    position: 'absolute', bottom: '-10%', right: '-5%', width: '35vw', height: '35vw',
-                    background: 'radial-gradient(circle, rgba(114,46,209,0.05) 0%, rgba(114,46,209,0) 70%)', borderRadius: '50%'
+                    position: 'absolute', bottom: '-20%', right: '-10%', width: '50vw', height: '50vw',
+                    background: 'linear-gradient(135deg, rgba(236,72,153,0.05) 0%, rgba(255,255,255,0) 60%)', borderRadius: '50%'
                 }} />
 
                 <Card
                     style={{
                         width: '100%',
-                        maxWidth: '420px',
+                        maxWidth: '440px',
                         borderRadius: '24px',
-                        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.08)',
-                        border: '1px solid rgba(255,255,255,0.6)',
-                        background: 'rgba(255,255,255,0.9)',
-                        backdropFilter: 'blur(10px)',
-                        padding: '8px'
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)',
+                        border: 'none',
+                        background: '#ffffff',
+                        padding: '16px'
                     }}
                 >
                     <Flex vertical align="center" style={{ marginBottom: 32 }}>
-                        <Avatar src={'/logo128.png'} size={64} style={{ boxShadow: '0 8px 16px rgba(0,0,0,0.08)' }} />
-                        <Typography.Title level={3} style={{ margin: '20px 0 8px 0', fontWeight: 600, color: '#1f2937' }}>
+                        <Avatar src={'/logo128.png'} size={72} style={{ background: 'transparent' }} />
+                        <Typography.Title level={2} style={{ margin: '24px 0 8px 0', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
                             {t('登录 Atlas')}
                         </Typography.Title>
-                        <Typography.Text type="secondary" style={{ fontSize: 14, color: '#6b7280' }}>
-                            {t('欢迎回来，请登录以继续访问系统')}
+                        <Typography.Text style={{ fontSize: 15, color: '#6b7280' }}>
+                            {t('欢迎回来，请登录以继续')}
                         </Typography.Text>
                     </Flex>
 
@@ -270,32 +281,32 @@ const Login = () => {
                             items={[
                                 {
                                     key: '1',
-                                    label: t('账号登录'),
+                                    label: t('账号'),
                                     children: (
-                                        <div style={{ marginTop: 12 }}>
+                                        <div style={{ marginTop: 8 }}>
                                             <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]}>
-                                                <Input allowClear size="large" placeholder="请输入用户名" prefix={<UserOutlined style={{ color: '#bfbfbf' }} />} style={{ borderRadius: 8, height: 44 }} />
+                                                <Input allowClear size="large" placeholder="用户名" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                             </Form.Item>
                                             <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]}>
-                                                <Input.Password size="large" placeholder="请输入密码" prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} style={{ borderRadius: 8, height: 44 }} />
+                                                <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                             </Form.Item>
                                         </div>
                                     )
                                 },
                                 {
                                     key: '2',
-                                    label: t('邮箱登录'),
+                                    label: t('邮箱'),
                                     children: (
-                                        <div style={{ marginTop: 12 }}>
+                                        <div style={{ marginTop: 8 }}>
                                             <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]}>
-                                                <Input allowClear size="large" placeholder="请输入邮箱" prefix={<MailOutlined style={{ color: '#bfbfbf' }} />} style={{ borderRadius: 8, height: 44 }} />
+                                                <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                             </Form.Item>
                                             <Flex gap='small'>
                                                 <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1 }}>
-                                                    <Input allowClear size="large" placeholder="验证码" prefix={<MailOutlined style={{ color: '#bfbfbf' }} />} style={{ borderRadius: 8, height: 44 }} />
+                                                    <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                                 </Form.Item>
-                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode} style={{ borderRadius: 8, height: 44 }}>
-                                                    {verificationCode.disabled ? t('{{ti}} 秒后重试', { ti: verificationCode.seconds }) : t('获取验证码')}
+                                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                                    {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
                                                 </Button>
                                             </Flex>
                                         </div>
@@ -304,29 +315,29 @@ const Login = () => {
                             ]}
                         />
 
-                        <Flex justify="end" align="center" style={{ marginBottom: 24 }}>
-                            <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14 }}>
+                        <Flex justify="end" align="center" style={{ marginBottom: 32 }}>
+                            <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14, fontWeight: 500 }}>
                                 {t('忘记密码？')}
                             </Typography.Link>
                         </Flex>
 
-                        <Form.Item style={{ marginBottom: 24 }}>
-                            <Button type="primary" htmlType="submit" style={{ width: '100%', height: 44, borderRadius: 8, fontSize: 16, fontWeight: 500 }} loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading}>
+                        <Form.Item style={{ marginBottom: 32 }}>
+                            <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
                                 {t('登 录')}
                             </Button>
                         </Form.Item>
 
                         <Divider plain>
-                            <Typography.Text type="secondary" style={{ fontSize: 12, color: '#9ca3af' }}>
-                                {t('其他登录方式')}
-                            </Typography.Text>
+                            <span style={{ color: '#9ca3af', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {t('其他方式')}
+                            </span>
                         </Divider>
 
-                        <Flex justify="center" align="center" gap={32} style={{ marginBottom: 4 }}>
+                        <Flex justify="center" align="center" gap={32} style={{ marginBottom: 8, marginTop: 24 }}>
                             <GithubOutlined
-                                style={{ fontSize: 24, color: '#374151', cursor: 'pointer', transition: 'transform 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                style={{ fontSize: 24, color: '#374151', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#111827'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#374151'; }}
                                 title="GitHub"
                             />
                             <Dropdown
@@ -354,18 +365,18 @@ const Login = () => {
                                     size={28}
                                     style={{
                                         cursor: 'pointer',
-                                        transition: 'transform 0.2s',
-                                        border: '1px solid #e5e7eb',
-                                        background: '#fff'
+                                        transition: 'transform 0.2s ease',
+                                        background: 'transparent',
+                                        filter: 'grayscale(20%)'
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.filter = 'grayscale(0%)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'grayscale(20%)'; }}
                                 />
                             </Dropdown>
                             <GoogleOutlined
-                                style={{ fontSize: 24, color: '#EA4335', cursor: 'pointer', transition: 'transform 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                style={{ fontSize: 24, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#EA4335'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#6b7280'; }}
                                 title="Google"
                             />
                         </Flex>

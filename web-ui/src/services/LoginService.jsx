@@ -14,6 +14,11 @@ export const ottLogin = async (ottToken) => {
     return apiRequestWrapper(() => httpWrapper.get(`/api/auth/login/ott?ottToken=${ottToken}`))
 }
 
+export const sendOttLink = async (username) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/ott/generate?username=${username}`))
+}
+
 // 登出
 export const logout = () => {
 

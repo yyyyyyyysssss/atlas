@@ -22,7 +22,7 @@ public interface UserService extends IService<User> {
 
     UserAuthDTO loadUserByUsername(String username);
 
-    String getOrRegisterUsername(ExternalIdentityDTO externalIdentityDTO);
+    String ensureUser(ExternalIdentityDTO externalIdentityDTO);
 
     UserAuthDTO loadUserByUserId(Long id);
 

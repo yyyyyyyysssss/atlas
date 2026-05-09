@@ -55,7 +55,7 @@ const Notification = () => {
       duration: 0,
       style: {
         paddingTop: 30,
-        minWidth: 600
+        minWidth: 450
       },
     })
     refreshUnreadCount()

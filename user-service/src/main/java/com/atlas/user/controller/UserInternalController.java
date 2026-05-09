@@ -28,15 +28,21 @@ public class UserInternalController {
 
     private final UserService userService;
 
-    @GetMapping("/username")
+    @GetMapping("/auth")
     public Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username) {
         UserAuthDTO userAuthDTO = userService.loadUserByUsername(username);
         return ResultGenerator.ok(userAuthDTO);
     }
 
-    @PostMapping("/getOrRegisterUsername")
+    @GetMapping("/profile")
+    public Result<UserDTO> userProfile(@RequestParam("username") String username) {
+        User user = userService.findByUsername(username);
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
+    }
+
+    @PostMapping("/ensureUser")
     public Result<String> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
-        String username = userService.getOrRegisterUsername(externalIdentityDTO);
+        String username = userService.ensureUser(externalIdentityDTO);
         return ResultGenerator.ok(username);
     }
 

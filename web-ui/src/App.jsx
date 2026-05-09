@@ -221,12 +221,14 @@ const App = () => {
       theme={themeConfig[themeValue]}
       renderEmpty={() => (<NoDataEmpty />)}
     >
-      <AuthProvider>
-        {contextHolder}
-        <RouterProvider
-          router={router}
-        />
-      </AuthProvider>
+      <AntdApp>
+        <AuthProvider>
+          {contextHolder}
+          <RouterProvider
+            router={router}
+          />
+        </AuthProvider>
+      </AntdApp>
     </ConfigProvider>
   );
 }

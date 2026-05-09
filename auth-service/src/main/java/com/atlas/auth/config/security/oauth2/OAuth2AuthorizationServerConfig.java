@@ -11,6 +11,7 @@ import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
+import com.atlas.security.token.EmailAuthenticationToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -176,6 +177,7 @@ public class OAuth2AuthorizationServerConfig {
         objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
         objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
         objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
+        objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
 
         authorizationRowMapper.setObjectMapper(objectMapper);
 

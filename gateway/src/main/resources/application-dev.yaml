@@ -66,7 +66,7 @@ rate-limit:
       stripPrefix: 2
       limits:
         - path: /api/auth/code/send-email
-          capacity: 1 # 令牌桶容量（或最大访问次数） 在指定周期内同一个 Key 最多允许访问 1 次
+          capacity: 60 # 令牌桶容量（或最大访问次数） 在指定周期内同一个 Key 最多允许访问 1 次
           periodInSeconds: 60 # 限流周期 配合 capacity 使用
           methods: ["POST"]
           keyResolverName: ipKeyResolver

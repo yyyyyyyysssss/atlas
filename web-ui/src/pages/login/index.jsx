@@ -4,7 +4,7 @@ import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutline
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
-import { login, ottLogin, sendEmailVerificationCode } from '../../services/LoginService';
+import { login, ottLogin, sendEmailVerificationCode, sendOttLink } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
@@ -30,6 +30,10 @@ const Login = () => {
     const redirect = useRedirect()
 
     const { runAsync, loading } = useRequest(login, {
+        manual: true
+    })
+
+    const { runAsync: sendOttLinkAsync, loading: sendOttLinkLoading } = useRequest(sendOttLink, {
         manual: true
     })
 
@@ -88,6 +92,43 @@ const Login = () => {
         }
     }
 
+    const handleSendMagicLink = async () => {
+        try {
+            // validateFields 返回的是通过校验的字段，如果没有通过会抛出异常中断执行
+            const values = await form.validateFields(['magicUsername']);
+
+            await sendOttLinkAsync(values.magicUsername);
+            console.log('message',message)
+            message.success('登录链接已发送到您的邮箱，请注意查收！');
+
+            // 重置定时器状态为60秒倒计时
+            if (timerRef.current) clearInterval(timerRef.current);
+            let ti = 60;
+            setVerificationCode(prev => ({
+                ...prev,
+                disabled: true,
+                seconds: ti,
+            }));
+
+            timerRef.current = setInterval(() => {
+                ti--;
+                if (ti > 0) {
+                    setVerificationCode(prev => ({
+                        ...prev,
+                        seconds: ti,
+                    }));
+                } else {
+                    resetVerificationCode();
+                }
+            }, 1000);
+        } catch (e) {
+            // 这里捕获的是表单校验失败的错误或接口请求失败的错误
+            // 如果是因为 validateFields 没过，e.errorFields 会存在
+            if (!e.errorFields) {
+                console.error('发送失败:', e);
+            }
+        }
+    }
 
     const switchLoginMethod = (loginMethod) => {
         form.resetFields()
@@ -306,63 +347,128 @@ const Login = () => {
                     </Flex>
 
                     <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
-                        {loginMethod === '1' ? (
-                            <motion.div
-                                key="password-login"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
-                                    <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                </Form.Item>
-                                <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
-                                    <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                </Form.Item>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="code-login"
-                                initial={{ opacity: 0, x: 10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]} style={{ marginBottom: 20 }}>
-                                    <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                </Form.Item>
-                                <Flex gap='small' style={{ marginBottom: 20 }}>
-                                    <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
-                                        <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                        <AnimatePresence mode="wait">
+                            {loginMethod === '1' && (
+                                <motion.div
+                                    key="password-login"
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
+                                        <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                     </Form.Item>
-                                    <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
-                                        {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
-                                    </Button>
-                                </Flex>
-                            </motion.div>
-                        )}
+                                    <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
+                                        <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                    </Form.Item>
+                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+                                        <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                            {t('登 录')}
+                                        </Button>
+                                    </Form.Item>
+                                </motion.div>
+                            )}
+
+                            {loginMethod === '2' && (
+                                <motion.div
+                                    key="code-login"
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]} style={{ marginBottom: 20 }}>
+                                        <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                    </Form.Item>
+                                    <Flex gap='small' style={{ marginBottom: 20 }}>
+                                        <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
+                                            <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                        </Form.Item>
+                                        <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                            {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
+                                        </Button>
+                                    </Flex>
+                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+                                        <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                            {t('登 录')}
+                                        </Button>
+                                    </Form.Item>
+                                </motion.div>
+                            )}
+
+                            {loginMethod === '3' && (
+                                <motion.div
+                                    key="magic-login"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 20, fontSize: 13 }}>
+                                        输入您的账号或邮箱，我们将向您发送一条免密登录的快捷链接。
+                                    </Typography.Paragraph>
+                                    <Form.Item name="magicUsername" rules={[{ required: loginMethod === '3', message: '账号不可为空' }]} style={{ marginBottom: 20 }}>
+                                        <Input allowClear size="large" placeholder="输入用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                    </Form.Item>
+                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+                                        <Button
+                                            type="primary"
+                                            size="large"
+                                            block
+                                            onClick={handleSendMagicLink}
+                                            loading={sendOttLinkLoading}
+                                            disabled={verificationCode.disabled}
+                                            style={{ boxShadow: verificationCode.disabled === true ? '' : '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}
+                                        >
+                                            {verificationCode.disabled ? t('链接已发送 ({{ti}}s)', { ti: verificationCode.seconds }) : t('发送快捷登录链接')}
+                                        </Button>
+                                    </Form.Item>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         <Flex justify="space-between" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
-                            <Typography.Link
-                                onClick={() => {
-                                    form.resetFields();
-                                    setLoginMethod(prev => prev === '1' ? '2' : '1');
-                                }}
-                                style={{ fontSize: 14, color: '#6b7280' }}
-                            >
-                                {loginMethod === '1' ? t('使用验证码登录') : t('使用密码登录')}
-                            </Typography.Link>
-                            <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14, fontWeight: 500 }}>
-                                {t('忘记密码？')}
-                            </Typography.Link>
-                        </Flex>
+                            {loginMethod === '1' ? (
+                                <Dropdown
+                                    menu={{
+                                        items: [
+                                            {
+                                                key: '2',
+                                                label: '邮箱登录',
+                                                align: 'center',
+                                                onClick: () => switchLoginMethod('2')
+                                            },
+                                            {
+                                                key: '3',
+                                                label: '免密登录',
+                                                align: 'center',
+                                                onClick: () => switchLoginMethod('3')
+                                            }
+                                        ]
+                                    }}
+                                    placement="bottomLeft"
+                                    trigger={['click']}
+                                >
+                                    <Typography.Link style={{ fontSize: 14, color: '#6b7280' }}>
+                                        {t('其他登录方式 ▾')}
+                                    </Typography.Link>
+                                </Dropdown>
+                            ) : (
+                                <Typography.Link
+                                    onClick={() => switchLoginMethod('1')}
+                                    style={{ fontSize: 14, color: '#6b7280' }}
+                                >
+                                    {t('返回密码登录')}
+                                </Typography.Link>
+                            )}
 
-                        <Form.Item style={{ marginBottom: 32 }}>
-                            <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
-                                {t('登 录')}
-                            </Button>
-                        </Form.Item>
+                            {loginMethod === '1' && (
+                                <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14, fontWeight: 500 }}>
+                                    {t('忘记密码？')}
+                                </Typography.Link>
+                            )}
+                        </Flex>
 
                         <Divider plain>
                             <span style={{ color: '#9ca3af', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

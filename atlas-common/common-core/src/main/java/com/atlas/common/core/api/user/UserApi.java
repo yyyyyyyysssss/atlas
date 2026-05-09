@@ -17,11 +17,14 @@ import java.util.List;
 public interface UserApi {
 
 
-    @GetExchange("/username")
+    @GetExchange("/auth")
     Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
 
-    @PostExchange("/getOrRegisterUsername")
-    Result<String> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO);
+    @GetExchange("/profile")
+    Result<UserDTO> userProfile(@RequestParam("username") String username);
+
+    @PostExchange("/ensureUser")
+    Result<String> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO);
 
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();

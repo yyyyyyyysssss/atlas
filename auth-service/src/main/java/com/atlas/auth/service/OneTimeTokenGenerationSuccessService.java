@@ -2,6 +2,11 @@ package com.atlas.auth.service;
 
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
+import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.response.Result;
+import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.properties.SecurityProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +17,8 @@ import org.springframework.security.authentication.ott.OneTimeToken;
 import org.springframework.security.web.authentication.ott.OneTimeTokenGenerationSuccessHandler;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,8 +40,20 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
 
     private final NotificationApi notificationApi;
 
+    private final UserApi userApi;
+
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) {
+    public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) throws IOException {
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        Result<UserDTO> userResult = userApi.userProfile(oneTimeToken.getUsername());
+        if (!userResult.isSucceed()){
+            response.getWriter().write(JsonUtils.toJson(ResultGenerator.failed(userResult.getMessage())));
+            return;
+        }
+
         String magicLink = securityProperties.getUiUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
         log.info("magic link: {}", magicLink);
         LocalDateTime now = LocalDateTime.now();
@@ -52,5 +71,7 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
                         .toUsernames(oneTimeToken.getUsername())
                         .build()
         );
+
+        response.getWriter().write(JsonUtils.toJson(ResultGenerator.ok()));
     }
 }

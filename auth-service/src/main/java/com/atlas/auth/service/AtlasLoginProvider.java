@@ -90,7 +90,7 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
                     .email(email)
                     .phone(phone)
                     .build();
-            Result<String> usernameResult = userApi.getOrRegisterUsername(externalIdentityDTO);
+            Result<String> usernameResult = userApi.ensureUser(externalIdentityDTO);
             if(!usernameResult.isSucceed()){
                 throw new BusinessException("获取或注册用户失败: " + usernameResult.getMessage());
             }

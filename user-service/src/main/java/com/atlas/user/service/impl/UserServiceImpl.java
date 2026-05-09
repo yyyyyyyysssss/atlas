@@ -84,7 +84,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    public String getOrRegisterUsername(ExternalIdentityDTO externalIdentityDTO) {
+    public String ensureUser(ExternalIdentityDTO externalIdentityDTO) {
         String provider = externalIdentityDTO.getProvider();
         String sub = externalIdentityDTO.getSub();
         UserIdentityDTO existingIdentity = userIdentityService.getByIdentity(provider, sub);

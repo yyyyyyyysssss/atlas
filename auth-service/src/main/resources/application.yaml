@@ -52,6 +52,8 @@ security:
       - /oauth2/oidc/logout
       - /oauth2/consent
       - /oauth2/activate
+      - /qr/ticket
+      - /qr/status
       - /thirdParty/**
       - /activated
       - /open/**

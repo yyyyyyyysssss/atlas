@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider } from 'antd';
+import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined } from '@ant-design/icons';
+import { QrCode, Monitor } from 'lucide-react';
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
-import { login, ottLogin, sendEmailVerificationCode, sendOttLink } from '../../services/LoginService';
+import { login, ottLogin, qrTicket, sendEmailVerificationCode, sendOttLink } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
@@ -41,6 +42,10 @@ const Login = () => {
         manual: true
     })
 
+    const { runAsync: qrTicketAsync, loading: qrTicketLoading } = useRequest(qrTicket, {
+        manual: true
+    })
+
     const { runAsync: sendEmailVerificationCodeAsync, loading: sendEmailVerificationCodeLoading } = useRequest(sendEmailVerificationCode, {
         manual: true
     })
@@ -53,8 +58,32 @@ const Login = () => {
         manual: true
     })
 
-    //登录方式
     const [loginMethod, setLoginMethod] = useState("1");
+
+    // 是否显示扫码登录 (翻转状态)
+    const [isQrLogin, setIsQrLogin] = useState(false);
+
+    const [qrCodeData, setQrCodeData] = useState({
+        url: ''
+    })
+
+    const refreshQrCode = () => {
+        qrTicketAsync()
+            .then((data) => {
+                setQrCodeData({
+                    url: data?.qrUrl || ''
+                })
+            })
+            .catch(() => {
+                message.error('获取二维码失败，请重试')
+            })
+    }
+
+    useEffect(() => {
+        if (isQrLogin) {
+            refreshQrCode()
+        }
+    }, [isQrLogin])
 
     //验证码设置
     const [verificationCode, setVerificationCode] = useState({
@@ -92,7 +121,7 @@ const Login = () => {
         }
     }
 
-        const handleSendMagicLink = async () => {
+    const handleSendMagicLink = async () => {
         try {
             // validateFields 返回的是通过校验的字段，如果没有通过会抛出异常中断执行
             const values = await form.validateFields(['magicUsername']);
@@ -327,203 +356,339 @@ const Login = () => {
                     background: 'linear-gradient(135deg, rgba(236,72,153,0.05) 0%, rgba(255,255,255,0) 60%)', borderRadius: '50%'
                 }} />
 
-                <Card
+                <motion.div
+                    animate={{ rotateY: isQrLogin ? 180 : 0 }}
+                    transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
                     style={{
                         width: '100%',
                         maxWidth: '440px',
-                        borderRadius: '24px',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)',
-                        border: 'none',
-                        background: '#ffffff',
-                        padding: '16px'
+                        transformStyle: 'preserve-3d',
+                        perspective: '1000px',
+                        position: 'relative'
                     }}
                 >
-                    <Flex vertical align="center" style={{ marginBottom: 32 }}>
-                        <Avatar src={'/logo128_eclipse.svg'} size={80} style={{ background: 'transparent' }} />
-                        <Typography.Title level={2} style={{ margin: '24px 0 8px 0', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
-                            {t('登录 Atlas')}
-                        </Typography.Title>
-                        <Typography.Text style={{ fontSize: 15, color: '#6b7280' }}>
-                            {t('欢迎回来，请登录以继续')}
-                        </Typography.Text>
-                    </Flex>
+                    {/* 密码/表单登录面 (Front) */}
+                    <Card
+                        style={{
+                            width: '100%',
+                            borderRadius: '24px',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)',
+                            border: 'none',
+                            background: '#ffffff',
+                            padding: '16px',
+                            backfaceVisibility: 'hidden', // 翻转时隐藏背面
+                            position: 'relative'
+                        }}
+                    >
+                        {/* 右上角切换扫码图标 (折角图片) */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 16,
+                                right: 16,
+                                cursor: 'pointer',
+                                zIndex: 10,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
+                            className="qr-toggle-btn"
+                            onClick={() => setIsQrLogin(true)}
+                            title="扫码登录"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                                e.currentTarget.style.opacity = '0.8';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                        >
+                            <QrCode
+                                size={32}
+                                color="#9ca3af"
+                                strokeWidth={1.5}
+                            />
+                        </div>
 
-                    <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
-                        <AnimatePresence mode="wait">
-                            {loginMethod === '1' && (
-                                <motion.div
-                                    key="password-login"
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
-                                        <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                    </Form.Item>
-                                    <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
-                                        <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                    </Form.Item>
-                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
-                                        <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
-                                            {t('登 录')}
-                                        </Button>
-                                    </Form.Item>
-                                </motion.div>
-                            )}
+                        <Flex vertical align="center" style={{ marginBottom: 32 }}>
+                            <Avatar src={'/logo128_eclipse.svg'} size={80} style={{ background: 'transparent' }} />
+                            <Typography.Title level={2} style={{ margin: '24px 0 8px 0', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
+                                {t('登录 Atlas')}
+                            </Typography.Title>
+                            <Typography.Text style={{ fontSize: 15, color: '#6b7280' }}>
+                                {t('欢迎回来，请登录以继续')}
+                            </Typography.Text>
+                        </Flex>
 
-                            {loginMethod === '2' && (
-                                <motion.div
-                                    key="code-login"
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]} style={{ marginBottom: 20 }}>
-                                        <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                    </Form.Item>
-                                    <Flex gap='small' style={{ marginBottom: 20 }}>
-                                        <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
-                                            <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                        <Form form={form} style={{ width: '100%' }} onFinish={onFinish}>
+                            <AnimatePresence mode="wait">
+                                {loginMethod === '1' && (
+                                    <motion.div
+                                        key="password-login"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
+                                            <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                         </Form.Item>
-                                        <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
-                                            {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
-                                        </Button>
-                                    </Flex>
-                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
-                                        <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
-                                            {t('登 录')}
-                                        </Button>
-                                    </Form.Item>
-                                </motion.div>
-                            )}
+                                        <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
+                                            <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                        </Form.Item>
+                                        <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+                                            <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                                {t('登 录')}
+                                            </Button>
+                                        </Form.Item>
+                                    </motion.div>
+                                )}
 
-                                                                                                                {loginMethod === '3' && (
-                                <motion.div
-                                    key="magic-login"
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 20, fontSize: 13 }}>
-                                        输入您的账号或邮箱，我们将向该账号绑定的邮箱发送登录链接。
-                                    </Typography.Paragraph>
-                                    <Form.Item name="magicUsername" rules={[{ required: loginMethod === '3', message: '账号不可为空' }]} style={{ marginBottom: 32 }}>
-                                        <Input allowClear size="large" placeholder="输入用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
-                                    </Form.Item>
+                                {loginMethod === '2' && (
+                                    <motion.div
+                                        key="code-login"
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Form.Item name="email" validateTrigger="onBlur" rules={[{ validator: emailVerification }]} style={{ marginBottom: 20 }}>
+                                            <Input allowClear size="large" placeholder="注册邮箱" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                        </Form.Item>
+                                        <Flex gap='small' style={{ marginBottom: 20 }}>
+                                            <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
+                                                <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                            </Form.Item>
+                                            <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                                {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
+                                            </Button>
+                                        </Flex>
+                                        <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+                                            <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading || getDeviceCodeLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                                {t('登 录')}
+                                            </Button>
+                                        </Form.Item>
+                                    </motion.div>
+                                )}
 
-                                    <Form.Item style={{ marginBottom: 32 }}>
-                                        <Button
-                                            type="primary"
-                                            size="large"
-                                            block
-                                            onClick={handleSendMagicLink}
-                                            loading={sendOttLinkLoading}
-                                            disabled={verificationCode.disabled}
-                                            style={{ boxShadow: verificationCode.disabled === true ? '' : '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}
-                                        >
-                                            {verificationCode.disabled ? t('请求已发送 ({{ti}}s)', { ti: verificationCode.seconds }) : t('发送快捷登录链接')}
-                                        </Button>
-                                    </Form.Item>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                {loginMethod === '3' && (
+                                    <motion.div
+                                        key="magic-login"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 20, fontSize: 13 }}>
+                                            输入您的账号或邮箱，我们将向该账号绑定的邮箱发送登录链接。
+                                        </Typography.Paragraph>
+                                        <Form.Item name="magicUsername" rules={[{ required: loginMethod === '3', message: '账号不可为空' }]} style={{ marginBottom: 32 }}>
+                                            <Input allowClear size="large" placeholder="输入用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                        </Form.Item>
 
-                        <Flex justify="end" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
-                            {loginMethod === '1' ? (
+                                        <Form.Item style={{ marginBottom: 32 }}>
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                block
+                                                onClick={handleSendMagicLink}
+                                                loading={sendOttLinkLoading}
+                                                disabled={verificationCode.disabled}
+                                                style={{ boxShadow: verificationCode.disabled === true ? '' : '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}
+                                            >
+                                                {verificationCode.disabled ? t('请求已发送 ({{ti}}s)', { ti: verificationCode.seconds }) : t('发送快捷登录链接')}
+                                            </Button>
+                                        </Form.Item>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <Flex justify="end" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
+                                {loginMethod === '1' ? (
+                                    <Dropdown
+                                        menu={{
+                                            items: [
+                                                {
+                                                    key: '2',
+                                                    label: '邮箱登录',
+                                                    align: 'center',
+                                                    onClick: () => switchLoginMethod('2')
+                                                },
+                                                {
+                                                    key: '3',
+                                                    label: '免密登录',
+                                                    align: 'center',
+                                                    onClick: () => switchLoginMethod('3')
+                                                }
+                                            ]
+                                        }}
+                                        placement="bottomLeft"
+                                        trigger={['click']}
+                                    >
+                                        <Typography.Link style={{ fontSize: 14, color: '#6b7280' }}>
+                                            {t('更多登录方式 ▾')}
+                                        </Typography.Link>
+                                    </Dropdown>
+                                ) : (
+                                    <Typography.Link
+                                        onClick={() => switchLoginMethod('1')}
+                                        style={{ fontSize: 14, color: '#6b7280' }}
+                                    >
+                                        {t('返回密码登录')}
+                                    </Typography.Link>
+                                )}
+
+
+                            </Flex>
+
+                            <Divider plain>
+                                <span style={{ color: '#9ca3af', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    {t('其他方式')}
+                                </span>
+                            </Divider>
+
+                            <Flex justify="center" align="center" gap={32} style={{ marginBottom: 8, marginTop: 24 }}>
+                                <GithubOutlined
+                                    style={{ fontSize: 24, color: '#374151', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#111827'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#374151'; }}
+                                    title="GitHub"
+                                />
                                 <Dropdown
                                     menu={{
                                         items: [
                                             {
-                                                key: '2',
-                                                label: '邮箱登录',
-                                                align: 'center',
-                                                onClick: () => switchLoginMethod('2')
+                                                key: 'auth_code',
+                                                label: '授权码登录',
+                                                icon: <KeyOutlined />,
+                                                onClick: authorizeCodeLogin
                                             },
                                             {
-                                                key: '3',
-                                                label: '免密登录',
-                                                align: 'center',
-                                                onClick: () => switchLoginMethod('3')
+                                                key: 'device_code',
+                                                label: '设备码登录',
+                                                icon: <ScanOutlined />,
+                                                onClick: deviceCodeLogin
                                             }
                                         ]
                                     }}
-                                    placement="bottomLeft"
-                                    trigger={['click']}
+                                    trigger={['hover']}
+                                    placement="bottom"
                                 >
-                                    <Typography.Link style={{ fontSize: 14, color: '#6b7280' }}>
-                                        {t('更多登录方式 ▾')}
-                                    </Typography.Link>
+                                    <Avatar
+                                        src="/logo128.png"
+                                        size={28}
+                                        style={{
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s ease',
+                                            background: 'transparent',
+                                            filter: 'grayscale(20%)'
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.filter = 'grayscale(0%)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'grayscale(20%)'; }}
+                                    />
                                 </Dropdown>
-                            ) : (
-                                <Typography.Link
-                                    onClick={() => switchLoginMethod('1')}
-                                    style={{ fontSize: 14, color: '#6b7280' }}
-                                >
-                                    {t('返回密码登录')}
-                                </Typography.Link>
-                            )}
-
-                          
-                        </Flex>
-
-                        <Divider plain>
-                            <span style={{ color: '#9ca3af', fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                {t('其他方式')}
-                            </span>
-                        </Divider>
-
-                        <Flex justify="center" align="center" gap={32} style={{ marginBottom: 8, marginTop: 24 }}>
-                            <GithubOutlined
-                                style={{ fontSize: 24, color: '#374151', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#111827'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#374151'; }}
-                                title="GitHub"
-                            />
-                            <Dropdown
-                                menu={{
-                                    items: [
-                                        {
-                                            key: 'auth_code',
-                                            label: '授权码登录',
-                                            icon: <KeyOutlined />,
-                                            onClick: authorizeCodeLogin
-                                        },
-                                        {
-                                            key: 'device_code',
-                                            label: '设备码登录',
-                                            icon: <ScanOutlined />,
-                                            onClick: deviceCodeLogin
-                                        }
-                                    ]
-                                }}
-                                trigger={['hover']}
-                                placement="bottom"
-                            >
-                                <Avatar
-                                    src="/logo128.png"
-                                    size={28}
-                                    style={{
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s ease',
-                                        background: 'transparent',
-                                        filter: 'grayscale(20%)'
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.filter = 'grayscale(0%)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'grayscale(20%)'; }}
+                                <GoogleOutlined
+                                    style={{ fontSize: 24, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#EA4335'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#6b7280'; }}
+                                    title="Google"
                                 />
-                            </Dropdown>
-                            <GoogleOutlined
-                                style={{ fontSize: 24, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#EA4335'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#6b7280'; }}
-                                title="Google"
+                            </Flex>
+                        </Form>
+                    </Card>
+
+                    {/* 扫码登录面 (Back) */}
+                    <Card
+                        style={{
+                            width: '100%',
+                            borderRadius: '24px',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)',
+                            border: 'none',
+                            background: '#ffffff',
+                            padding: '16px',
+                            backfaceVisibility: 'hidden',
+                            position: 'absolute', // 绝对定位使其与正面重合
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            transform: 'rotateY(180deg)' // 初始状态背面翻转
+                        }}
+                    >
+                        {/* 右上角切回电脑图标 (折角图片) */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 16,
+                                right: 16,
+                                cursor: 'pointer',
+                                zIndex: 10,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            }}
+                            className="qr-toggle-btn"
+                            onClick={() => setIsQrLogin(false)}
+                            title="密码登录"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                                e.currentTarget.style.opacity = '0.8';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                        >
+                            <Monitor
+                                size={32}
+                                color="#9ca3af"
+                                strokeWidth={1.5}
                             />
+                        </div>
+
+                        <Flex vertical align="center" justify="center" style={{ height: '100%', paddingTop: 20 }}>
+                            <Typography.Title level={3} style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#111827' }}>
+                                {t('扫码安全登录')}
+                            </Typography.Title>
+                            <Typography.Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 32 }}>
+                                {t('请使用 Atlas 移动端扫描二维码')}
+                            </Typography.Text>
+
+                            <div
+                                style={{
+                                    padding: 12,
+                                    background: '#ffffff',
+                                    borderRadius: 16,
+                                    border: '1px solid #f3f4f6',
+                                    marginBottom: 32,
+                                    cursor: 'pointer' // 增加手型光标提示
+                                }}
+                                onClick={() => {
+                                    // 防止在 loading 时重复触发请求
+                                    if (!qrTicketLoading) {
+                                        refreshQrCode()
+                                    }
+                                }}
+                                title="点击刷新二维码"
+                            >
+                                <QRCode
+                                    value={qrCodeData.url || 'loading...'}
+                                    status={qrTicketLoading ? 'loading' : 'active'}
+                                    onRefresh={refreshQrCode}
+                                    icon="/logo128.png"
+                                    size={200}
+                                    bordered={false}
+                                    color="#000000"
+                                    bgColor="#ffffff"
+                                />
+                            </div>
+
+                            <Flex gap={16} align="center">
+                                <ScanOutlined style={{ fontSize: 20, color: '#4f46e5' }} />
+                                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                                    打开手机 App - 扫一扫
+                                </Typography.Text>
+                            </Flex>
                         </Flex>
-                    </Form>
-                </Card>
+                    </Card>
+                </motion.div>
             </div>
         </ConfigProvider>
     )

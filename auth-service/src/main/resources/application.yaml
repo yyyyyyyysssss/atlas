@@ -58,7 +58,7 @@ security:
       - /actuator/**
       - /error
       - /favicon.ico
-      - /code/send-email
+      - /code/email/*
   # 用户设备最大token数量 -1 表示不限制
   coexistToken: 1
   # jwt token配置

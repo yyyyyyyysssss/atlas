@@ -24,7 +24,7 @@ public interface UserApi {
     Result<UserDTO> userProfile(@RequestParam("username") String username);
 
     @PostExchange("/ensureUser")
-    Result<String> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO);
+    Result<UserDTO> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO);
 
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();

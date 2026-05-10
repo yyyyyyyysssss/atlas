@@ -1,13 +1,16 @@
 package com.atlas.auth.service;
 
 import com.atlas.common.core.api.user.UserApi;
+import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -48,5 +51,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         securityUser.setAuthorities(authorityList);
         return securityUser;
+    }
+
+    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO){
+        Result<UserDTO> userDTOResult = userApi.ensureUser(externalIdentityDTO);
+        if(!userDTOResult.isSucceed()){
+            throw new BadCredentialsException(userDTOResult.getMessage());
+        }
+        return userDTOResult.getData();
     }
 }

@@ -21,6 +21,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -161,7 +162,9 @@ public class OAuth2AuthorizationServerConfig {
 
     // 令牌的发放记录, 对应 oauth2_authorization 表
     @Bean
-    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
+                                                           RegisteredClientRepository registeredClientRepository,
+                                                           @Qualifier("securityObjectMapper") ObjectMapper securityObjectMapper) {
         JdbcOAuth2AuthorizationService jdbcOAuth2AuthorizationService = new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
 
         JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper authorizationRowMapper = new JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper(
@@ -169,18 +172,9 @@ public class OAuth2AuthorizationServerConfig {
         authorizationRowMapper.setLobHandler(new DefaultLobHandler());
 
         //spring security 反序列化设置
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new CoreJackson2Module());
+        ObjectMapper objectMapper = securityObjectMapper.copy();
         objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.registerModule(new WebServletJackson2Module());
-        objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
-        objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
-        objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
-        objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
-
         authorizationRowMapper.setObjectMapper(objectMapper);
-
         jdbcOAuth2AuthorizationService.setAuthorizationRowMapper(authorizationRowMapper);
 
         return jdbcOAuth2AuthorizationService;

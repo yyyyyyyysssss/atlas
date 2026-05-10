@@ -30,6 +30,7 @@ import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -73,6 +74,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final String defaultRoleCode = "role_member";
 
+    private static final String ALPHABET = "qazwsxedcrfvtgbyhnujmikolp0987654321";
+
+    private static final int BASE = ALPHABET.length();
+
+    private static final int TARGET_LENGTH = 8;
+
     @Override
     public UserAuthDTO loadUserByUsername(String username) {
         User user = this.findByUsername(username);
@@ -84,37 +91,44 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    public String ensureUser(ExternalIdentityDTO externalIdentityDTO) {
+    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO) {
         String provider = externalIdentityDTO.getProvider();
         String sub = externalIdentityDTO.getSub();
         UserIdentityDTO existingIdentity = userIdentityService.getByIdentity(provider, sub);
         if (existingIdentity != null) {
             // 如果身份已存在，直接返回关联的主表用户名
             User user = this.getById(existingIdentity.getUserId());
-            return user.getUsername();
+            return UserMapping.INSTANCE.toUserDTO(user);
         }
-        // 身份不存在，开始注册流程
-        UserCreateDTO userCreateDTO = new UserCreateDTO();
-        userCreateDTO.setUsername(generateUniqueUsername());
-        userCreateDTO.setFullName(externalIdentityDTO.getFullName());
-        userCreateDTO.setPassword(PasswordGeneratorUtils.generate(16));
-        userCreateDTO.setEmail(externalIdentityDTO.getEmail());
-        userCreateDTO.setPhone(externalIdentityDTO.getPhone());
-        userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
-        Role defaultRole = roleService.findByCode(defaultRoleCode);
-        userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
-        UserCreateVO userCreateVO = this.createUser(userCreateDTO);
-
+        // 身份不存在，尝试通过邮箱/手机号找现有的用户
+        String username = StringUtils.firstNonEmpty(externalIdentityDTO.getEmail(), externalIdentityDTO.getPhone());
+        User user = null;
+        try {
+            user = findByUsername(username);
+        }catch (UsernameNotFoundException e){
+            // 忽略不存在
+        }
+        if(user == null) {
+            // 身份不存在，开始注册流程
+            UserCreateDTO userCreateDTO = new UserCreateDTO();
+            userCreateDTO.setUsername(generateUniqueUsername());
+            userCreateDTO.setFullName(externalIdentityDTO.getFullName());
+            userCreateDTO.setEmail(externalIdentityDTO.getEmail());
+            userCreateDTO.setPhone(externalIdentityDTO.getPhone());
+            userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
+            Role defaultRole = roleService.findByCode(defaultRoleCode);
+            userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
+            user = this.saveUser(userCreateDTO);
+        }
         // 创建身份关联记录
         UserIdentityDTO userIdentityDTO = new UserIdentityDTO();
         userIdentityDTO.setId(IdGen.genId());
         userIdentityDTO.setIdentifier(externalIdentityDTO.getSub());
-        userIdentityDTO.setUserId(userCreateVO.getId());
+        userIdentityDTO.setUserId(user.getId());
         userIdentityDTO.setVerified(true);
         userIdentityDTO.setIdentityType(externalIdentityDTO.getProvider());
-        userIdentityService.addUserIdentity(userCreateVO.getId(), List.of(userIdentityDTO));
-
-        return userCreateVO.getUsername();
+        userIdentityService.addUserIdentity(user.getId(), List.of(userIdentityDTO));
+        return UserMapping.INSTANCE.toUserDTO(user);
     }
 
     @Override
@@ -190,7 +204,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .eq(User::getEmail, username);
         User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
-            throw new BusinessException("用户不存在: " + username);
+            throw new UsernameNotFoundException("用户不存在: " + username);
         }
         return user;
     }
@@ -257,12 +271,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional
     public UserCreateVO createUser(UserCreateDTO userCreateDTO) {
+        User user = saveUser(userCreateDTO);
+        UserCreateVO userCreateVO = new UserCreateVO();
+        userCreateVO.setId(user.getId());
+        userCreateVO.setUsername(user.getUsername());
+        return userCreateVO;
+    }
+
+    @Transactional
+    public User saveUser(UserCreateDTO userCreateDTO) {
         User user = UserMapping.INSTANCE.toUser(userCreateDTO);
         user.setId(IdGen.genId());
         UserCreateVO userCreateVO = new UserCreateVO();
         String password;
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            password = PasswordGeneratorUtils.generate(10);
+            password = PasswordGeneratorUtils.generate(16);
             userCreateVO.setInitialPassword(password);
         } else {
             password = user.getPassword();
@@ -284,10 +307,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userCreateDTO.getRoleIds() != null && !userCreateDTO.getRoleIds().isEmpty()) {
             bindRoles(user.getId(), userCreateDTO.getRoleIds());
         }
-
-        userCreateVO.setId(user.getId());
-        userCreateVO.setUsername(user.getUsername());
-        return userCreateVO;
+        return user;
     }
 
     @Override
@@ -495,7 +515,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private String generateUniqueUsername() {
         long id = IdGen.genId();
-        String shortId = Integer.toString((int)id, 32);
-        return "atlas_" + shortId;
+        long limitedId = id % 2821109907456L; // 36 的 8 次方
+
+        StringBuilder sb = new StringBuilder();
+        long tempId = limitedId;
+
+        // 核心转换逻辑
+        while (tempId > 0) {
+            sb.append(ALPHABET.charAt((int) (tempId % BASE)));
+            tempId /= BASE;
+        }
+
+        // 如果长度不足 8 位，用 ALPHABET 的第 0 个字符（或特定字符）在末尾补齐
+        while (sb.length() < TARGET_LENGTH) {
+            sb.append(ALPHABET.charAt(0));
+        }
+
+        // 反转并返回
+        return "u_" + sb.reverse();
     }
 }

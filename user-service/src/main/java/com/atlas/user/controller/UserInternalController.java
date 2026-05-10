@@ -41,9 +41,9 @@ public class UserInternalController {
     }
 
     @PostMapping("/ensureUser")
-    public Result<String> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
-        String username = userService.ensureUser(externalIdentityDTO);
-        return ResultGenerator.ok(username);
+    public Result<UserDTO> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
+        UserDTO userDTO = userService.ensureUser(externalIdentityDTO);
+        return ResultGenerator.ok(userDTO);
     }
 
     @GetMapping("/all")

@@ -268,19 +268,16 @@ const UserProfile = () => {
                                         align='center'
                                     >
                                         <LogOut size={16} />
-                                        {language === 'zh' ? (
-                                            <Flex
-                                                justify='space-between'
-                                                flex={1}
-                                            >
-                                                <Typography.Text>退</Typography.Text>
-                                                <Typography.Text>出</Typography.Text>
-                                            </Flex>
-                                        ) : (
-                                            <Typography.Text>{t('登出')}</Typography.Text>
-                                        )
-                                    }
-
+                                        <Typography.Text
+                                            style={{
+                                                display: 'inline-block',
+                                                width: '60px',
+                                                textAlign: 'justify',
+                                                textAlignLast: 'justify',
+                                            }}
+                                        >
+                                            {language === 'zh' ? '退出' : t('登出')}
+                                        </Typography.Text>
                                     </Flex>
                                 </Typography.Link>
                             )
@@ -297,7 +294,8 @@ const UserProfile = () => {
                         cursor: 'pointer',
                         padding: '8px',
                         borderRadius: 'var(--ant-border-radius)',
-                        userSelect: 'none'
+                        userSelect: 'none',
+                        maxWidth: '180px'
                     }}
                     onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--ant-control-item-bg-hover)'}
                     onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}

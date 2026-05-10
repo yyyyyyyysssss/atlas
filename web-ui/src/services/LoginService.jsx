@@ -14,9 +14,14 @@ export const ottLogin = async (ottToken) => {
     return apiRequestWrapper(() => httpWrapper.get(`/api/auth/login/ott?ottToken=${ottToken}`))
 }
 
-export const sendOttLink = async (username) => {
+export const sendOttLink = async (username, targetUrl = '') => {
 
-    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/ott/generate?username=${username}`))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/ott/generate', null, {
+        params: {
+            username: username,
+            targetUrl: targetUrl
+        }
+    }))
 }
 
 // 登出
@@ -25,11 +30,11 @@ export const logout = () => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/logout', null))
 }
 
-//发送邮箱验证码
+//发送登录邮箱验证码
 export const sendEmailVerificationCode = (email) => {
 
     return apiRequestWrapper(() =>
-        httpWrapper.post('/api/auth/code/send-email', {
+        httpWrapper.post('/api/auth/code/email/login', {
             email: email
         })
     )

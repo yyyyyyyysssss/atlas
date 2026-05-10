@@ -3,6 +3,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.config.properties.AtlasOauth2Properties;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.security.enums.ClientType;
@@ -90,12 +91,12 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
                     .email(email)
                     .phone(phone)
                     .build();
-            Result<String> usernameResult = userApi.ensureUser(externalIdentityDTO);
-            if(!usernameResult.isSucceed()){
-                throw new BusinessException("获取或注册用户失败: " + usernameResult.getMessage());
+            Result<UserDTO> userResult = userApi.ensureUser(externalIdentityDTO);
+            if(!userResult.isSucceed()){
+                throw new BusinessException("获取或注册用户失败: " + userResult.getMessage());
             }
-            String username = usernameResult.getData();
-            ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(username, null);
+            UserDTO userDTO = userResult.getData();
+            ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(userDTO.getUsername(), null);
             return loginService.login(thirdPartyAuthenticationToken, ClientType.WEB, true, false);
         }catch (Exception e){
             throw new BusinessException(e.getMessage());

@@ -25,7 +25,7 @@ const Login = () => {
     const { message } = App.useApp()
 
     const navigate = useNavigate()
-    const { ottToken } = useFullParams()
+    const { ottToken, targetUrl } = useFullParams()
 
     const redirect = useRedirect()
 
@@ -92,14 +92,16 @@ const Login = () => {
         }
     }
 
-    const handleSendMagicLink = async () => {
+        const handleSendMagicLink = async () => {
         try {
             // validateFields 返回的是通过校验的字段，如果没有通过会抛出异常中断执行
             const values = await form.validateFields(['magicUsername']);
 
-            await sendOttLinkAsync(values.magicUsername);
-            console.log('message',message)
-            message.success('登录链接已发送到您的邮箱，请注意查收！');
+            await sendOttLinkAsync(values.magicUsername, targetUrl);
+            message.success({
+                content: t('发送请求已提交。如果账号存在，您将在几分钟内收到登录邮件。'),
+                duration: 5 // 增加停留时间，让用户有充足时间阅读安全提示
+            });
 
             // 重置定时器状态为60秒倒计时
             if (timerRef.current) clearInterval(timerRef.current);
@@ -397,7 +399,7 @@ const Login = () => {
                                 </motion.div>
                             )}
 
-                            {loginMethod === '3' && (
+                                                                                                                {loginMethod === '3' && (
                                 <motion.div
                                     key="magic-login"
                                     initial={{ opacity: 0, y: 10 }}
@@ -406,12 +408,13 @@ const Login = () => {
                                     transition={{ duration: 0.2 }}
                                 >
                                     <Typography.Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 20, fontSize: 13 }}>
-                                        输入您的账号或邮箱，我们将向您发送一条免密登录的快捷链接。
+                                        输入您的账号或邮箱，我们将向该账号绑定的邮箱发送登录链接。
                                     </Typography.Paragraph>
-                                    <Form.Item name="magicUsername" rules={[{ required: loginMethod === '3', message: '账号不可为空' }]} style={{ marginBottom: 20 }}>
+                                    <Form.Item name="magicUsername" rules={[{ required: loginMethod === '3', message: '账号不可为空' }]} style={{ marginBottom: 32 }}>
                                         <Input allowClear size="large" placeholder="输入用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                     </Form.Item>
-                                    <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
+
+                                    <Form.Item style={{ marginBottom: 32 }}>
                                         <Button
                                             type="primary"
                                             size="large"
@@ -421,14 +424,14 @@ const Login = () => {
                                             disabled={verificationCode.disabled}
                                             style={{ boxShadow: verificationCode.disabled === true ? '' : '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}
                                         >
-                                            {verificationCode.disabled ? t('链接已发送 ({{ti}}s)', { ti: verificationCode.seconds }) : t('发送快捷登录链接')}
+                                            {verificationCode.disabled ? t('请求已发送 ({{ti}}s)', { ti: verificationCode.seconds }) : t('发送快捷登录链接')}
                                         </Button>
                                     </Form.Item>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        <Flex justify="space-between" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
+                        <Flex justify="end" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
                             {loginMethod === '1' ? (
                                 <Dropdown
                                     menu={{
@@ -451,7 +454,7 @@ const Login = () => {
                                     trigger={['click']}
                                 >
                                     <Typography.Link style={{ fontSize: 14, color: '#6b7280' }}>
-                                        {t('其他登录方式 ▾')}
+                                        {t('更多登录方式 ▾')}
                                     </Typography.Link>
                                 </Dropdown>
                             ) : (
@@ -463,11 +466,7 @@ const Login = () => {
                                 </Typography.Link>
                             )}
 
-                            {loginMethod === '1' && (
-                                <Typography.Link onClick={handleForgetPassword} style={{ fontSize: 14, fontWeight: 500 }}>
-                                    {t('忘记密码？')}
-                                </Typography.Link>
-                            )}
+                          
                         </Flex>
 
                         <Divider plain>

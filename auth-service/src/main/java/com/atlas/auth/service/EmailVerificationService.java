@@ -1,5 +1,6 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.enums.VerificationScene;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.notification.builder.NotificationDTO;
@@ -36,31 +37,34 @@ public class EmailVerificationService {
 
     private static final String CODE_PREFIX = "email:verification:code:";
 
-    public void send(String email) {
-        Result<List<UserDTO>> result = userApi.findByEmails(Collections.singletonList(email));
-        if (!result.isSucceed() || CollectionUtils.isEmpty(result.getData())) {
-            throw new BusinessException("用户不存在");
-        }
+    public void send(String email, VerificationScene verificationScene) {
+        send(email, verificationScene, Duration.ofMinutes(10));
+    }
+
+    public void send(String email, VerificationScene verificationScene, Duration duration) {
+        String redisKey = CODE_PREFIX + verificationScene.getLowerCaseCode() + ":" + email;
         // 生成并存入 Redis
         String code = VerificationCodeUtils.genVerificationCode();
-        redisHelper.setValue(CODE_PREFIX + email, code, Duration.ofMinutes(10));
+        redisHelper.setValue(redisKey, code, duration);
 
-        // 发送通知
-        Map<String, Object> variable = new HashMap<>();
-        variable.put("code", code);
+        //准备通知变量
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("code", code);
+        variables.put("min", duration.toMinutes());
+        // 发送
         notificationApi.send(
                 NotificationRequest
-                        .template("auth_code", "登录验证码", variable)
+                        .template(verificationScene.getCode(), verificationScene.getDescription(), variables)
                         .email()
-                        .withParam("min", 10)
                         .to()
                         .toEmails(email)
                         .build()
         );
     }
 
-    public boolean verify(String email, String inputCode) {
-        String cacheCode = redisHelper.getValue(CODE_PREFIX + email, String.class);
+    public boolean verify(String email, String inputCode, VerificationScene verificationScene) {
+        String redisKey = CODE_PREFIX + verificationScene.getLowerCaseCode() + ":" + email;
+        String cacheCode = redisHelper.getValue(redisKey, String.class);
         if (cacheCode == null || !cacheCode.equals(inputCode)) {
             return false;
         }

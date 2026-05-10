@@ -87,7 +87,7 @@ public class NotificationTemplateServiceImpl extends ServiceImpl<NotificationTem
         };
 
         // 2. 拼接完整路径：templates/auth-code/email.html
-        String fullPath = String.format("templates/%s/%s%s", code, channelKey, suffix);
+        String fullPath = String.format("templates/%s/%s%s", code.toLowerCase(), channelKey, suffix);
 
         Resource resource = new ClassPathResource(fullPath);
         if (!resource.exists()) {

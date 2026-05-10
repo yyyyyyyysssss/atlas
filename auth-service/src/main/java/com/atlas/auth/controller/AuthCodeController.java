@@ -1,6 +1,7 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.dto.EmailCodeDTO;
+import com.atlas.auth.enums.VerificationScene;
 import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -25,9 +26,9 @@ public class AuthCodeController {
 
     private final EmailVerificationService emailVerificationService;
 
-    @PostMapping("/send-email")
+    @PostMapping("/email/login")
     public Result<Void> sendEmailCode(@RequestBody @Validated EmailCodeDTO emailCodeDTO) {
-        emailVerificationService.send(emailCodeDTO.getEmail());
+        emailVerificationService.send(emailCodeDTO.getEmail(), VerificationScene.LOGIN);
         return ResultGenerator.ok();
     }
 

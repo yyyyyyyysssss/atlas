@@ -5,6 +5,7 @@ import com.atlas.common.core.api.notification.builder.NotificationRequest;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
+import com.atlas.common.core.response.ResultCode;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.properties.SecurityProperties;
@@ -50,11 +51,20 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
 
         Result<UserDTO> userResult = userApi.userProfile(oneTimeToken.getUsername());
         if (!userResult.isSucceed()){
-            response.getWriter().write(JsonUtils.toJson(ResultGenerator.failed(userResult.getMessage())));
+            if(userResult.getCode() == ResultCode.AUTH_LOGIN_FAILED.getCode()){
+                // 即使用户不存在，也返回成功 攻击者从 HTTP 响应上看不出区别
+                log.warn("用户尝试登录但不存在: {}", oneTimeToken.getUsername());
+                response.getWriter().write(JsonUtils.toJson(ResultGenerator.ok()));
+            }else {
+                response.getWriter().write(JsonUtils.toJson(ResultGenerator.failed(userResult.getMessage())));
+            }
             return;
         }
-
+        String queryString = request.getQueryString();
         String magicLink = securityProperties.getUiUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
+        if (queryString != null && !queryString.isEmpty()) {
+            magicLink += "&" + queryString;
+        }
         log.info("magic link: {}", magicLink);
         LocalDateTime now = LocalDateTime.now();
         Instant nowInstant = now.atZone(ZoneId.systemDefault()).toInstant();

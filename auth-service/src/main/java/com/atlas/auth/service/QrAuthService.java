@@ -13,6 +13,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -47,7 +48,7 @@ public class QrAuthService {
 
     private static final String QR_SCENE_KEY = "auth:qr:scene:";
 
-    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope) {
+    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope,String codeChallenge,String codeChallengeMethod) {
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
         if(registeredClient == null){
             throw new BusinessException("客户端不存在");
@@ -72,6 +73,11 @@ public class QrAuthService {
         context.put("clientId", clientId);
         context.put("redirectUri", redirectUri);
         context.put("scope", scope);
+        if (StringUtils.hasText(codeChallenge)) {
+            context.put("code_challenge", codeChallenge);
+            // 如果客户端没传 method，按照 OAuth2 规范默认使用 S256
+            context.put("code_challenge_method", StringUtils.hasText(codeChallengeMethod) ? codeChallengeMethod : "S256");
+        }
         redisHelper.addHash(redisKey,context,Duration.ofSeconds(EXPIRE_SECONDS));
 
         ClientSettings clientSettings = registeredClient.getClientSettings();
@@ -122,18 +128,21 @@ public class QrAuthService {
             throw new BusinessException("请勿重复确认");
         }
 
-        String url = UriComponentsBuilder.fromPath("/oauth2/authorize")
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromPath("/oauth2/authorize")
                 .queryParam("client_id", context.get("clientId"))
                 .queryParam("response_type", "code")
                 .queryParam("scope", context.get("scope"))
                 .queryParam("redirect_uri", context.get("redirectUri"))
                 .queryParam("format", "json")
-                .queryParam("login_mode", "qr")
-                .build()
-                .toUriString();
+                .queryParam("login_mode", "qr");
+
+        if (context.containsKey("code_challenge")) {
+            uriBuilder.queryParam("code_challenge", context.get("code_challenge"));
+            uriBuilder.queryParam("code_challenge_method", context.get("code_challenge_method"));
+        }
         AdapterAuthorizationSuccessHandler.AuthorizationResponse authorizationResponse = localRestClient
                 .get()
-                .uri(url)
+                .uri(uriBuilder.build().toUriString())
                 .header("Authorization","Bearer " + accessToken)
                 .retrieve()
                 .body(AdapterAuthorizationSuccessHandler.AuthorizationResponse.class);

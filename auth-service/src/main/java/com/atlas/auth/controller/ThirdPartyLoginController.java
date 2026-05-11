@@ -35,8 +35,9 @@ public class ThirdPartyLoginController {
     @GetMapping("/callback/{clientName}")
     public Result<?> callback(@PathVariable("clientName") String clientName,
                               @RequestParam("code") String code,
-                              @RequestParam(value = "state", required = false) String state) {
-        TokenResponse tokenResponse = providerFactory.getProvider(clientName).processCallback(code,state);
+                              @RequestParam(value = "state", required = false) String state,
+                              @RequestParam(value = "code_verifier", required = false) String codeVerifier) {
+        TokenResponse tokenResponse = providerFactory.getProvider(clientName).processCallback(code, state,codeVerifier);
         return ResultGenerator.ok(tokenResponse);
     }
 

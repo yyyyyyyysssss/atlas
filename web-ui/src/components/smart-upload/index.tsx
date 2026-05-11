@@ -23,7 +23,7 @@ import {
 import 'react-circular-progressbar/dist/styles.css'
 import { downloadFile } from "../../utils/Download";
 import { UploadFileStatus, UploadListType } from "antd/es/upload/interface";
-import { calculateMD5AsFile } from "../../utils/MD5Util";
+import { calculateMD5AsFile } from "../../utils/md5";
 
 interface SmartUploadProps {
     children: React.ReactNode; // 确保 children 作为外部传递

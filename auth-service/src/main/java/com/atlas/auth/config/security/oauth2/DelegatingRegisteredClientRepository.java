@@ -46,6 +46,7 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
             return RegisteredClient.from(client)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // 核心包装逻辑：动态覆盖设置
+                            .requireProofKey(true) // 开启 PKCE 校验
                             .build())
                     .build();
         }

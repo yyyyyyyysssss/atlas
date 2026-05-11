@@ -22,10 +22,12 @@ public class QrAuthController {
     private final NormalBearerTokenResolver normalBearerTokenResolver;
 
     @GetMapping("/ticket")
-    public Result<QrAuthTicketVO> ticket(@RequestParam("client_id")String clientId,
-                                         @RequestParam("redirect_uri")String redirectUri,
-                                         @RequestParam("scope")String scope) {
-        QrAuthTicketVO ticket = qrAuthService.ticket(clientId,redirectUri,scope);
+    public Result<QrAuthTicketVO> ticket(@RequestParam("client_id") String clientId,
+                                         @RequestParam("redirect_uri") String redirectUri,
+                                         @RequestParam("scope") String scope,
+                                         @RequestParam(value = "code_challenge", required = false) String codeChallenge,
+                                         @RequestParam(value = "code_challenge_method",required = false) String codeChallengeMethod) {
+        QrAuthTicketVO ticket = qrAuthService.ticket(clientId, redirectUri, scope,codeChallenge,codeChallengeMethod);
         return ResultGenerator.ok(ticket);
     }
 
@@ -38,7 +40,7 @@ public class QrAuthController {
     @PostMapping("/confirm")
     public Result<QrAuthStatusVO> confirm(@RequestParam("sceneId") String sceneId, HttpServletRequest request) {
         String token = normalBearerTokenResolver.resolve(request);
-        qrAuthService.confirm(sceneId,token);
+        qrAuthService.confirm(sceneId, token);
         return ResultGenerator.ok();
     }
 

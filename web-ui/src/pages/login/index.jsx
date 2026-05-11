@@ -14,6 +14,7 @@ import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
 import Loading from '../../components/loading';
+import { generateChallenge, generateVerifier } from '../../utils/pkce';
 
 const Login = () => {
 
@@ -79,7 +80,13 @@ const Login = () => {
         if (!qrScanUrlRef.current) {
             qrScanUrlRef.current = await getQrScanUrlAsync('atlas')
         }
-        qrTicketAsync(qrScanUrlRef.current)
+        // 生成新的 Verifier
+        const verifier = generateVerifier()
+        sessionStorage.setItem('qr_scan_pkce_verifier', verifier)
+        // 生成 Challenge
+        const challenge = await generateChallenge(verifier)
+        const qrTicketUrl = qrScanUrlRef.current + `&code_challenge=${challenge}&code_challenge_method=S256`
+        qrTicketAsync(qrTicketUrl)
             .then((data) => {
                 setQrCodeData({
                     url: data?.qrUrl || ''
@@ -248,6 +255,10 @@ const Login = () => {
 
     const authorizeCodeLogin = async () => {
         const authorizeUrl = await getAuthorizeUrlAsync('atlas')
+        const verifier = generateVerifier()
+        const challenge = await generateChallenge(verifier)
+        sessionStorage.setItem('authorize_code_pkce_verifier', verifier)
+        const finalUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
         // 授权码模式跳转逻辑
         window.location.href = authorizeUrl
     }

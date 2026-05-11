@@ -32,6 +32,8 @@ const Consent = () => {
 
             if (pm.type === 'code') {
                 requestUrl = httpWrapper.getUri() + '/api/auth/oauth2/authorize';
+                const verifier = sessionStorage.getItem('authorize_code_pkce_verifier')
+                requestData.append('code_verifier', verifier)
             } else if (pm.type === 'device') {
                 requestUrl = httpWrapper.getUri() + '/api/auth/oauth2/device_verification';
                 requestData.append('user_code', pm.user_code);

@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -57,7 +58,7 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
     }
 
     @Override
-    public TokenResponse processCallback(String code,String state) {
+    public TokenResponse processCallback(String code,String state,String codeVerifier) {
         log.info("Processing Atlas OAuth2 callback. Client: {}, Code: {}",
                 atlasOauth2Properties.getClientName(), code);
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -66,6 +67,9 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
         formData.add("client_id", atlasOauth2Properties.getClientId());
         formData.add("client_secret", atlasOauth2Properties.getClientSecret());
         formData.add("redirect_uri", atlasOauth2Properties.getRedirectUrl());
+        if (StringUtils.hasText(codeVerifier)) {
+            formData.add("code_verifier", codeVerifier);
+        }
         try {
             OAuth2TokenResponse oAuth2TokenResponse = localRestClient
                     .post()

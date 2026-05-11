@@ -12,6 +12,6 @@ public interface ThirdPartyLoginProvider {
         throw new UnsupportedOperationException("暂不支持");
     }
 
-    TokenResponse processCallback(String code,String state);
+    TokenResponse processCallback(String code,String state,String codeVerifier);
 
 }

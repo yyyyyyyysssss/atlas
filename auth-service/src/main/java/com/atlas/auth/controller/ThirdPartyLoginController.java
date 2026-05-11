@@ -26,6 +26,12 @@ public class ThirdPartyLoginController {
         return ResultGenerator.ok(authorizeUrl);
     }
 
+    @GetMapping("/qrScanUrl/{clientName}")
+    public Result<String> qrScanUrl(@PathVariable("clientName") String clientName) {
+        String authorizeUrl = providerFactory.getProvider(clientName).getQrScanUrl();
+        return ResultGenerator.ok(authorizeUrl);
+    }
+
     @GetMapping("/callback/{clientName}")
     public Result<?> callback(@PathVariable("clientName") String clientName,
                               @RequestParam("code") String code,

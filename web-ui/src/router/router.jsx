@@ -30,6 +30,7 @@ const NotificationMessage = lazy(() => import('../pages/notification-center/mess
 const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'))
 const Oauth2Activate = lazy(() => import('../pages/oauth2/activate'))
 const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'))
+const Oauth2QrScan = lazy(() => import('../pages/oauth2/qr-scan'))
 const Oauth2Callback = lazy(() => import('../pages/oauth2/callback'))
 
 export const routes = [
@@ -54,6 +55,10 @@ export const routes = [
             {
                 path: 'activate',
                 element: <Oauth2Activate />,
+            },
+            {
+                path: 'qr/scan',
+                element: <Oauth2QrScan />,
             }
         ]
     },

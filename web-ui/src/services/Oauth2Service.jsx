@@ -27,3 +27,29 @@ export const oauth2Callback = async (code, clientName) => {
         params: { code: code }
     }))
 }
+
+
+export const fetchQrScanUrl = async (clientName) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/qrScanUrl/${clientName}`))
+}
+
+export const qrTicket = async (qrScanUrl) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(qrScanUrl))
+}
+
+export const qrScan = async (sceneId) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/oauth2/qr/scan?sceneId=${sceneId}`))
+}
+
+export const qrConfirm = async (sceneId) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/oauth2/qr/confirm?sceneId=${sceneId}`))
+}
+
+export const qrStatus = async (sceneId) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/oauth2/qr/status?sceneId=${sceneId}`))
+}

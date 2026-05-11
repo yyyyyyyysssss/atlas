@@ -9,7 +9,7 @@ import { urlParamParse } from '../../../utils/UrlUtil'
 import { useSelector } from 'react-redux'
 import { useRequest } from 'ahooks'
 import Loading from '../../../components/loading'
-import ScopeConfirm from './components/ScopeConfirm'
+import ScopeConfirm from '../components/ScopeConfirm'
 import { useAuth } from '../../../router/AuthProvider'
 
 const Consent = () => {
@@ -103,7 +103,7 @@ const Consent = () => {
                             <Flex gap='middle' style={{ height: '100%', width: '100%' }}>
                                 {/* 左侧：应用身份区 */}
                                 <Flex gap={10} style={{ width: '50%', height: '100%', paddingLeft: '10px' }} vertical>
-                                    <Avatar src={params.logo_uri} size={48} />
+                                    {params.logo_uri && <Avatar src={params.logo_uri} size={48} />}
                                     <Typography.Text style={{ fontSize: 30 }}>请选择账号</Typography.Text>
                                     {params.type === 'device' && params.user_code && (
                                         <Alert

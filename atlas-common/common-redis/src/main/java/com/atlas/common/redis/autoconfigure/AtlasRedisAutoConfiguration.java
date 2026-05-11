@@ -131,7 +131,7 @@ public class AtlasRedisAutoConfiguration {
 
         StringRedisSerializer stringRedisSerializer = new PrefixStringSerializer(applicationName);
         redisTemplate.setKeySerializer(stringRedisSerializer);
-        redisTemplate.setHashKeySerializer(stringRedisSerializer);
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
 
         redisTemplate.setValueSerializer(genericJackson2JsonRedisSerializer);
         redisTemplate.setHashValueSerializer(genericJackson2JsonRedisSerializer);
@@ -170,7 +170,7 @@ public class AtlasRedisAutoConfiguration {
 
     @Bean
     public SnowflakeIdWorker snowflakeIdWorker(RedisHelper redisHelper){
-        WorkIdService workIdService = new RedisWorkIdService(redisHelper, applicationName);
+        WorkIdService workIdService = new RedisWorkIdService(redisHelper);
         SnowflakeIdWorker worker = new SnowflakeIdWorker(workIdService);
         IdGen.init(worker);
         return worker;

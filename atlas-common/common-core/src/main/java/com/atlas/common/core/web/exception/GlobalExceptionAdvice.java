@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -77,6 +78,14 @@ public class GlobalExceptionAdvice {
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException e) {
 
+    }
+
+
+    //请求参数缺失
+    @ResponseStatus(HttpStatus.OK)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public Result<?> handlerMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        return ResultGenerator.failed(ResultCode.PARAM_ERROR,e.getMessage());
     }
 
     //参数校验异常

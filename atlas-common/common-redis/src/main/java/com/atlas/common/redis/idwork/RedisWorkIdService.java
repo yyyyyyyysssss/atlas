@@ -13,24 +13,20 @@ public class RedisWorkIdService implements WorkIdService {
 
     private final RedisHelper redisHelper;
 
-    private final String applicationName;
-
     private static final long MAX_WORKER_ID = 1024L;
 
-    private static final String WORKER_ID_MAP_SUFFIX = ":snowflake:worker_map";
-    private static final String WORKER_ID_COUNTER_SUFFIX = ":snowflake:worker_id_counter";
+    private static final String WORKER_ID_MAP_SUFFIX = "snowflake:worker_map";
+    private static final String WORKER_ID_COUNTER_SUFFIX = "snowflake:worker_id_counter";
 
-    public RedisWorkIdService(RedisHelper redisHelper, String applicationName) {
+    public RedisWorkIdService(RedisHelper redisHelper) {
         this.redisHelper = redisHelper;
-        this.applicationName = (applicationName == null || applicationName.isEmpty()) ? "atlas" : applicationName;
     }
 
     @Override
     public long getWorkId() {
         // 获取当前机器的唯一标识（例如：IP + 进程号 或 容器Hostname）
         String clientIdentifier = getClientIdentifier();
-        String mapKey = applicationName + WORKER_ID_MAP_SUFFIX;
-        String counterKey = applicationName + WORKER_ID_COUNTER_SUFFIX;
+        String mapKey = WORKER_ID_MAP_SUFFIX;
         try {
             // 优先从 Redis Hash 中获取已绑定的 ID
             String existingId = redisHelper.getHash(mapKey, clientIdentifier, String.class);
@@ -40,7 +36,7 @@ public class RedisWorkIdService implements WorkIdService {
                 return workerId;
             }
             // 如果是新机器/新进程，自增获取新 ID 并取模
-            Long nextId = redisHelper.incr(counterKey);
+            Long nextId = redisHelper.incr(WORKER_ID_COUNTER_SUFFIX);
             if (nextId == null) {
                 throw new RuntimeException("Redis counter failed");
             }

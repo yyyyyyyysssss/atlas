@@ -52,6 +52,11 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
     }
 
     @Override
+    public String getQrScanUrl() {
+        return atlasOauth2Properties.getQrScanUrl();
+    }
+
+    @Override
     public TokenResponse processCallback(String code,String state) {
         log.info("Processing Atlas OAuth2 callback. Client: {}, Code: {}",
                 atlasOauth2Properties.getClientName(), code);

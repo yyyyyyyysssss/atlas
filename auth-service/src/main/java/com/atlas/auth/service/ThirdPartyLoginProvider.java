@@ -8,6 +8,10 @@ public interface ThirdPartyLoginProvider {
 
     String getAuthorizeUrl();
 
+    default String getQrScanUrl(){
+        throw new UnsupportedOperationException("暂不支持");
+    }
+
     TokenResponse processCallback(String code,String state);
 
 }

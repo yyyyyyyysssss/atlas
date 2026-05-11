@@ -1,19 +1,12 @@
 package com.atlas.auth.config.security.oauth2;
 
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.core.utils.RsaUtils;
 import com.atlas.security.filter.TokenAuthenticationFilter;
-import com.atlas.security.jackson.AuthorityUrlMixin;
-import com.atlas.security.jackson.RequestUrlAuthorityMixin;
-import com.atlas.security.jackson.SecurityUserMixin;
-import com.atlas.security.model.RequestUrlAuthority;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.security.oauth2.JwtGrantedScopeAuthoritiesConverter;
 import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
-import com.atlas.security.token.EmailAuthenticationToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -22,6 +15,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -31,9 +25,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -55,13 +47,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.security.web.jackson2.WebServletJackson2Module;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.util.DigestUtils;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -110,6 +100,8 @@ public class OAuth2AuthorizationServerConfig {
                                 })
                                 .authorizationEndpoint(authorizationEndpoint -> {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
+                                    // 自定义处理器
+                                    authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler());
                                 })
                                 .deviceAuthorizationEndpoint(deviceAuthorizationEndpoint -> {
                                     deviceAuthorizationEndpoint.verificationUri(securityProperties.getUiUrl() + "/oauth2/activate");
@@ -157,7 +149,7 @@ public class OAuth2AuthorizationServerConfig {
     // 注册客户端应用, 对应 oauth2_registered_client 表
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        return new JdbcRegisteredClientRepository(jdbcTemplate);
+        return new DelegatingRegisteredClientRepository(new JdbcRegisteredClientRepository(jdbcTemplate));
     }
 
     // 令牌的发放记录, 对应 oauth2_authorization 表
@@ -220,6 +212,28 @@ public class OAuth2AuthorizationServerConfig {
         return AuthorizationServerSettings.builder().issuer(securityProperties.getIssuerUrl()).build();
     }
 
+
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        //自定义基于scope jwt解析器，设置解析出来的权限信息的前缀与在jwt中的key
+        JwtGrantedScopeAuthoritiesConverter jwtGrantedScopeAuthoritiesConverter = new JwtGrantedScopeAuthoritiesConverter();
+        // 设置解析权限信息的前缀，设置为空是去掉前缀
+        jwtGrantedScopeAuthoritiesConverter.setAuthorityPrefix("");
+
+        // 设置权限信息在jwt claims中的key
+        jwtGrantedScopeAuthoritiesConverter.setAuthoritiesClaimName("scope");
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedScopeAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OAuth2BearerTokenResolver oAuth2BearerTokenResolver() {
+
+        return new OAuth2BearerTokenResolver();
+    }
 
 
     @Bean

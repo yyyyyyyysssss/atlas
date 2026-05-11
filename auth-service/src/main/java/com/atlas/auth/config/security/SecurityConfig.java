@@ -11,6 +11,7 @@ import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.LogoutService;
 import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
 import com.atlas.common.redis.utils.RedisHelper;
+import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
@@ -44,6 +45,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 @EnableWebSecurity
 @Configuration
@@ -76,6 +78,12 @@ public class SecurityConfig {
 
     @Resource
     private OneTimeTokenGenerationSuccessService oneTimeTokenGenerationSuccessService;
+
+    @Resource
+    private TokenAuthenticationFilter tokenAuthenticationFilter;
+
+    @Resource
+    private SecurityContextRepository redisSecurityContextRepository;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -113,7 +121,10 @@ public class SecurityConfig {
                     //令牌生成成功处理器
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
-                .addFilterAfter(headerAuthenticationFilter(), SecurityContextHolderFilter.class)
+                .securityContext(securityContext -> {
+                    securityContext.securityContextRepository(redisSecurityContextRepository);
+                })
+                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
                 //记住我过滤器
                 .addFilterBefore(rememberMeFilter(authenticationManager(http),rememberMeServices()), UsernamePasswordAuthenticationFilter.class)
                 .logout(logout ->

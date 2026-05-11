@@ -238,7 +238,7 @@ const UserProfile = () => {
                                         align='center'
                                     >
                                         <UserPen size={16} />
-                                        <Typography.Text>{t('个人信息')}</Typography.Text>
+                                        <Typography.Text className='user-profile-menu-label'>{t('个人信息')}</Typography.Text>
                                     </Flex>
                                 </Typography.Link>
 
@@ -253,7 +253,11 @@ const UserProfile = () => {
                                         align='center'
                                     >
                                         <Lock size={16} />
-                                        <Typography.Text>{t('修改密码')}</Typography.Text>
+                                        <Typography.Text
+                                            className='user-profile-menu-label'
+                                        >
+                                            {t('修改密码')}
+                                        </Typography.Text>
                                     </Flex>
 
                                 </Typography.Link>
@@ -269,12 +273,7 @@ const UserProfile = () => {
                                     >
                                         <LogOut size={16} />
                                         <Typography.Text
-                                            style={{
-                                                display: 'inline-block',
-                                                width: '60px',
-                                                textAlign: 'justify',
-                                                textAlignLast: 'justify',
-                                            }}
+                                            className='user-profile-menu-label'
                                         >
                                             {language === 'zh' ? '退出' : t('登出')}
                                         </Typography.Text>

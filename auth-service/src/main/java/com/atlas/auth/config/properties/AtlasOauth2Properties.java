@@ -26,6 +26,8 @@ public class AtlasOauth2Properties {
 
     private String authorizeCodeUrl;
 
+    private String qrScanUrl;
+
     private String tokenUrl;
 
     private String userInfoUrl;

@@ -8,8 +8,8 @@ public interface CustomClientSettings {
 
     String TERMS_OF_SERVICE_URI = "settings.client.terms-of-service-uri";
 
-    String APP_DOMAIN = "app_domain";
+    String APP_DOMAIN = "app-domain";
 
-    String DEVELOPER_EMAIL = "developer_email";
+    String DEVELOPER_EMAIL = "developer-email";
 
 }

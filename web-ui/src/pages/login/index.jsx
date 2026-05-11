@@ -5,11 +5,11 @@ import { QrCode, Monitor } from 'lucide-react';
 import './index.css'
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../router/AuthProvider';
-import { login, ottLogin, qrTicket, sendEmailVerificationCode, sendOttLink } from '../../services/LoginService';
+import { login, ottLogin, sendEmailVerificationCode, sendOttLink } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
-import { fetchAuthorizeUrl, fetchDeviceCode } from '../../services/Oauth2Service';
+import { fetchAuthorizeUrl, fetchDeviceCode, fetchQrScanUrl, qrTicket } from '../../services/Oauth2Service';
 import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
@@ -42,6 +42,12 @@ const Login = () => {
         manual: true
     })
 
+
+    const { runAsync: getQrScanUrlAsync, loading: getQrScanUrlLoading } = useRequest(fetchQrScanUrl, {
+        manual: true
+    })
+
+
     const { runAsync: qrTicketAsync, loading: qrTicketLoading } = useRequest(qrTicket, {
         manual: true
     })
@@ -67,8 +73,13 @@ const Login = () => {
         url: ''
     })
 
-    const refreshQrCode = () => {
-        qrTicketAsync()
+    const qrScanUrlRef = useRef(null)
+
+    const refreshQrCode = async () => {
+        if (!qrScanUrlRef.current) {
+            qrScanUrlRef.current = await getQrScanUrlAsync('atlas')
+        }
+        qrTicketAsync(qrScanUrlRef.current)
             .then((data) => {
                 setQrCodeData({
                     url: data?.qrUrl || ''
@@ -658,34 +669,31 @@ const Login = () => {
                                     borderRadius: 16,
                                     border: '1px solid #f3f4f6',
                                     marginBottom: 32,
-                                    cursor: 'pointer' // 增加手型光标提示
                                 }}
-                                onClick={() => {
-                                    // 防止在 loading 时重复触发请求
-                                    if (!qrTicketLoading) {
-                                        refreshQrCode()
-                                    }
-                                }}
-                                title="点击刷新二维码"
+                                onClick={refreshQrCode}
                             >
                                 <QRCode
-                                    value={qrCodeData.url || 'loading...'}
-                                    status={qrTicketLoading ? 'loading' : 'active'}
+                                    value={qrCodeData.url || 'Loading...'}
+                                    status={qrTicketLoading || getQrScanUrlLoading ? 'loading' : (qrCodeData.url ? 'active' : 'expired')}
                                     onRefresh={refreshQrCode}
-                                    icon="/logo128.png"
+                                    icon="/logo128_eclipse.svg"
                                     size={200}
                                     bordered={false}
-                                    color="#000000"
+                                    color="#111827"
                                     bgColor="#ffffff"
                                 />
                             </div>
-
-                            <Flex gap={16} align="center">
-                                <ScanOutlined style={{ fontSize: 20, color: '#4f46e5' }} />
-                                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                                    打开手机 App - 扫一扫
-                                </Typography.Text>
-                            </Flex>
+                            <Typography.Text type="secondary" style={{ fontSize: 12, textAlign: 'center', maxWidth: 280 }}>
+                                尚未安装 App？您可以尝试使用浏览器自带的扫码功能，或安装兼容的
+                                <Typography.Link
+                                    href="https://chromewebstore.google.com/search/qr%20code%20scanner"
+                                    target="_blank"
+                                    style={{ color: '#4f46e5', margin: '0 4px' }}
+                                >
+                                    扫码扩展
+                                </Typography.Link>
+                                进行验证。
+                            </Typography.Text>
                         </Flex>
                     </Card>
                 </motion.div>

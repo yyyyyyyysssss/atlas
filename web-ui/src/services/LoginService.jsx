@@ -53,11 +53,6 @@ export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
     )
 }
 
-export const qrTicket = async () => {
-
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/qr/ticket`))
-}
-
 
 export const saveToken = (tokenInfo) => {
     Cookies.set('accessToken', tokenInfo.access.token)

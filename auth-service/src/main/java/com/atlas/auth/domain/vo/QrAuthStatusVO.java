@@ -11,6 +11,6 @@ public class QrAuthStatusVO {
 
     private String status;
 
-    private String token;
+    private String code;
 
 }

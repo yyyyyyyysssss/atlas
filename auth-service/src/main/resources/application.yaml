@@ -52,8 +52,8 @@ security:
       - /oauth2/oidc/logout
       - /oauth2/consent
       - /oauth2/activate
-      - /qr/ticket
-      - /qr/status
+      - /oauth2/qr/ticket
+      - /oauth2/qr/status
       - /thirdParty/**
       - /activated
       - /open/**
@@ -82,6 +82,7 @@ security:
       redirectUrl: ${security.uiUrl}/oauth2/callback/atlas
       scope: "openid profile email phone"
       authorizeCodeUrl: ${security.issuerUrl}/api/auth/oauth2/authorize?client_id=${security.other-login.atlas.clientId}&scope=${security.other-login.atlas.scope}&response_type=code&redirect_uri=${security.other-login.atlas.redirectUrl}
+      qrScanUrl: /api/auth/oauth2/qr/ticket?client_id=${security.other-login.atlas.clientId}&scope=${security.other-login.atlas.scope}&redirect_uri=${security.other-login.atlas.redirectUrl}
       tokenUrl: /oauth2/token
       userInfoUrl: /userinfo
     google:

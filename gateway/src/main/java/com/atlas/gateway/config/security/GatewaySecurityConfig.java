@@ -90,8 +90,9 @@ public class GatewaySecurityConfig {
                 })
                 .authorizeHttpRequests(authorize -> {
                     // 放行路径
-                    authorize.requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
-                            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+                    authorize.requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll();
+                    //允许所有异步请求
+                    authorize.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
                     // 只需要通过身份认证就能访问的路径
                     authorize.requestMatchers(securityProperties.getAuthorize().getAuthenticated().toArray(new String[0])).authenticated();
                     // 基于请求头apikey授权

@@ -107,7 +107,7 @@ security:
       - /api/notification/user/notification/**
     # 基于oauth2 scope的授权
     resourceAuthorizations:
-      - pattern: /api/user/v1/profile
+      - pattern: /api/user/v1/profile/info
         scope: profile
   # 基于请求头的授权
     requestHeadAuthentications:

@@ -38,7 +38,7 @@ public class ApikeyAuthenticationProvider implements AuthenticationProvider {
         if (requestHeadAuthentications == null || requestHeadAuthentications.isEmpty()){
             throw new NullPointerException("requestHeadAuthentications not null");
         }
-        this.apikeyMap = requestHeadAuthentications.stream().collect(Collectors.toMap(SecurityProperties.RequestHeadAuthenticationConfig::getApikey, SecurityProperties.RequestHeadAuthenticationConfig::getAntPath));
+        this.apikeyMap = requestHeadAuthentications.stream().collect(Collectors.toMap(SecurityProperties.RequestHeadAuthenticationConfig::getApikey, SecurityProperties.RequestHeadAuthenticationConfig::getPattern));
     }
 
     @Override

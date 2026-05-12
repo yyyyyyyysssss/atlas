@@ -97,7 +97,7 @@ public class SecurityProperties {
         private List<ResourceAuthenticationConfig> resourceAuthorizations = new ArrayList<>();
 
         public String[] requestHeadAuthenticationPath(){
-            return this.getRequestHeadAuthentications().stream().map(m -> m.antPath.split(",")).toList().stream().flatMap(Stream::of).toArray(String[]::new);
+            return this.getRequestHeadAuthentications().stream().map(m -> m.pattern.split(",")).toList().stream().flatMap(Stream::of).toArray(String[]::new);
         }
 
     }
@@ -106,7 +106,7 @@ public class SecurityProperties {
     @Getter
     public static class RequestHeadAuthenticationConfig{
 
-        private String antPath;
+        private String pattern;
 
         private String apikey;
 

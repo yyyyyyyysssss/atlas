@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -28,26 +29,42 @@ public class GatewayHeaderHeaderPropagationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         // 必须已认证且不是匿名用户
-        if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof SecurityUser securityUser) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
             HeaderEnhanceRequestWrapper wrappedRequest = new HeaderEnhanceRequestWrapper(request);
-            wrappedRequest.addHeader(CommonConstant.USER_ID,securityUser.getId().toString());
-            if(securityUser.getOrgId() != null){
-                wrappedRequest.addHeader(CommonConstant.ORG_ID,securityUser.getOrgId().toString());
+            if (principal instanceof SecurityUser securityUser) {
+                fillHeadersFromSecurityUser(wrappedRequest,securityUser);
+            } else if(principal instanceof Jwt jwt){
+                fillHeadersFromJwt(wrappedRequest,jwt);
             }
-            if(securityUser.getDataScopes() != null && !securityUser.getDataScopes().isEmpty()){
-                String dataScopes = securityUser.getDataScopes().stream().map(Object::toString).collect(Collectors.joining(","));
-                wrappedRequest.addHeader(CommonConstant.DATA_SCOPE, dataScopes);
-            }
-            String fullName = securityUser.getFullName();
-            if (fullName != null) {
-                String encodedName = URLEncoder.encode(fullName, StandardCharsets.UTF_8);
-                wrappedRequest.addHeader(CommonConstant.USER_FULL_NAME,encodedName);
-            }
-
             filterChain.doFilter(wrappedRequest,response);
         }else {
             filterChain.doFilter(request,response);
         }
     }
 
+    private void fillHeadersFromSecurityUser(HeaderEnhanceRequestWrapper wrappedRequest, SecurityUser securityUser) {
+        wrappedRequest.addHeader(CommonConstant.USER_ID,securityUser.getId().toString());
+        if(securityUser.getOrgId() != null){
+            wrappedRequest.addHeader(CommonConstant.ORG_ID,securityUser.getOrgId().toString());
+        }
+        if(securityUser.getDataScopes() != null && !securityUser.getDataScopes().isEmpty()){
+            String dataScopes = securityUser.getDataScopes().stream().map(Object::toString).collect(Collectors.joining(","));
+            wrappedRequest.addHeader(CommonConstant.DATA_SCOPE, dataScopes);
+        }
+        String fullName = securityUser.getFullName();
+        if (fullName != null) {
+            String encodedName = URLEncoder.encode(fullName, StandardCharsets.UTF_8);
+            wrappedRequest.addHeader(CommonConstant.USER_FULL_NAME,encodedName);
+        }
+    }
+
+    private void fillHeadersFromJwt(HeaderEnhanceRequestWrapper wrapper, Jwt jwt) {
+        String userId = jwt.getSubject();
+        wrapper.addHeader(CommonConstant.USER_ID, userId);
+        String fullName = jwt.getClaim("name");
+        if (fullName != null) {
+            wrapper.addHeader(CommonConstant.USER_FULL_NAME, URLEncoder.encode(fullName, StandardCharsets.UTF_8));
+        }
+    }
 }

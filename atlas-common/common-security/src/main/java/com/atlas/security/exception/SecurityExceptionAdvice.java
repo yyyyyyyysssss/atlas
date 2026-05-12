@@ -14,6 +14,8 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -60,6 +62,17 @@ public class SecurityExceptionAdvice {
     public Result<?> handlerAccessDeniedException(AccessDeniedException accessDeniedException){
         log.error("Access Denied: ",accessDeniedException);
         return ResultGenerator.failed(ResultCode.FORBIDDEN);
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler({OAuth2AuthenticationException.class})
+    public Result<?> handlerOAuth2AuthenticationException(OAuth2AuthenticationException e){
+        log.error("OAuth2 认证异常, 错误码: {}, 原因: {}",
+                e.getError().getErrorCode(), e.getMessage());
+        OAuth2Error error = e.getError();
+        // 优先获取具体的描述信息，如果没有则获取错误码
+        String message = (error != null) ? error.getDescription() : e.getMessage();
+        return ResultGenerator.failed(ResultCode.UNAUTHORIZED,message);
     }
 
 }

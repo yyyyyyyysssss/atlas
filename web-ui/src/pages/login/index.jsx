@@ -9,7 +9,7 @@ import { login, ottLogin, sendEmailVerificationCode, sendOttLink } from '../../s
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
-import { fetchAuthorizeUrl, fetchDeviceCode, fetchQrScanUrl, qrTicket } from '../../services/Oauth2Service';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl, fetchDeviceCode, fetchQrScanUrl, QR_SCAN_PKCE_VERIFIER, qrTicket } from '../../services/Oauth2Service';
 import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
@@ -82,7 +82,7 @@ const Login = () => {
         }
         // 生成新的 Verifier
         const verifier = generateVerifier()
-        sessionStorage.setItem('qr_scan_pkce_verifier', verifier)
+        sessionStorage.setItem(QR_SCAN_PKCE_VERIFIER, verifier)
         // 生成 Challenge
         const challenge = await generateChallenge(verifier)
         const qrTicketUrl = qrScanUrlRef.current + `&code_challenge=${challenge}&code_challenge_method=S256`
@@ -257,15 +257,15 @@ const Login = () => {
         const authorizeUrl = await getAuthorizeUrlAsync('atlas')
         const verifier = generateVerifier()
         const challenge = await generateChallenge(verifier)
-        sessionStorage.setItem('authorize_code_pkce_verifier', verifier)
+        sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
         const finalUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
         // 授权码模式跳转逻辑
-        window.location.href = authorizeUrl
+        window.location.href = finalUrl
     }
 
     const deviceCodeLogin = async () => {
         const deviceCodeResult = await getDeviceCodeAsync()
-        window.location.href = deviceCodeResult.verification_uri_complete
+        window.open(deviceCodeResult.verification_uri_complete, '_blank');
     }
 
     const onFinish = (values) => {

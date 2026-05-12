@@ -5,12 +5,12 @@ import { useRequest } from 'ahooks';
 import { useAuth } from '../../../router/AuthProvider';
 import { login } from '../../../services/LoginService';
 import Loading from '../../../components/loading';
-import { oauth2Callback } from '../../../services/Oauth2Service';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, oauth2Callback } from '../../../services/Oauth2Service';
 import { useRedirect } from '../../../hooks/useRedirect';
 import useFullParams from '../../../hooks/useFullParams';
 
 const OAuth2Callback = () => {
-    const { code, clientName } = useFullParams()
+    const { code, error, error_description, error_uri, clientName } = useFullParams()
     const navigate = useNavigate()
     const { signin } = useAuth()
 
@@ -20,22 +20,30 @@ const OAuth2Callback = () => {
 
     useEffect(() => {
         if (!code) {
-            message.error("无效的授权回调")
-            navigate('/login', { replace: true })
+            navigate('/500', {
+                state: {
+                    title: error,
+                    subTitle: error_description,
+                    errorUri: error_uri
+                }
+            })
             return
         }
 
         const handleAuth = async (code, clientName) => {
             try {
+                const verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
                 // 根据你后端的接口调整参数
-                const data = await runAsync(code, clientName)
-                console.log('data', data)
+                const data = await runAsync(code, verifier, clientName)
                 await signin(data)
                 redirect('/', data?.access?.token)
             } catch (error) {
-                console.error('OAuth2 回调处理失败:', error);
-                message.error("登录处理失败，请重试");
-                navigate('/login');
+                navigate('/500', {
+                    state: {
+                        title: 'OAuth2 回调处理失败',
+                        subTitle: error.message
+                    }
+                })
             }
         }
         handleAuth(code, clientName)

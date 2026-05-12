@@ -39,6 +39,9 @@ export const routes = [
         element: <LoginRoute><Login /></LoginRoute>,
         protected: false,
     },
+    { path: '/404', element: <NotFound />, protected: false },
+    { path: '/403', element: <Forbidden />, protected: false },
+    { path: '/500', element: <ServerError />, protected: false },
     {
         path: 'oauth2',
         element: (
@@ -73,7 +76,7 @@ export const routes = [
         protected: false,
     },
     {
-        path: '',
+        path: '/',
         element: <AppLayout />,
         breadcrumbName: '主页',
         protected: true,
@@ -205,26 +208,23 @@ export const routes = [
                 ]
             },
             {
+                path: 'status', // 统一前缀：/status
+                children: [
+                    { path: 'success', element: <Success /> },
+                    { path: '403', element: <Forbidden /> },
+                    { path: '500', element: <ServerError /> },
+                ]
+            },
+            {
                 path: '*',
                 element: <NotFound />
             },
-            {
-                path: '/404',
-                element: <NotFound />
-            },
-            {
-                path: '/403',
-                element: <Forbidden />
-            },
-            {
-                path: '/500',
-                element: <ServerError />
-            },
-            {
-                path: '/success',
-                element: <Success />
-            },
         ]
+    },
+    {
+        path: '*',
+        element: <NotFound />,
+        protected: false,
     }
 ]
 
@@ -259,6 +259,7 @@ export const findRouteByPath = (targetPath) => {
     let result = null
     for (const route of routes) {
         result = findRoute(route, '', targetPath)
+        if (result) break
     }
     routeCache.set(targetPath, result)
     return result

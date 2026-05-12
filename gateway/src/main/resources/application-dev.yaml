@@ -13,6 +13,11 @@ spring:
           max-idle: 20
           max-active: 100
           max-wait: 5000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:9096/oauth2/jwks
   cloud:
     gateway:
       server:

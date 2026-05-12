@@ -2,6 +2,10 @@ import { apiRequestWrapper } from "./ApiRequestWrapper"
 import httpWrapper from "./AxiosWrapper"
 
 
+export const AUTHORIZE_CODE_PKCE_VERIFIER = "authorize_code_pkce_verifier"
+
+export const QR_SCAN_PKCE_VERIFIER = "qr_scan_pkce_verifier"
+
 export const fetchAuthorizeUrl = async (clientName) => {
 
     return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/authorizeUrl/${clientName}`))
@@ -21,10 +25,13 @@ export const fetchDeviceCode = async () => {
 }
 
 
-export const oauth2Callback = async (code, clientName) => {
+export const oauth2Callback = async (code, verifier, clientName) => {
 
     return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/callback/${clientName}`, {
-        params: { code: code }
+        params: {
+            code: code,
+            code_verifier: verifier
+        }
     }))
 }
 

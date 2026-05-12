@@ -68,7 +68,7 @@ const UserDetails = () => {
         const values = await form.validateFields()
         if (operationMode === OperationMode.ADD.value) {
             const result = await createUserAsync(values)
-            navigate('/success', {
+            navigate('/status/success', {
                 state: {
                     title: '用户创建成功',
                     subTitle: '初始密码为',

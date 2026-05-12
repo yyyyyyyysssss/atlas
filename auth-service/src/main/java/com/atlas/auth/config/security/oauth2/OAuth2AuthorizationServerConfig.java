@@ -28,6 +28,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
@@ -138,10 +139,15 @@ public class OAuth2AuthorizationServerConfig {
         return context -> {
             String name = context.getPrincipal().getName();
             Set<String> authorizedScopes = context.getAuthorizedScopes();
+            OidcUserInfo oidcUserInfo = oidcUserInfoService.loadUser(name,authorizedScopes);
             //自定义id_token中包含的信息
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
-                OidcUserInfo oidcUserInfo = oidcUserInfoService.loadUser(name,authorizedScopes);
                 context.getClaims().claims(claims -> claims.putAll(oidcUserInfo.getClaims()));
+            }
+            if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+                context.getClaims().claims(claims -> {
+                    claims.put(JwtClaimNames.SUB, oidcUserInfo.getSubject());
+                });
             }
         };
     }
@@ -180,7 +186,7 @@ public class OAuth2AuthorizationServerConfig {
 
             @Override
             public void save(OAuth2AuthorizationConsent authorizationConsent) {
-//                jdbcOAuth2AuthorizationConsentService.save(authorizationConsent);
+
             }
 
             @Override
@@ -210,29 +216,6 @@ public class OAuth2AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder().issuer(securityProperties.getIssuerUrl()).build();
-    }
-
-
-    @Bean
-    @ConditionalOnMissingBean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        //自定义基于scope jwt解析器，设置解析出来的权限信息的前缀与在jwt中的key
-        JwtGrantedScopeAuthoritiesConverter jwtGrantedScopeAuthoritiesConverter = new JwtGrantedScopeAuthoritiesConverter();
-        // 设置解析权限信息的前缀，设置为空是去掉前缀
-        jwtGrantedScopeAuthoritiesConverter.setAuthorityPrefix("");
-
-        // 设置权限信息在jwt claims中的key
-        jwtGrantedScopeAuthoritiesConverter.setAuthoritiesClaimName("scope");
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedScopeAuthoritiesConverter);
-        return jwtAuthenticationConverter;
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public OAuth2BearerTokenResolver oAuth2BearerTokenResolver() {
-
-        return new OAuth2BearerTokenResolver();
     }
 
 

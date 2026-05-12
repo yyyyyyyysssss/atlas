@@ -6,21 +6,28 @@ import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
+import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.TokenResponse;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Description
@@ -78,9 +85,10 @@ public class AtlasLoginProvider implements ThirdPartyLoginProvider{
                     .body(formData)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (request, clientResponse) -> {
-                        log.error("Token exchange failed. Status: {}, ClientId: {}",
-                                clientResponse.getStatusCode(), atlasOauth2Properties.getClientId());
-                        throw new BusinessException("认证服务器获取token失败: " + clientResponse.getStatusCode());
+                        String errorBody = StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
+                        JsonNode jsonNode = JsonUtils.parseObject(errorBody, JsonNode.class);
+                        log.error("OAuth2 Server Error Body: {}", errorBody);
+                        throw new BusinessException(jsonNode.get("error").asText());
                     })
                     .body(OAuth2TokenResponse.class);
 

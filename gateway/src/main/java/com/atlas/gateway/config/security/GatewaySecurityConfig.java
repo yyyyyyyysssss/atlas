@@ -8,6 +8,7 @@ import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFi
 import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
+import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
@@ -25,6 +26,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.preauth.RequestHeaderAuthenticationFilter;
@@ -56,6 +58,11 @@ public class GatewaySecurityConfig {
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
 
+    @Resource
+    private JwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @Resource
+    private OAuth2BearerTokenResolver oAuth2BearerTokenResolver;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -82,18 +89,38 @@ public class GatewaySecurityConfig {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
                 .authorizeHttpRequests(authorize -> {
-                    //放行的路径
-                    authorize
-                            //允许所有人访问的路径
-                            .requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
-                            //允许所有异步请求
-                            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                            //只需要通过身份认证就能访问的路径
-                            .requestMatchers(securityProperties.getAuthorize().getAuthenticated().toArray(new String[0])).authenticated()
-                            //基于请求头apikey授权
-                            .requestMatchers(securityProperties.requestHeadAuthenticationPath()).hasAuthority(ApikeyAuthenticationProvider.APIKEY_ROLE_CODE)
-                            //必须校验权限的路径
-                            .anyRequest().access(requestPathAuthorizationManager());
+                    // 放行路径
+                    authorize.requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
+                            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll();
+                    // 只需要通过身份认证就能访问的路径
+                    authorize.requestMatchers(securityProperties.getAuthorize().getAuthenticated().toArray(new String[0])).authenticated();
+                    // 基于请求头apikey授权
+                    authorize.requestMatchers(securityProperties.getAuthorize().requestHeadAuthenticationPath()).hasAuthority(ApikeyAuthenticationProvider.APIKEY_ROLE_CODE);
+                    // 基于oauth2 scope授权
+                    List<SecurityProperties.ResourceAuthenticationConfig> resourceRules = securityProperties.getAuthorize().getResourceAuthorizations();
+                    if (resourceRules != null) {
+                        for (SecurityProperties.ResourceAuthenticationConfig rule : resourceRules) {
+                            // 这里动态绑定 pattern 和 scope
+                            authorize.requestMatchers(rule.getPattern())
+                                    .hasAuthority(rule.getScope());
+                        }
+                    }
+                    // 兜底策略
+                    authorize.anyRequest().access(requestPathAuthorizationManager());
+//                    //放行的路径
+//                    authorize
+//                            //允许所有人访问的路径
+//                            .requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
+//                            //允许所有异步请求
+//                            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+//                            //只需要通过身份认证就能访问的路径
+//                            .requestMatchers(securityProperties.getAuthorize().getAuthenticated().toArray(new String[0])).authenticated()
+//                            //基于请求头apikey授权
+//                            .requestMatchers(securityProperties.getAuthorize().requestHeadAuthenticationPath()).hasAuthority(ApikeyAuthenticationProvider.APIKEY_ROLE_CODE)
+//                            //基于oauth2 scope授权
+//                            .requestMatchers("/api/user/v1/profile/info").hasAuthority("profile")
+//                            //必须校验权限的路径
+//                            .anyRequest().access(requestPathAuthorizationManager());
                 })
                 // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
                 .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
@@ -102,7 +129,14 @@ public class GatewaySecurityConfig {
                 // 基于请求头apikey认证的过滤器
                 .addFilterBefore(apikeyAuthenticationFilter(authenticationManager(http)), HeaderWriterFilter.class)
                 // 设置用户信息到请求头
-                .addFilterAfter(gatewayHeaderHeaderPropagationFilter(), AuthenticationFilter.class);
+                .addFilterAfter(gatewayHeaderHeaderPropagationFilter(), AuthenticationFilter.class)
+                // oauth2资源服务器
+                .oauth2ResourceServer((resourceServer) -> {
+                    resourceServer.jwt(jwt -> {
+                        jwt.jwtAuthenticationConverter(jwtAuthenticationConverter);
+                    });
+                    resourceServer.bearerTokenResolver(oAuth2BearerTokenResolver);
+                });
 
         return http.build();
     }
@@ -140,7 +174,7 @@ public class GatewaySecurityConfig {
     //基于请求头apikey的认证过滤器
     @Bean
     public RequestHeaderAuthenticationFilter apikeyAuthenticationFilter(AuthenticationManager authenticationManager) {
-        String[] antPaths = securityProperties.requestHeadAuthenticationPath();
+        String[] antPaths = securityProperties.getAuthorize().requestHeadAuthenticationPath();
         RequestHeaderAuthenticationFilter requestHeaderAuthenticationFilter = new RequestHeaderAuthenticationFilter();
         requestHeaderAuthenticationFilter.setPrincipalRequestHeader("apikey");
         requestHeaderAuthenticationFilter.setExceptionIfHeaderMissing(false);
@@ -152,7 +186,7 @@ public class GatewaySecurityConfig {
     @Bean
     public ApikeyAuthenticationProvider apikeyAuthenticationProvider() {
 
-        return new ApikeyAuthenticationProvider(securityProperties.getRequestHeadAuthentications());
+        return new ApikeyAuthenticationProvider(securityProperties.getAuthorize().getRequestHeadAuthentications());
     }
 
 }

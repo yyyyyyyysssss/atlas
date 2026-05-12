@@ -33,8 +33,6 @@ public class SecurityProperties {
 
     private KeyConfig totp = new KeyConfig();
 
-    private List<RequestHeadAuthenticationConfig> requestHeadAuthentications = new ArrayList<>();
-
     @Setter
     @Getter
     public static class KeyConfig {
@@ -86,8 +84,22 @@ public class SecurityProperties {
     }
 
 
-    public String[] requestHeadAuthenticationPath(){
-        return this.getRequestHeadAuthentications().stream().map(m -> m.antPath.split(",")).toList().stream().flatMap(Stream::of).toArray(String[]::new);
+    @Setter
+    @Getter
+    public static class AuthorizeConfig{
+
+        private List<String> permit;
+
+        private List<String> authenticated;
+
+        private List<RequestHeadAuthenticationConfig> requestHeadAuthentications = new ArrayList<>();
+
+        private List<ResourceAuthenticationConfig> resourceAuthorizations = new ArrayList<>();
+
+        public String[] requestHeadAuthenticationPath(){
+            return this.getRequestHeadAuthentications().stream().map(m -> m.antPath.split(",")).toList().stream().flatMap(Stream::of).toArray(String[]::new);
+        }
+
     }
 
     @Setter
@@ -103,11 +115,12 @@ public class SecurityProperties {
 
     @Setter
     @Getter
-    public static class AuthorizeConfig{
+    public static class ResourceAuthenticationConfig{
 
-        private List<String> permit;
+        private String pattern;
 
-        private List<String> authenticated;
+        private String scope;
+
 
     }
 

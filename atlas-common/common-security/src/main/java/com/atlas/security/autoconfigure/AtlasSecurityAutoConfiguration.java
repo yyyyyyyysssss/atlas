@@ -170,4 +170,26 @@ public class AtlasSecurityAutoConfiguration {
         return new JwtUtils(securityProperties);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        //自定义基于scope jwt解析器，设置解析出来的权限信息的前缀与在jwt中的key
+        JwtGrantedScopeAuthoritiesConverter jwtGrantedScopeAuthoritiesConverter = new JwtGrantedScopeAuthoritiesConverter();
+        // 设置解析权限信息的前缀，设置为空是去掉前缀
+        jwtGrantedScopeAuthoritiesConverter.setAuthorityPrefix("");
+
+        // 设置权限信息在jwt claims中的key
+        jwtGrantedScopeAuthoritiesConverter.setAuthoritiesClaimName("scope");
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedScopeAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OAuth2BearerTokenResolver oAuth2BearerTokenResolver() {
+
+        return new OAuth2BearerTokenResolver();
+    }
+
 }

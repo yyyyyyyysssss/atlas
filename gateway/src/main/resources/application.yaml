@@ -25,6 +25,11 @@ spring:
   threads:
     virtual:
       enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-service/oauth2/jwks
   cloud:
     gateway:
       server:
@@ -100,10 +105,14 @@ security:
       - /api/notification/user/announcement/**
       - /api/notification/v1/notification/sse/**
       - /api/notification/user/notification/**
-  # 基于请求头的身份认证
-  requestHeadAuthentications:
-    - antPath: /api/internal/**
-      apikey: 26662f07703c41d2a4994b8b30b101a9
+    # 基于oauth2 scope的授权
+    resourceAuthorizations:
+      - pattern: /api/user/v1/profile
+        scope: profile
+  # 基于请求头的授权
+    requestHeadAuthentications:
+      - antPath: /api/internal/**
+        apikey: 26662f07703c41d2a4994b8b30b101a9
   # jwt token配置
   jwt:
     secretKey: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

@@ -25,11 +25,11 @@ public class RedisSecurityContextRepository implements SecurityContextStore {
 
     private static final String SECURITY_CONTEXT_KEY_PREFIX = "security:context:repository:";
 
-    private RedisTemplate<String,SecurityContext> redisTemplate;
+    private RedisTemplate<String,Object> redisTemplate;
 
     private SecurityProperties securityProperties;
 
-    public RedisSecurityContextRepository(RedisTemplate<String,SecurityContext> redisTemplate, SecurityProperties securityProperties){
+    public RedisSecurityContextRepository(RedisTemplate<String,Object> redisTemplate, SecurityProperties securityProperties){
         this.redisTemplate = redisTemplate;
         this.securityProperties = securityProperties;
     }
@@ -43,7 +43,7 @@ public class RedisSecurityContextRepository implements SecurityContextStore {
         if (attribute == null || attribute.isEmpty()){
             return null;
         }
-        return redisTemplate.opsForValue().get(SECURITY_CONTEXT_KEY_PREFIX + attribute);
+        return (SecurityContext)redisTemplate.opsForValue().get(SECURITY_CONTEXT_KEY_PREFIX + attribute);
     }
 
     @Override

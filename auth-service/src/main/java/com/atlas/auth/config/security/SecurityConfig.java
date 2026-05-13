@@ -7,6 +7,8 @@ import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenti
 import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
+import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
+import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
 import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.LogoutService;
 import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
@@ -24,6 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
@@ -46,6 +49,10 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 
 @EnableWebSecurity
 @Configuration
@@ -121,19 +128,26 @@ public class SecurityConfig {
                     //令牌生成成功处理器
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
+                .webAuthn((webAuthn) -> webAuthn
+                        .rpId(securityProperties.getDomain())
+                        .rpName("Atlas Identity Server")
+                        .allowedOrigins(
+                                securityProperties.getUiUrl(),
+                                securityProperties.getIssuerUrl()
+                        )
+                )
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
                 .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
                 //记住我过滤器
-                .addFilterBefore(rememberMeFilter(authenticationManager(http),rememberMeServices()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rememberMeFilter(authenticationManager(http), rememberMeServices()), UsernamePasswordAuthenticationFilter.class)
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout")
                                 .logoutSuccessHandler(logoutSuccessHandler())
                                 .permitAll()
                 );
-
 
 
         return http.build();
@@ -166,7 +180,7 @@ public class SecurityConfig {
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         // 密码防暴力破解登录
         LoginAttemptHandler loginAttemptService = new LoginAttemptHandler(redisHelper);
-        DaoAuthenticationProvider authProvider = new UsernamePasswordAuthenticationProvider(userService,loginAttemptService);
+        DaoAuthenticationProvider authProvider = new UsernamePasswordAuthenticationProvider(userService, loginAttemptService);
         // 设置密码编辑器
         authProvider.setPasswordEncoder(passwordEncoder);
         authProvider.setHideUserNotFoundExceptions(false);
@@ -189,7 +203,7 @@ public class SecurityConfig {
     @Bean
     public RememberMeServices rememberMeServices() {
         String secretKey = securityProperties.getRememberMe().getSecretKey();
-        return new HeaderBasedRememberMeServices(secretKey,tokenService,userService);
+        return new HeaderBasedRememberMeServices(secretKey, tokenService, userService);
     }
 
     //邮箱登录认证
@@ -207,7 +221,23 @@ public class SecurityConfig {
 
     @Bean
     public OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider() {
-        return new OneTimeTokenAuthenticationProvider(oneTimeTokenService(),userService);
+        return new OneTimeTokenAuthenticationProvider(oneTimeTokenService(), userService);
+    }
+
+    // 通行密钥
+    @Bean
+    public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
+        return new AtlasPublicKeyCredentialUserEntityRepository(userService);
+    }
+
+    @Bean
+    public UserCredentialRepository userCredentialRepository() {
+        return new JdbcUserCredentialRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public PublicKeyCredentialCreationOptionsRepository creationOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
+        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate);
     }
 
     //三方登录认证
@@ -219,13 +249,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RefreshAuthenticationProvider refreshAuthenticationProvider(){
+    public RefreshAuthenticationProvider refreshAuthenticationProvider() {
 
         return new RefreshAuthenticationProvider(userService);
     }
 
     @Bean
-    public HeaderAuthenticationFilter headerAuthenticationFilter(){
+    public HeaderAuthenticationFilter headerAuthenticationFilter() {
         return new HeaderAuthenticationFilter();
     }
 

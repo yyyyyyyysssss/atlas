@@ -71,6 +71,7 @@ public class QrAuthService {
         Map<String, Object> context = new HashMap<>();
         context.put("status", PENDING);
         context.put("clientId", clientId);
+        context.put("clientName", registeredClient.getClientName());
         context.put("redirectUri", redirectUri);
         context.put("scope", scope);
         if (StringUtils.hasText(codeChallenge)) {
@@ -166,11 +167,13 @@ public class QrAuthService {
         }
         String status = (String) map.get("status");
         String authCode = (String) map.get("code");
+        String clientName = (String) map.get("clientName");
         log.debug("检查二维码状态 sceneId: {}, 状态: {}", sceneId, status);
         return QrAuthStatusVO
                 .builder()
                 .status(status)
                 .code(authCode)
+                .clientName(clientName)
                 .build();
     }
 

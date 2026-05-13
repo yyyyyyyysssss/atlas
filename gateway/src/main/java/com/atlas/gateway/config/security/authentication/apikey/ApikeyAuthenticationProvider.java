@@ -2,7 +2,6 @@ package com.atlas.gateway.config.security.authentication.apikey;
 
 
 import com.atlas.security.properties.SecurityProperties;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -11,8 +10,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,7 +21,7 @@ import java.util.stream.Collectors;
  */
 public class ApikeyAuthenticationProvider implements AuthenticationProvider {
 
-    private Map<String, String> apikeyMap;
+    private final Map<String, List<String>> apikeyPathMap;
 
     private final static PathMatcher PATH_MATCHER = new AntPathMatcher();
 
@@ -32,37 +29,25 @@ public class ApikeyAuthenticationProvider implements AuthenticationProvider {
 
     private final static Set<? extends GrantedAuthority> REQUEST_HEADER_AUTHORITY = Collections.singleton((GrantedAuthority) () -> APIKEY_ROLE_CODE);
 
-    private final static String URL_SEPARATOR = ",";
-
-    public ApikeyAuthenticationProvider(List<SecurityProperties.RequestHeadAuthenticationConfig> requestHeadAuthentications){
-        if (requestHeadAuthentications == null || requestHeadAuthentications.isEmpty()){
+    public ApikeyAuthenticationProvider(List<SecurityProperties.RequestHeadAuthenticationConfig> requestHeadAuthentications) {
+        if (requestHeadAuthentications == null || requestHeadAuthentications.isEmpty()) {
             throw new NullPointerException("requestHeadAuthentications not null");
         }
-        this.apikeyMap = requestHeadAuthentications.stream().collect(Collectors.toMap(SecurityProperties.RequestHeadAuthenticationConfig::getApikey, SecurityProperties.RequestHeadAuthenticationConfig::getPattern));
+        this.apikeyPathMap = requestHeadAuthentications.stream().collect(Collectors.toMap(
+                SecurityProperties.RequestHeadAuthenticationConfig::getApikey,
+                c -> Arrays.asList(c.getPattern().split(","))
+        ));
     }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        Object principal = authentication.getPrincipal();
-        if (principal == null){
-            throw new BadCredentialsException("Bad Request Header Principal");
+        String requestUrl = (String) authentication.getPrincipal();
+        String apiKey = (String) authentication.getCredentials();
+        List<String> allowedPatterns = apikeyPathMap.get(apiKey);
+        if (allowedPatterns != null && allowedPatterns.stream().anyMatch(p -> PATH_MATCHER.match(p, requestUrl))) {
+            return new PreAuthenticatedAuthenticationToken(requestUrl, null, REQUEST_HEADER_AUTHORITY);
         }
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest request = requestAttributes.getRequest();
-        String requestUrl = request.getRequestURI();
-        boolean valid = false;
-        String antPath = apikeyMap.get((String) principal);
-        if (antPath != null && !antPath.isEmpty()){
-            String[] urls = antPath.split(URL_SEPARATOR);
-            List<String> urlList = Arrays.asList(urls);
-            if(urlList.stream().anyMatch(m -> PATH_MATCHER.match(m, requestUrl))){
-                valid = true;
-            }
-        }
-        if (!valid){
-            throw new BadCredentialsException("Bad Request Header Credentials");
-        }
-        return new PreAuthenticatedAuthenticationToken(principal,null,REQUEST_HEADER_AUTHORITY);
+        throw new BadCredentialsException("API Key invalid or unauthorized for path: " + requestUrl);
     }
 
     @Override

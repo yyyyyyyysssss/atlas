@@ -232,13 +232,13 @@ const UserProfile = () => {
                         {
                             key: 'profile',
                             label: (
-                                <Typography.Link onClick={() => setProfileOpen(true)}>
+                                <Typography.Link onClick={() => navigate('/account/settings')}>
                                     <Flex
                                         gap={8}
                                         align='center'
                                     >
                                         <UserPen size={16} />
-                                        <Typography.Text className='user-profile-menu-label'>{t('个人信息')}</Typography.Text>
+                                        <Typography.Text className='user-profile-menu-label'>{t('个人中心')}</Typography.Text>
                                     </Flex>
                                 </Typography.Link>
 

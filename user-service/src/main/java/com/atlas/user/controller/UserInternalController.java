@@ -34,6 +34,18 @@ public class UserInternalController {
         return ResultGenerator.ok(userAuthDTO);
     }
 
+    @GetMapping("/findByUsername")
+    public Result<UserDTO> findByUsername(@RequestParam("username") String username) {
+        User user = userService.findByUsername(username);
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
+    }
+
+    @GetMapping("/findByUserId")
+    public Result<UserDTO> findByUsername(@RequestParam("userId") Long userId) {
+        User user = userService.findByUserId(userId);
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
+    }
+
     @GetMapping("/profile")
     public Result<UserDTO> userProfile(@RequestParam("username") String username) {
         User user = userService.findByUsername(username);

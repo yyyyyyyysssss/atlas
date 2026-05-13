@@ -25,7 +25,10 @@ import com.atlas.security.token.RefreshAuthenticationToken;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.atlas.security.utils.JwtUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +51,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.jackson2.CoreJackson2Module;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.jackson2.WebServletJackson2Module;
+import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
 
 /**
  * @Description
@@ -108,16 +112,15 @@ public class AtlasSecurityAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SecurityContextStore securityContextRepository(
-            @Qualifier("securityRedisTemplate") RedisTemplate<String, SecurityContext> securityRedisTemplate,
+            @Qualifier("securityRedisTemplate") RedisTemplate<String, Object> securityRedisTemplate,
             SecurityProperties securityProperties) {
 
         return new RedisSecurityContextRepository(securityRedisTemplate, securityProperties);
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public RedisTemplate<String, SecurityContext> securityRedisTemplate(RedisConnectionFactory redisConnectionFactory, @Qualifier("securityObjectMapper") ObjectMapper securityObjectMapper) {
-        RedisTemplate<String, SecurityContext> redisTemplate = new RedisTemplate<>();
+    public RedisTemplate<String, Object> securityRedisTemplate(RedisConnectionFactory redisConnectionFactory, @Qualifier("securityObjectMapper") ObjectMapper securityObjectMapper) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
 
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
@@ -137,14 +140,16 @@ public class AtlasSecurityAutoConfiguration {
     public ObjectMapper securityObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // 1. 注册基础模块
+        // 注册基础模块
         objectMapper.registerModule(new JavaTimeModule());
         // 注意：CoreJackson2Module 和 WebServletJackson2Module 是 Spring Security 提供的
         // 它们允许 Jackson 识别 SimpleGrantedAuthority 等安全类
         objectMapper.registerModule(new CoreJackson2Module());
         objectMapper.registerModule(new WebServletJackson2Module());
+        objectMapper.registerModule(new WebauthnJackson2Module());
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        // 2. 注册你自定义的权限模型 Mixin
+        // 注册你自定义的权限模型 Mixin
         objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
         objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
         objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
@@ -153,7 +158,15 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
         objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);
 
-        // 3. 必须开启的配置：保留类型信息
+        // 屏蔽 WebAuthn 的类型信息
+        @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+        abstract class IgnoreTypeInfoMixin {}
+        objectMapper.addMixIn(org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInputs.class,
+                IgnoreTypeInfoMixin.class);
+        objectMapper.addMixIn(org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInput.class,
+                IgnoreTypeInfoMixin.class);
+
+        //  必须开启的配置：保留类型信息
         // 否则 Redis 反序列化时不知道要把 JSON 转成哪个具体的实现类
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,

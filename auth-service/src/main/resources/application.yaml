@@ -42,6 +42,7 @@ spring:
 
 
 security:
+  domain: ys0921.sbs
   issuerUrl: https://atlas.ys0921.sbs:4443
   uiUrl: https://atlas.ys0921.sbs:4443
   authorize:

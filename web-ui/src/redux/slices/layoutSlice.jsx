@@ -86,18 +86,15 @@ export const layoutSlice = createSlice({
                 return
             }
             // 不存在且在菜单中则新增
-            if (!menuItem) {
-                return
-            }
-            const item = state.tabItems.find(item => item.key === menuItem.id)
+            const item = state.tabItems.find(item => item.key === menuItem?.id)
             if (item) {
                 state.activeKey = menuItem.id
                 return
             }
-            tabItem.key = menuItem.id
+            tabItem.key = menuItem?.id || path
             state.tabItems.push(tabItem)
-            state.activeKey = menuItem.id
-            state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
+            state.activeKey = menuItem?.id || path
+            state.openKeys = state.menuCollapsed ? [] : menuItem?.parentPath
         },
         removeTabItem: (state, action) => {
             const { payload } = action

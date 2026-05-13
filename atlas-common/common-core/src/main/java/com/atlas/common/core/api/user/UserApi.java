@@ -20,6 +20,12 @@ public interface UserApi {
     @GetExchange("/auth")
     Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
 
+    @GetExchange("/findByUsername")
+    Result<UserDTO> findByUsername(@RequestParam("username") String username);
+
+    @GetExchange("/findByUserId")
+    Result<UserDTO> findByUserId(@RequestParam("userId") Long userId);
+
     @GetExchange("/profile")
     Result<UserDTO> userProfile(@RequestParam("username") String username);
 

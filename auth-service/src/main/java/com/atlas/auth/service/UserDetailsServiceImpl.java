@@ -26,6 +26,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserApi userApi;
 
+
+    public UserDTO findByUsername(String username){
+        Result<UserDTO> result = userApi.findByUsername(username);
+        // 查询不到或服务异常，返回 null 进而让 Spring Security 处理认证失败
+        if(!result.isSucceed()){
+            return null;
+        }
+        return result.getData();
+    }
+
+    public UserDTO findByUserId(Long userId){
+        Result<UserDTO> result = userApi.findByUserId(userId);
+        if(!result.isSucceed()){
+            return null;
+        }
+        return result.getData();
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Result<UserAuthDTO> result = userApi.loadUserByUsername(username);

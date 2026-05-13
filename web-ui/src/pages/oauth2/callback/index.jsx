@@ -5,12 +5,12 @@ import { useRequest } from 'ahooks';
 import { useAuth } from '../../../router/AuthProvider';
 import { login } from '../../../services/LoginService';
 import Loading from '../../../components/loading';
-import { AUTHORIZE_CODE_PKCE_VERIFIER, oauth2Callback } from '../../../services/Oauth2Service';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, oauth2Callback, QR_SCAN_PKCE_VERIFIER } from '../../../services/Oauth2Service';
 import { useRedirect } from '../../../hooks/useRedirect';
 import useFullParams from '../../../hooks/useFullParams';
 
 const OAuth2Callback = () => {
-    const { code, error, error_description, error_uri, clientName } = useFullParams()
+    const { code, error, error_description, error_uri, clientName, login_mode } = useFullParams()
     const navigate = useNavigate()
     const { signin } = useAuth()
 
@@ -30,9 +30,14 @@ const OAuth2Callback = () => {
             return
         }
 
-        const handleAuth = async (code, clientName) => {
+        const handleAuth = async (code, clientName, loginMode) => {
             try {
-                const verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
+                let verifier
+                if (loginMode && loginMode === 'qr') {
+                    verifier = sessionStorage.getItem(QR_SCAN_PKCE_VERIFIER)
+                } else {
+                    verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
+                }
                 // 根据你后端的接口调整参数
                 const data = await runAsync(code, verifier, clientName)
                 await signin(data)
@@ -46,8 +51,8 @@ const OAuth2Callback = () => {
                 })
             }
         }
-        handleAuth(code, clientName)
-    }, [code, clientName])
+        handleAuth(code, clientName, login_mode)
+    }, [code, clientName, login_mode])
 
     return (
         <Loading fullscreen tip="正在完成登录..." />

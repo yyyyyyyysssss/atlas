@@ -24,6 +24,7 @@ logging:
     com.atlas.common.core.api: info
 
 security:
+  domain: localhost
   issuerUrl: http://localhost:9090
   uiUrl: http://localhost:3000
 

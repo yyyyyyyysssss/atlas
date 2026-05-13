@@ -49,6 +49,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
 import org.springframework.util.DigestUtils;
 
 import java.security.interfaces.RSAPrivateKey;

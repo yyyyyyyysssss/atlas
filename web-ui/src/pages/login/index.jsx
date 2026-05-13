@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { QrCode, Monitor } from 'lucide-react';
 import './index.css'
 import { useRequest } from 'ahooks';
@@ -9,7 +9,7 @@ import { login, ottLogin, sendEmailVerificationCode, sendOttLink } from '../../s
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
-import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl, fetchDeviceCode, fetchQrScanUrl, QR_SCAN_PKCE_VERIFIER, qrTicket } from '../../services/Oauth2Service';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl, fetchDeviceCode, fetchQrScanUrl, QR_SCAN_PKCE_VERIFIER, qrStatus, qrTicket } from '../../services/Oauth2Service';
 import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
@@ -53,6 +53,10 @@ const Login = () => {
         manual: true
     })
 
+    const { runAsync: qrStatusAsync, loading: qrStatusLoading } = useRequest(qrStatus, {
+        manual: true
+    })
+
     const { runAsync: sendEmailVerificationCodeAsync, loading: sendEmailVerificationCodeLoading } = useRequest(sendEmailVerificationCode, {
         manual: true
     })
@@ -76,7 +80,44 @@ const Login = () => {
 
     const qrScanUrlRef = useRef(null)
 
+    const pollingTimerRef = useRef(null)
+
+    // 停止轮询
+    const stopPolling = () => {
+        if (pollingTimerRef.current) {
+            clearInterval(pollingTimerRef.current)
+            pollingTimerRef.current = null
+        }
+    }
+
+    // 开始轮询二维码状态
+    const startPolling = (sceneId) => {
+        stopPolling() // 确保之前的轮询被清除
+        pollingTimerRef.current = setInterval(async () => {
+            try {
+                const statusRes = await qrStatusAsync(sceneId)
+                const currentStatus = statusRes.status
+
+                setQrCodeData(prev => ({ ...prev, status: currentStatus }))
+
+                if (currentStatus === 'CONFIRMED') {
+                    stopPolling()
+                    const { code, clientName } = statusRes
+                    navigate(`/oauth2/callback/${clientName}?code=${code}&login_mode=qr`)
+                } else if (currentStatus === 'EXPIRED') {
+                    stopPolling()
+                }
+            } catch (error) {
+                console.error('查询二维码状态失败', error)
+                setQrCodeData(prev => ({ ...prev, status: 'EXPIRED' }))
+                stopPolling()
+            }
+        }, 2000) // 每 2 秒轮询一次
+    }
+
     const refreshQrCode = async () => {
+        stopPolling()
+
         if (!qrScanUrlRef.current) {
             qrScanUrlRef.current = await getQrScanUrlAsync('atlas')
         }
@@ -89,17 +130,25 @@ const Login = () => {
         qrTicketAsync(qrTicketUrl)
             .then((data) => {
                 setQrCodeData({
-                    url: data?.qrUrl || ''
+                    url: data?.qrUrl || '',
+                    sceneId: data?.sceneId || '',
+                    status: 'PENDING'
                 })
+                if (data?.sceneId) {
+                    startPolling(data.sceneId)
+                }
             })
             .catch(() => {
                 message.error('获取二维码失败，请重试')
+                setQrCodeData(prev => ({ ...prev, status: 'EXPIRED' }))
             })
     }
 
     useEffect(() => {
         if (isQrLogin) {
             refreshQrCode()
+        } else {
+            stopPolling()
         }
     }, [isQrLogin])
 
@@ -117,6 +166,7 @@ const Login = () => {
         // 组件卸载时清理定时器
         return () => {
             if (timerRef.current) clearInterval(timerRef.current)
+            stopPolling()
         }
     }, [])
 
@@ -673,26 +723,51 @@ const Login = () => {
                                 {t('请使用 Atlas 移动端扫描二维码')}
                             </Typography.Text>
 
-                            <div
-                                style={{
-                                    padding: 12,
-                                    background: '#ffffff',
-                                    borderRadius: 16,
-                                    border: '1px solid #f3f4f6',
-                                    marginBottom: 32,
-                                }}
-                                onClick={refreshQrCode}
-                            >
+                            <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 32 }}>
                                 <QRCode
-                                    value={qrCodeData.url || 'Loading...'}
-                                    status={qrTicketLoading || getQrScanUrlLoading ? 'loading' : (qrCodeData.url ? 'active' : 'expired')}
+                                    onClick={refreshQrCode}
+                                    value={qrCodeData.url || 'https://atlas.ys0921.sbs'}
+                                    status={
+                                        qrTicketLoading || getQrScanUrlLoading ? 'loading' : 
+                                            (qrCodeData.status === 'EXPIRED' || !qrCodeData.url ? 'expired' : 'active')
+                                    }
                                     onRefresh={refreshQrCode}
                                     icon="/logo128_eclipse.svg"
                                     size={200}
                                     bordered={false}
-                                    color="#111827"
+                                    color={qrCodeData.status === 'SCANNED' ? "rgba(17, 24, 39, 0.2)" : "#111827"} // 扫描后变灰
                                     bgColor="#ffffff"
                                 />
+
+                                {/* 扫码成功后的半透明覆盖层 */}
+                                <AnimatePresence>
+                                    {qrCodeData.status === 'SCANNED' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0, left: 0, right: 0, bottom: 0,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                background: 'rgba(255, 255, 255, 0.85)',
+                                                backdropFilter: 'blur(2px)',
+                                                zIndex: 2
+                                            }}
+                                        >
+                                            <CheckCircleFilled style={{ fontSize: 32, color: '#10b981', marginBottom: 12 }} />
+                                            <Typography.Text strong style={{ fontSize: 16, color: '#111827' }}>
+                                                扫描成功
+                                            </Typography.Text>
+                                            <Typography.Text type="secondary" style={{ fontSize: 13, marginTop: 4 }}>
+                                                请在手机上点击确认
+                                            </Typography.Text>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                             <Typography.Text type="secondary" style={{ fontSize: 12, textAlign: 'center', maxWidth: 280 }}>
                                 尚未安装 App？您可以尝试使用浏览器自带的扫码功能，或安装兼容的

@@ -3,6 +3,7 @@ package com.atlas.gateway.config.security;
 import com.atlas.gateway.config.security.authentication.apikey.ApikeyAuthenticationProvider;
 import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathRequestMatcher;
 import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
+import com.atlas.gateway.config.security.filter.ApikeyAuthenticationFilter;
 import com.atlas.gateway.config.security.filter.FileCookieAuthenticationFilter;
 import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
 import com.atlas.security.filter.TokenAuthenticationFilter;
@@ -108,20 +109,6 @@ public class GatewaySecurityConfig {
                     }
                     // 兜底策略
                     authorize.anyRequest().access(requestPathAuthorizationManager());
-//                    //放行的路径
-//                    authorize
-//                            //允许所有人访问的路径
-//                            .requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
-//                            //允许所有异步请求
-//                            .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-//                            //只需要通过身份认证就能访问的路径
-//                            .requestMatchers(securityProperties.getAuthorize().getAuthenticated().toArray(new String[0])).authenticated()
-//                            //基于请求头apikey授权
-//                            .requestMatchers(securityProperties.getAuthorize().requestHeadAuthenticationPath()).hasAuthority(ApikeyAuthenticationProvider.APIKEY_ROLE_CODE)
-//                            //基于oauth2 scope授权
-//                            .requestMatchers("/api/user/v1/profile/info").hasAuthority("profile")
-//                            //必须校验权限的路径
-//                            .anyRequest().access(requestPathAuthorizationManager());
                 })
                 // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
                 .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
@@ -176,8 +163,7 @@ public class GatewaySecurityConfig {
     @Bean
     public RequestHeaderAuthenticationFilter apikeyAuthenticationFilter(AuthenticationManager authenticationManager) {
         String[] antPaths = securityProperties.getAuthorize().requestHeadAuthenticationPath();
-        RequestHeaderAuthenticationFilter requestHeaderAuthenticationFilter = new RequestHeaderAuthenticationFilter();
-        requestHeaderAuthenticationFilter.setPrincipalRequestHeader("apikey");
+        RequestHeaderAuthenticationFilter requestHeaderAuthenticationFilter = new ApikeyAuthenticationFilter();
         requestHeaderAuthenticationFilter.setExceptionIfHeaderMissing(false);
         requestHeaderAuthenticationFilter.setRequiresAuthenticationRequestMatcher(new SeparatorAntPathRequestMatcher(antPaths));
         requestHeaderAuthenticationFilter.setAuthenticationManager(authenticationManager);

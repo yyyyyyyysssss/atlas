@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -26,6 +26,8 @@ const DictItemManage = lazy(() => import('../pages/system-manage/dict-manage/dic
 const NotificationAnnouncement = lazy(() => import('../pages/notification-center/announcement'))
 const AnnouncementDetails = lazy(() => import('../pages/notification-center/announcement/details'))
 const NotificationMessage = lazy(() => import('../pages/notification-center/message'))
+
+const AccountSettings = lazy(() => import('../pages/account-settings'))
 
 const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'))
 const Oauth2Activate = lazy(() => import('../pages/oauth2/activate'))
@@ -76,9 +78,8 @@ export const routes = [
         protected: false,
     },
     {
-        path: '/',
+        path: '',
         element: <AppLayout />,
-        breadcrumbName: '主页',
         protected: true,
         children: [
             {
@@ -90,6 +91,12 @@ export const routes = [
                 breadcrumbName: '工作台',
                 defaultIcon: <AppWindow size={18} />,
                 element: <Workbench />,
+            },
+            {
+                path: 'account/settings',
+                breadcrumbName: '个人中心',
+                defaultIcon: <UserPen size={18} />,
+                element: <AccountSettings />,
             },
             {
                 path: 'dashboard',
@@ -229,6 +236,9 @@ export const routes = [
 ]
 
 const findRoute = (route, fullPath, targetPath) => {
+    if (route.path === '*') {
+        return null;
+    }
     if (route.path !== '') {
         fullPath = fullPath + (route.path.startsWith('/') ? route.path : '/' + route.path)
     }

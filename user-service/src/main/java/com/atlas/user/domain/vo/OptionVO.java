@@ -32,6 +32,8 @@ public class OptionVO<T extends Serializable> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private T parentId;
 
+    private String description;
+
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<OptionVO<T>> children;
 
@@ -42,19 +44,28 @@ public class OptionVO<T extends Serializable> {
     }
 
     public static <T extends Serializable> OptionVO<T> of(String label, T value) {
-        return OptionVO.of(label,label, value, null);
+        return OptionVO.of(label,label, value, null,null);
+    }
+
+    public static <T extends Serializable> OptionVO<T> of(String label, T value,String description) {
+        return OptionVO.of(label,label, value, null,description);
     }
 
     public static <T extends Serializable> OptionVO<T> of(String label, T value, T parentId) {
-        return OptionVO.of(label,label, value, parentId);
+        return OptionVO.of(label,label, value, parentId,null);
     }
 
     public static <T extends Serializable> OptionVO<T> of(String label,String fullLabel, T value, T parentId) {
+        return OptionVO.of(label,fullLabel, value, parentId,null);
+    }
+
+    public static <T extends Serializable> OptionVO<T> of(String label,String fullLabel, T value, T parentId,String description) {
         return OptionVO.<T>builder()
                 .label(label)
                 .fullLabel(fullLabel)
                 .value(value)
                 .parentId(parentId)
+                .description(description)
                 .build();
     }
 

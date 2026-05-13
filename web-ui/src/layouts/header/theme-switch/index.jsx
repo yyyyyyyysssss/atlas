@@ -6,7 +6,6 @@ import {
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRequest } from 'ahooks';
-import { changeAppearance } from '../../../services/UserProfileService';
 import { switchTheme } from '../../../redux/slices/userSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
@@ -17,18 +16,11 @@ const ThemeSwitch = () => {
 
     const dispatch = useDispatch()
 
-    const { runAsync: changeAppearanceAsync, loading: changeAppearanceLoading } = useRequest(changeAppearance, {
-        manual: true
-    })
-
     const handleSwitchTheme = (newTheme) => {
         if (newTheme === themeValue) {
             return
         }
         dispatch(switchTheme({ theme: newTheme }))
-        changeAppearanceAsync({
-            theme: newTheme
-        })
     }
 
 

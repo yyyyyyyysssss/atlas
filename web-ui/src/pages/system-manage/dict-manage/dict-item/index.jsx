@@ -592,6 +592,14 @@ const DictItem = () => {
                             />
                         </Form.Item>
                         <Form.Item
+                            label="描述:"
+                            name="description"
+                        >
+                            <Input.TextArea
+                                placeholder="请输入字典项描述"
+                            />
+                        </Form.Item>
+                        <Form.Item
                             label="排序:"
                             name="sort"
                         >

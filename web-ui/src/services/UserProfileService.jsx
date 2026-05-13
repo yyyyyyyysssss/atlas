@@ -44,6 +44,11 @@ export const changeAppearance = async (appearance) => {
     return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/appearance/settings', appearance))
 }
 
+export const changeNotificationSetting = async (notificationSetting) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/notification/settings', notificationSetting))
+}
+
 
 export const getUserWorkSchedule = async (startDate, endDate) => {
 

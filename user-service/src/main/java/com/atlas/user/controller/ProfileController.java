@@ -8,6 +8,7 @@ import com.atlas.user.domain.dto.ChangeAvatarDTO;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
 import com.atlas.user.domain.dto.ShortcutUpdateDTO;
 import com.atlas.user.domain.entity.AppearanceSetting;
+import com.atlas.user.domain.entity.NotificationSetting;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
@@ -79,6 +80,13 @@ public class ProfileController {
     public Result<?> updateAppearance(@RequestBody AppearanceSetting appearanceSetting) {
         Long userId = UserContext.getRequiredUserId();
         profileService.updateUserAppearance(userId,appearanceSetting);
+        return ResultGenerator.ok();
+    }
+
+    @PutMapping("/notification/settings")
+    public Result<?> updateNotification(@RequestBody NotificationSetting notificationSetting) {
+        Long userId = UserContext.getRequiredUserId();
+        profileService.updateNotification(userId,notificationSetting);
         return ResultGenerator.ok();
     }
 

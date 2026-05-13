@@ -15,9 +15,13 @@ import java.util.Map;
 @Setter
 public class UserInfoVO {
 
-    private Long userId;
+    private Long id;
 
     private String username;
+
+    private String email;
+
+    private String phone;
 
     private Long orgId;
 

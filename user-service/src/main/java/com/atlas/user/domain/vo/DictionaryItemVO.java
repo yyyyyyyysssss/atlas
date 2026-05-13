@@ -34,6 +34,8 @@ public class DictionaryItemVO {
 
     private Integer sort;
 
+    private String description;
+
     private String extJson;
 
     private String createTime;

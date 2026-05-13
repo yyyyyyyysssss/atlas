@@ -47,18 +47,13 @@ public class ProfileServiceImpl implements ProfileService {
     public UserInfoVO userInfo(Long userId) {
         User user = userService
                 .lambdaQuery()
-                .select(User::getUsername,User::getFullName, User::getAvatar, User::getSettings)
+                .select(User::getUsername,User::getFullName,User::getEmail,User::getPhone, User::getAvatar, User::getSettings)
                 .eq(User::getId, userId)
                 .one();
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        UserInfoVO userInfoVO = new UserInfoVO();
-        userInfoVO.setUserId(userId);
-        userInfoVO.setUsername(user.getUsername());
-        userInfoVO.setFullName(user.getFullName());
-        userInfoVO.setAvatar(user.getAvatar());
-        userInfoVO.setSettings(user.getSettings());
+        UserInfoVO userInfoVO = UserMapping.INSTANCE.toUserInfoVO(user);
         // 用户所属组织
         UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
         if (userOrgMain != null) {
@@ -207,6 +202,24 @@ public class ProfileServiceImpl implements ProfileService {
         UserMapping.INSTANCE.updateAppearanceSetting(appearanceSetting, appearance);
 
         settings.setAppearance(appearance);
+
+        User user = new User();
+        user.setId(userId);
+        user.setSettings(settings);
+        userService.updateById(user);
+    }
+
+    @Override
+    public void updateNotification(Long userId, NotificationSetting notificationSetting) {
+        UserSetting settings = getUserSetting(userId);
+
+        NotificationSetting notification = settings.getNotification();
+        if (notification == null) {
+            notification = new NotificationSetting();
+        }
+        UserMapping.INSTANCE.updateNotificationSetting(notificationSetting, notification);
+
+        settings.setNotification(notification);
 
         User user = new User();
         user.setId(userId);

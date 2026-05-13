@@ -9,4 +9,6 @@ public class UserSetting {
 
     private AppearanceSetting appearance;
 
+    private NotificationSetting notification;
+
 }

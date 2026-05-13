@@ -54,7 +54,7 @@ public class OptionController {
         List<DictionaryItemVO> dictList = optionsService.dictOptions(code, category);
         return ResultGenerator.ok(
                 dictList.stream()
-                        .map(m -> OptionVO.of(m.getLabel(), m.getValue()))
+                        .map(m -> OptionVO.of(m.getLabel(), m.getValue(),m.getDescription()))
                         .collect(Collectors.toList())
 
         );

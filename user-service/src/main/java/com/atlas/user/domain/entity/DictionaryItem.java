@@ -41,6 +41,9 @@ public class DictionaryItem extends BaseEntity implements TreeRelation {
     @TableField("category")
     private String category;
 
+    @TableField("description")
+    private String description;
+
     @TableField("enabled")
     private Boolean enabled;
 

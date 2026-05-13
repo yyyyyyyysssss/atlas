@@ -8,7 +8,7 @@ import { switchColorPrimary } from '../../../redux/slices/userSlice';
 import { changeAppearance } from '../../../services/UserProfileService';
 import { useRequest } from 'ahooks';
 
-const COLOR_PRIMARY_OPTIONS = [
+export const COLOR_PRIMARY_OPTIONS = [
     { color: '#1DA57A', label: '晨露' },
     { color: '#2D9CDB', label: '拂晓' },
     { color: '#D94F4F', label: '薄暮' },
@@ -36,9 +36,9 @@ const ThemeColor = () => {
 
     const switchColor = (color) => {
         dispatch(switchColorPrimary({ colorPrimary: color }))
-        changeAppearanceAsync({
-            colorPrimary: color
-        })
+        // changeAppearanceAsync({
+        //     colorPrimary: color
+        // })
     }
 
     const colorItems = useMemo(() => COLOR_PRIMARY_OPTIONS.map(option => ({

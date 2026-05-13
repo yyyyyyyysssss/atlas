@@ -263,6 +263,7 @@ public class DictionaryItemServiceImpl extends ServiceImpl<DictionaryItemMapper,
                         DictionaryItem::getParentId,
                         DictionaryItem::getLabel,
                         DictionaryItem::getValue,
+                        DictionaryItem::getDescription,
                         DictionaryItem::getAlias,
                         DictionaryItem::getCategory,
                         DictionaryItem::getImgUrl

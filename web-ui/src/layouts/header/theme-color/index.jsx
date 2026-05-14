@@ -5,7 +5,6 @@ import IconBox from '../../../components/icon-box';
 import { useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { switchColorPrimary } from '../../../redux/slices/userSlice';
-import { changeAppearance } from '../../../services/UserProfileService';
 import { useRequest } from 'ahooks';
 
 export const COLOR_PRIMARY_OPTIONS = [
@@ -28,17 +27,10 @@ const ThemeColor = () => {
 
     const { token } = theme.useToken()
 
-    const { runAsync: changeAppearanceAsync, loading: changeAppearanceLoading } = useRequest(changeAppearance, {
-        manual: true
-    })
-
 
 
     const switchColor = (color) => {
         dispatch(switchColorPrimary({ colorPrimary: color }))
-        // changeAppearanceAsync({
-        //     colorPrimary: color
-        // })
     }
 
     const colorItems = useMemo(() => COLOR_PRIMARY_OPTIONS.map(option => ({

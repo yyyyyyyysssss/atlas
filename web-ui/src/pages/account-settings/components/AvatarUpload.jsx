@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from 'ahooks';
 import 'react-image-crop/dist/ReactCrop.css';
 import { simpleUploadFile } from '../../../services/FileService';
-import { changeAvatar } from '../../../services/UserProfileService';
+import { changeUserProfile } from '../../../services/UserProfileService';
 import { useDispatch } from 'react-redux';
 import { updateUserInfoPartial } from '../../../redux/slices/userSlice';
 
@@ -22,7 +22,10 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
     const imgRef = useRef(null);
 
     const { runAsync: simpleUploadFileAsync, loading: simpleUploadFileLoading } = useRequest(simpleUploadFile, { manual: true });
-    const { runAsync: changeAvatarAsync, loading: changeAvatarLoading } = useRequest(changeAvatar, { manual: true });
+
+    const { runAsync: changeUserProfileAsync, loading: changeUserProfileLoading } = useRequest(changeUserProfile, {
+        manual: true
+    })
 
     const handleBeforeUpload = (file) => {
         const reader = new FileReader();
@@ -43,20 +46,22 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
     const handleSetNewAvatar = async () => {
         const image = imgRef.current;
         if (!image || !completedCrop) return;
-        
+
         const scaleX = image.naturalWidth / image.width;
         const scaleY = image.naturalHeight / image.height;
         const offscreen = new OffscreenCanvas(completedCrop.width * scaleX, completedCrop.height * scaleY);
         const ctx = offscreen.getContext('2d');
         ctx.drawImage(image, completedCrop.x * scaleX, completedCrop.y * scaleY, completedCrop.width * scaleX, completedCrop.height * scaleY, 0, 0, completedCrop.width * scaleX, completedCrop.height * scaleY);
-        
+
         const blob = await offscreen.convertToBlob({ type: 'image/png' });
         const formData = new FormData();
         formData.append('file', new File([blob], 'avatar.png', { type: 'image/png' }));
-        
+
         const accessUrl = await simpleUploadFileAsync(formData);
-        await changeAvatarAsync(accessUrl);
-        dispatch(updateUserInfoPartial({ avatar: accessUrl }));
+        await changeUserProfileAsync({
+            avatar: accessUrl
+        })
+        dispatch(updateUserInfoPartial({ avatar: accessUrl }))
         message.success('修改成功');
         handleAvatarCropClose();
         onAvatarChange?.(accessUrl);
@@ -75,7 +80,7 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
                 open={avatarCropOpen.open}
                 onCancel={handleAvatarCropClose}
                 onOk={handleSetNewAvatar}
-                confirmLoading={simpleUploadFileLoading || changeAvatarLoading}
+                confirmLoading={simpleUploadFileLoading || changeUserProfileLoading}
                 width={400}
                 centered
                 title={<Typography.Title level={5} style={{ margin: 0 }}>{t('更新头像')}</Typography.Title>}
@@ -88,7 +93,7 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
                         circularCrop
                         onChange={(c) => setCrop(c)}
                         onComplete={handleCropComplete}
-                            >
+                    >
                         <img
                             ref={imgRef}
                             src={avatarCropOpen.previewImage}

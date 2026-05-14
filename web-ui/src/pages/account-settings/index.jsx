@@ -7,7 +7,7 @@ import PreferencesTab from './components/PreferencesTab';
 
 const AccountSettings = () => {
     const { token } = theme.useToken();
-    const [activeTab, setActiveTab] = useState('profile');
+    const [activeTab, setActiveTab] = useState('profile')
 
     return (
         <Flex justify="center" style={{ width: '100%', minHeight: '100%' }}>

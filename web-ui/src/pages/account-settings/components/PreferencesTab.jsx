@@ -3,7 +3,7 @@ import { Form, Typography, theme, Flex, Divider, Select, Segmented, Switch, Spac
 import { MonitorOutlined, CheckOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLOR_PRIMARY_OPTIONS, DEFAULT_PRIMARY_COLOR } from '../../../layouts/header/theme-color';
-import { changeAppearance, changeNotificationSetting } from '../../../services/UserProfileService';
+import { changeUserProfile } from '../../../services/UserProfileService';
 import { useRequest } from 'ahooks';
 import { switchLanguage, switchTheme, switchColorPrimary, setNotificationSetting } from '../../../redux/slices/userSlice';
 import { useTranslation } from 'react-i18next';
@@ -23,11 +23,7 @@ const PreferencesTab = () => {
 
     const { i18n } = useTranslation()
 
-    const { runAsync: changeAppearanceAsync, loading: changeAppearanceLoading } = useRequest(changeAppearance, {
-        manual: true
-    })
-
-    const { runAsync: changeNotificationSettingAsync, loading: changeNotificationSettingLoading } = useRequest(changeNotificationSetting, {
+    const { runAsync: changeUserProfileAsync, loading: changeUserProfileLoading } = useRequest(changeUserProfile, {
         manual: true
     })
 
@@ -50,8 +46,12 @@ const PreferencesTab = () => {
     const handleUpdate = (key, value) => {
         if (key === 'theme') {
             dispatch(switchTheme({ theme: value }))
-            changeAppearanceAsync({
-                theme: value
+            changeUserProfileAsync({
+                settings: {
+                    appearance: {
+                        theme: value
+                    }
+                }
             })
             return
         }
@@ -59,16 +59,24 @@ const PreferencesTab = () => {
         if (key === 'language') {
             dispatch(switchLanguage({ language: value }))
             i18n.changeLanguage(value)
-            changeAppearanceAsync({
-                language: value
+            changeUserProfileAsync({
+                settings: {
+                    appearance: {
+                        language: value
+                    }
+                }
             })
             return
         }
 
         if (key === 'colorPrimary') {
             dispatch(switchColorPrimary({ colorPrimary: value }))
-            changeAppearanceAsync({
-                colorPrimary: value
+            changeUserProfileAsync({
+                settings: {
+                    appearance: {
+                        colorPrimary: value
+                    }
+                }
             })
             return
         }
@@ -80,7 +88,11 @@ const PreferencesTab = () => {
                 [type]: checked
             }
             dispatch(setNotificationSetting({notificationSetting: updatedSettings}))
-            changeNotificationSettingAsync(updatedSettings)
+            changeUserProfileAsync({
+                settings: {
+                    notification: updatedSettings
+                }
+            })
         }
     }
 

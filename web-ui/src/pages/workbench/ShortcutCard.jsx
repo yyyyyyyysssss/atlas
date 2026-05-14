@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { findRouteByPath } from '../../router/router';
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
-import { changeWorkbenchShortcuts } from '../../services/UserProfileService';
+import { changeUserProfile } from '../../services/UserProfileService';
 import { updateShortcuts } from '../../redux/slices/userSlice';
 
 const { Text } = Typography;
@@ -30,7 +30,7 @@ const ShortcutCard = () => {
 
   const dispatch = useDispatch()
 
-  const { runAsync: changeWorkbenchShortcutsAsync, loading: changeWorkbenchShortcutsLoading } = useRequest(changeWorkbenchShortcuts, {
+  const { runAsync: changeUserProfileAsync, loading: changeUserProfileLoading } = useRequest(changeUserProfile, {
     manual: true
   })
 
@@ -74,9 +74,15 @@ const ShortcutCard = () => {
   }
 
   const handleOk = async () => {
-    await changeWorkbenchShortcutsAsync(targetKeys)
     setIsModalOpen(false)
     dispatch(updateShortcuts(targetKeys))
+    changeUserProfileAsync({
+      settings: {
+        workbench: {
+          shortcuts: targetKeys
+        }
+      }
+    })
   }
 
   const moveUp = (e, index) => {
@@ -146,7 +152,7 @@ const ShortcutCard = () => {
         onOk={handleOk}
         onCancel={() => setIsModalOpen(false)}
         okButtonProps={{
-          loading: changeWorkbenchShortcutsLoading
+          loading: changeUserProfileLoading
         }}
         width={600}
         centered

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -30,6 +31,9 @@ public class User extends BaseEntity {
     @TableField("full_name")
     private String fullName;
 
+    @TableField("motto")
+    private String motto;
+
     @TableField("enabled")
     private Boolean enabled;
 
@@ -44,4 +48,10 @@ public class User extends BaseEntity {
 
     @TableField(value = "settings", typeHandler = JacksonTypeHandler.class)
     private UserSetting settings;
+
+    @TableField("username_modify_count")
+    private Integer usernameModifyCount;
+
+    @TableField("username_last_modified")
+    private LocalDateTime usernameLastModified;
 }

@@ -4,10 +4,9 @@ package com.atlas.user.controller;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.user.domain.dto.ChangeAvatarDTO;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
-import com.atlas.user.domain.dto.ShortcutUpdateDTO;
-import com.atlas.user.domain.entity.AppearanceSetting;
+import com.atlas.user.domain.dto.ChangeUsernameDTO;
+import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
@@ -18,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @Description 当前登录用户的个人信息管理控制器
@@ -33,14 +31,14 @@ public class ProfileController {
     @Resource
     private ProfileService profileService;
 
-    @GetMapping("/user/info")
+    @GetMapping
     public Result<UserInfoVO> userInfo() {
         Long userId = UserContext.getRequiredUserId();
         UserInfoVO userInfoVO = profileService.userInfo(userId);
         return ResultGenerator.ok(userInfoVO);
     }
 
-    @GetMapping("/auth/info")
+    @GetMapping("/auth")
     public Result<AuthInfoVO> authInfo() {
         Long userId = UserContext.getRequiredUserId();
         AuthInfoVO authInfo = profileService.authInfo(userId);
@@ -55,38 +53,24 @@ public class ProfileController {
         return ResultGenerator.ok(myTeam);
     }
 
-    @PutMapping("/password")
-    public Result<?> changePassword(@RequestBody @Validated ChangePasswordDTO changePasswordDTO) {
+    @PatchMapping
+    public Result<?> profile(@RequestBody @Validated UserProfileDTO userProfileDTO) {
         Long userId = UserContext.getRequiredUserId();
-        Boolean b = profileService.changePassword(userId, changePasswordDTO);
-        return ResultGenerator.ok(b);
-    }
-
-    @PutMapping("/avatar")
-    public Result<?> changeAvatar(@RequestBody @Validated ChangeAvatarDTO changeAvatarDTO) {
-        Long userId = UserContext.getRequiredUserId();
-        Boolean b = profileService.changeAvatar(userId, changeAvatarDTO.getNewAvatarUrl());
-        return ResultGenerator.ok(b);
-    }
-
-    @PutMapping("/workbench/shortcuts")
-    public Result<?> updateShortcuts(@RequestBody @Validated ShortcutUpdateDTO shortcutUpdateDTO) {
-        Long userId = UserContext.getRequiredUserId();
-        profileService.updateShortcuts(userId,shortcutUpdateDTO.getShortcuts());
+        profileService.changeUserProfile(userId,userProfileDTO);
         return ResultGenerator.ok();
     }
 
-    @PutMapping("/appearance/settings")
-    public Result<?> updateAppearance(@RequestBody AppearanceSetting appearanceSetting) {
+    @PostMapping("/username")
+    public Result<?> username(@RequestBody @Validated ChangeUsernameDTO changeUsernameDTO) {
         Long userId = UserContext.getRequiredUserId();
-        profileService.updateUserAppearance(userId,appearanceSetting);
+        profileService.changeUsername(userId, changeUsernameDTO);
         return ResultGenerator.ok();
     }
 
-    @PutMapping("/notification/settings")
-    public Result<?> updateNotification(@RequestBody Map<String, Boolean> notificationSetting) {
+    @PostMapping("/password")
+    public Result<?> password(@RequestBody @Validated ChangePasswordDTO changePasswordDTO) {
         Long userId = UserContext.getRequiredUserId();
-        profileService.updateNotification(userId,notificationSetting);
+        profileService.changePassword(userId, changePasswordDTO);
         return ResultGenerator.ok();
     }
 

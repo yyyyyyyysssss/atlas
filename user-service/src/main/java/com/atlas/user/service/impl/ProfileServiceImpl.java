@@ -3,6 +3,8 @@ package com.atlas.user.service.impl;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
+import com.atlas.user.domain.dto.ChangeUsernameDTO;
+import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.*;
 import com.atlas.user.mapping.UserMapping;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,13 +50,23 @@ public class ProfileServiceImpl implements ProfileService {
     public UserInfoVO userInfo(Long userId) {
         User user = userService
                 .lambdaQuery()
-                .select(User::getUsername,User::getFullName,User::getEmail,User::getPhone, User::getAvatar, User::getSettings)
+                .select(
+                        User::getUsername,
+                        User::getFullName,
+                        User::getEmail,
+                        User::getPhone,
+                        User::getAvatar,
+                        User::getMotto,
+                        User::getUsernameModifyCount,
+                        User::getSettings
+                )
                 .eq(User::getId, userId)
                 .one();
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
         UserInfoVO userInfoVO = UserMapping.INSTANCE.toUserInfoVO(user);
+        userInfoVO.setIsUsernameModified(user.getUsernameModifyCount() > 1);
         // 用户所属组织
         UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
         if (userOrgMain != null) {
@@ -129,6 +142,60 @@ public class ProfileServiceImpl implements ProfileService {
         return authInfoVO;
     }
 
+
+    @Override
+    public void changeUserProfile(Long userId, UserProfileDTO userProfileDTO) {
+        User user = userService.findByUserId(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        if (userProfileDTO.getFullName() != null) {
+            user.setFullName(userProfileDTO.getFullName());
+        }
+        if (userProfileDTO.getAvatar() != null) {
+            user.setAvatar(userProfileDTO.getAvatar());
+        }
+        if (userProfileDTO.getMotto() != null) {
+            user.setMotto(userProfileDTO.getMotto());
+        }
+        if (userProfileDTO.getSettings() != null) {
+            UserSetting currentSettings = user.getSettings();
+            if (currentSettings == null) {
+                currentSettings = new UserSetting();
+            }
+            UserSetting newSettings = userProfileDTO.getSettings();
+            // 合并外观设置 (Appearance)
+            if (newSettings.getAppearance() != null) {
+                AppearanceSetting appearance = currentSettings.getAppearance();
+                if (appearance == null) appearance = new AppearanceSetting();
+                // 使用 MapStruct 转换器进行属性拷贝
+                UserMapping.INSTANCE.updateAppearanceSetting(newSettings.getAppearance(), appearance);
+                currentSettings.setAppearance(appearance);
+            }
+            // 合并工作台设置 (Workbench/Shortcuts)
+            if (newSettings.getWorkbench() != null) {
+                WorkbenchSetting workbench = currentSettings.getWorkbench();
+                if (workbench == null) workbench = new WorkbenchSetting();
+                // 如果传了 shortcuts，直接覆盖
+                if (newSettings.getWorkbench().getShortcuts() != null) {
+                    workbench.setShortcuts(newSettings.getWorkbench().getShortcuts());
+                }
+                currentSettings.setWorkbench(workbench);
+            }
+
+            // 合并通知设置 (Notification)
+            if (newSettings.getNotification() != null) {
+                Map<String, Boolean> currentNotification = currentSettings.getNotification();
+                if (currentNotification == null) currentNotification = new HashMap<>();
+                // putAll 实现 Map 增量更新
+                currentNotification.putAll(newSettings.getNotification());
+                currentSettings.setNotification(currentNotification);
+            }
+            user.setSettings(currentSettings);
+        }
+        userService.updateById(user);
+    }
+
     @Override
     public List<OrgMemberVO> getMyTeam(Long userId) {
         // 用户所属组织
@@ -141,7 +208,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    public Boolean changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
+    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
         User user = userService.findByUserId(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
@@ -158,88 +225,36 @@ public class ProfileServiceImpl implements ProfileService {
                 .lambda()
                 .set(User::getPassword, newEncodedPassword)
                 .eq(User::getId, userId);
-        return userService.update(userUpdateWrapper);
+        userService.update(userUpdateWrapper);
     }
 
     @Override
-    public Boolean changeAvatar(Long userId, String avatarUrl) {
+    public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO) {
         User user = userService.findByUserId(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-        userUpdateWrapper
-                .lambda()
-                .set(User::getAvatar, avatarUrl)
-                .eq(User::getId, userId);
-        return userService.update(userUpdateWrapper);
-    }
-
-    @Override
-    public void updateShortcuts(Long userId, List<String> shortcuts) {
-        UserSetting settings = getUserSetting(userId);
-        WorkbenchSetting workbench = settings.getWorkbench();
-        if (workbench == null) {
-            workbench = new WorkbenchSetting();
+        Integer oldModifyCount = user.getUsernameModifyCount();
+        if (user.getUsernameModifyCount() >= 1) {
+            throw new BusinessException("账号只能修改一次，您已经修改过了");
         }
-        workbench.setShortcuts(shortcuts);
-
-        settings.setWorkbench(workbench);
-        User user = new User();
-        user.setId(userId);
-        user.setSettings(settings);
-        userService.updateById(user);
-    }
-
-    @Override
-    public void updateUserAppearance(Long userId, AppearanceSetting appearanceSetting) {
-        UserSetting settings = getUserSetting(userId);
-
-        AppearanceSetting appearance = settings.getAppearance();
-        if (appearance == null) {
-            appearance = new AppearanceSetting();
+        String username = changeUsernameDTO.getUsername();
+        boolean exists = userService.lambdaQuery().eq(User::getUsername, username).exists();
+        if (exists) {
+            throw new BusinessException("该账号已被占用");
         }
-        UserMapping.INSTANCE.updateAppearanceSetting(appearanceSetting, appearance);
 
-        settings.setAppearance(appearance);
-
-        User user = new User();
-        user.setId(userId);
-        user.setSettings(settings);
-        userService.updateById(user);
-    }
-
-    @Override
-    public void updateNotification(Long userId, Map<String, Boolean> notificationSetting) {
-        UserSetting settings = getUserSetting(userId);
-
-        Map<String, Boolean> notification = settings.getNotification();
-        if (notification == null) {
-            notification = new HashMap<>();
-        }
-        notification.putAll(notificationSetting);
-
-        settings.setNotification(notification);
-
-        User user = new User();
-        user.setId(userId);
-        user.setSettings(settings);
-        userService.updateById(user);
-    }
-
-    private UserSetting getUserSetting(Long userId) {
-        User user = userService.
-                lambdaQuery()
-                .select(User::getId, User::getSettings)
+        boolean success = userService.lambdaUpdate()
+                .set(User::getUsername, username)
+                .set(User::getUsernameModifyCount, oldModifyCount + 1)
+                .set(User::getUsernameLastModified, LocalDateTime.now())
+                // WHERE 条件
                 .eq(User::getId, userId)
-                .one();
-        if (user == null) {
-            throw new BusinessException("用户不存在");
+                .eq(User::getUsernameModifyCount, oldModifyCount) // 只有当数据库里的值没变时才更新
+                .lt(User::getUsernameModifyCount, 1)              // 再次强制限制小于1
+                .update();
+        if (!success) {
+            throw new BusinessException("操作过于频繁，请稍后重试");
         }
-        UserSetting settings = user.getSettings();
-        if (settings == null) {
-            settings = new UserSetting();
-        }
-        return settings;
     }
 }

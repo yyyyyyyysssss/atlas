@@ -4,13 +4,13 @@ import httpWrapper from "./AxiosWrapper"
 
 export const fetchUserInfo = async () => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/user/info'))
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile'))
 }
 
 
 export const fetchAuthInfo = async () => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/auth/info'))
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/auth'))
 }
 
 export const fetchUserTeamMember = async () => {
@@ -20,35 +20,18 @@ export const fetchUserTeamMember = async () => {
 
 export const changePassword = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/password', req))
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/profile/password', req))
 }
 
+export const changeUserProfile = async (req) => {
 
-
-export const changeAvatar = async (newAvatarUrl) => {
-    const req = {
-        newAvatarUrl: newAvatarUrl
-    }
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/avatar', req))
+    return apiRequestWrapper(() => httpWrapper.patch('/api/user/profile', req))
 }
 
-export const changeWorkbenchShortcuts = async (shortcuts) => {
-    const req = {
-        shortcuts: shortcuts
-    }
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/workbench/shortcuts', req))
+export const changeUsername = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/user/profile/username', req))
 }
-
-export const changeAppearance = async (appearance) => {
-
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/appearance/settings', appearance))
-}
-
-export const changeNotificationSetting = async (notificationSetting) => {
-
-    return apiRequestWrapper(() => httpWrapper.put('/api/user/profile/notification/settings', notificationSetting))
-}
-
 
 export const getUserWorkSchedule = async (startDate, endDate) => {
 

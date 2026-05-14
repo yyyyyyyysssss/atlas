@@ -35,6 +35,10 @@ public class UserInfoVO {
 
     private String avatar;
 
+    private String motto;
+
     private UserSetting settings;
+
+    private Boolean isUsernameModified;
 
 }

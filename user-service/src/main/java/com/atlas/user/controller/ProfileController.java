@@ -8,7 +8,6 @@ import com.atlas.user.domain.dto.ChangeAvatarDTO;
 import com.atlas.user.domain.dto.ChangePasswordDTO;
 import com.atlas.user.domain.dto.ShortcutUpdateDTO;
 import com.atlas.user.domain.entity.AppearanceSetting;
-import com.atlas.user.domain.entity.NotificationSetting;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
@@ -19,6 +18,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description 当前登录用户的个人信息管理控制器
@@ -84,7 +84,7 @@ public class ProfileController {
     }
 
     @PutMapping("/notification/settings")
-    public Result<?> updateNotification(@RequestBody NotificationSetting notificationSetting) {
+    public Result<?> updateNotification(@RequestBody Map<String, Boolean> notificationSetting) {
         Long userId = UserContext.getRequiredUserId();
         profileService.updateNotification(userId,notificationSetting);
         return ResultGenerator.ok();

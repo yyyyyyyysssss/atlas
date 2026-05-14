@@ -91,9 +91,9 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
                 try {
                     // 根据渠道 TargetType 解析账号
-                    List<ResolvedTarget> accounts = accountResolver.resolve(channel, ctx.getTargetType(), ctx.getTargets());
+                    List<ResolvedTarget> accounts = accountResolver.resolve(channel, ctx.getTargetType(), ctx.getTargets(),ctx.getCategory());
                     if (accounts.isEmpty()) {
-                        throw new NotificationException(NotificationErrorCode.RECIPIENT_NOT_FOUND);
+                        continue;
                     }
 
                     // 构建模型

@@ -2,6 +2,8 @@ package com.atlas.user.domain.entity;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class UserSetting {
 
@@ -9,6 +11,6 @@ public class UserSetting {
 
     private AppearanceSetting appearance;
 
-    private NotificationSetting notification;
+    private Map<String, Boolean> notification;
 
 }

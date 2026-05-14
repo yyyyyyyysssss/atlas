@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { COLOR_PRIMARY_OPTIONS, DEFAULT_PRIMARY_COLOR } from '../../../layouts/header/theme-color';
 import { changeAppearance, changeNotificationSetting } from '../../../services/UserProfileService';
 import { useRequest } from 'ahooks';
-import { switchLanguage, switchTheme, switchColorPrimary } from '../../../redux/slices/userSlice';
+import { switchLanguage, switchTheme, switchColorPrimary, setNotificationSetting } from '../../../redux/slices/userSlice';
 import { useTranslation } from 'react-i18next';
 import { fetchDictByCode } from '../../../services/SystemService';
 
@@ -17,7 +17,7 @@ const PreferencesTab = () => {
     const language = useSelector(state => state.user.userInfo?.settings?.appearance?.language || 'zh')
     const themeValue = useSelector(state => state.user.userInfo?.settings?.appearance?.theme || 'light')
     const colorPrimary = useSelector(state => state.user.userInfo?.settings?.appearance?.colorPrimary || DEFAULT_PRIMARY_COLOR)
-    const notificationSetting = useSelector(state => state.user.userInfo?.settings?.notification || {})
+    const notificationSetting = useSelector(state => state.user.userInfo?.settings?.notification)
 
     const dispatch = useDispatch()
 
@@ -71,6 +71,16 @@ const PreferencesTab = () => {
                 colorPrimary: value
             })
             return
+        }
+
+        if (key = 'notification') {
+            const { type, checked } = value
+            const updatedSettings = {
+                ...notificationSetting,
+                [type]: checked
+            }
+            dispatch(setNotificationSetting({notificationSetting: updatedSettings}))
+            changeNotificationSettingAsync(updatedSettings)
         }
     }
 
@@ -156,11 +166,8 @@ const PreferencesTab = () => {
                                 <Text type="secondary">{type.description || '暂无描述'}</Text>
                             </div>
                             <Switch
-                                defaultChecked
-                                onChange={(checked) => {
-                                    // 这里后续可以调用后端接口保存用户的订阅偏好
-                                    console.log(`Changed notification preference for ${type.value} to ${checked}`)
-                                }}
+                                value={notificationSetting?.[type.value] ?? true}
+                                onChange={(checked) => handleUpdate('notification', { type: type.value, checked: checked })}
                             />
                         </Flex>
                     ))

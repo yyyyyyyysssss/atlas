@@ -8,7 +8,6 @@ import com.atlas.common.core.mapping.LocalDateTimeMapper;
 import com.atlas.user.domain.dto.UserCreateDTO;
 import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.AppearanceSetting;
-import com.atlas.user.domain.entity.NotificationSetting;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.domain.vo.UserInfoVO;
 import com.atlas.user.domain.vo.UserVO;
@@ -49,8 +48,5 @@ public interface UserMapping {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateAppearanceSetting(AppearanceSetting o, @MappingTarget AppearanceSetting t);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateNotificationSetting(NotificationSetting o, @MappingTarget NotificationSetting t);
 
 }

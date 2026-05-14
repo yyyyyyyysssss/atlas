@@ -3,12 +3,12 @@ package com.atlas.user.service;
 
 import com.atlas.user.domain.dto.ChangePasswordDTO;
 import com.atlas.user.domain.entity.AppearanceSetting;
-import com.atlas.user.domain.entity.NotificationSetting;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ProfileService {
 
@@ -26,6 +26,6 @@ public interface ProfileService {
 
     void updateUserAppearance(Long userId, AppearanceSetting appearance);
 
-    void updateNotification(Long userId, NotificationSetting notificationSetting);
+    void updateNotification(Long userId, Map<String, Boolean> notificationSetting);
 
 }

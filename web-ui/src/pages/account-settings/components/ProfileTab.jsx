@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Upload, Avatar, Typography, theme, Flex, Divider, App, Tooltip } from 'antd';
+import { Form, Input, Button, Typography, theme, Flex, Divider, App, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Pencil } from 'lucide-react';
-
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import AvatarUpload from './AvatarUpload';
 const { Title, Paragraph } = Typography;
 
 const ProfileTab = ({ onNavigateToSecurity }) => {
-    const { token } = theme.useToken();
-    const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
-    const { message } = App.useApp();
-    const [isUsernameModified, setIsUsernameModified] = useState(false);
+
+    const { t } = useTranslation()
+
+    const { token } = theme.useToken()
+
+    const [form] = Form.useForm()
+
+    const { fullName, avatar, email, username } = useSelector(state => state.user.userInfo)
+
+    const [loading, setLoading] = useState(false)
+
+    const { message } = App.useApp()
+
+    const [isUsernameModified, setIsUsernameModified] = useState(false)
 
     const handleSaveProfile = async () => {
         setLoading(true);
@@ -31,10 +41,11 @@ const ProfileTab = ({ onNavigateToSecurity }) => {
 
             <Flex gap={32} align="flex-start" style={{ marginBottom: 32 }}>
                 <div style={{ flex: 1 }}>
-                    <Form form={form} layout="vertical" initialValues={{ displayName: 'AtlasAdmin', username: 'u_juqhs2k', email: 'admin@atlas.com' }}>
+                    <Form form={form} layout="vertical" initialValues={{ displayName: fullName, username: username, email: email }}>
                         <Form.Item label="显示名称" name="displayName" rules={[{ required: true }]}>
-                            <Input size="large" placeholder="请输入您的姓名或昵称" />
+                            <Input size="large" />
                         </Form.Item>
+
                         <Form.Item
                             label="账号"
                             name="username"
@@ -57,6 +68,7 @@ const ProfileTab = ({ onNavigateToSecurity }) => {
                                 }
                             />
                         </Form.Item>
+
                         <Form.Item
                             label="邮箱"
                             name="email"
@@ -69,56 +81,20 @@ const ProfileTab = ({ onNavigateToSecurity }) => {
                         >
                             <Input size="large" disabled />
                         </Form.Item>
+
                         <Form.Item label="个人简介" name="bio">
-                            <Input.TextArea rows={4} placeholder="简单介绍一下你自己..." />
+                            <Input.TextArea rows={4} />
                         </Form.Item>
+
                         <Form.Item>
-                            <Button type="primary" size="large" onClick={handleSaveProfile} loading={loading}>
-                                保存更改
-                            </Button>
+                            <Button type="primary" size="large" onClick={handleSaveProfile} loading={loading}>保存更改</Button>
                         </Form.Item>
                     </Form>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                    <Upload
-                        showUploadList={false}
-                        maxCount={1}
-                        accept='image/*'
-                        beforeUpload={() => { return false; }}
-                    >
-                        <div style={{
-                            position: 'relative',
-                            cursor: 'pointer',
-                            padding: 4,
-                            transition: 'all 0.3s',
-                            display: 'inline-block'
-                        }}>
-                            <Avatar
-                                size={150}
-                                src="/logo128_eclipse.svg"
-                                style={{
-                                    cursor: 'pointer',
-                                    backgroundColor: token.colorBgContainer,
-                                    boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
-                                }}
-                            />
-                            <div style={{
-                                position: 'absolute',
-                                bottom: 8,
-                                left: 8,
-                                background: token.colorBgContainer,
-                                borderRadius: '50%',
-                                padding: '6px',
-                                boxShadow: token.boxShadowSecondary,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                border: `1px solid ${token.colorBorderSecondary}`
-                            }}>
-                                <Pencil color={token.colorPrimary} size={18} />
-                            </div>
-                        </div>
-                    </Upload>
+
+                {/* 头像区域 - 保持在右侧 */}
+                <div style={{ padding: '24px 0' }}>
+                    <AvatarUpload avatar={avatar} onAvatarChange={() => { }} />
                 </div>
             </Flex>
         </div>

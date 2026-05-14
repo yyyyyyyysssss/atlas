@@ -2,10 +2,12 @@ package com.atlas.notification.service;
 
 
 import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.NotificationCategory;
 import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserSettingsDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.notification.domain.mode.ResolvedTarget;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +49,7 @@ public class AccountResolver {
         FIELD_GETTER.put(TargetType.PHONE, UserDTO::getPhone);
     }
 
-    public List<ResolvedTarget> resolve(ChannelType channel, TargetType targetType, List<String> targets) {
+    public List<ResolvedTarget> resolve(ChannelType channel, TargetType targetType, List<String> targets, NotificationCategory category) {
         if (CollectionUtils.isEmpty(targets) && !targetType.equals(TargetType.ALL)) {
             return Collections.emptyList();
         }
@@ -62,18 +64,33 @@ public class AccountResolver {
         };
         // 转换已存在系统的用户
         Function<UserDTO, String> getter = getGetter(requiredType);
+        // 愿意接收的
         List<ResolvedTarget> resolvedList = new ArrayList<>(users.stream()
+                .filter(user -> Optional.ofNullable(user.getSettings())
+                        .map(s -> s.isNotificationEnabled(category.name()))
+                        .orElse(true) // 只有明确获取到 false 时，结果才为 false，其余（null）全为 true
+                )
                 .map(u -> new ResolvedTarget(u.getId(), getter.apply(u)))
                 .filter(rt -> StringUtils.isNotBlank(rt.getAccount()))
                 .distinct()
                 .toList());
+        // 明确拒绝接收的系统用户账号（关键：防止匿名逻辑误伤）
+        Set<String> rejectedAccounts = users.stream()
+                .filter(user -> Optional.ofNullable(user.getSettings())
+                        .map(s -> s.isNotificationEnabled(category.name()))
+                        .map(enabled -> !enabled) // 显式设置为 false 的
+                        .orElse(false))
+                .map(getter)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
         // 处理匿名/外部目标
         if (targetType == requiredType && !targetType.equals(TargetType.ALL)) {
             Set<String> resolvedAccounts = resolvedList.stream()
                     .map(ResolvedTarget::getAccount)
                     .collect(Collectors.toSet());
             targets.stream()
-                    .filter(t -> !resolvedAccounts.contains(t))
+                    // 既不在已解析列表中，也不在明确拒绝的黑名单中
+                    .filter(t -> !resolvedAccounts.contains(t) && !rejectedAccounts.contains(t) )
                     .forEach(t -> resolvedList.add(new ResolvedTarget(null, t)));
         }
 

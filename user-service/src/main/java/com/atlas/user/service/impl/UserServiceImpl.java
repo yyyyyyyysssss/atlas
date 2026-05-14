@@ -6,30 +6,26 @@ import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.response.Result;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.common.core.response.Result;
+import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.domain.dto.*;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
-import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import com.atlas.user.utils.PasswordGeneratorUtils;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
@@ -216,39 +212,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public List<UserDTO> findByIdentifier(Collection<?> identifiers) {
-        if (CollectionUtils.isEmpty(identifiers)) {
-            log.warn("findByIdentifier called with empty identifiers");
-            return Collections.emptyList();
-        }
+
+        if (CollectionUtils.isEmpty(identifiers)) return Collections.emptyList();
+
         Object first = identifiers.iterator().next();
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getEnabled, true);
+
+        // 判断是 ID 查询还是 账号查询
         if (first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))) {
-            queryWrapper.in(User::getId, identifiers);
-        } else {
-            // 否则走账号查询
-            queryWrapper.in(User::getUsername, identifiers);
+            return findUsersByField(User::getId, (Collection<Object>) identifiers);
         }
-        List<User> users = this.list(queryWrapper);
-        if (CollectionUtils.isEmpty(users)) {
-            return Collections.emptyList();
-        }
-        return users.stream()
-                .filter(Objects::nonNull)
-                .map(UserMapping.INSTANCE::toUserDTO)
-                .collect(Collectors.toList());
+        return findUsersByField(User::getUsername, (Collection<Object>) identifiers);
     }
 
     @Override
     public List<UserDTO> findByEmail(Collection<String> emails) {
 
-        return findListBy(User::getEmail, emails.toArray());
+        return findUsersByField(User::getEmail, emails);
     }
 
     @Override
     public List<UserDTO> findByPhone(Collection<String> phones) {
 
-        return findListBy(User::getPhone, phones);
+        return findUsersByField(User::getPhone, phones);
     }
 
     // 根据角色查询用户
@@ -501,16 +486,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
 
-    public <R> List<UserDTO> findListBy(SFunction<User, R> column, Object... values) {
-        if (values == null || values.length == 0) {
+    /**
+     * 通用用户查询抽象
+     * @param field 数据库字段对应的 Lambda 表达式
+     * @param values 查询的值集合
+     * @return UserDTO 列表
+     */
+    private <T> List<UserDTO> findUsersByField(SFunction<User, T> field, Collection<T> values) {
+        if (CollectionUtils.isEmpty(values)) {
             return Collections.emptyList();
         }
-        List<User> users = userMapper.selectList(Wrappers.lambdaQuery(User.class)
-                .eq(User::getEnabled,true).in(column, values));
-        if (CollectionUtils.isEmpty(users)) {
-            return Collections.emptyList();
-        }
-        return UserMapping.INSTANCE.toUserDTO(users);
+
+        List<User> users = this.lambdaQuery()
+                .eq(User::getEnabled, true)
+                .in(field, values)
+                .list();
+
+        return users.stream()
+                .map(UserMapping.INSTANCE::toUserDTO)
+                .toList();
     }
 
     private String generateUniqueUsername() {

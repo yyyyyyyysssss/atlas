@@ -37,6 +37,13 @@ export const userSlice = createSlice({
                 }
             }
         },
+        updateUserInfoPartial: (state, action) => {
+            const { payload } = action
+            state.userInfo = {
+                ...state.userInfo,
+                ...payload
+            }
+        },
         updateShortcuts: (state, action) => {
             const shortcuts = action.payload
             if (!state.userInfo.settings) {
@@ -72,9 +79,27 @@ export const userSlice = createSlice({
             const { notificationUnreadCount } = payload
             state.userInfo.notificationUnreadCount = notificationUnreadCount
         },
+        setNotificationSetting: (state, action) => {
+            const { payload } = action
+            const { notificationSetting } = payload
+            if (!state.userInfo.settings) {
+                state.userInfo.settings = {}
+            }
+            state.userInfo.settings.notification = notificationSetting
+        }
     }
 })
 
-export const { reset, setUserInfo, updateShortcuts, switchTheme, switchColorPrimary, switchLanguage, setTodayTaskCount, setNotificationUnreadCount } = userSlice.actions
-
+export const {
+    reset,
+    setUserInfo,
+    updateUserInfoPartial,
+    updateShortcuts,
+    switchTheme,
+    switchColorPrimary,
+    switchLanguage,
+    setTodayTaskCount,
+    setNotificationUnreadCount,
+    setNotificationSetting
+} = userSlice.actions
 export default userSlice.reducer

@@ -210,14 +210,14 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    public void updateNotification(Long userId, NotificationSetting notificationSetting) {
+    public void updateNotification(Long userId, Map<String, Boolean> notificationSetting) {
         UserSetting settings = getUserSetting(userId);
 
-        NotificationSetting notification = settings.getNotification();
+        Map<String, Boolean> notification = settings.getNotification();
         if (notification == null) {
-            notification = new NotificationSetting();
+            notification = new HashMap<>();
         }
-        UserMapping.INSTANCE.updateNotificationSetting(notificationSetting, notification);
+        notification.putAll(notificationSetting);
 
         settings.setNotification(notification);
 

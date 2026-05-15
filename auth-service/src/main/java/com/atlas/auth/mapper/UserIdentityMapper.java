@@ -1,6 +1,7 @@
-package com.atlas.user.mapper;
+package com.atlas.auth.mapper;
 
-import com.atlas.user.domain.entity.UserIdentity;
+
+import com.atlas.auth.domain.entity.UserIdentity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

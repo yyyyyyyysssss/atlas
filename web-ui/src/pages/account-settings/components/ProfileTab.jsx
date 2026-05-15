@@ -127,10 +127,12 @@ const ProfileTab = ({ onNavigateToSecurity }) => {
                         <Form.Item label="个人签名" name="motto">
                             <Input.TextArea rows={4} />
                         </Form.Item>
+                        {!isUsernameEditing && (
+                            <Form.Item>
+                                <Button type="primary" size="large" onClick={handleSaveProfile} loading={changeUserProfileLoading}>保存更改</Button>
+                            </Form.Item>
+                        )}
 
-                        <Form.Item>
-                            <Button type="primary" size="large" onClick={handleSaveProfile} loading={changeUserProfileLoading}>保存更改</Button>
-                        </Form.Item>
                     </Form>
                 </div>
 

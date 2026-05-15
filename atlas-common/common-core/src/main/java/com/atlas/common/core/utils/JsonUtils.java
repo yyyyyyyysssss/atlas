@@ -84,4 +84,11 @@ public class JsonUtils {
         }
     }
 
+    public static <T> T convert(Object fromValue, TypeReference<T> toValueTypeRef) {
+        if (fromValue == null) {
+            return null;
+        }
+        return getMapper().convertValue(fromValue, toValueTypeRef);
+    }
+
 }

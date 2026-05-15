@@ -303,8 +303,8 @@ const Login = () => {
 
     }
 
-    const authorizeCodeLogin = async () => {
-        const authorizeUrl = await getAuthorizeUrlAsync('atlas')
+    const authorizeCodeLogin = async (clientName) => {
+        const authorizeUrl = await getAuthorizeUrlAsync(clientName)
         const verifier = generateVerifier()
         const challenge = await generateChallenge(verifier)
         sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
@@ -623,6 +623,7 @@ const Login = () => {
                                     style={{ fontSize: 24, color: '#374151', cursor: 'pointer', transition: 'all 0.2s ease' }}
                                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#111827'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#374151'; }}
+                                    onClick={() => authorizeCodeLogin('gitHub')}
                                     title="GitHub"
                                 />
                                 <Dropdown
@@ -632,7 +633,7 @@ const Login = () => {
                                                 key: 'auth_code',
                                                 label: '授权码登录',
                                                 icon: <KeyOutlined />,
-                                                onClick: authorizeCodeLogin
+                                                onClick: () => authorizeCodeLogin('atlas')
                                             },
                                             {
                                                 key: 'device_code',
@@ -662,6 +663,7 @@ const Login = () => {
                                     style={{ fontSize: 24, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
                                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#EA4335'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#6b7280'; }}
+                                    onClick={() => authorizeCodeLogin('google')}
                                     title="Google"
                                 />
                             </Flex>
@@ -728,7 +730,7 @@ const Login = () => {
                                     onClick={refreshQrCode}
                                     value={qrCodeData.url || 'https://atlas.ys0921.sbs'}
                                     status={
-                                        qrTicketLoading || getQrScanUrlLoading ? 'loading' : 
+                                        qrTicketLoading || getQrScanUrlLoading ? 'loading' :
                                             (qrCodeData.status === 'EXPIRED' || !qrCodeData.url ? 'expired' : 'active')
                                     }
                                     onRefresh={refreshQrCode}

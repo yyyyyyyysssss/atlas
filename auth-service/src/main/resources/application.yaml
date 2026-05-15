@@ -75,26 +75,39 @@ security:
     secretKey: 209E335266556A586E3272357538782F413A4428472B4B6250645367566B5B76
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 7d
-  other-login:
-    atlas:
-      clientName: Atlas
-      clientId: 32b00b1e89af-90d2e0e46d20ebb92f6c
-      clientSecret: ${OAUTH2_ATLAS_CLIENT_SECRET}
-      redirectUrl: ${security.uiUrl}/oauth2/callback/atlas
-      scope: "openid profile email phone"
-      authorizeCodeUrl: ${security.issuerUrl}/api/auth/oauth2/authorize?client_id=${security.other-login.atlas.clientId}&scope=${security.other-login.atlas.scope}&response_type=code&redirect_uri=${security.other-login.atlas.redirectUrl}
-      qrScanUrl: /api/auth/oauth2/qr/ticket?client_id=${security.other-login.atlas.clientId}&scope=${security.other-login.atlas.scope}&redirect_uri=${security.other-login.atlas.redirectUrl}
-      tokenUrl: /oauth2/token
-      userInfoUrl: /userinfo
-    google:
-      clientName: Google
-      clientId: 848791233261-gsq163m89ik7u9od9erunaudnvekf2r5.apps.googleusercontent.com
-      clientSecret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
-      redirectUrl: https://atlas.ys0921.sbs:4443/login
-      scope: https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile+openid
-      authCodeUrl: https://accounts.google.com/o/oauth2/v2/auth?client_id=${security.other-login.google.clientId}&scope=${security.other-login.google.scope}&response_type=code&access_type=offline&prompt=consent&state=Google&redirect_uri=${security.other-login.google.redirectUrl}
-      tokenUrl: https://oauth2.googleapis.com/token
-      userInfoUrl: https://www.googleapis.com/oauth2/v3/userinfo
+  oauth2:
+    login:
+      providers:
+        atlas:
+          clientName: Atlas
+          clientId: 32b00b1e89af-90d2e0e46d20ebb92f6c
+          clientSecret: ${OAUTH2_ATLAS_CLIENT_SECRET}
+          redirectUrl: ${security.uiUrl}/oauth2/callback/atlas
+          scope: "openid profile email phone"
+          authorizeCodeEndpoint: /api/auth/oauth2/authorize
+          qrScanEndpoint: /api/auth/oauth2/qr/ticket
+          tokenEndpoint: /oauth2/token
+          userInfoEndpoint: /userinfo
+        google:
+          clientName: Google
+          clientId: 848791233261-gsq163m89ik7u9od9erunaudnvekf2r5.apps.googleusercontent.com
+          clientSecret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
+          redirectUrl: ${security.uiUrl}/oauth2/callback/google
+          scope: https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile+openid
+          authorizeCodeEndpoint: https://accounts.google.com/o/oauth2/v2/auth
+          tokenEndpoint: https://oauth2.googleapis.com/token
+          userInfoEndpoint: https://www.googleapis.com/oauth2/v3/userinfo
+        github:
+          clientName: Github
+          clientId: bbf124ed2c08a0ea0ad0
+          clientSecret: ${OAUTH2_GITHUB_CLIENT_SECRET}
+          redirectUrl: ${security.uiUrl}/oauth2/callback/github
+          scope: user
+          authorizeCodeEndpoint: https://github.com/login/oauth/authorize
+          tokenEndpoint: https://github.com/login/oauth/access_token
+          userInfoEndpoint: https://api.github.com/user
+          userEmailsEndpoint: https://api.github.com/user/emails
+
 
 logging:
   level:
@@ -227,7 +240,7 @@ http:
     # 是否跳过 HTTPS 证书校验（仅限 dev/test，生产必须为 false）
     insecureSkipVerify: true
     # HTTP 代理地址
-    proxy:
+    proxy: 'http://127.0.0.1:1081'
 
 
 atlas:

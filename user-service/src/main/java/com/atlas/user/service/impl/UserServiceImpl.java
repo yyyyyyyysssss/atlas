@@ -9,11 +9,15 @@ import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.mybatis.enums.DataScope;
-import com.atlas.user.domain.dto.*;
+import com.atlas.user.domain.dto.UserCreateDTO;
+import com.atlas.user.domain.dto.UserOrgDTO;
+import com.atlas.user.domain.dto.UserQueryDTO;
+import com.atlas.user.domain.dto.UserUpdateDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
+import com.atlas.user.event.UserAvatarSyncEvent;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
@@ -30,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -66,7 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final FileApi fileApi;
 
-    private final UserIdentityService userIdentityService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private final String defaultRoleCode = "role_member";
 
@@ -83,48 +88,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new UsernameNotFoundException("用户不存在: " + username);
         }
         return getUserAuthDTO(user);
-    }
-
-    @Override
-    @Transactional
-    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO) {
-        String provider = externalIdentityDTO.getProvider();
-        String sub = externalIdentityDTO.getSub();
-        UserIdentityDTO existingIdentity = userIdentityService.getByIdentity(provider, sub);
-        if (existingIdentity != null) {
-            // 如果身份已存在，直接返回关联的主表用户名
-            User user = this.getById(existingIdentity.getUserId());
-            return UserMapping.INSTANCE.toUserDTO(user);
-        }
-        // 身份不存在，尝试通过邮箱/手机号找现有的用户
-        String username = StringUtils.firstNonEmpty(externalIdentityDTO.getEmail(), externalIdentityDTO.getPhone());
-        User user = null;
-        try {
-            user = findByUsername(username);
-        }catch (UsernameNotFoundException e){
-            // 忽略不存在
-        }
-        if(user == null) {
-            // 身份不存在，开始注册流程
-            UserCreateDTO userCreateDTO = new UserCreateDTO();
-            userCreateDTO.setUsername(generateUniqueUsername());
-            userCreateDTO.setFullName(externalIdentityDTO.getFullName());
-            userCreateDTO.setEmail(externalIdentityDTO.getEmail());
-            userCreateDTO.setPhone(externalIdentityDTO.getPhone());
-            userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
-            Role defaultRole = roleService.findByCode(defaultRoleCode);
-            userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
-            user = this.saveUser(userCreateDTO);
-        }
-        // 创建身份关联记录
-        UserIdentityDTO userIdentityDTO = new UserIdentityDTO();
-        userIdentityDTO.setId(IdGen.genId());
-        userIdentityDTO.setIdentifier(externalIdentityDTO.getSub());
-        userIdentityDTO.setUserId(user.getId());
-        userIdentityDTO.setVerified(true);
-        userIdentityDTO.setIdentityType(externalIdentityDTO.getProvider());
-        userIdentityService.addUserIdentity(user.getId(), List.of(userIdentityDTO));
-        return UserMapping.INSTANCE.toUserDTO(user);
     }
 
     @Override
@@ -256,27 +219,55 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional
     public UserCreateVO createUser(UserCreateDTO userCreateDTO) {
+        String initPassword = PasswordGeneratorUtils.generate(16);
+        userCreateDTO.setPassword(initPassword);
         User user = saveUser(userCreateDTO);
         UserCreateVO userCreateVO = new UserCreateVO();
         userCreateVO.setId(user.getId());
         userCreateVO.setUsername(user.getUsername());
+        userCreateVO.setInitialPassword(initPassword);
         return userCreateVO;
+    }
+
+    @Override
+    @Transactional
+    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO) {
+        // 身份不存在，尝试通过邮箱/手机号找现有的用户
+        String username = StringUtils.firstNonEmpty(externalIdentityDTO.getEmail(), externalIdentityDTO.getPhone());
+        if (StringUtils.isEmpty(username)){
+            throw new BusinessException("无法获取用户唯一标识");
+        }
+        try {
+            User user = findByUsername(username);
+            return UserMapping.INSTANCE.toUserDTO(user);
+        }catch (UsernameNotFoundException e){
+            // 身份不存在，开始注册流程
+            UserCreateDTO userCreateDTO = new UserCreateDTO();
+            userCreateDTO.setUsername(generateUniqueUsername());
+            userCreateDTO.setFullName(externalIdentityDTO.getFullName());
+            userCreateDTO.setEmail(externalIdentityDTO.getEmail());
+            userCreateDTO.setPhone(externalIdentityDTO.getPhone());
+            userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
+            Role defaultRole = roleService.findByCode(defaultRoleCode);
+            userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
+            User newUser = this.saveUser(userCreateDTO);
+            // 发布事件：通知监听器去下载 Google/GitHub 头像
+            if (StringUtils.isNotEmpty(externalIdentityDTO.getAvatar())) {
+                log.info("发布头像同步事件, userId: {}", newUser.getId());
+                applicationEventPublisher.publishEvent(new UserAvatarSyncEvent(newUser.getId(), externalIdentityDTO.getAvatar()));
+            }
+            return UserMapping.INSTANCE.toUserDTO(newUser);
+        }
     }
 
     @Transactional
     public User saveUser(UserCreateDTO userCreateDTO) {
         User user = UserMapping.INSTANCE.toUser(userCreateDTO);
         user.setId(IdGen.genId());
-        UserCreateVO userCreateVO = new UserCreateVO();
-        String password;
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            password = PasswordGeneratorUtils.generate(16);
-            userCreateVO.setInitialPassword(password);
-        } else {
-            password = user.getPassword();
+        if(user.getPassword() != null){
+            String encryptPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(encryptPassword);
         }
-        String encryptPassword = passwordEncoder.encode(password);
-        user.setPassword(encryptPassword);
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
             String defaultAvatar = generateDefaultAvatar(user.getUsername());
             user.setAvatar(defaultAvatar);

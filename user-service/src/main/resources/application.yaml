@@ -175,7 +175,7 @@ http:
     # 是否跳过 HTTPS 证书校验（仅限 dev/test，生产必须为 false）
     insecureSkipVerify: true
     # HTTP 代理地址
-    proxy:
+    proxy: 'http://127.0.0.1:1081'
 
 atlas:
   user:

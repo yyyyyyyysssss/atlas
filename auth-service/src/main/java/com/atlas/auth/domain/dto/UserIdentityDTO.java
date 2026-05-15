@@ -1,4 +1,4 @@
-package com.atlas.user.domain.dto;
+package com.atlas.auth.domain.dto;
 
 import java.util.Map;
 import java.util.Map;

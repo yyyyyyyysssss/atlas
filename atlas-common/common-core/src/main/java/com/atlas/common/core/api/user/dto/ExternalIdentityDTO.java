@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * @Description
  * @Author ys
@@ -33,5 +35,7 @@ public class ExternalIdentityDTO {
 
     /** 手机号 (可选) */
     private String phone;
+
+    private Map<String, Object> extraInfo;
 
 }

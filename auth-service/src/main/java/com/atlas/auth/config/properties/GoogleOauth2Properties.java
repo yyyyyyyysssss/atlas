@@ -1,18 +1,20 @@
 package com.atlas.auth.config.properties;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
  * @Description
  * @Author ys
- * @Date 2026/5/8 13:31
+ * @Date 2023/9/20 20:12
  */
-@Data
+@Getter
+@Setter
+@ConfigurationProperties(prefix = "security.oauth2.login.providers.google")
 @Component
-@ConfigurationProperties(prefix = "security.oauth2.login.providers.atlas")
-public class AtlasOauth2Properties {
+public class GoogleOauth2Properties {
 
     private String clientName;
 
@@ -20,16 +22,13 @@ public class AtlasOauth2Properties {
 
     private String clientSecret;
 
-    private String redirectUrl;
-
     private String scope;
 
     private String authorizeCodeEndpoint;
 
-    private String qrScanEndpoint;
-
     private String tokenEndpoint;
 
-    private String userInfoEndpoint;
+    private String redirectUrl;
 
+    private String userInfoEndpoint;
 }

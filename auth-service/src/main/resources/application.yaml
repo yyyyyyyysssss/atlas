@@ -102,7 +102,7 @@ security:
           clientId: bbf124ed2c08a0ea0ad0
           clientSecret: ${OAUTH2_GITHUB_CLIENT_SECRET}
           redirectUrl: ${security.uiUrl}/oauth2/callback/github
-          scope: user
+          scope: "user user:email"
           authorizeCodeEndpoint: https://github.com/login/oauth/authorize
           tokenEndpoint: https://github.com/login/oauth/access_token
           userInfoEndpoint: https://api.github.com/user

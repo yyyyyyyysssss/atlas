@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.properties.GoogleOauth2Properties;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -86,7 +87,9 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + googleTokenResponse.accessToken)
                 .retrieve()
                 .body(GoogleUserInfoResponse.class);
-
+        if (googleUserInfoResponse.emailVerified() != null && !googleUserInfoResponse.emailVerified()) {
+            throw new BusinessException("Google 账号邮箱未验证，安全起见拒绝登录。请先前往 Google 账户完成邮箱验证。");
+        }
         Map<String, Object> extraInfo = JsonUtils.convert(googleUserInfoResponse, new TypeReference<>() {});
         ExternalIdentityDTO externalIdentityDTO = ExternalIdentityDTO
                 .builder()

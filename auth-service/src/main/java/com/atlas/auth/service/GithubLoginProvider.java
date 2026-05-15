@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.properties.GithubOauth2Properties;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -87,6 +88,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubTokenResponse.accessToken)
                 .retrieve()
                 .body(GitHubUserInfoResponse.class);
+        log.info("GitHubUserInfoResponse : {}", gitHubUserInfoResponse);
         // 获取邮箱
         List<GitHubUserEmailResponse> gitHubUserEmailResponses = proxyRestClient
                 .get()
@@ -95,9 +97,30 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
         log.info("GitHubUserEmailResponses : {}", gitHubUserEmailResponses);
-        GitHubUserEmailResponse gitHubUserEmailResponse = gitHubUserEmailResponses.stream().filter(f -> f.primary).findFirst().orElseThrow();
+        GitHubUserEmailResponse primaryEmail = gitHubUserEmailResponses.stream()
+                // 核心安全校验：必须是已经验证通过的邮箱
+                .filter(GitHubUserEmailResponse::verified)
+                // 优先筛选主邮箱
+                .filter(GitHubUserEmailResponse::primary)
+                .findFirst()
+                // 降级策略：如果没有满足既验证又是primary的，退而求其次，找任何一个已验证的邮箱
+                .orElseGet(() -> gitHubUserEmailResponses.stream()
+                        .filter(GitHubUserEmailResponse::verified)
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException("GitHub 账户未绑定任何已验证的邮箱，请先去 GitHub 验证邮件")));
 
-        return null;
+        Map<String, Object> extraInfo = JsonUtils.convert(gitHubUserInfoResponse, new TypeReference<>() {});
+        ExternalIdentityDTO externalIdentityDTO = ExternalIdentityDTO
+                .builder()
+                .sub(gitHubUserInfoResponse.id.toString())
+                .provider(githubOauth2Properties.getClientName())
+                .fullName(gitHubUserInfoResponse.name)
+                .avatar(gitHubUserInfoResponse.avatarUrl)
+                .email(primaryEmail.email)
+                .extraInfo(extraInfo)
+                .build();
+
+        return doLogin(externalIdentityDTO);
     }
 
     /**

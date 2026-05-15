@@ -22,6 +22,7 @@ import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import com.atlas.user.utils.PasswordGeneratorUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
@@ -151,17 +152,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public User findByUsername(String username) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<User>();
-        queryWrapper
-                .lambda()
-                .eq(User::getUsername, username)
-                .or()
-                .eq(User::getId, username)
-                .or()
-                .eq(User::getPhone, username)
-                .or()
-                .eq(User::getEmail, username);
-        User user = userMapper.selectOne(queryWrapper);
+        // 先去匹配类型相同的字符串字段 (确保走普通索引)
+        LambdaQueryWrapper<User> stringQueryWrapper = new LambdaQueryWrapper<>();
+        stringQueryWrapper
+                .and(wrapper -> wrapper
+                        .eq(User::getUsername, username)
+                        .or().eq(User::getPhone, username)
+                        .or().eq(User::getEmail, username)
+                );
+        User user = userMapper.selectOne(stringQueryWrapper);
+        // 如果上面没搜到，且入参是纯数字，再尝试根据 ID 查询 (确保走主键索引)
+        if (user == null && username.matches("^\\d+$")) {
+            try {
+                // 转换为 Long 类型，规避隐式转换，确保数字对数字，主键索引绝对生效
+                Long userId = Long.parseLong(username);
+                user = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                        .eq(User::getId, userId)
+                );
+            } catch (NumberFormatException e) {
+                // 防御性容错：如果数字太大超出了 Long 的范围，直接忽略，不抛异常
+            }
+        }
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在: " + username);
         }
@@ -234,13 +245,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO) {
         // 身份不存在，尝试通过邮箱/手机号找现有的用户
         String username = StringUtils.firstNonEmpty(externalIdentityDTO.getEmail(), externalIdentityDTO.getPhone());
-        if (StringUtils.isEmpty(username)){
+        if (StringUtils.isEmpty(username)) {
             throw new BusinessException("无法获取用户唯一标识");
         }
         try {
             User user = findByUsername(username);
             return UserMapping.INSTANCE.toUserDTO(user);
-        }catch (UsernameNotFoundException e){
+        } catch (UsernameNotFoundException e) {
             // 身份不存在，开始注册流程
             UserCreateDTO userCreateDTO = new UserCreateDTO();
             userCreateDTO.setUsername(generateUniqueUsername());
@@ -264,7 +275,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User saveUser(UserCreateDTO userCreateDTO) {
         User user = UserMapping.INSTANCE.toUser(userCreateDTO);
         user.setId(IdGen.genId());
-        if(user.getPassword() != null){
+        if (user.getPassword() != null) {
             String encryptPassword = passwordEncoder.encode(user.getPassword());
             user.setPassword(encryptPassword);
         }
@@ -273,8 +284,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setAvatar(defaultAvatar);
         }
         // 添加用户所属组织
-        if(userCreateDTO.getOrgId() != null){
-            addUserOrg(user.getId(),userCreateDTO.getOrgId(),userCreateDTO.getPosId());
+        if (userCreateDTO.getOrgId() != null) {
+            addUserOrg(user.getId(), userCreateDTO.getOrgId(), userCreateDTO.getPosId());
         }
         int row = userMapper.insert(user);
         if (row <= 0) {
@@ -304,8 +315,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             String defaultAvatar = generateDefaultAvatar(user.getUsername());
             user.setAvatar(defaultAvatar);
         }
-        if(userUpdateDTO.getOrgId() != null){
-            addUserOrg(user.getId(),userUpdateDTO.getOrgId(),userUpdateDTO.getPosId());
+        if (userUpdateDTO.getOrgId() != null) {
+            addUserOrg(user.getId(), userUpdateDTO.getOrgId(), userUpdateDTO.getPosId());
         }
         int i = userMapper.updateById(user);
         if (i <= 0) {
@@ -321,10 +332,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
 
-    private String generateDefaultAvatar(String username){
+    private String generateDefaultAvatar(String username) {
         Result<String> result = fileApi.generateAvatar(username);
-        if(result.isSucceed()){
-           return result.getData();
+        if (result.isSucceed()) {
+            return result.getData();
         }
         return null;
     }
@@ -479,7 +490,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     /**
      * 通用用户查询抽象
-     * @param field 数据库字段对应的 Lambda 表达式
+     *
+     * @param field  数据库字段对应的 Lambda 表达式
      * @param values 查询的值集合
      * @return UserDTO 列表
      */

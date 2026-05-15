@@ -42,7 +42,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
             userIdentityService.addUserIdentity(userDTO.getId(), externalIdentityDTO);
             username = userDTO.getUsername();
         } else {
-            username = existingIdentity.getIdentifier();
+            username = existingIdentity.getUserId().toString();
         }
         ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(username, null);
         return loginService.login(thirdPartyAuthenticationToken, ClientType.WEB, true, false);

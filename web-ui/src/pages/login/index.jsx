@@ -626,39 +626,19 @@ const Login = () => {
                                     onClick={() => authorizeCodeLogin('gitHub')}
                                     title="GitHub"
                                 />
-                                <Dropdown
-                                    menu={{
-                                        items: [
-                                            {
-                                                key: 'auth_code',
-                                                label: '授权码登录',
-                                                icon: <KeyOutlined />,
-                                                onClick: () => authorizeCodeLogin('atlas')
-                                            },
-                                            {
-                                                key: 'device_code',
-                                                label: '设备码登录',
-                                                icon: <ScanOutlined />,
-                                                onClick: deviceCodeLogin
-                                            }
-                                        ]
+                                <Avatar
+                                    src="/logo128.png"
+                                    size={28}
+                                    style={{
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s ease',
+                                        background: 'transparent',
+                                        filter: 'grayscale(20%)'
                                     }}
-                                    trigger={['hover']}
-                                    placement="bottom"
-                                >
-                                    <Avatar
-                                        src="/logo128.png"
-                                        size={28}
-                                        style={{
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s ease',
-                                            background: 'transparent',
-                                            filter: 'grayscale(20%)'
-                                        }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.filter = 'grayscale(0%)'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'grayscale(20%)'; }}
-                                    />
-                                </Dropdown>
+                                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.filter = 'grayscale(0%)'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'grayscale(20%)'; }}
+                                    onClick={() => authorizeCodeLogin('atlas')}
+                                />
                                 <GoogleOutlined
                                     style={{ fontSize: 24, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
                                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.color = '#EA4335'; }}

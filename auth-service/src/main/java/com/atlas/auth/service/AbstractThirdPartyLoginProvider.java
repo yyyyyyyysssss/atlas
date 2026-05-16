@@ -1,6 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.UserIdentityDTO;
+import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
@@ -22,7 +22,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     private LoginService loginService;
 
     @Resource
-    private UserIdentityService userIdentityService;
+    private UserProviderService userProviderService;
 
     @Resource
     private UserApi userApi;
@@ -30,7 +30,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     protected TokenResponse doLogin(ExternalIdentityDTO externalIdentityDTO){
         String provider = externalIdentityDTO.getProvider();
         String sub = externalIdentityDTO.getSub();
-        UserIdentityDTO existingIdentity = userIdentityService.getByIdentity(provider, sub);
+        UserProviderDTO existingIdentity = userProviderService.getByProvider(provider, sub);
         String username;
         if (existingIdentity == null) {
             Result<UserDTO> userResult = userApi.ensureUser(externalIdentityDTO);
@@ -39,7 +39,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
             }
             UserDTO userDTO = userResult.getData();
             // 创建身份关联记录
-            userIdentityService.addUserIdentity(userDTO.getId(), externalIdentityDTO);
+            userProviderService.addUserProvider(userDTO.getId(), externalIdentityDTO);
             username = userDTO.getUsername();
         } else {
             username = existingIdentity.getUserId().toString();

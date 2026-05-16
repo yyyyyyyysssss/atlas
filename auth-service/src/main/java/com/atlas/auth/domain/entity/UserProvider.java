@@ -1,8 +1,9 @@
 package com.atlas.auth.domain.entity;
 
-import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.Map;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,19 +14,19 @@ import lombok.experimental.Tolerate;
 import com.atlas.common.mybatis.entity.BaseIdEntity;
 
 /**
- * (UserIdentity)实体类
+ * (UserProvider)实体类
  *
  * @author ys
  * @since 2026-05-08 17:33:59
  */
 @Getter
 @Setter
-@TableName(value = "user_identity", autoResultMap = true)
+@TableName(value = "user_provider", autoResultMap = true)
 @Builder
-public class UserIdentity extends BaseIdEntity {
+public class UserProvider extends BaseIdEntity {
 
     @Tolerate
-    public UserIdentity() {
+    public UserProvider() {
     }
 
     // 用户ID 
@@ -33,12 +34,12 @@ public class UserIdentity extends BaseIdEntity {
     private Long userId;
 
     // 身份类型 (GOOGLE, GITHUB,ATLAS) 
-    @TableField("identity_type")
-    private String identityType;
+    @TableField("provider")
+    private String provider;
 
     // 唯一标识 (如OpenID, UnionID, Sub, 手机号) 
-    @TableField("identifier")
-    private String identifier;
+    @TableField("provider_user_id")
+    private String providerUserId;
 
     // 是否已验证 (false:未验证, true:已验证)
     @TableField("verified")
@@ -48,6 +49,10 @@ public class UserIdentity extends BaseIdEntity {
     @TableField(value = "extra_info", typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> extraInfo;
 
+    @TableField(value = "create_time",fill = FieldFill.INSERT)
+    protected LocalDateTime createTime;
 
+    @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
+    protected LocalDateTime updateTime;
 }
 

@@ -23,6 +23,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * @Description
@@ -108,6 +109,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
 
             String idToken = oAuth2TokenResponse.idToken;
             Jwt jwt = jwtDecoder.decode(idToken);
+            Map<String, Object> claims = jwt.getClaims();
             ExternalIdentityDTO externalIdentityDTO = ExternalIdentityDTO
                     .builder()
                     .sub(jwt.getSubject())
@@ -116,6 +118,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
                     .avatar(jwt.getClaimAsString("picture"))
                     .email(jwt.getClaimAsString("email"))
                     .phone(jwt.getClaimAsString("phone_number"))
+                    .extraInfo(claims)
                     .build();
             return doLogin(externalIdentityDTO);
         }catch (Exception e){

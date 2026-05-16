@@ -4,13 +4,27 @@ import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.mybatis.handler.BaseMetaHandler;
 import com.atlas.common.mybatis.handler.DataScopeHandler;
 import com.atlas.common.mybatis.injector.MySqlInjector;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.DataPermissionInterceptor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration(after = AtlasCoreAutoConfiguration.class)
 public class AtlasMybatisAutoConfiguration {
+
+    @Resource
+    private ObjectMapper objectMapper;
+
+    @PostConstruct
+    public void initMybatisPlusJacksonTypeHandler() {
+        if (objectMapper != null) {
+            JacksonTypeHandler.setObjectMapper(objectMapper);
+        }
+    }
 
     @Bean
     public MySqlInjector mySqlInjector(){
@@ -35,6 +49,8 @@ public class AtlasMybatisAutoConfiguration {
         interceptor.addInnerInterceptor(dataPermissionInterceptor);
         return interceptor;
     }
+
+
 
 
 }

@@ -17,24 +17,40 @@ public class BaseMetaHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
 
-        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        Long userId = UserContext.getUserId();
+        String fullName = UserContext.getFullName();
 
-        this.strictInsertFill(metaObject, "creatorId", Long.class, UserContext.getUserId());
-        this.strictInsertFill(metaObject, "creatorName", String.class, UserContext.getFullName());
-
-        this.strictInsertFill(metaObject, "updaterId", Long.class, UserContext.getUserId());
-        this.strictInsertFill(metaObject, "updaterName", String.class, UserContext.getFullName());
+        fillFieldIfNull(metaObject, "createTime", now);
+        fillFieldIfNull(metaObject, "updateTime", now);
+        fillFieldIfNull(metaObject, "creatorId", userId);
+        fillFieldIfNull(metaObject, "creatorName", fullName);
+        fillFieldIfNull(metaObject, "updaterId", userId);
+        fillFieldIfNull(metaObject, "updaterName", fullName);
 
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
 
-        this.setFieldValByName("updaterId", UserContext.getUserId(), metaObject);
-        this.setFieldValByName("updaterName", UserContext.getFullName(), metaObject);
+        forceUpdateFieldIfPresent(metaObject, "updateTime", LocalDateTime.now());
+        forceUpdateFieldIfPresent(metaObject, "updaterId", UserContext.getUserId());
+        forceUpdateFieldIfPresent(metaObject, "updaterName", UserContext.getFullName());
     }
 
+    private void fillFieldIfNull(MetaObject metaObject, String fieldName, Object value) {
+        if (metaObject.hasSetter(fieldName)) {
+            // 使用底层策略，默认行为是：实体类中该字段为 null 才会填充
+            this.strictFillStrategy(metaObject, fieldName, () -> value);
+        }
+    }
+
+    private void forceUpdateFieldIfPresent(MetaObject metaObject, String fieldName, Object value) {
+        // 确保实体类里有这个字段，没字段直接忽略，不报错
+        if (metaObject.hasSetter(fieldName)) {
+            // 这样就能无视实体类里原有的旧值，强行覆盖
+            metaObject.setValue(fieldName, value);
+        }
+    }
 
 }

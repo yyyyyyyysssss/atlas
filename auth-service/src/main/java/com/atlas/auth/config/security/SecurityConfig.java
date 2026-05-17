@@ -9,6 +9,8 @@ import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
+import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
+import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.LogoutService;
 import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
@@ -49,7 +51,6 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
@@ -231,8 +232,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserCredentialRepository userCredentialRepository() {
-        return new JdbcUserCredentialRepository(jdbcTemplate);
+    public UserCredentialRepository userCredentialRepository(UserWebauthnCredentialsMapper userWebauthnCredentialsMapper) {
+        return new UserWebauthnCredentialsRepository(userWebauthnCredentialsMapper);
     }
 
     @Bean

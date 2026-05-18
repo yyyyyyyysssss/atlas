@@ -6,6 +6,8 @@ import com.atlas.auth.domain.entity.UserProvider;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.Map;
+
 /**
  * (UserProvider)表服务接口
  *
@@ -16,6 +18,6 @@ public interface UserProviderService extends IService<UserProvider> {
 
     UserProviderDTO getByProvider(String identityType, String identifier);
 
-    void addUserProvider(Long userId, ExternalIdentityDTO externalIdentityDTO);
+    void addUserProvider(Long userId, String provider, String providerUserId, Map<String, Object> extraInfo);
 }
 

@@ -3,21 +3,13 @@ package com.atlas.auth.service;
 import com.atlas.auth.enums.VerificationScene;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
-import com.atlas.common.core.api.notification.builder.NotificationDTO;
-import com.atlas.common.core.api.user.UserApi;
-import com.atlas.common.core.api.user.dto.UserDTO;
-import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.response.Result;
 import com.atlas.common.core.utils.VerificationCodeUtils;
 import com.atlas.common.redis.utils.RedisHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,8 +24,6 @@ public class EmailVerificationService {
     private final RedisHelper redisHelper;
 
     private final NotificationApi notificationApi;
-
-    private final UserApi userApi;
 
     private static final String CODE_PREFIX = "email:verification:code:";
 

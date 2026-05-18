@@ -254,7 +254,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         } catch (UsernameNotFoundException e) {
             // 身份不存在，开始注册流程
             UserCreateDTO userCreateDTO = new UserCreateDTO();
-            userCreateDTO.setUsername(generateUniqueUsername());
             userCreateDTO.setFullName(externalIdentityDTO.getFullName());
             userCreateDTO.setEmail(externalIdentityDTO.getEmail());
             userCreateDTO.setPhone(externalIdentityDTO.getPhone());
@@ -508,27 +507,5 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return users.stream()
                 .map(UserMapping.INSTANCE::toUserDTO)
                 .toList();
-    }
-
-    private String generateUniqueUsername() {
-        long id = IdGen.genId();
-        long limitedId = id % 2821109907456L; // 36 的 8 次方
-
-        StringBuilder sb = new StringBuilder();
-        long tempId = limitedId;
-
-        // 核心转换逻辑
-        while (tempId > 0) {
-            sb.append(ALPHABET.charAt((int) (tempId % BASE)));
-            tempId /= BASE;
-        }
-
-        // 如果长度不足 8 位，用 ALPHABET 的第 0 个字符（或特定字符）在末尾补齐
-        while (sb.length() < TARGET_LENGTH) {
-            sb.append(ALPHABET.charAt(0));
-        }
-
-        // 反转并返回
-        return "u_" + sb.reverse();
     }
 }

@@ -2,7 +2,7 @@ package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.enums.VerificationScene;
 import com.atlas.auth.service.EmailVerificationService;
-import com.atlas.auth.service.UserDetailsServiceImpl;
+import com.atlas.auth.service.UserService;
 import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.security.token.EmailAuthenticationToken;
@@ -21,12 +21,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  */
 public class EmailAuthenticationProvider implements AuthenticationProvider {
 
-    private final UserDetailsService userDetailsService;
+    private final UserService userService;
 
     private final EmailVerificationService emailVerificationService;
 
-    public EmailAuthenticationProvider(UserDetailsService userDetailsService, EmailVerificationService emailVerificationService){
-        this.userDetailsService = userDetailsService;
+    public EmailAuthenticationProvider(UserService userService, EmailVerificationService emailVerificationService){
+        this.userService = userService;
         this.emailVerificationService = emailVerificationService;
     }
 
@@ -49,9 +49,9 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         identity.setSub(email);
         identity.setFullName(email.split("@")[0]);
         identity.setEmail(email);
-        UserDTO userDTO = ((UserDetailsServiceImpl) userDetailsService).ensureUser(identity);
+        UserDTO userDTO = userService.ensureUser(identity);
         // 加载 UserDetails
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userDTO.getUsername());
+        UserDetails userDetails = userService.loadUserByUsername(userDTO.getUsername());
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }

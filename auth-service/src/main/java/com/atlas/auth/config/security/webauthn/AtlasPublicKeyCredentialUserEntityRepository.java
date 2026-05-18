@@ -1,7 +1,11 @@
 package com.atlas.auth.config.security.webauthn;
 
-import com.atlas.auth.service.UserDetailsServiceImpl;
+import com.atlas.auth.enums.IdentifierType;
+import com.atlas.auth.service.UserIdentifierService;
+import com.atlas.auth.service.UserService;
+import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.response.Result;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
@@ -17,31 +21,38 @@ import java.nio.charset.StandardCharsets;
  */
 public class AtlasPublicKeyCredentialUserEntityRepository implements PublicKeyCredentialUserEntityRepository {
 
-    private final UserDetailsService userDetailsService;
+    private final UserService userService;
 
-    public AtlasPublicKeyCredentialUserEntityRepository(UserDetailsService userDetailsService){
-        this.userDetailsService = userDetailsService;
+    private final UserIdentifierService userIdentifierService;
+
+    public AtlasPublicKeyCredentialUserEntityRepository(UserService userService,UserIdentifierService userIdentifierService){
+        this.userService = userService;
+        this.userIdentifierService = userIdentifierService;
     }
 
     @Override
     public PublicKeyCredentialUserEntity findById(Bytes id) {
-        String userIdStr = new String(id.getBytes(), StandardCharsets.UTF_8);
-        Long userId = Long.valueOf(userIdStr);
-        UserDTO user = ((UserDetailsServiceImpl) userDetailsService).findByUserId(userId);
+        Long userId = Long.valueOf(new String(id.getBytes(), StandardCharsets.UTF_8));
+        String username = userIdentifierService.findValueByUserIdAndType(userId, IdentifierType.USERNAME);
+        UserDTO user = userService.findByUserId(userId);
         if(user == null){
             return null;
         }
         return ImmutablePublicKeyCredentialUserEntity
                 .builder()
                 .id(id)
-                .name(user.getUsername())
+                .name(username)
                 .displayName(user.getFullName())
                 .build();
     }
 
     @Override
     public PublicKeyCredentialUserEntity findByUsername(String username) {
-        UserDTO user = ((UserDetailsServiceImpl) userDetailsService).findByUsername(username);
+        Long userId = userIdentifierService.findUserIdByValueAndType(username, IdentifierType.USERNAME);
+        if (userId == null) {
+            return null;
+        }
+        UserDTO user = userService.findByUserId(userId);
         if(user == null){
             return null;
         }
@@ -49,7 +60,7 @@ public class AtlasPublicKeyCredentialUserEntityRepository implements PublicKeyCr
         return ImmutablePublicKeyCredentialUserEntity
                 .builder()
                 .id(new Bytes(bytes))
-                .name(user.getUsername())
+                .name(username)
                 .displayName(user.getFullName())
                 .build();
     }

@@ -11,9 +11,7 @@ import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntit
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
 import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
-import com.atlas.auth.service.EmailVerificationService;
-import com.atlas.auth.service.LogoutService;
-import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
+import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
@@ -42,7 +40,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.RememberMeServices;
@@ -67,7 +64,7 @@ public class SecurityConfig {
     private RedisHelper redisHelper;
 
     @Resource
-    private UserDetailsService userService;
+    private UserService userService;
 
     @Resource
     private EmailVerificationService emailVerificationService;
@@ -92,6 +89,9 @@ public class SecurityConfig {
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
+
+    @Resource
+    private UserIdentifierService userIdentifierService;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -228,7 +228,7 @@ public class SecurityConfig {
     // 通行密钥
     @Bean
     public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
-        return new AtlasPublicKeyCredentialUserEntityRepository(userService);
+        return new AtlasPublicKeyCredentialUserEntityRepository(userService,userIdentifierService);
     }
 
     @Bean

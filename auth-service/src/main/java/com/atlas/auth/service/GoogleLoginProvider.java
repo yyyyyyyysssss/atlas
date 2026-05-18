@@ -98,6 +98,7 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
                 .fullName(googleUserInfoResponse.familyName + googleUserInfoResponse.givenName)
                 .avatar(googleUserInfoResponse.picture)
                 .email(googleUserInfoResponse.email)
+                .emailVerified(googleUserInfoResponse.emailVerified)
                 .extraInfo(extraInfo)
                 .build();
         return doLogin(externalIdentityDTO);

@@ -33,8 +33,12 @@ public class ExternalIdentityDTO {
     /** 邮箱 (可选) */
     private String email;
 
+    private Boolean emailVerified;
+
     /** 手机号 (可选) */
     private String phone;
+
+    private Boolean phoneVerified;
 
     private Map<String, Object> extraInfo;
 

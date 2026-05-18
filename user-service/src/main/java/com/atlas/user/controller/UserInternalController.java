@@ -34,26 +34,20 @@ public class UserInternalController {
         return ResultGenerator.ok(userAuthDTO);
     }
 
-    @GetMapping("/findByUsername")
-    public Result<UserDTO> findByUsername(@RequestParam("username") String username) {
-        User user = userService.findByUsername(username);
-        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
+    @GetMapping("/auth/v2")
+    public Result<UserAuthDTO> loadUserByUserId(@RequestParam("userId") Long userId) {
+        UserAuthDTO userAuthDTO = userService.loadUserByUserId(userId);
+        return ResultGenerator.ok(userAuthDTO);
     }
 
     @GetMapping("/findByUserId")
-    public Result<UserDTO> findByUsername(@RequestParam("userId") Long userId) {
+    public Result<UserDTO> findByUserId(@RequestParam("userId") Long userId) {
         User user = userService.findByUserId(userId);
         return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
     }
 
-    @GetMapping("/profile")
-    public Result<UserDTO> userProfile(@RequestParam("username") String username) {
-        User user = userService.findByUsername(username);
-        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
-    }
-
     @PostMapping("/ensureUser")
-    public Result<UserDTO> getOrRegisterUsername(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
+    public Result<UserDTO> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
         UserDTO userDTO = userService.ensureUser(externalIdentityDTO);
         return ResultGenerator.ok(userDTO);
     }

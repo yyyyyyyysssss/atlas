@@ -14,6 +14,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.Map;
 
 
 /**
@@ -46,13 +49,13 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
 
     @Override
     @Transactional
-    public void addUserProvider(Long userId, ExternalIdentityDTO externalIdentityDTO) {
-        if(externalIdentityDTO == null){
-            return;
+    public void addUserProvider(Long userId, String provider, String providerUserId, Map<String, Object> extraInfo) {
+        if(!StringUtils.hasText(provider) || !StringUtils.hasText(providerUserId)){
+            throw new BusinessException("provider or providerUserId is empty");
         }
         UserProvider entity = this.userProviderMapper.selectOne(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getProvider, externalIdentityDTO.getProvider())
-                .eq(UserProvider::getProviderUserId, externalIdentityDTO.getSub()));
+                .eq(UserProvider::getProvider, provider)
+                .eq(UserProvider::getProviderUserId, providerUserId));
         if (entity != null) {
             if(!entity.getUserId().equals(userId)){
                 log.warn("身份标识 {} 已被用户 {} 占用，当前尝试绑定到用户 {}", entity.getProviderUserId(), entity.getUserId(), userId);
@@ -63,12 +66,10 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         }
         UserProvider userIdentity = UserProvider
                 .builder()
-                .providerUserId(externalIdentityDTO.getSub())
-                .provider(externalIdentityDTO.getProvider())
+                .providerUserId(providerUserId)
+                .provider(provider)
                 .userId(userId)
-                .extraInfo(externalIdentityDTO.getExtraInfo())
-                .verified(true)
-
+                .extraInfo(extraInfo)
                 .build();
         userIdentity.setId(IdGen.genId());
         this.save(userIdentity);

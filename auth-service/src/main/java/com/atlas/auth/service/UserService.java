@@ -22,19 +22,9 @@ import java.util.List;
 @Service("userService")
 @RequiredArgsConstructor
 @Slf4j
-public class UserDetailsServiceImpl implements UserDetailsService {
+public class UserService implements UserDetailsService {
 
     private final UserApi userApi;
-
-
-    public UserDTO findByUsername(String username){
-        Result<UserDTO> result = userApi.findByUsername(username);
-        // 查询不到或服务异常，返回 null 进而让 Spring Security 处理认证失败
-        if(!result.isSucceed()){
-            return null;
-        }
-        return result.getData();
-    }
 
     public UserDTO findByUserId(Long userId){
         Result<UserDTO> result = userApi.findByUserId(userId);
@@ -44,6 +34,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return result.getData();
     }
 
+    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO){
+        Result<UserDTO> userDTOResult = userApi.ensureUser(externalIdentityDTO);
+        if(!userDTOResult.isSucceed()){
+            throw new BadCredentialsException(userDTOResult.getMessage());
+        }
+        return userDTOResult.getData();
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Result<UserAuthDTO> result = userApi.loadUserByUsername(username);
@@ -51,6 +49,20 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException(result.getMessage());
         }
         UserAuthDTO userAuthDTO = result.getData();
+        return securityUser(userAuthDTO);
+    }
+
+    public UserDetails loadUserByUserId(Long userId) throws UsernameNotFoundException{
+        Result<UserAuthDTO> result = userApi.loadUserByUserId(userId);
+        if(!result.isSucceed()){
+            throw new UsernameNotFoundException(result.getMessage());
+        }
+        UserAuthDTO userAuthDTO = result.getData();
+        return securityUser(userAuthDTO);
+    }
+
+
+    public SecurityUser securityUser(UserAuthDTO userAuthDTO){
         SecurityUser securityUser = new SecurityUser();
         securityUser.setId(userAuthDTO.getId());
         securityUser.setUsername(userAuthDTO.getUsername());
@@ -69,13 +81,5 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         }
         securityUser.setAuthorities(authorityList);
         return securityUser;
-    }
-
-    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO){
-        Result<UserDTO> userDTOResult = userApi.ensureUser(externalIdentityDTO);
-        if(!userDTOResult.isSucceed()){
-            throw new BadCredentialsException(userDTOResult.getMessage());
-        }
-        return userDTOResult.getData();
     }
 }

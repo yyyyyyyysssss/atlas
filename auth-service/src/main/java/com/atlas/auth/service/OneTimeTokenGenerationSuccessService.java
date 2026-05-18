@@ -1,15 +1,11 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
-import com.atlas.common.core.api.user.UserApi;
-import com.atlas.common.core.api.user.dto.UserDTO;
-import com.atlas.common.core.response.Result;
-import com.atlas.common.core.response.ResultCode;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.properties.SecurityProperties;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +37,7 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
 
     private final NotificationApi notificationApi;
 
-    private final UserApi userApi;
+    private final UserIdentifierService userIdentifierService;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, OneTimeToken oneTimeToken) throws IOException {
@@ -49,17 +45,14 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
         response.setContentType("application/json");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
-        Result<UserDTO> userResult = userApi.userProfile(oneTimeToken.getUsername());
-        if (!userResult.isSucceed()){
-            if(userResult.getCode() == ResultCode.AUTH_LOGIN_FAILED.getCode()){
-                // 即使用户不存在，也返回成功 攻击者从 HTTP 响应上看不出区别
-                log.warn("用户尝试登录但不存在: {}", oneTimeToken.getUsername());
-                response.getWriter().write(JsonUtils.toJson(ResultGenerator.ok()));
-            }else {
-                response.getWriter().write(JsonUtils.toJson(ResultGenerator.failed(userResult.getMessage())));
-            }
+        UserIdentifier userIdentifier = userIdentifierService.findByValue(oneTimeToken.getUsername());
+        if(userIdentifier == null){
+            // 即使用户不存在，也返回成功 攻击者从 HTTP 响应上看不出区别
+            log.warn("用户尝试登录但不存在: {}", oneTimeToken.getUsername());
+            response.getWriter().write(JsonUtils.toJson(ResultGenerator.ok()));
             return;
         }
+
         String queryString = request.getQueryString();
         String magicLink = securityProperties.getUiUrl() + "/login?ottToken=" + oneTimeToken.getTokenValue();
         if (queryString != null && !queryString.isEmpty()) {
@@ -78,7 +71,7 @@ public class OneTimeTokenGenerationSuccessService implements OneTimeTokenGenerat
                         .withParam("requestTime", now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .withParam("expireMinutes", minutes)
                         .to()
-                        .toUsernames(oneTimeToken.getUsername())
+                        .toUserIds(userIdentifier.getUserId())
                         .build()
         );
 

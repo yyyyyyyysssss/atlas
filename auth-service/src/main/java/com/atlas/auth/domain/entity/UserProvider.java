@@ -41,10 +41,6 @@ public class UserProvider extends BaseIdEntity {
     @TableField("provider_user_id")
     private String providerUserId;
 
-    // 是否已验证 (false:未验证, true:已验证)
-    @TableField("verified")
-    private Boolean verified;
-
     // 扩展信息 
     @TableField(value = "extra_info", typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> extraInfo;

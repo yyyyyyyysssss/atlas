@@ -117,6 +117,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                 .fullName(gitHubUserInfoResponse.name)
                 .avatar(gitHubUserInfoResponse.avatarUrl)
                 .email(primaryEmail.email)
+                .emailVerified(primaryEmail.verified)
                 .extraInfo(extraInfo)
                 .build();
 

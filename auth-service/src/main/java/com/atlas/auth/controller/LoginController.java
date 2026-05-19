@@ -1,6 +1,8 @@
 package com.atlas.auth.controller;
 
 
+import com.atlas.auth.domain.dto.CaptchaLoginDTO;
+import com.atlas.auth.domain.dto.PasswordLoginDTO;
 import com.atlas.auth.enums.LoginType;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.exception.TokenAuthenticationException;
@@ -66,6 +68,21 @@ public class LoginController {
         return ResultGenerator.ok(tokenResponse);
     }
 
+    // 账号密码登录
+    @PostMapping("/login/password")
+    public Result<?> loginPassword(@RequestBody @Validated PasswordLoginDTO passwordLoginDTO){
+
+        return ResultGenerator.ok();
+    }
+
+    // 验证码登录
+    @PostMapping("/login/captcha")
+    public Result<?> loginCaptcha(@RequestBody @Validated CaptchaLoginDTO captchaLoginDTO){
+
+        return ResultGenerator.ok();
+    }
+
+    // 一次令牌登录
     @GetMapping("/login/ott")
     public Result<?> login(@RequestParam("ottToken") String ottToken, @RequestParam(value = "clientType", required = false) ClientType clientType) {
         LoginDTO loginDTO = new LoginDTO();

@@ -5,12 +5,14 @@ import com.atlas.auth.enums.VerificationScene;
 import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.UserService;
 import com.atlas.security.token.EmailAuthenticationToken;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 
 /**
  * @Description
@@ -22,6 +24,8 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
     private final UserService userService;
 
     private final EmailVerificationService emailVerificationService;
+
+    private final UserDetailsChecker userDetailsChecker = new AccountStatusUserDetailsChecker();
 
     public EmailAuthenticationProvider(UserService userService, EmailVerificationService emailVerificationService){
         this.userService = userService;
@@ -47,6 +51,9 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }
+        // 校验用户状态（是否被禁用、锁定等）
+        userDetailsChecker.check(userDetails);
+        // 构建已认证的 Token
         EmailAuthenticationToken authenticated = EmailAuthenticationToken.authenticated(
                 userDetails,
                 null,

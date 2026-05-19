@@ -3,7 +3,12 @@ package com.atlas.security.utils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
+import org.springframework.security.core.GrantedAuthority;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,11 +19,47 @@ import java.util.Set;
  */
 public class JsonNodeUtils {
 
-    public static final TypeReference<Set<String>> STRING_SET = new TypeReference<Set<String>>() {
-    };
+    private static final TypeReference<List<GrantedAuthority>> GRANTED_AUTHORITY_LIST = new TypeReference<List<GrantedAuthority>>() {};
 
-    public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP = new TypeReference<Map<String, Object>>() {
-    };
+    public static JsonNode getChildNode(JsonNode jsonNode, String fieldName) {
+        if (jsonNode == null) {
+            return MissingNode.getInstance();
+        }
+        return jsonNode.has(fieldName) ? jsonNode.get(fieldName) : MissingNode.getInstance();
+    }
+
+    public static Object getPrincipal(JsonNode jsonNode, ObjectMapper mapper) throws IOException {
+        JsonNode principalNode = getChildNode(jsonNode, "principal");
+        return principalNode.isObject() ? mapper.readValue(principalNode.traverse(mapper), Object.class) : principalNode.asText();
+    }
+
+    public static Object getCredentials(JsonNode jsonNode) {
+        JsonNode credentialsNode = getChildNode(jsonNode, "credentials");
+        return !credentialsNode.isNull() && !credentialsNode.isMissingNode() ? credentialsNode.asText() : null;
+    }
+
+    public static boolean getAuthenticated(JsonNode jsonNode) {
+        JsonNode authNode = getChildNode(jsonNode, "authenticated");
+        return !authNode.isMissingNode() && authNode.asBoolean();
+    }
+
+    public static List<GrantedAuthority> getAuthorities(JsonNode jsonNode, ObjectMapper mapper) {
+        JsonNode authoritiesNode = getChildNode(jsonNode, "authorities");
+        if (authoritiesNode.isMissingNode() || authoritiesNode.isNull() || !authoritiesNode.isContainerNode()) {
+            return Collections.emptyList(); // 兜底返回空列表，防止上游抛 NPE
+        }
+        return mapper.convertValue(authoritiesNode, GRANTED_AUTHORITY_LIST);
+    }
+
+    public static Object getDetails(JsonNode jsonNode, ObjectMapper mapper) {
+        JsonNode detailsNode = getChildNode(jsonNode, "details");
+        if (detailsNode.isMissingNode() || detailsNode.isNull()) {
+            return null;
+        }
+        return detailsNode.isContainerNode()
+                ? mapper.convertValue(detailsNode, Object.class)
+                : detailsNode.asText();
+    }
 
     public static String findStringValue(JsonNode jsonNode, String fieldName) {
         if (jsonNode == null) {

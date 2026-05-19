@@ -1,7 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.properties.AtlasOauth2Properties;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
@@ -110,7 +110,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
             String idToken = oAuth2TokenResponse.idToken;
             Jwt jwt = jwtDecoder.decode(idToken);
             Map<String, Object> claims = jwt.getClaims();
-            ExternalIdentityDTO externalIdentityDTO = ExternalIdentityDTO
+            OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
                     .builder()
                     .sub(jwt.getSubject())
                     .provider(atlasOauth2Properties.getClientName())

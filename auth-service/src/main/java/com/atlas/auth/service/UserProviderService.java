@@ -3,7 +3,6 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserProvider;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.Map;

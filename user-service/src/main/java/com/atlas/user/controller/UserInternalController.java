@@ -1,7 +1,7 @@
 package com.atlas.user.controller;
 
 
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
@@ -40,16 +40,16 @@ public class UserInternalController {
         return ResultGenerator.ok(userAuthDTO);
     }
 
+    @PostMapping("/create")
+    public Result<Long> createUser(@RequestBody CreateUserSpec userSpec){
+        Long userId = userService.createCoreUser(userSpec);
+        return ResultGenerator.ok(userId);
+    }
+
     @GetMapping("/findByUserId")
     public Result<UserDTO> findByUserId(@RequestParam("userId") Long userId) {
         User user = userService.findByUserId(userId);
         return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
-    }
-
-    @PostMapping("/ensureUser")
-    public Result<UserDTO> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO) {
-        UserDTO userDTO = userService.ensureUser(externalIdentityDTO);
-        return ResultGenerator.ok(userDTO);
     }
 
     @GetMapping("/all")

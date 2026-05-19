@@ -1,10 +1,9 @@
 package com.atlas.auth.config.security.authentication.provider;
 
+import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.enums.VerificationScene;
 import com.atlas.auth.service.EmailVerificationService;
 import com.atlas.auth.service.UserService;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
-import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.security.token.EmailAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -12,7 +11,6 @@ import org.springframework.security.authentication.InternalAuthenticationService
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * @Description
@@ -43,15 +41,9 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         if (!verify){
             throw new BadCredentialsException("验证码错误!");
         }
-        // 身份供应 无论用户是否存在，ensureUser 都会返回一个有效的 UserDTO（不存在静默创建）
-        ExternalIdentityDTO identity = new ExternalIdentityDTO();
-        identity.setProvider("email");
-        identity.setSub(email);
-        identity.setFullName(email.split("@")[0]);
-        identity.setEmail(email);
-        UserDTO userDTO = userService.ensureUser(identity);
+        Long userId = userService.ensureUserByIdentifier(IdentifierType.EMAIL, email);
         // 加载 UserDetails
-        UserDetails userDetails = userService.loadUserByUsername(userDTO.getUsername());
+        UserDetails userDetails = userService.loadUserByUserId(userId);
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }

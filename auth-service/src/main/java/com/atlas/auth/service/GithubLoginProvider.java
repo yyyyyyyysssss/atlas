@@ -1,7 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.properties.GithubOauth2Properties;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
@@ -110,7 +110,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                         .orElseThrow(() -> new BusinessException("GitHub 账户未绑定任何已验证的邮箱，请先去 GitHub 验证邮件")));
 
         Map<String, Object> extraInfo = JsonUtils.convert(gitHubUserInfoResponse, new TypeReference<>() {});
-        ExternalIdentityDTO externalIdentityDTO = ExternalIdentityDTO
+        OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
                 .builder()
                 .sub(gitHubUserInfoResponse.id.toString())
                 .provider(githubOauth2Properties.getClientName())

@@ -5,7 +5,6 @@ import com.atlas.auth.domain.entity.UserProvider;
 import com.atlas.auth.mapper.UserProviderMapper;
 import com.atlas.auth.mapping.UserProviderMapping;
 import com.atlas.auth.service.UserProviderService;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

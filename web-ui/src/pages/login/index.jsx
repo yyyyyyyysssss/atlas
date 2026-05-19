@@ -38,11 +38,8 @@ const Login = () => {
     // 是否显示扫码登录 (翻转状态)
     const [isQrLogin, setIsQrLogin] = useState(false);
 
-    const hasHandledOttRef = useRef(false) // 用于防止 StrictMode 下执行两次
-
     useEffect(() => {
-        if (ottToken && !hasHandledOttRef.current) {
-            hasHandledOttRef.current = true
+        if (ottToken) {
             handleOttLogin(ottToken)
         }
     }, [ottToken])

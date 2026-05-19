@@ -1,10 +1,7 @@
 package com.atlas.user.service.impl;
 
 import com.atlas.common.core.api.file.FileApi;
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
-import com.atlas.common.core.api.user.dto.RoleAuthDTO;
-import com.atlas.common.core.api.user.dto.UserAuthDTO;
-import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.*;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
@@ -21,6 +18,7 @@ import com.atlas.user.event.UserAvatarSyncEvent;
 import com.atlas.user.mapper.UserMapper;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
+import com.atlas.user.utils.NameGenerator;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -242,32 +240,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    public UserDTO ensureUser(ExternalIdentityDTO externalIdentityDTO) {
-        // 身份不存在，尝试通过邮箱/手机号找现有的用户
-        String username = StringUtils.firstNonEmpty(externalIdentityDTO.getEmail(), externalIdentityDTO.getPhone());
-        if (StringUtils.isEmpty(username)) {
-            throw new BusinessException("无法获取用户唯一标识");
-        }
-        try {
-            User user = findByUsername(username);
-            return UserMapping.INSTANCE.toUserDTO(user);
-        } catch (UsernameNotFoundException e) {
-            // 身份不存在，开始注册流程
-            UserCreateDTO userCreateDTO = new UserCreateDTO();
-            userCreateDTO.setFullName(externalIdentityDTO.getFullName());
-            userCreateDTO.setEmail(externalIdentityDTO.getEmail());
-            userCreateDTO.setPhone(externalIdentityDTO.getPhone());
-            userCreateDTO.setAvatar(externalIdentityDTO.getAvatar());
-            Role defaultRole = roleService.findByCode(defaultRoleCode);
+    public Long createCoreUser(CreateUserSpec userSpec) {
+        // 身份不存在，开始注册流程
+        UserCreateDTO userCreateDTO = new UserCreateDTO();
+        userCreateDTO.setFullName(userSpec.fullName());
+        userCreateDTO.setAvatar(userSpec.avatarUrl());
+        Role defaultRole = roleService.findByCode(defaultRoleCode);
+        if (defaultRole != null) {
             userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
-            User newUser = this.saveUser(userCreateDTO);
-            // 发布事件：通知监听器去下载 Google/GitHub 头像
-            if (StringUtils.isNotEmpty(externalIdentityDTO.getAvatar())) {
-                log.info("发布头像同步事件, userId: {}", newUser.getId());
-                applicationEventPublisher.publishEvent(new UserAvatarSyncEvent(newUser.getId(), externalIdentityDTO.getAvatar()));
-            }
-            return UserMapping.INSTANCE.toUserDTO(newUser);
         }
+        // 落库主体表
+        User newUser = this.saveUser(userCreateDTO);
+        // 发布事件：通知监听器去下载 Google/GitHub 头像
+        if (StringUtils.isNotEmpty(userSpec.avatarUrl())) {
+            log.info("发布头像同步事件, userId: {}", newUser.getId());
+            applicationEventPublisher.publishEvent(new UserAvatarSyncEvent(newUser.getId(), userSpec.avatarUrl()));
+        }
+        return newUser.getId();
     }
 
     @Transactional
@@ -281,6 +270,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
             String defaultAvatar = generateDefaultAvatar(user.getUsername());
             user.setAvatar(defaultAvatar);
+        }
+        if(userCreateDTO.getFullName() == null || userCreateDTO.getFullName().isEmpty()){
+            String defaultName = NameGenerator.generateFunnyName();
+            user.setFullName(defaultName);
         }
         // 添加用户所属组织
         if (userCreateDTO.getOrgId() != null) {

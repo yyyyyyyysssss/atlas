@@ -1,4 +1,4 @@
-package com.atlas.common.core.api.user.dto;
+package com.atlas.auth.domain.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExternalIdentityDTO {
+public class OAuth2UserInfo {
 
     /** 唯一标识 (授权服务器返回的 sub) */
     private String sub;

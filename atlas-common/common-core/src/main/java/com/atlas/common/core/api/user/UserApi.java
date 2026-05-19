@@ -1,7 +1,7 @@
 package com.atlas.common.core.api.user;
 
 
-import com.atlas.common.core.api.user.dto.ExternalIdentityDTO;
+import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.response.Result;
@@ -26,8 +26,8 @@ public interface UserApi {
     @GetExchange("/findByUserId")
     Result<UserDTO> findByUserId(@RequestParam("userId") Long userId);
 
-    @PostExchange("/ensureUser")
-    Result<UserDTO> ensureUser(@RequestBody ExternalIdentityDTO externalIdentityDTO);
+    @PostExchange("/create")
+    Result<Long> createUser(@RequestBody CreateUserSpec createUserSpec);
 
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();

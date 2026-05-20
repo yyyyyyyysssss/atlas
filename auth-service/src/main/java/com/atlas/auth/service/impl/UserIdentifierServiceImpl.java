@@ -115,6 +115,7 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
     public List<UserIdentifier> listByUserId(Long userId) {
         QueryWrapper<UserIdentifier> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId);
+        wrapper.eq("status", IdentifierStatus.ACTIVE.name());
         return this.list(wrapper);
     }
 

@@ -1,12 +1,14 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.IdentifierSpec;
+import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.api.user.UserApi;
-import com.atlas.common.core.api.user.dto.*;
+import com.atlas.common.core.api.user.dto.CreateUserSpec;
+import com.atlas.common.core.api.user.dto.RoleAuthDTO;
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.security.model.RequestUrlAuthority;
@@ -20,8 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("userService")
 @RequiredArgsConstructor
@@ -34,12 +36,24 @@ public class UserService implements UserDetailsService {
 
     private final UserProviderService userProviderService;
 
-    public UserDTO findByUserId(Long userId){
-        Result<UserDTO> result = userApi.findByUserId(userId);
-        if(!result.isSucceed()){
-            return null;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserIdentifier userIdentifier = userIdentifierService.findByValue(username);
+        if(userIdentifier == null){
+            throw new UsernameNotFoundException("user not fund");
         }
-        return result.getData();
+        return loadUserByUserId(userIdentifier.getUserId());
+    }
+
+    public UserDetails loadUserByUserId(Long userId) throws UsernameNotFoundException{
+        Result<UserAuthDTO> result = userApi.loadUserByUserId(userId);
+        if(!result.isSucceed()){
+            throw new UsernameNotFoundException(result.getMessage());
+        }
+        List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
+        UserAuthDTO userAuthDTO = result.getData();
+        return securityUser(userAuthDTO,userIdentifiers);
     }
 
     @Transactional
@@ -110,39 +124,33 @@ public class UserService implements UserDetailsService {
         return userId;
     }
 
-
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserIdentifier userIdentifier = userIdentifierService.findByValue(username);
-        if(userIdentifier == null){
-            throw new UsernameNotFoundException("user not fund");
-        }
-        return loadUserByUserId(userIdentifier.getUserId());
-    }
-
-    public UserDetails loadUserByUserId(Long userId) throws UsernameNotFoundException{
-        Result<UserAuthDTO> result = userApi.loadUserByUserId(userId);
-        if(!result.isSucceed()){
-            throw new UsernameNotFoundException(result.getMessage());
-        }
-        UserAuthDTO userAuthDTO = result.getData();
-        return securityUser(userAuthDTO);
-    }
-
-
-    public SecurityUser securityUser(UserAuthDTO userAuthDTO){
+    public SecurityUser securityUser(UserAuthDTO userAuthDTO,List<UserIdentifier> userIdentifiers){
+        Map<IdentifierType, String> identifierTypeMap = Optional.ofNullable(userIdentifiers)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(ui -> ui.getIdentifierType() != null)
+                .collect(Collectors.toMap(
+                        UserIdentifier::getIdentifierType,
+                        ui -> ui.getIdentifierValue() == null ? "" : ui.getIdentifierValue(),
+                        (oldVal, newVal) -> newVal
+                ));
         SecurityUser securityUser = new SecurityUser();
         securityUser.setId(userAuthDTO.getId());
-        securityUser.setUsername(userAuthDTO.getUsername());
+        securityUser.setUsername(identifierTypeMap.get(IdentifierType.USERNAME));
+        securityUser.setEmail(identifierTypeMap.get(IdentifierType.EMAIL));
+        securityUser.setPhone(identifierTypeMap.get(IdentifierType.PHONE));
         securityUser.setPassword(userAuthDTO.getPassword());
+
+        // 补全 Spring Security 标准核心状态，防止框架拦截
+        securityUser.setAccountNonExpired(true);
+        securityUser.setAccountNonLocked(true);
+        securityUser.setCredentialsNonExpired(true);
+
         securityUser.setFullName(userAuthDTO.getFullName());
         securityUser.setEnabled(userAuthDTO.isEnabled());
         securityUser.setDataScopes(userAuthDTO.getDataScopes());
         securityUser.setOrgId(userAuthDTO.getOrgId());
         securityUser.setAvatar(userAuthDTO.getAvatar());
-        securityUser.setEmail(userAuthDTO.getEmail());
-        securityUser.setPhone(userAuthDTO.getPhone());
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();
         for (RoleAuthDTO roleAuthDTO : authorities) {

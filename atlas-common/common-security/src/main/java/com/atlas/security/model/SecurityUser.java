@@ -38,6 +38,12 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private List<? extends GrantedAuthority> authorities;
 
+    private boolean accountNonExpired;
+
+    private boolean accountNonLocked;
+
+    private boolean credentialsNonExpired;
+
     @Override
     public String getPassword() {
         return this.password;
@@ -59,8 +65,25 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
     }
 
     @Override
+    public boolean isAccountNonExpired() {
+        return this.accountNonExpired;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return this.accountNonLocked;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return this.credentialsNonExpired;
+    }
+
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.authorities;
     }
+
+
 
 }

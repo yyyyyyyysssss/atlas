@@ -3,6 +3,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.dto.UserProviderDTO;
+import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.*;
@@ -113,12 +114,11 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Result<UserAuthDTO> result = userApi.loadUserByUsername(username);
-        if(!result.isSucceed()){
-            throw new UsernameNotFoundException(result.getMessage());
+        UserIdentifier userIdentifier = userIdentifierService.findByValue(username);
+        if(userIdentifier == null){
+            throw new UsernameNotFoundException("user not fund");
         }
-        UserAuthDTO userAuthDTO = result.getData();
-        return securityUser(userAuthDTO);
+        return loadUserByUserId(userIdentifier.getUserId());
     }
 
     public UserDetails loadUserByUserId(Long userId) throws UsernameNotFoundException{

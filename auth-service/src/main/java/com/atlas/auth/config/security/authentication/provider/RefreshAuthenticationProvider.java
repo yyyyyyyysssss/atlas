@@ -1,13 +1,15 @@
 package com.atlas.auth.config.security.authentication.provider;
 
+import com.atlas.auth.service.UserService;
+import com.atlas.security.enums.TokenType;
+import com.atlas.security.model.PayloadInfo;
+import com.atlas.security.service.TokenService;
 import com.atlas.security.token.RefreshAuthenticationToken;
-import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * @Description 用于提供三方登录的身份认证
@@ -16,10 +18,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  */
 public class RefreshAuthenticationProvider implements AuthenticationProvider {
 
-    private final UserDetailsService userDetailsService;
+    private final UserService userService;
 
-    public RefreshAuthenticationProvider(UserDetailsService userDetailsService){
-        this.userDetailsService = userDetailsService;
+    private final TokenService tokenService;
+
+    public RefreshAuthenticationProvider(UserService userService,TokenService tokenService){
+        this.userService = userService;
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -27,18 +32,22 @@ public class RefreshAuthenticationProvider implements AuthenticationProvider {
         if (!supports(authentication.getClass())) {
             return null;
         }
-        RefreshAuthenticationToken refreshAuthenticationToken = (RefreshAuthenticationToken)authentication;
-        Object principal = refreshAuthenticationToken.getPrincipal();
-        UserDetails userDetails = userDetailsService.loadUserByUsername((String) principal);
+        RefreshAuthenticationToken refreshAuthenticationToken = (RefreshAuthenticationToken) authentication;
+        String token = (String)refreshAuthenticationToken.getCredentials();
+        PayloadInfo payloadInfo = tokenService.verify(token, TokenType.REFRESH_TOKEN);
+        String userId = payloadInfo.getSubject();
+        UserDetails userDetails = userService.loadUserByUserId(Long.parseLong(userId));
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }
         RefreshAuthenticationToken authenticated = RefreshAuthenticationToken.authenticated(
                 userDetails,
                 null,
+                payloadInfo.getId(),
                 userDetails.getAuthorities()
         );
         authenticated.setDetails(authentication.getDetails());
+        tokenService.revoke(token);
         return authenticated;
     }
 

@@ -23,7 +23,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         String provider = oAuth2UserInfo.getProvider();
         String sub = oAuth2UserInfo.getSub();
         Long userId = userService.ensureUserByProvider(provider, sub, oAuth2UserInfo);
-        ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(userId.toString(), null);
+        ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(userId, null);
         return loginService.login(thirdPartyAuthenticationToken, ClientType.WEB, true, false);
     }
 

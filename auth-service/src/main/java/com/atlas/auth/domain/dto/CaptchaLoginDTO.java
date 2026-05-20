@@ -1,5 +1,7 @@
 package com.atlas.auth.domain.dto;
 
+import com.atlas.auth.enums.CaptchaType;
+import com.atlas.security.enums.ClientType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -12,14 +14,10 @@ public record CaptchaLoginDTO(
         String captcha,
 
         @NotNull(message = "认证类型不能为空")
-        Type type,
+        CaptchaType captchaType,
 
-        String clientType
+        @NotNull(message = "客户端类型不能为空")
+        ClientType clientType
 ) {
-
-    public enum Type {
-        PHONE,
-        EMAIL
-    }
 
 }

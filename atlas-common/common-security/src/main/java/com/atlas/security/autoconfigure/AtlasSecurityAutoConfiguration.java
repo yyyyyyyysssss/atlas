@@ -20,15 +20,13 @@ import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.DefaultTokenService;
 import com.atlas.security.service.TokenService;
-import com.atlas.security.token.EmailAuthenticationToken;
+import com.atlas.security.token.CaptchaAuthenticationToken;
 import com.atlas.security.token.RefreshAuthenticationToken;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import com.atlas.security.utils.JwtUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +42,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -149,14 +146,14 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.registerModule(new WebauthnJackson2Module());
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        // 注册你自定义的权限模型 Mixin
+        // 注册自定义的权限模型 Mixin
         objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
         objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
         objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
-        objectMapper.addMixIn(EmailAuthenticationToken.class, EmailAuthenticationToken.EmailAuthenticationTokenMixin.class);
         objectMapper.addMixIn(ThirdPartyAuthenticationToken.class, ThirdPartyAuthenticationToken.ThirdPartyAuthenticationTokenMixin.class);
         objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
         objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(CaptchaAuthenticationToken.class, CaptchaAuthenticationToken.CaptchaAuthenticationTokenMixin.class);
 
         // 屏蔽 WebAuthn 的类型信息
         @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)

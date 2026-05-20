@@ -3,7 +3,7 @@ import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutline
 import { QrCode, Monitor } from 'lucide-react';
 import { useAuth } from '../../../router/AuthProvider';
 import { useRequest } from 'ahooks';
-import { login, sendEmailVerificationCode, sendOttLink } from '../../../services/LoginService';
+import { captchaLogin, passwordLogin, sendCaptcha, sendOttLink } from '../../../services/LoginService';
 import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../services/Oauth2Service';
 import { useNavigate } from 'react-router-dom';
 import { useRedirect } from '../../../hooks/useRedirect';
@@ -28,7 +28,11 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
 
     const redirect = useRedirect()
 
-    const { runAsync, loading } = useRequest(login, {
+    const { runAsync: captchaLoginAsync, loading: captchaLoginLoading } = useRequest(captchaLogin, {
+        manual: true
+    })
+
+    const { runAsync: passwordLoginAsync, loading: passwordLoginLoading } = useRequest(passwordLogin, {
         manual: true
     })
 
@@ -37,7 +41,7 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
     })
 
 
-    const { runAsync: sendEmailVerificationCodeAsync, loading: sendEmailVerificationCodeLoading } = useRequest(sendEmailVerificationCode, {
+    const { runAsync: sendCaptchaAsync, loading: sendCaptchaLoading } = useRequest(sendCaptcha, {
         manual: true
     })
 
@@ -143,7 +147,11 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
     const handleWithVerificationCode = async () => {
         const values = await form.validateFields(['email'])
         // 调用接口
-        await sendEmailVerificationCodeAsync(values.email)
+        await sendCaptchaAsync({
+            target: values.email,
+            captchaType: 'email',
+            captchaScene: 'login'
+        })
         // 清理旧定时器
         if (timerRef.current) clearInterval(timerRef.current)
         let ti = verificationCode.time
@@ -191,44 +199,54 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
         window.open(deviceCodeResult.verification_uri_complete, '_blank');
     }
 
-    const onFinish = (values) => {
+    const onFinish = async (values) => {
         let loginReq;
-        switch (loginMethod) {
-            case '1':
-                loginReq = {
-                    username: values.username,
-                    credential: values.password,
-                    loginType: 'NORMAL',
-                    clientType: 'WEB',
-                    rememberMe: values.rememberMe ? 1 : null
+        try {
+            let loginResponse
+            switch (loginMethod) {
+                case '1':
+                    loginResponse = await passwordLoginAsync({
+                        username: values.username,
+                        password: values.password,
+                        clientType: 'WEB',
+                    })
+                    break
+                case '2':
+                    loginResponse = await captchaLoginAsync({
+                        identity: values.email,
+                        captcha: values.verificationCode,
+                        captchaType: 'EMAIL',
+                        clientType: 'WEB',
+                    })
+                    break
+            }
+            loginSuccessHandler(loginResponse)
+        } catch (error) {
+            if (error.response && error.response.status === 401) {
+                if (error.response.data && error.response.data.code === 2201) {
+                    message.error('账号已锁定，请联系系统管理员')
+                } else {
+                    message.error('用户名或密码错误')
                 }
-                break
-            case '2':
-                loginReq = {
-                    username: values.email,
-                    credential: values.verificationCode,
-                    loginType: 'EMAIL',
-                    clientType: 'WEB',
-                    rememberMe: values.rememberMe ? 1 : null
-                }
-                break
-        }
-        runAsync(loginReq)
-            .then(
-                (data) => {
-                    loginSuccessHandler(data)
-                },
-                (error) => {
-                    if (error.response && error.response.status === 401) {
-                        if (error.response.data && error.response.data.code === 2201) {
-                            message.error('账号已锁定，请联系系统管理员')
-                        } else {
-                            message.error('用户名或密码错误')
-                        }
 
-                    }
-                }
-            )
+            }
+        }
+        // runAsync(loginReq)
+        //     .then(
+        //         (data) => {
+        //             loginSuccessHandler(data)
+        //         },
+        //         (error) => {
+        //             if (error.response && error.response.status === 401) {
+        //                 if (error.response.data && error.response.data.code === 2201) {
+        //                     message.error('账号已锁定，请联系系统管理员')
+        //                 } else {
+        //                     message.error('用户名或密码错误')
+        //                 }
+
+        //             }
+        //         }
+        //     )
     }
 
     return (
@@ -300,7 +318,7 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                                 <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                             </Form.Item>
                             <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
-                                <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                <Button type="primary" htmlType="submit" size="large" block loading={passwordLoginLoading || getAuthorizeUrlLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
                                     {t('登 录')}
                                 </Button>
                             </Form.Item>
@@ -322,12 +340,12 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                                 <Form.Item name="verificationCode" rules={[{ required: loginMethod === '2', message: '验证码不可为空' }]} style={{ flex: 1, marginBottom: 0 }}>
                                     <Input allowClear size="large" placeholder="6位验证码" prefix={<MailOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
                                 </Form.Item>
-                                <Button loading={sendEmailVerificationCodeLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
+                                <Button loading={sendCaptchaLoading} disabled={verificationCode.disabled} size="large" onClick={handleWithVerificationCode}>
                                     {verificationCode.disabled ? t('{{ti}}s', { ti: verificationCode.seconds }) : t('发送')}
                                 </Button>
                             </Flex>
                             <Form.Item style={{ marginBottom: 32, marginTop: 12 }}>
-                                <Button type="primary" htmlType="submit" size="large" block loading={loading || getAuthorizeUrlLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
+                                <Button type="primary" htmlType="submit" size="large" block loading={captchaLoginLoading || getAuthorizeUrlLoading} style={{ boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.39)' }}>
                                     {t('登 录')}
                                 </Button>
                             </Form.Item>

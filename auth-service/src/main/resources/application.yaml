@@ -47,8 +47,7 @@ security:
   uiUrl: https://atlas.ys0921.sbs:4443
   authorize:
     permit:
-      - /login
-      - /login/ott
+      - /login/*
       - /refreshToken
       - /oauth2/oidc/logout
       - /oauth2/consent
@@ -61,7 +60,7 @@ security:
       - /actuator/**
       - /error
       - /favicon.ico
-      - /code/email/*
+      - /captcha/*
   # 用户设备最大token数量 -1 表示不限制
   coexistToken: 1
   # jwt token配置

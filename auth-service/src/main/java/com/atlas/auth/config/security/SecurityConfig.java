@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security;
 
 
-import com.atlas.auth.config.security.authentication.provider.EmailAuthenticationProvider;
+import com.atlas.auth.config.security.authentication.provider.CaptchaAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
 import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
@@ -11,7 +11,10 @@ import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntit
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
 import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
-import com.atlas.auth.service.*;
+import com.atlas.auth.service.CaptchaFactory;
+import com.atlas.auth.service.LogoutService;
+import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
+import com.atlas.auth.service.UserService;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
@@ -67,9 +70,6 @@ public class SecurityConfig {
     private UserService userService;
 
     @Resource
-    private EmailVerificationService emailVerificationService;
-
-    @Resource
     private PasswordEncoder passwordEncoder;
 
     @Resource
@@ -91,7 +91,7 @@ public class SecurityConfig {
     private SecurityContextRepository redisSecurityContextRepository;
 
     @Resource
-    private UserIdentifierService userIdentifierService;
+    private CaptchaFactory captchaFactory;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
@@ -162,8 +162,8 @@ public class SecurityConfig {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
                 //用户名密码身份认证
                 .authenticationProvider(daoAuthenticationProvider())
-                //邮箱验证码认证
-                .authenticationProvider(emailAuthenticationProvider())
+                // 验证码认证
+                .authenticationProvider(captchaAuthenticationProvider())
                 //用于使用三方登录的身份认证
                 .authenticationProvider(thirdPartyAuthenticationProvider())
                 // 刷新令牌
@@ -207,10 +207,10 @@ public class SecurityConfig {
         return new HeaderBasedRememberMeServices(secretKey, tokenService, userService);
     }
 
-    //邮箱登录认证
+    // 验证码认证
     @Bean
-    public EmailAuthenticationProvider emailAuthenticationProvider() {
-        return new EmailAuthenticationProvider(userService, emailVerificationService);
+    public CaptchaAuthenticationProvider captchaAuthenticationProvider() {
+        return new CaptchaAuthenticationProvider(userService, captchaFactory);
     }
 
     //一次性令牌
@@ -228,7 +228,7 @@ public class SecurityConfig {
     // 通行密钥
     @Bean
     public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
-        return new AtlasPublicKeyCredentialUserEntityRepository(userService,userIdentifierService);
+        return new AtlasPublicKeyCredentialUserEntityRepository(userService);
     }
 
     @Bean
@@ -244,15 +244,14 @@ public class SecurityConfig {
     //三方登录认证
     @Bean
     public ThirdPartyAuthenticationProvider thirdPartyAuthenticationProvider() {
-        ThirdPartyAuthenticationProvider thirdPartyAuthenticationProvider = new ThirdPartyAuthenticationProvider();
-        thirdPartyAuthenticationProvider.setUserDetailsService(userService);
-        return thirdPartyAuthenticationProvider;
+
+        return new ThirdPartyAuthenticationProvider(userService);
     }
 
     @Bean
     public RefreshAuthenticationProvider refreshAuthenticationProvider() {
 
-        return new RefreshAuthenticationProvider(userService);
+        return new RefreshAuthenticationProvider(userService,tokenService);
     }
 
     @Bean

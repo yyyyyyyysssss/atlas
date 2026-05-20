@@ -36,7 +36,9 @@ const Login = () => {
     })
 
     // 是否显示扫码登录 (翻转状态)
-    const [isQrLogin, setIsQrLogin] = useState(false);
+    const [isQrLogin, setIsQrLogin] = useState(false)
+
+    const ottLoginRef = useRef(false)
 
     useEffect(() => {
         if (ottToken) {
@@ -46,13 +48,17 @@ const Login = () => {
 
     const handleOttLogin = async (token) => {
         try {
-            const data = await ottLoginAsync(token)
-            loginSuccessHandler(data)
+            ottLoginRef.current = true
+            const loginResponse = await ottLoginAsync({
+                token: token,
+                clientType: 'WEB'
+            })
+            loginSuccessHandler(loginResponse)
         } catch (error) {
+            ottLoginRef.current = false
             message.error('快捷登录链接已失效或无效，请重新登录')
             // 登录失败后清理 URL 中的 token，防止刷新再次触发
             navigate('/login', { replace: true })
-            hasHandledOttRef.current = false
         }
     }
 
@@ -61,7 +67,7 @@ const Login = () => {
         redirect('/', data?.access?.token)
     }
 
-    if (ottLoginLoading) {
+    if (ottLoginRef.current) {
         return <Loading fullscreen tip="正在通过快捷链接登录..." />
     }
 

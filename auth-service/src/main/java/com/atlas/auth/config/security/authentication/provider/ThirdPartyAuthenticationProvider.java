@@ -1,5 +1,6 @@
 package com.atlas.auth.config.security.authentication.provider;
 
+import com.atlas.auth.service.UserService;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -15,7 +16,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
  */
 public class ThirdPartyAuthenticationProvider implements AuthenticationProvider {
 
-    private UserDetailsService userDetailsService;
+    private UserService userService;
+
+    public ThirdPartyAuthenticationProvider(UserService userService){
+        this.userService = userService;
+    }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -24,7 +29,7 @@ public class ThirdPartyAuthenticationProvider implements AuthenticationProvider 
         }
         ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = (ThirdPartyAuthenticationToken)authentication;
         Object principal = thirdPartyAuthenticationToken.getPrincipal();
-        UserDetails userDetails = userDetailsService.loadUserByUsername((String) principal);
+        UserDetails userDetails = userService.loadUserByUserId((Long) principal);
         if (userDetails == null) {
             throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
         }
@@ -40,9 +45,5 @@ public class ThirdPartyAuthenticationProvider implements AuthenticationProvider 
     @Override
     public boolean supports(Class<?> authentication) {
         return ThirdPartyAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    public void setUserDetailsService(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
     }
 }

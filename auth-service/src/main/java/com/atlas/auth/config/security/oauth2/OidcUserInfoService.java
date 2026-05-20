@@ -1,21 +1,20 @@
 package com.atlas.auth.config.security.oauth2;
 
+import com.atlas.auth.service.UserService;
 import com.atlas.security.model.SecurityUser;
 import jakarta.annotation.Resource;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Set;
 
 @Service
 public class OidcUserInfoService {
 
     @Resource
-    private UserDetailsService userService;
+    private UserService userService;
 
     public OidcUserInfo loadUser(String username, Set<String> authorizedScopes) {
         SecurityUser securityUser = (SecurityUser) userService.loadUserByUsername(username);

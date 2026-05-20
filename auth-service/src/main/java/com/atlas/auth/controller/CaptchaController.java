@@ -1,8 +1,7 @@
 package com.atlas.auth.controller;
 
-import com.atlas.auth.domain.dto.EmailCodeDTO;
-import com.atlas.auth.enums.VerificationScene;
-import com.atlas.auth.service.EmailVerificationService;
+import com.atlas.auth.domain.dto.CaptchaSendDTO;
+import com.atlas.auth.service.CaptchaFactory;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/code")
-public class AuthCodeController {
+@RequestMapping("/captcha")
+public class CaptchaController {
 
-    private final EmailVerificationService emailVerificationService;
+    private final CaptchaFactory captchaFactory;
 
-    @PostMapping("/email/login")
-    public Result<Void> sendEmailCode(@RequestBody @Validated EmailCodeDTO emailCodeDTO) {
-        emailVerificationService.send(emailCodeDTO.getEmail(), VerificationScene.LOGIN);
+    @PostMapping("/send")
+    public Result<Void> send(@RequestBody @Validated CaptchaSendDTO captchaSendDTO) {
+        captchaFactory.getService(captchaSendDTO.captchaType())
+                .send(captchaSendDTO.target(), captchaSendDTO.captchaScene());
         return ResultGenerator.ok();
     }
 

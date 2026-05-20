@@ -3,15 +3,21 @@ import httpWrapper from "./AxiosWrapper"
 import Cookies from 'js-cookie'
 
 
-//登录
-export const login = async (req) => {
+// 验证码登录
+export const captchaLogin = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login', req))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/captcha', req))
 }
 
-export const ottLogin = async (ottToken) => {
+// 账号密码登录
+export const passwordLogin = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/login/ott?ottToken=${ottToken}`))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/password', req))
+}
+
+export const ottLogin = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/ott',req))
 }
 
 export const sendOttLink = async (username, targetUrl = '') => {
@@ -37,6 +43,14 @@ export const sendEmailVerificationCode = (email) => {
         httpWrapper.post('/api/auth/code/email/login', {
             email: email
         })
+    )
+}
+
+// 发送验证码
+export const sendCaptcha = (req) => {
+
+    return apiRequestWrapper(() =>
+        httpWrapper.post('/api/auth/captcha/send', req)
     )
 }
 

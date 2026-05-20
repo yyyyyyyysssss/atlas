@@ -2,30 +2,19 @@ package com.atlas.auth.controller;
 
 
 import com.atlas.auth.domain.dto.CaptchaLoginDTO;
+import com.atlas.auth.domain.dto.OttLoginDTO;
 import com.atlas.auth.domain.dto.PasswordLoginDTO;
-import com.atlas.auth.enums.LoginType;
-import com.atlas.security.enums.ClientType;
-import com.atlas.security.exception.TokenAuthenticationException;
-import com.atlas.security.token.EmailAuthenticationToken;
-import com.atlas.auth.domain.dto.LoginDTO;
+import com.atlas.auth.domain.dto.RefreshTokenDTO;
 import com.atlas.auth.service.LoginService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.TokenResponse;
-import com.atlas.security.resolver.NormalBearerTokenResolver;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.RememberMeAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,74 +23,30 @@ public class LoginController {
 
     private final LoginService loginService;
 
-    private final NormalBearerTokenResolver normalBearerTokenResolver;
-
-    @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Result<TokenResponse> login(@RequestBody @Validated LoginDTO loginDTO) {
-        TokenResponse tokenResponse;
-        switch (loginDTO.getLoginType()) {
-            case NORMAL:
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getCredential());
-                tokenResponse = loginService.login(authenticationToken, loginDTO.getClientType(),true, loginDTO.isRememberMe());
-                break;
-            case EMAIL:
-                EmailAuthenticationToken emailAuthenticationToken = new EmailAuthenticationToken(loginDTO.getUsername(), loginDTO.getCredential());
-                tokenResponse = loginService.login(emailAuthenticationToken, loginDTO.getClientType(), true,loginDTO.isRememberMe());
-                break;
-            case OTT:
-                OneTimeTokenAuthenticationToken oneTimeTokenAuthenticationToken = new OneTimeTokenAuthenticationToken(loginDTO.getCredential());
-                tokenResponse = loginService.login(oneTimeTokenAuthenticationToken, loginDTO.getClientType(), false, loginDTO.isRememberMe());
-                break;
-            case REMEMBER_ME:
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                if(!(authentication instanceof RememberMeAuthenticationToken)){
-                    throw new BadCredentialsException("非法认证请求");
-                }
-                tokenResponse = loginService.login(authentication, loginDTO.getClientType(),true, loginDTO.isRememberMe());
-                break;
-            default:
-                throw new UnsupportedOperationException("不支持的登录方式:" + loginDTO.getLoginType());
-        }
-        if (tokenResponse == null) {
-            throw new BadCredentialsException("Bad Credentials");
-        }
-        return ResultGenerator.ok(tokenResponse);
-    }
-
     // 账号密码登录
     @PostMapping("/login/password")
     public Result<?> loginPassword(@RequestBody @Validated PasswordLoginDTO passwordLoginDTO){
-
-        return ResultGenerator.ok();
+        TokenResponse tokenResponse = loginService.loginPassword(passwordLoginDTO);
+        return ResultGenerator.ok(tokenResponse);
     }
 
     // 验证码登录
     @PostMapping("/login/captcha")
     public Result<?> loginCaptcha(@RequestBody @Validated CaptchaLoginDTO captchaLoginDTO){
-
-        return ResultGenerator.ok();
+        TokenResponse tokenResponse = loginService.loginCaptcha(captchaLoginDTO);
+        return ResultGenerator.ok(tokenResponse);
     }
 
     // 一次令牌登录
-    @GetMapping("/login/ott")
-    public Result<?> login(@RequestParam("ottToken") String ottToken, @RequestParam(value = "clientType", required = false) ClientType clientType) {
-        LoginDTO loginDTO = new LoginDTO();
-        loginDTO.setLoginType(LoginType.OTT);
-        loginDTO.setCredential(ottToken);
-        if (clientType == null) {
-            clientType = ClientType.WEB;
-        }
-        loginDTO.setClientType(clientType);
-        return login(loginDTO);
+    @PostMapping("/login/ott")
+    public Result<?> loginOtt(@RequestBody @Validated OttLoginDTO ottLoginDTO) {
+        TokenResponse tokenResponse = loginService.loginOtt(ottLoginDTO);
+        return ResultGenerator.ok(tokenResponse);
     }
 
     @PostMapping("/refreshToken")
-    public Result<?> refreshToken(HttpServletRequest request) {
-        String refreshToken = normalBearerTokenResolver.resolve(request);
-        if (StringUtils.isEmpty(refreshToken)) {
-            throw new TokenAuthenticationException("凭证不能为空");
-        }
-        TokenResponse tokenResponse = loginService.refreshToken(refreshToken);
+    public Result<?> refreshToken(@RequestBody @Validated RefreshTokenDTO refreshTokenDTO) {
+        TokenResponse tokenResponse = loginService.refreshToken(refreshTokenDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 

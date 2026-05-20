@@ -1,10 +1,12 @@
 package com.atlas.auth.config.security.authentication.provider;
 
+import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
-import com.atlas.auth.enums.VerificationScene;
-import com.atlas.auth.service.EmailVerificationService;
+import com.atlas.auth.enums.CaptchaScene;
+import com.atlas.auth.service.CaptchaFactory;
+import com.atlas.auth.service.CaptchaVerificationService;
 import com.atlas.auth.service.UserService;
-import com.atlas.security.token.EmailAuthenticationToken;
+import com.atlas.security.token.CaptchaAuthenticationToken;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,19 +19,19 @@ import org.springframework.security.core.userdetails.UserDetailsChecker;
 /**
  * @Description
  * @Author ys
- * @Date 2024/8/13 11:38
+ * @Date 2026/5/20 10:16
  */
-public class EmailAuthenticationProvider implements AuthenticationProvider {
+public class CaptchaAuthenticationProvider implements AuthenticationProvider {
 
     private final UserService userService;
 
-    private final EmailVerificationService emailVerificationService;
+    private final CaptchaFactory captchaFactory;
 
     private final UserDetailsChecker userDetailsChecker = new AccountStatusUserDetailsChecker();
 
-    public EmailAuthenticationProvider(UserService userService, EmailVerificationService emailVerificationService){
+    public CaptchaAuthenticationProvider(UserService userService, CaptchaFactory captchaFactory){
         this.userService = userService;
-        this.emailVerificationService = emailVerificationService;
+        this.captchaFactory = captchaFactory;
     }
 
     @Override
@@ -37,15 +39,24 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         if (!supports(authentication.getClass())) {
             return null;
         }
-        EmailAuthenticationToken emailAuthenticationToken = (EmailAuthenticationToken) authentication;
-        String email = (String) emailAuthenticationToken.getPrincipal();
-        String inputCode = (String) emailAuthenticationToken.getCredentials();
+        CaptchaAuthenticationToken captchaAuthenticationToken = (CaptchaAuthenticationToken) authentication;
+        String principal = (String)captchaAuthenticationToken.getPrincipal();
+        String captchaCode = (String) captchaAuthenticationToken.getCredentials();
+        String captchaType = captchaAuthenticationToken.getCaptchaType();
+        CaptchaType type;
+        try {
+            type = CaptchaType.valueOf(captchaType.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new BadCredentialsException("不支持的验证码登录类型: " + captchaType);
+        }
+        CaptchaVerificationService captchaVerificationService = captchaFactory.getService(type);
         // 先校验验证码
-        boolean verify = emailVerificationService.verify(email, inputCode, VerificationScene.LOGIN);
+        boolean verify = captchaVerificationService.verify(principal, captchaCode, CaptchaScene.LOGIN);
         if (!verify){
             throw new BadCredentialsException("验证码错误!");
         }
-        Long userId = userService.ensureUserByIdentifier(IdentifierType.EMAIL, email);
+        // 确保用户存在（不存在则自动创建，实现一键登录）
+        Long userId = userService.ensureUserByIdentifier(IdentifierType.valueOf(captchaType), principal);
         // 加载 UserDetails
         UserDetails userDetails = userService.loadUserByUserId(userId);
         if (userDetails == null) {
@@ -54,17 +65,18 @@ public class EmailAuthenticationProvider implements AuthenticationProvider {
         // 校验用户状态（是否被禁用、锁定等）
         userDetailsChecker.check(userDetails);
         // 构建已认证的 Token
-        EmailAuthenticationToken authenticated = EmailAuthenticationToken.authenticated(
+        CaptchaAuthenticationToken authenticated = CaptchaAuthenticationToken.authenticated(
                 userDetails,
                 null,
+                captchaType,
                 userDetails.getAuthorities()
         );
-        authenticated.setDetails(emailAuthenticationToken.getDetails());
+        authenticated.setDetails(captchaAuthenticationToken.getDetails());
         return authenticated;
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
-        return EmailAuthenticationToken.class.isAssignableFrom(authentication);
+        return CaptchaAuthenticationToken.class.isAssignableFrom(authentication);
     }
 }

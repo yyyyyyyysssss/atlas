@@ -69,7 +69,7 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
 
     return (
         <div style={{ position: 'relative', display: 'inline-block' }}>
-            <Avatar size={120} src={avatar} style={{ cursor: 'pointer', boxShadow: '0 0 0 1px #d9d9d9' }} onClick={() => setAvatarPreviewVisible(true)} />
+            <Avatar size={120} src={avatar} style={{ cursor: 'pointer' }} onClick={() => setAvatarPreviewVisible(true)} />
             <Image preview={{ visible: avatarPreviewVisible, src: avatar, onVisibleChange: setAvatarPreviewVisible }} style={{ display: 'none' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0 }}>
                 <Upload showUploadList={false} accept='image/*' beforeUpload={handleBeforeUpload}>

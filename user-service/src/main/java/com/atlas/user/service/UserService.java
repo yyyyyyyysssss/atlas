@@ -28,7 +28,7 @@ public interface UserService extends IService<User> {
 
     User findByUsername(String username);
 
-    User findByUserId(Serializable userId);
+    UserDTO findByUserId(Serializable userId);
 
     List<UserDTO> findByIdentifier(Collection<?> identifiers);
 

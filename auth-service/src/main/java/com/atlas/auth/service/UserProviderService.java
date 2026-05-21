@@ -5,6 +5,7 @@ import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserProvider;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,5 +19,7 @@ public interface UserProviderService extends IService<UserProvider> {
     UserProviderDTO getByProvider(String identityType, String identifier);
 
     void addUserProvider(Long userId, String provider, String providerUserId, Map<String, Object> extraInfo);
+
+    List<UserProvider> listByUserId(Long userId);
 }
 

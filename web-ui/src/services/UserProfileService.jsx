@@ -30,7 +30,12 @@ export const changeUserProfile = async (req) => {
 
 export const changeUsername = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/user/profile/username', req))
+    return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/username', req))
+}
+
+export const fetchAccountSecurity = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/auth/account/security'))
 }
 
 export const getUserWorkSchedule = async (startDate, endDate) => {

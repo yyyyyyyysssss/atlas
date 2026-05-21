@@ -1,0 +1,75 @@
+package com.atlas.auth.controller;
+
+import com.atlas.auth.domain.dto.ChangeUsernameDTO;
+import com.atlas.auth.domain.vo.AccountSecurityVO;
+import com.atlas.auth.service.AccountService;
+import com.atlas.common.core.response.Result;
+import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.security.model.SecurityUser;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * @Description
+ * @Author ys
+ * @Date 2026/5/21 11:55
+ */
+@RequestMapping("/account")
+@RestController
+@RequiredArgsConstructor
+@Slf4j
+public class AccountController {
+
+    private final AccountService accountService;
+
+
+    /**
+     * 获取账号安全与绑定状态
+     */
+    @GetMapping("/security")
+    public Result<AccountSecurityVO> accountSecurity(@AuthenticationPrincipal SecurityUser securityUser) {
+        AccountSecurityVO accountSecurity = accountService.getAccountSecurity(securityUser.getId());
+        return ResultGenerator.ok(accountSecurity);
+    }
+
+    /**
+     * 修改/设置用户名
+     */
+    @PutMapping("/username")
+    public Result<Void> changeUsername(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeUsernameDTO changeUsernameDTO){
+        accountService.changeUsername(securityUser.getId(),changeUsernameDTO);
+        return ResultGenerator.ok();
+    }
+
+    /**
+     * 修改/设置密码
+     */
+    @PutMapping("/password")
+    public Result<Void> changePassword(){
+
+        return ResultGenerator.ok();
+    }
+
+    /**
+     * 修改/设置邮箱
+     */
+    @PutMapping("/email")
+    public Result<Void> changeEmail(){
+
+        return ResultGenerator.ok();
+    }
+
+    /**
+     * 修改/设置手机号
+     */
+    @PutMapping("/phone")
+    public Result<Void> changePhone(){
+
+        return ResultGenerator.ok();
+    }
+
+
+}

@@ -91,7 +91,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserAuthDTO loadUserByUserId(Long id) {
-        User user = findByUserId(id);
+        User user = getById(id);
         return getUserAuthDTO(user);
     }
 
@@ -178,8 +178,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public User findByUserId(Serializable userId) {
-        return userMapper.selectById(userId);
+    public UserDTO findByUserId(Serializable userId) {
+        User user = userMapper.selectById(userId);
+        return UserMapping.INSTANCE.toUserDTO(user);
     }
 
     @Override

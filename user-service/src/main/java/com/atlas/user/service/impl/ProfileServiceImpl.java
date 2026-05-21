@@ -145,7 +145,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void changeUserProfile(Long userId, UserProfileDTO userProfileDTO) {
-        User user = userService.findByUserId(userId);
+        User user = userService.getById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
@@ -209,7 +209,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
-        User user = userService.findByUserId(userId);
+        User user = userService.getById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
@@ -230,7 +230,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO) {
-        User user = userService.findByUserId(userId);
+        User user = userService.getById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }

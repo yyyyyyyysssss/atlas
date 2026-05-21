@@ -111,7 +111,7 @@ public class SecurityConfig {
                             .requestMatchers(securityProperties.getAuthorize().getPermit().toArray(new String[0])).permitAll()
                             //允许所有异步请求
                             .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                            // 其余的只要通过认证即可 这里的“认证”是指你通过 Filter 从 Header 解析出的用户信息
+                            // 必须通过身份认证
                             .anyRequest().authenticated();
                 })
                 //记住我

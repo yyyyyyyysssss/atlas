@@ -85,6 +85,15 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
     }
 
     @Override
+    public UserIdentifier findByUserIdAndType(Long userId, IdentifierType type) {
+        QueryWrapper<UserIdentifier> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", userId)
+                .eq("identifier_type", type.name())
+                .eq("status", IdentifierStatus.ACTIVE.name());
+        return userIdentifierMapper.selectOne(wrapper);
+    }
+
+    @Override
     public String findValueByUserIdAndType(Long userId, IdentifierType type) {
         QueryWrapper<UserIdentifier> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId)
@@ -117,6 +126,21 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         wrapper.eq("user_id", userId);
         wrapper.eq("status", IdentifierStatus.ACTIVE.name());
         return this.list(wrapper);
+    }
+
+    @Override
+    public boolean updateUsername(Long userId, String newUsername) {
+        String normalizeValue = normalize(IdentifierType.USERNAME, newUsername);
+        UserIdentifier exist = this.findByUserIdAndType(userId, IdentifierType.USERNAME);
+        if (exist != null) {
+            exist.setIdentifierValue(newUsername);
+            exist.setNormalizedValue(normalizeValue);
+            return this.lambdaUpdate()
+                    .eq(UserIdentifier::getId, exist.getId()) // 💡 使用主键更新，性能最高且最安全
+                    .update(exist);
+        } else {
+            return !this.addIdentifier(userId, new IdentifierSpec(IdentifierType.USERNAME, newUsername, true)).isEmpty();
+        }
     }
 
     /** 更新状态 */

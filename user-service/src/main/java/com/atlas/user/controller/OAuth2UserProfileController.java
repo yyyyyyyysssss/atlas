@@ -28,7 +28,7 @@ public class OAuth2UserProfileController {
     @GetMapping("/info")
     public Result<Map<String, Object>> loadUser(){
         Long userId = UserContext.getRequiredUserId();
-        User user = userService.findByUserId(userId);
+        User user = userService.getById(userId);
         OidcUserInfo oidcUserInfo = OidcUserInfo.builder()
                 .subject(user.getId().toString())
                 .preferredUsername(user.getUsername())

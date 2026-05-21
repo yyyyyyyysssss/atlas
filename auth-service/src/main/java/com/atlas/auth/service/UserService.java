@@ -62,12 +62,11 @@ public class UserService implements UserDetailsService {
         if(userId != null){
             return userId;
         }
-        // 创建用户
-        Result<Long> result = userApi.createUser(CreateUserSpec.empty());
-        if(!result.isSucceed()){
-            throw new BusinessException("用户创建失败: " + result.getMessage());
+        if(IdentifierType.USERNAME.equals(type)){
+            throw new IllegalArgumentException("不支持对【用户名】类型执行自动创建用户操作");
         }
-        userId = result.getData();
+        // 创建用户
+        userId = invokeCreateUser(CreateUserSpec.empty());
         // 创建用户标识
         List<IdentifierSpec> specs = new ArrayList<>();
         specs.add(new IdentifierSpec(IdentifierType.USERNAME, null, null));
@@ -83,32 +82,25 @@ public class UserService implements UserDetailsService {
             return existingIdentity.getUserId();
         }
         // 用三方带回的原生标识（邮箱/手机）去本地撞库，防止同人多号
-        Long userId = null;
-        if(StringUtils.hasText(extraInfo.getEmail())){
-            userId = userIdentifierService.findUserIdByValueAndType(extraInfo.getEmail(), IdentifierType.EMAIL);
-        }
-        if(userId == null && StringUtils.hasText(extraInfo.getPhone())){
-            userId = userIdentifierService.findUserIdByValueAndType(extraInfo.getPhone(), IdentifierType.PHONE);
-        }
+        Long matchedEmailUserId = StringUtils.hasText(extraInfo.getEmail()) ? userIdentifierService.findUserIdByValueAndType(extraInfo.getEmail(), IdentifierType.EMAIL) : null;
+        Long matchedPhoneUserId = StringUtils.hasText(extraInfo.getPhone()) ? userIdentifierService.findUserIdByValueAndType(extraInfo.getPhone(), IdentifierType.PHONE) : null;
+        // 优先使用邮箱撞库命中的 ID，其次是手机
+        Long userId = matchedEmailUserId != null ? matchedEmailUserId : matchedPhoneUserId;
         if (userId != null) {
             // 命中本地老账号！直接为老账号绑定该三方关系（静默绑定），不建新号
             userProviderService.addUserProvider(userId, provider,sub,extraInfo.getExtraInfo());
             List<IdentifierSpec> missingSpecs = new ArrayList<>();
-            if(StringUtils.hasText(extraInfo.getEmail())){
+            if(StringUtils.hasText(extraInfo.getEmail()) && matchedEmailUserId == null){
                 missingSpecs.add(new IdentifierSpec(IdentifierType.EMAIL, extraInfo.getEmail(), extraInfo.getEmailVerified()));
             }
-            if(StringUtils.hasText(extraInfo.getPhone())){
+            if(StringUtils.hasText(extraInfo.getPhone()) && matchedPhoneUserId == null){
                 missingSpecs.add(new IdentifierSpec(IdentifierType.PHONE, extraInfo.getPhone(), extraInfo.getPhoneVerified()));
             }
             userIdentifierService.addIdentifier(userId, missingSpecs);
             return userId;
         }
         // 创建用户
-        Result<Long> result = userApi.createUser(new CreateUserSpec(extraInfo.getFullName(),extraInfo.getAvatar(),null));
-        if(!result.isSucceed()){
-            throw new BusinessException("用户创建失败: " + result.getMessage());
-        }
-        userId = result.getData();
+        userId = invokeCreateUser(new CreateUserSpec(extraInfo.getFullName(),extraInfo.getAvatar(),null));
         // 创建身份关联记录
         userProviderService.addUserProvider(userId, provider,sub,extraInfo.getExtraInfo());
         // 创建用户标识
@@ -122,6 +114,17 @@ public class UserService implements UserDetailsService {
         }
         userIdentifierService.addIdentifier(userId, specs);
         return userId;
+    }
+
+    private Long invokeCreateUser(CreateUserSpec spec) {
+        Result<Long> result = userApi.createUser(spec);
+        if (!result.isSucceed()) {
+            throw new BusinessException("用户基础档案创建失败: " + result.getMessage());
+        }
+        if (result.getData() == null) {
+            throw new BusinessException("用户基础档案创建失败: 远程服务未返回合法用户ID");
+        }
+        return result.getData();
     }
 
     public SecurityUser securityUser(UserAuthDTO userAuthDTO,List<UserIdentifier> userIdentifiers){

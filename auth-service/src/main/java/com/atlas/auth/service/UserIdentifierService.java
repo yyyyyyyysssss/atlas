@@ -43,6 +43,8 @@ public interface UserIdentifierService extends IService<UserIdentifier> {
      */
     UserIdentifier findByValue(String value);
 
+    UserIdentifier findByUserIdAndType(Long userId, IdentifierType type);
+
     /**
      * 根据标识值全局获取用户标识（不限制类型）
      * @throws UsernameNotFoundException 如果该凭证在系统内找不到
@@ -85,6 +87,8 @@ public interface UserIdentifierService extends IService<UserIdentifier> {
      * 查询用户的所有标识
      */
     List<UserIdentifier> listByUserId(Long userId);
+
+    boolean updateUsername(Long userId, String newUsername);
 
     /**
      * 更新标识状态

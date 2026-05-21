@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -73,6 +74,10 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         userIdentity.setId(IdGen.genId());
         this.save(userIdentity);
     }
-    
+
+    @Override
+    public List<UserProvider> listByUserId(Long userId) {
+        return userProviderMapper.selectList(new LambdaQueryWrapper<UserProvider>().eq(UserProvider::getUserId,userId));
+    }
 }
 

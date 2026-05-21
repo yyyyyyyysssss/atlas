@@ -48,8 +48,8 @@ public class UserInternalController {
 
     @GetMapping("/findByUserId")
     public Result<UserDTO> findByUserId(@RequestParam("userId") Long userId) {
-        User user = userService.findByUserId(userId);
-        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(user));
+        UserDTO userDTO = userService.findByUserId(userId);
+        return ResultGenerator.ok(userDTO);
     }
 
     @GetMapping("/all")

@@ -4,17 +4,16 @@ import com.atlas.auth.domain.dto.ChangeUsernameDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.domain.entity.UserProvider;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
+import com.atlas.auth.domain.vo.UserProviderVO;
 import com.atlas.auth.enums.IdentifierType;
+import com.atlas.auth.enums.ProviderType;
 import com.atlas.common.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,11 +44,52 @@ public class AccountService {
 
         // 三方账号
         List<UserProvider> userProviders = userProviderService.listByUserId(userId);
-        Set<String> boundProviderNames = userProviders.stream()
-                .map(UserProvider::getProvider)
-                .filter(Objects::nonNull) // 顺手做个防呆过滤，防止数据库里有空字段导致空指针
-                .map(String::toUpperCase)
-                .collect(Collectors.toSet());
+        Map<String, UserProvider> providerMap = userProviders.stream()
+                .filter(item -> item.getProvider() != null)
+                .collect(Collectors.toMap(
+                        item -> item.getProvider().toUpperCase(),
+                        item -> item,
+                        (k1, k2) -> k1
+                ));
+        List<UserProviderVO> providers = Arrays.stream(ProviderType.values())
+                .map(supported -> {
+                    String code = supported.getCode();
+                    boolean isBound = providerMap.containsKey(code);
+                    String boundName = null;
+                    if (isBound) {
+                        UserProvider providerData = providerMap.get(code);
+                        Map<String, Object> extraInfo = providerData.getExtraInfo();
+                        boundName = "已关联账户";
+                        if (extraInfo != null && !extraInfo.isEmpty()) {
+                            if (ProviderType.GOOGLE.getCode().equals(code)) {
+                                // Google 授权通常返回 email
+                                Object emailObj = extraInfo.get("email");
+                                if (emailObj != null) {
+                                    boundName = emailObj.toString();
+                                }
+                            } else if (ProviderType.GITHUB.getCode().equals(code)) {
+                                // GitHub 标准字段是 login (用户名)
+                                Object loginObj = extraInfo.get("login");
+                                if (loginObj != null) {
+                                    boundName = loginObj.toString();
+                                }
+                            } else if (ProviderType.ATLAS.getCode().equals(code)) {
+                                // Atlas通常是 preferred_username
+                                Object preferredUsername = extraInfo.get("preferred_username");
+                                if (preferredUsername != null) {
+                                    boundName = preferredUsername.toString();
+                                }
+                            }
+                        }
+                    }
+
+                    return UserProviderVO.builder()
+                            .provider(code.toLowerCase()) // 转小写给前端当 key (如 "google")
+                            .isBound(isBound)
+                            .boundName(boundName)
+                            .build();
+                })
+                .toList();
 
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
@@ -65,8 +105,7 @@ public class AccountService {
                 .phoneVerified(phoneIdent != null && phoneIdent.getVerified())
 
                 // 来自 user_provider 表 的社交绑定资产
-                .googleBound(boundProviderNames.contains("GOOGLE"))
-                .githubBound(boundProviderNames.contains("GITHUB"))
+                .providers(providers)
 
                 // 2FA 两步验证状态（暂不处理）
                 .mfaEnabled(false)

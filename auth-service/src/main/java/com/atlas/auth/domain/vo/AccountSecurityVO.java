@@ -3,6 +3,8 @@ package com.atlas.auth.domain.vo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @Description
  * @Author ys
@@ -47,14 +49,9 @@ public class AccountSecurityVO {
     private Boolean passkeyBound;
 
     /**
-     * 是否绑定了 Google 账号
+     * 第三方账号
      */
-    private Boolean googleBound;
-
-    /**
-     * 是否绑定了 GitHub 账号
-     */
-    private Boolean githubBound;
+    private List<UserProviderVO> providers;
 
     // ================== 两步验证 (2FA / MFA) ==================
 

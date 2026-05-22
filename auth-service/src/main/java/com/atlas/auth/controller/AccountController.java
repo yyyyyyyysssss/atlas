@@ -1,8 +1,6 @@
 package com.atlas.auth.controller;
 
-import com.atlas.auth.domain.dto.ChangePasswordDTO;
-import com.atlas.auth.domain.dto.ChangeUsernameDTO;
-import com.atlas.auth.domain.dto.InitPasswordDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.service.AccountService;
 import com.atlas.common.core.response.Result;
@@ -64,21 +62,18 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
-    /**
-     * 修改/设置邮箱
-     */
-    @PutMapping("/email")
-    public Result<Void> changeEmail(){
-
-        return ResultGenerator.ok();
+    @PostMapping("/verify/password")
+    public Result<Boolean> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO){
+        boolean verify = accountService.verifyPassword(securityUser.getId(), verifyPasswordDTO);
+        return ResultGenerator.ok(verify);
     }
 
     /**
-     * 修改/设置手机号
+     * 修改邮箱
      */
-    @PutMapping("/phone")
-    public Result<Void> changePhone(){
-
+    @PutMapping("/email")
+    public Result<Void> changeEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeEmailDTO changeEmailDTO){
+        accountService.changeEmail(securityUser.getId(), changeEmailDTO);
         return ResultGenerator.ok();
     }
 

@@ -88,7 +88,7 @@ public interface UserIdentifierService extends IService<UserIdentifier> {
      */
     List<UserIdentifier> listByUserId(Long userId);
 
-    boolean updateUsername(Long userId, String newUsername);
+    boolean updateIdentifier(Long userId, IdentifierType type, String newValue, boolean verified);
 
     /**
      * 更新标识状态

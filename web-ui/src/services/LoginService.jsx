@@ -54,6 +54,14 @@ export const sendCaptcha = (req) => {
     )
 }
 
+// 校验验证码
+export const verifyCaptcha = (req) => {
+
+    return apiRequestWrapper(() =>
+        httpWrapper.post('/api/auth/captcha/verify', req)
+    )
+}
+
 // 验证token是否有效
 export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
 

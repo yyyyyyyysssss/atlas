@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atlas - 验证码</title>
+    <title>Atlas - 重置账户密码</title>
     <style>
         /* 针对邮件客户端的重置样式 */
         body, table, td, p, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -37,10 +37,11 @@
                 <!-- Content 区域 -->
                 <tr>
                     <td style="padding: 32px 24px; color: #24292f;">
-                        <h2 style="font-size: 20px; font-weight: 600; margin-top: 0; margin-bottom: 24px; color: #24292f; line-height: 1.3;">验证您的设备或浏览器</h2>
+                        <!-- 重置密码业务专属标题 -->
+                        <h2 style="font-size: 20px; font-weight: 600; margin-top: 0; margin-bottom: 24px; color: #24292f; line-height: 1.3;">重置您的账户密码</h2>
                         <p style="font-size: 14px; color: #24292f; margin: 0 0 24px 0; line-height: 1.6;">
                             您好，<br><br>
-                            我们收到了在 Atlas 账号上的验证请求。请输入以下验证码以继续：
+                            您正在尝试重置 Atlas 账户的登录密码。请在密码重置页面输入以下验证码以继续操作：
                         </p>
 
                         <!-- 验证码外框 -->
@@ -54,9 +55,12 @@
                             </tr>
                         </table>
 
+                        <!-- 重置密码阶段的安全风险预警 -->
                         <p style="font-size: 13px; color: #57606a; line-height: 1.6; margin: 0;">
                             验证码将在 <strong th:text="${min}" style="color: #24292f;">5</strong> 分钟后失效。<br>
-                            如果您没有发起此请求，请忽略此邮件。可能有人误输入了您的邮箱地址。
+                            <span style="color: #cf222e; font-weight: 500; display: block; margin-top: 8px;">
+                                🚨 如果您并未发起密码重置申请，说明可能有人在尝试盗取您的账户！请绝对不要将此验证码泄漏给任何人，并建议立即前往官网检查您的账户密码安全。
+                            </span>
                         </p>
                     </td>
                 </tr>

@@ -1,6 +1,7 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.dto.CaptchaSendDTO;
+import com.atlas.auth.domain.dto.CaptchaVerifyDTO;
 import com.atlas.auth.service.CaptchaFactory;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -30,6 +31,13 @@ public class CaptchaController {
         captchaFactory.getService(captchaSendDTO.captchaType())
                 .send(captchaSendDTO.target(), captchaSendDTO.captchaScene());
         return ResultGenerator.ok();
+    }
+
+    @PostMapping("/verify")
+    public Result<Boolean> verify(@RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO) {
+        boolean isValid = captchaFactory.getService(captchaVerifyDTO.captchaType())
+                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.captchaScene());
+        return ResultGenerator.ok(isValid);
     }
 
 }

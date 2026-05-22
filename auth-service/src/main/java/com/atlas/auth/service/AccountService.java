@@ -1,11 +1,11 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.ChangePasswordDTO;
-import com.atlas.auth.domain.dto.ChangeUsernameDTO;
-import com.atlas.auth.domain.dto.InitPasswordDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.domain.vo.UserProviderVO;
+import com.atlas.auth.enums.CaptchaScene;
+import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,9 @@ public class AccountService {
 
     private final UserPasswordCredentialsService userPasswordCredentialsService;
 
-    public AccountSecurityVO getAccountSecurity(Long userId){
+    private final CaptchaFactory captchaFactory;
+
+    public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
         List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
         Map<IdentifierType, UserIdentifier> identifierMap = userIdentifiers.stream()
@@ -73,7 +75,7 @@ public class AccountService {
                 .build();
     }
 
-    public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO){
+    public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO) {
         UserIdentifier userIdentifier = userIdentifierService.findByUserIdAndType(userId, IdentifierType.USERNAME);
         if (isUsernameModified(userIdentifier)) {
             throw new BusinessException("账号名一年内仅允许修改一次，上次修改时间：" + userIdentifier.getUpdateTime().toLocalDate());
@@ -83,18 +85,36 @@ public class AccountService {
         if (existsUserId != null) {
             throw new BusinessException("该账号名已被占用，请换一个试试");
         }
-        userIdentifierService.updateUsername(userId, newUsername);
+        userIdentifierService.updateIdentifier(userId, IdentifierType.USERNAME, newUsername, true);
     }
 
-    public void initPassword(Long userId, InitPasswordDTO initPasswordDTO){
-        userPasswordCredentialsService.setPassword(userId,initPasswordDTO.password());
+    public void initPassword(Long userId, InitPasswordDTO initPasswordDTO) {
+        userPasswordCredentialsService.setPassword(userId, initPasswordDTO.password());
     }
 
-    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO){
-        userPasswordCredentialsService.updatePassword(userId,changePasswordDTO.oldPassword(),changePasswordDTO.newPassword());
+    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
+        userPasswordCredentialsService.updatePassword(userId, changePasswordDTO.oldPassword(), changePasswordDTO.newPassword());
     }
 
-    private boolean isUsernameModified(UserIdentifier userIdentifier){
+    public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {
+        Long exist = userIdentifierService.findUserIdByValueAndType(changeEmailDTO.newEmail(),IdentifierType.EMAIL);
+        if (exist != null) {
+            throw new BusinessException("该邮箱已被其他账号占用");
+        }
+        boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
+                .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
+        if (!verify) {
+            throw new BusinessException("验证码错误或已过期");
+        }
+        userIdentifierService.updateIdentifier(userId, IdentifierType.EMAIL, changeEmailDTO.newEmail(), true);
+    }
+
+    public boolean verifyPassword(Long userId, VerifyPasswordDTO verifyPasswordDTO){
+
+        return userPasswordCredentialsService.verifyPassword(userId,verifyPasswordDTO.password());
+    }
+
+    private boolean isUsernameModified(UserIdentifier userIdentifier) {
 
         return userIdentifier.getUpdateTime() != null && userIdentifier.getUpdateTime().isAfter(userIdentifier.getCreateTime());
     }

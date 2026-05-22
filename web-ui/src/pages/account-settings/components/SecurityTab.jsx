@@ -58,6 +58,7 @@ const SecurityTab = () => {
                 />
                 {/* 电子邮箱组件 */}
                 <EmailItem
+                    passwordSet={passwordSet}
                     boundEmail={boundEmail}
                     emailVerified={emailVerified}
                     refresh={refresh}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Button, Typography, Flex, theme, Modal, Form, Input, message, Progress, Row, Col } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
+import { Button, Typography, Flex, theme, Modal, Form, Input, Progress, Row, Col, Space, App } from 'antd';
+import { CheckCircleFilled, CloseCircleOutlined, LockOutlined } from '@ant-design/icons';
 import { changePassword, initPassword } from '../../../services/UserProfileService';
 import { useRequest } from 'ahooks';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 const PasswordItem = ({ passwordSet, refresh }) => {
     const { token } = theme.useToken();
@@ -12,6 +13,8 @@ const PasswordItem = ({ passwordSet, refresh }) => {
     const [form] = Form.useForm();
     const [passwordStrength, setPasswordStrength] = useState(0); // 0-4 分
     const [password, setPassword] = useState('');
+
+    const { modal, message } = App.useApp();
 
     const { runAsync: changePasswordAsync, loading: changeLoading } = useRequest(changePassword, { manual: true });
     const { runAsync: initPasswordAsync, loading: initLoading } = useRequest(initPassword, { manual: true });
@@ -24,6 +27,24 @@ const PasswordItem = ({ passwordSet, refresh }) => {
         if (/[0-9]/.test(value)) strength += 1;
         if (/[^A-Za-z0-9]/.test(value)) strength += 1;
         return strength;
+    };
+
+    // 辅助计算强度颜色与文案映射
+    const getStrengthConfig = (score) => {
+        if (score <= 1) return { color: token.colorError, label: '弱安全性' };
+        if (score === 2) return { color: token.colorWarning, label: '中等强度' };
+        if (score === 3) return { color: token.colorSuccess, label: '高安全性' };
+        return { color: token.colorLink, label: '极强密码' };
+    };
+
+    const currentStrength = getStrengthConfig(passwordStrength);
+
+    // 实时规则符合状态
+    const rulesCheck = {
+        length: password.length >= 8,
+        mixed: /[A-Z]/.test(password),
+        digit: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9]/.test(password)
     };
 
     const handleOk = async () => {
@@ -63,7 +84,16 @@ const PasswordItem = ({ passwordSet, refresh }) => {
             </Flex>
 
             <Modal
-                title={passwordSet ? '修改密码' : '设置初始密码'}
+                title={
+                    <div style={{ marginBottom: 4 }}>
+                        <Title level={4} style={{ margin: 0, fontWeight: 600 }}>
+                            {passwordSet ? '变更安全密码' : '初始化安全密码'}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
+                            {passwordSet ? '为了您的账户安全，定期更换密码是个好习惯' : '请为您的账户设置一个符合安全合规要求的高强度密码'}
+                        </Text>
+                    </div>
+                }
                 open={isModalOpen}
                 onOk={handleOk}
                 onCancel={() => {
@@ -74,22 +104,33 @@ const PasswordItem = ({ passwordSet, refresh }) => {
                 }}
                 confirmLoading={changeLoading || initLoading}
                 afterClose={() => form.resetFields()}
+                styles={{
+                    body: { paddingTop: 20 }
+                }}
                 destroyOnHidden
             >
-                <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
+                <Form form={form} layout="vertical" requiredMark={false}>
                     {passwordSet && (
-                        <Form.Item label="当前密码" name="oldPassword" rules={[{ required: true, message: '请输入当前密码' }]}>
-                            <Input.Password placeholder="输入旧密码" />
+                        <Form.Item 
+                            label={<Text style={{ fontWeight: 500, fontSize: 13 }}>当前密码</Text>}
+                            name="oldPassword" 
+                            rules={[{ required: true, message: '请输入当前密码' }]}
+                        >
+                            <Input.Password 
+                                placeholder="输入旧密码验证身份" 
+                                size="large"
+                                style={{ borderRadius: 8 }}
+                            />
                         </Form.Item>
                     )}
+                    
                     <Form.Item
-                        label="新密码"
+                        label={<Text style={{ fontWeight: 500, fontSize: 13 }}>新密码</Text>}
                         name="newPassword"
                         rules={[
                             { required: true, message: '请输入新密码' },
                             {
                                 validator: (_, value) => {
-                                    // 获取当前输入的旧密码
                                     const oldPassword = form.getFieldValue('oldPassword');
                                     if (passwordSet && oldPassword && value === oldPassword) {
                                         return Promise.reject(new Error('新密码不能与原密码相同'));
@@ -100,37 +141,74 @@ const PasswordItem = ({ passwordSet, refresh }) => {
                         ]}
                     >
                         <Input.Password
-                            placeholder="设置新密码"
+                            placeholder="输入新密码"
+                            size="large"
+                            style={{ borderRadius: 8 }}
                             onChange={(e) => {
                                 const val = e.target.value;
-                                setPassword(val); // 保存当前输入值
-                                setPasswordStrength(checkStrength(val)); // 计算分数
+                                setPassword(val);
+                                setPasswordStrength(checkStrength(val));
                             }}
                         />
                     </Form.Item>
 
-                    {/* 仅在用户输入密码时才显示强度条 */}
-                    {password.length > 0 && (
-                        <div style={{ marginBottom: 24 }}>
-                            <Flex justify="space-between" align="center" style={{ marginBottom: 4 }}>
-                                <Text type="secondary" style={{ fontSize: 12 }}>密码强度</Text>
-                                <Text style={{
-                                    fontSize: 12,
-                                    color: passwordStrength > 2 ? token.colorSuccess : (passwordStrength > 1 ? token.colorWarning : token.colorError)
-                                }}>
-                                    {['', '弱', '中等', '强', '极强'][passwordStrength]}
-                                </Text>
-                            </Flex>
-                            <Progress
-                                percent={passwordStrength === 0 ? 10 : passwordStrength * 25}
-                                showInfo={false}
-                                strokeColor={passwordStrength > 2 ? token.colorSuccess : (passwordStrength > 1 ? token.colorWarning : token.colorError)}
-                                size="small"
-                            />
-                        </div>
-                    )}
+                    {/* 🌟 动态舒展的精细化密码强度指示面板 */}
+                    <AnimatePresence>
+                        {password.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0, y: -10 }}
+                                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                                exit={{ opacity: 0, height: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ 
+                                    background: token.colorFillAlter, 
+                                    padding: '12px 16px', 
+                                    borderRadius: 8, 
+                                    marginBottom: 24,
+                                    border: `1px solid ${token.colorBorderSecondary}`,
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                                    <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>安全评级</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: 600, color: currentStrength.color }}>
+                                        {currentStrength.label}
+                                    </Text>
+                                </Flex>
+                                
+                                <Progress
+                                    percent={passwordStrength === 0 ? 8 : passwordStrength * 25}
+                                    showInfo={false}
+                                    strokeColor={currentStrength.color}
+                                    size="small"
+                                    style={{ margin: '0 0 12px 0' }}
+                                />
+
+                                {/* 密码复杂度实时审计指引 */}
+                                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                    <Flex align="center" gap={6}>
+                                        {rulesCheck.length ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                        <Text style={{ fontSize: 12 }} type={rulesCheck.length ? 'success' : 'secondary'}>长度达到或超过 8 位</Text>
+                                    </Flex>
+                                    <Flex align="center" gap={6}>
+                                        {rulesCheck.mixed ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                        <Text style={{ fontSize: 12 }} type={rulesCheck.mixed ? 'success' : 'secondary'}>包含大写英文字母</Text>
+                                    </Flex>
+                                    <Flex align="center" gap={6}>
+                                        {rulesCheck.digit ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                        <Text style={{ fontSize: 12 }} type={rulesCheck.digit ? 'success' : 'secondary'}>包含数字字符 (0-9)</Text>
+                                    </Flex>
+                                    <Flex align="center" gap={6}>
+                                        {rulesCheck.special ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                        <Text style={{ fontSize: 12 }} type={rulesCheck.special ? 'success' : 'secondary'}>包含特殊符号或标点</Text>
+                                    </Flex>
+                                </Space>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <Form.Item
-                        label="确认密码"
+                        label={<Text style={{ fontWeight: 500, fontSize: 13 }}>确认新密码</Text>}
                         name="confirmPassword"
                         dependencies={['newPassword']}
                         rules={[
@@ -143,7 +221,11 @@ const PasswordItem = ({ passwordSet, refresh }) => {
                             }),
                         ]}
                     >
-                        <Input.Password placeholder="再次确认新密码" />
+                        <Input.Password 
+                            placeholder="请再次输入新密码" 
+                            size="large"
+                            style={{ borderRadius: 8 }}
+                        />
                     </Form.Item>
                 </Form>
             </Modal>

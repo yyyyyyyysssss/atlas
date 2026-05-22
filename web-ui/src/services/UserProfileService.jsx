@@ -49,6 +49,17 @@ export const initPassword = async (req) => {
     return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/init/password', req))
 }
 
+export const verifyPassword = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/verify/password', req))
+}
+
+export const changeEmail = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/email', req))
+}
+
+
 
 
 

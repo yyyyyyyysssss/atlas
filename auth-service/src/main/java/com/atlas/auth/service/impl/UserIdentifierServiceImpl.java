@@ -129,17 +129,21 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
     }
 
     @Override
-    public boolean updateUsername(Long userId, String newUsername) {
-        String normalizeValue = normalize(IdentifierType.USERNAME, newUsername);
-        UserIdentifier exist = this.findByUserIdAndType(userId, IdentifierType.USERNAME);
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateIdentifier(Long userId, IdentifierType type, String newValue, boolean verified) {
+        String normalizeValue = normalize(type, newValue);
+        UserIdentifier exist = this.findByUserIdAndType(userId, type);
         if (exist != null) {
-            exist.setIdentifierValue(newUsername);
+            // 3. 如果存在，使用主键乐观锁定或精确更新
+            exist.setIdentifierValue(newValue);
             exist.setNormalizedValue(normalizeValue);
+            exist.setVerified(verified);
             return this.lambdaUpdate()
-                    .eq(UserIdentifier::getId, exist.getId()) // 💡 使用主键更新，性能最高且最安全
+                    .eq(UserIdentifier::getId, exist.getId())
                     .update(exist);
         } else {
-            return !this.addIdentifier(userId, new IdentifierSpec(IdentifierType.USERNAME, newUsername, true)).isEmpty();
+            // 如果不存在，直接调用你现有的添加凭证逻辑
+            return !this.addIdentifier(userId, new IdentifierSpec(type, newValue, verified)).isEmpty();
         }
     }
 

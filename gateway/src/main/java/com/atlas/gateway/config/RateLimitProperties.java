@@ -64,6 +64,11 @@ public class RateLimitProperties {
         private int periodInSeconds;
 
         /**
+         * 版本
+         */
+        private String version = "v1";
+
+        /**
          * 请求方式限制
          */
         private List<String> methods;

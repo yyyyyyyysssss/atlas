@@ -40,6 +40,8 @@ public interface UserPasswordCredentialsService extends IService<UserPasswordCre
 
     boolean hasPassword(Long userId);
 
+    boolean verifyPassword(Long userId, String password);
+
     /**
      * 检查当前密码凭证是否已经过期
      */

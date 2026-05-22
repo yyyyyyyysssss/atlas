@@ -2,15 +2,17 @@ package com.atlas.gateway.config;
 
 import com.atlas.common.core.response.IErrorCode;
 import com.atlas.common.core.response.ResultGenerator;
+import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
 import io.github.bucket4j.distributed.proxy.AsyncProxyManager;
+import io.github.bucket4j.distributed.proxy.ClientSideConfig;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.codec.RedisCodec;
+import io.lettuce.core.codec.StringCodec;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.gateway.server.mvc.common.MvcUtils;
-import org.springframework.cloud.gateway.server.mvc.filter.Bucket4jFilterFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -21,7 +23,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.servlet.function.*;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -41,24 +42,34 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 @Slf4j
 public class RateLimiterConfig {
 
-    @Value("${spring.application.name:atlas}")
-    private String applicationName;
-
     // Spring 会自动收集所有 KeyResolver 类型的 Bean
     private final Map<String, Function<ServerRequest, String>> keyResolvers;
 
-    public RateLimiterConfig(Map<String, Function<ServerRequest, String>> keyResolvers) {
+    private final KeyResolverConfiguration resolverConfig;
+
+
+    public RateLimiterConfig(Map<String, Function<ServerRequest, String>> keyResolvers, KeyResolverConfiguration resolverConfig) {
         this.keyResolvers = keyResolvers;
+        this.resolverConfig = resolverConfig;
     }
 
     @Bean
     public AsyncProxyManager<String> redisAsyncProxyManager(RedisConnectionFactory connectionFactory) {
         LettuceConnectionFactory lettuceFactory = (LettuceConnectionFactory) connectionFactory;
         RedisClient redisClient = (RedisClient) lettuceFactory.getNativeClient();
-        String redisKeyPrefix = applicationName + ":rate-limit:";
-        StatefulRedisConnection<String, byte[]> connection = redisClient.connect(new PrefixedStringCodec(redisKeyPrefix));
+        RedisCodec<String, byte[]> codec = RedisCodec.of(StringCodec.UTF8, ByteArrayCodec.INSTANCE);
+        StatefulRedisConnection<String, byte[]> connection = redisClient.connect(codec);
+
+        // 使用 basedOnTimeForRefillingBucketUpToMax 策略，传入一个最大兜底存活时间
+        ClientSideConfig clientSideConfig = ClientSideConfig
+                .getDefault()
+                .withExpirationAfterWriteStrategy(
+                        ExpirationAfterWriteStrategy
+                                .basedOnTimeForRefillingBucketUpToMax(Duration.ofDays(1))
+                );
         return LettuceBasedProxyManager
                 .builderFor(connection)
+                .withClientSideConfig(clientSideConfig)
                 .build()
                 .asAsync();
     }
@@ -73,14 +84,11 @@ public class RateLimiterConfig {
                 Function<ServerRequest, String> resolver;
                 String resolverName = rule.getKeyResolverName() != null ? rule.getKeyResolverName() : "ipKeyResolver";
                 if ("paramKeyResolver".equals(resolverName) && rule.getKeyName() != null) {
-                    String targetParam = rule.getKeyName();
-                    resolver = request -> request.param(targetParam)
-                            .filter(val -> !val.isEmpty()) // 过滤掉空字符串
-                            .orElseGet(() -> defaultIpResolver.apply(request));
+                    resolver = resolverConfig.createParamKeyResolver(rule.getKeyName());
                 } else {
                     resolver = keyResolvers.getOrDefault(resolverName, defaultIpResolver);
                 }
-                // 构建路径
+                // 构建路径和 Method 的谓词机制
                 RequestPredicate predicate = RequestPredicates.path(rule.getPath());
                 // 构建方法
                 if (rule.getMethods() != null && !rule.getMethods().isEmpty()) {
@@ -90,12 +98,13 @@ public class RateLimiterConfig {
                             .orElse(RequestPredicates.all()); // 兜底
                     predicate = predicate.and(methodPredicate);
                 }
-                // RateLimiter 过滤器实例
+                // 构建 Bucket4j 过滤器实例（包装它，让其只做令牌判定）
                 HandlerFilterFunction<ServerResponse, ServerResponse> rateLimiterFilter =
                         rateLimit(c -> c
                                 .setCapacity(rule.getCapacity())
                                 .setPeriod(Duration.ofSeconds(rule.getPeriodInSeconds()))
-                                .setKeyResolver(resolver)
+                                // 在生成的 Redis Key 后面强制加上 :version
+                                .setKeyResolver(request -> resolver.apply(request) + ":" + rule.getVersion())
                         );
                 // 生成唯一的 RouteId (将路径斜杠替换为下划线，防止重名)
                 String routeId = service.getServiceId() + "_" + rule.getPath().replaceAll("/", "_");

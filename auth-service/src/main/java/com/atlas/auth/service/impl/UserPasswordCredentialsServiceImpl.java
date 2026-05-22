@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,15 +73,9 @@ public class UserPasswordCredentialsServiceImpl extends ServiceImpl<UserPassword
         if (Objects.equals(oldRawPassword, newRawPassword)) {
             throw new BusinessException("新密码不能与原密码相同");
         }
-        UserPasswordCredentials credentials = this.getOne(
-                new LambdaQueryWrapper<UserPasswordCredentials>()
-                        .eq(UserPasswordCredentials::getUserId, userId)
-        );
-        if (credentials == null) {
-            throw new BusinessException("账户安全凭证异常");
-        }
+        boolean verify = verifyPassword(userId, oldRawPassword);
         // 严密校验旧密码
-        if (!passwordEncoder.matches(oldRawPassword, credentials.getPassword())) {
+        if (verify) {
             throw new BusinessException("当前原密码输入不正确");
         }
 
@@ -105,6 +100,23 @@ public class UserPasswordCredentialsServiceImpl extends ServiceImpl<UserPassword
     public boolean hasPassword(Long userId) {
         String hash = this.getPasswordHashByUserId(userId);
         return hash != null && !hash.isBlank();
+    }
+
+    @Override
+    public boolean verifyPassword(Long userId, String password) {
+        Objects.requireNonNull(userId, "用户ID不能为空");
+        if (StringUtils.isBlank(password)) {
+            return false;
+        }
+        UserPasswordCredentials credentials = this.getOne(
+                new LambdaQueryWrapper<UserPasswordCredentials>()
+                        .eq(UserPasswordCredentials::getUserId, userId)
+        );
+        if (credentials == null) {
+            log.warn("用户密码凭证不存在，用户ID: {}", userId);
+            return false;
+        }
+        return passwordEncoder.matches(password, credentials.getPassword());
     }
 
     @Override

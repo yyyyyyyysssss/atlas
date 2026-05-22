@@ -3,11 +3,13 @@ package com.atlas.auth.controller;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.service.AccountService;
+import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -58,7 +60,13 @@ public class AccountController {
      */
     @PutMapping("/password")
     public Result<Void> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangePasswordDTO changePasswordDTO){
-        accountService.changePassword(securityUser.getId(),changePasswordDTO);
+        if(changePasswordDTO.verifyMethod().equals("change") && StringUtils.isBlank(changePasswordDTO.oldPassword())){
+            throw new BusinessException("原密码不能为空");
+        }
+        if(changePasswordDTO.verifyMethod().equals("reset") && StringUtils.isBlank(changePasswordDTO.code())){
+            throw new BusinessException("验证码不能为空");
+        }
+        accountService.changePassword(securityUser,changePasswordDTO);
         return ResultGenerator.ok();
     }
 

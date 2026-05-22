@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Typography, Flex, Tag, theme, Modal, Form, Input, Steps, Row, Col, App, message, Radio } from 'antd';
-import { MailOutlined, SafetyCertificateOutlined, LeftOutlined, LockOutlined } from '@ant-design/icons';
+import { Button, Typography, Flex, Tag, theme, Modal, Form, Input, Steps, Row, Col, App, Radio } from 'antd';
+import { MailOutlined, SafetyCertificateOutlined, LeftOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendCaptcha, verifyCaptcha } from '../../../services/LoginService';
 import { useRequest } from 'ahooks';
@@ -11,18 +11,21 @@ import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 const { Text, Title } = Typography;
 
 const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
-    const { token } = theme.useToken();
-    const [form] = Form.useForm();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentStep, setCurrentStep] = useState(0);
+    const { token } = theme.useToken()
+    const [form] = Form.useForm()
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [currentStep, setCurrentStep] = useState(0)
 
-    const { modal, message } = App.useApp();
+    const { modal, message } = App.useApp()
 
     // 倒计时状态
-    const [countdown, setCountdown] = useState(0);
-    const [sendLoading, setSendLoading] = useState(false);
+    const [countdown, setCountdown] = useState(0)
+
+    const [sendLoading, setSendLoading] = useState(false)
 
     const verifierRef = useRef(null);
+
+    const [verifyMethod, setVerifyMethod] = useState('password')
 
     const { runAsync: sendCaptchaAsync, loading: sendCaptchaLoading } = useRequest(sendCaptcha, {
         manual: true
@@ -36,14 +39,7 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
         manual: true
     })
 
-    const { runAsync: verifyPasswordAsync, loading: verifyLoading } = useRequest(verifyPassword, { manual: true })
-
-    // 监听弹窗打开，如果是初次绑定，跳过第 0 步，直接进入绑定页
-    useEffect(() => {
-        if (isModalOpen) {
-            setCurrentStep(boundEmail ? 0 : 1);
-        }
-    }, [isModalOpen, boundEmail]);
+    const { runAsync: verifyPasswordAsync, loading: verifyPasswordLoading } = useRequest(verifyPassword, { manual: true })
 
     // 验证码倒计时逻辑
     useEffect(() => {
@@ -54,7 +50,11 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
         return () => clearTimeout(timer);
     }, [countdown]);
 
-    const handleEmailAction = () => setIsModalOpen(true);
+    const handleEmailAction = () => {
+        setCurrentStep(boundEmail ? 0 : 1);
+        setVerifyMethod(passwordSet ? 'password' : 'captcha');
+        setIsModalOpen(true);
+    }
 
     // 发送验证码接口
     const handleSendCode = async () => {
@@ -205,7 +205,7 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
                             exit={{ opacity: 0, x: 10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            {passwordSet === false ? (
+                            {verifyMethod === 'password' ? (
                                 <UniversalPasswordVerifier
                                     key="password"
                                     verifierRef={verifierRef}
@@ -231,6 +231,29 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
                                         });
                                     }}
                                 />
+                            )}
+                            {passwordSet && (
+                                <Flex justify="flex-end" style={{ marginTop: 12 }}>
+                                    <Button
+                                        type="link"
+                                        size="small"
+                                        icon={verifyMethod === 'password' ? <MailOutlined /> : <KeyOutlined />}
+                                        onClick={() => setVerifyMethod(verifyMethod === 'password' ? 'captcha' : 'password')}
+                                        style={{
+                                            fontSize: 13,
+                                            color: token.colorTextDescription,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            padding: '0 4px',
+                                            height: 'auto'
+                                        }}
+                                        className="verify-method-switcher"
+                                        onMouseEnter={(e) => e.currentTarget.style.color = token.colorPrimary}
+                                        onMouseLeave={(e) => e.currentTarget.style.color = token.colorTextDescription}
+                                    >
+                                        {verifyMethod === 'password' ? '忘记密码？改用邮箱验证码' : '返回使用密码验证'}
+                                    </Button>
+                                </Flex>
                             )}
                         </motion.div>
                     ) : (
@@ -296,7 +319,7 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
                     <Flex gap={12}>
                         <Button onClick={handleCancel}>取消</Button>
                         {currentStep === 0 ? (
-                            <Button type="primary" onClick={handleNextStep} loading={verifyCaptchaLoading}>下一步</Button>
+                            <Button type="primary" onClick={handleNextStep} loading={verifyCaptchaLoading || verifyPasswordLoading}>下一步</Button>
                         ) : (
                             <Button type="primary" onClick={handleSubmit} loading={changeEmailLoading}>完成修改</Button>
                         )}

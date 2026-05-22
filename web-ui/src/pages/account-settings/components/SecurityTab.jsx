@@ -53,6 +53,7 @@ const SecurityTab = () => {
                 />
                 {/* 登录密码组件 */}
                 <PasswordItem
+                    boundEmail={boundEmail}
                     passwordSet={passwordSet}
                     refresh={refresh}
                 />

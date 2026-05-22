@@ -25,10 +25,9 @@ public interface UserPasswordCredentialsService extends IService<UserPasswordCre
      * 用户自助修改密码（内含强力的防重放、旧密码合法性严格校验）
      *
      * @param userId          用户ID
-     * @param oldRawPassword  旧明文密码
      * @param newRawPassword  新明文密码
      */
-    void updatePassword(Long userId, String oldRawPassword, String newRawPassword);
+    void updatePassword(Long userId, String newRawPassword);
 
     /**
      * 安全提取 BCrypt 哈希串 (仅用于核心安全上下文，如 Spring Security UserDetailsService)

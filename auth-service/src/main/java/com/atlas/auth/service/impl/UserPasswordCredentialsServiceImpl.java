@@ -68,17 +68,8 @@ public class UserPasswordCredentialsServiceImpl extends ServiceImpl<UserPassword
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updatePassword(Long userId, String oldRawPassword, String newRawPassword) {
+    public void updatePassword(Long userId, String newRawPassword) {
         Objects.requireNonNull(userId, "用户ID不能为空");
-        if (Objects.equals(oldRawPassword, newRawPassword)) {
-            throw new BusinessException("新密码不能与原密码相同");
-        }
-        boolean verify = verifyPassword(userId, oldRawPassword);
-        // 严密校验旧密码
-        if (verify) {
-            throw new BusinessException("当前原密码输入不正确");
-        }
-
         LocalDateTime now = LocalDateTime.now();
         updatePasswordHash(userId, passwordEncoder.encode(newRawPassword), now);
     }

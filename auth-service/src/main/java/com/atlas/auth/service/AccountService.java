@@ -8,12 +8,14 @@ import com.atlas.auth.enums.CaptchaScene;
 import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -89,11 +91,34 @@ public class AccountService {
     }
 
     public void initPassword(Long userId, InitPasswordDTO initPasswordDTO) {
+        if (!Objects.equals(initPasswordDTO.password(), initPasswordDTO.confirmPassword())) {
+            throw new BusinessException("两次输入的新密码不一致");
+        }
         userPasswordCredentialsService.setPassword(userId, initPasswordDTO.password());
     }
 
-    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
-        userPasswordCredentialsService.updatePassword(userId, changePasswordDTO.oldPassword(), changePasswordDTO.newPassword());
+    public void changePassword(SecurityUser securityUser, ChangePasswordDTO changePasswordDTO) {
+        Long userId = securityUser.getId();
+        if (!Objects.equals(changePasswordDTO.newPassword(), changePasswordDTO.confirmPassword())) {
+            throw new BusinessException("两次输入的新密码不一致");
+        }
+        if("reset".equals(changePasswordDTO.verifyMethod())){
+            boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
+                    .verify(securityUser.getEmail(), changePasswordDTO.code(), CaptchaScene.RESET_PASSWORD);
+            if(!verify){
+                throw new BusinessException("验证码不正确或已过期");
+            }
+        } else {
+            if (Objects.equals(changePasswordDTO.oldPassword(), changePasswordDTO.newPassword())) {
+                throw new BusinessException("新密码不能与原密码相同");
+            }
+            boolean verify = userPasswordCredentialsService.verifyPassword(userId,changePasswordDTO.oldPassword());
+            // 严密校验旧密码
+            if (!verify) {
+                throw new BusinessException("当前原密码输入不正确");
+            }
+        }
+        userPasswordCredentialsService.updatePassword(userId, changePasswordDTO.newPassword());
     }
 
     public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {

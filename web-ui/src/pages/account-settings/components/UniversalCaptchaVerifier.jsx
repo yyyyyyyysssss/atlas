@@ -48,6 +48,12 @@ const UniversalCaptchaVerifier = ({
 
     if (verifierRef) {
         verifierRef.current = {
+            getCaptchaCode: () => {
+                return form.getFieldValue('captchaCode');
+            },
+            validate: async () => {
+                return await form.validateFields(['captchaCode']);
+            },
             onVerify: async () => {
                 await form.validateFields(['captchaCode']);
                 const code = form.getFieldValue('captchaCode');
@@ -66,7 +72,7 @@ const UniversalCaptchaVerifier = ({
     }
 
     return (
-        <Form form={form} layout="vertical" requiredMark={false} style={{ width: '100%' }}>
+        <Form form={form} layout="vertical" requiredMark={false} style={{ width: '100%' }} component={false}>
 
             {/* 1. 使用 Antd Card 打造的经典账号看板 */}
             <Card

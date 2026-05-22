@@ -1,6 +1,8 @@
 package com.atlas.auth.controller;
 
+import com.atlas.auth.domain.dto.ChangePasswordDTO;
 import com.atlas.auth.domain.dto.ChangeUsernameDTO;
+import com.atlas.auth.domain.dto.InitPasswordDTO;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.service.AccountService;
 import com.atlas.common.core.response.Result;
@@ -45,11 +47,20 @@ public class AccountController {
     }
 
     /**
-     * 修改/设置密码
+     * 初始化/设置密码（仅限未设置密码时调用）
+     */
+    @PutMapping("/init/password")
+    public Result<Void> initPassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitPasswordDTO initPasswordDTO){
+        accountService.initPassword(securityUser.getId(),initPasswordDTO);
+        return ResultGenerator.ok();
+    }
+
+    /**
+     * 修改密码
      */
     @PutMapping("/password")
-    public Result<Void> changePassword(){
-
+    public Result<Void> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangePasswordDTO changePasswordDTO){
+        accountService.changePassword(securityUser.getId(),changePasswordDTO);
         return ResultGenerator.ok();
     }
 

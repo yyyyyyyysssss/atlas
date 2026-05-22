@@ -61,6 +61,7 @@ const Loading: React.FC<LoadingProps> = ({
                 spinning={spinning}
                 size={size}
                 tip={tip}
+                indicator={customIndicator}
                 {...restProps}
             >
                 {children}

@@ -1,19 +1,19 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.ChangePasswordDTO;
 import com.atlas.auth.domain.dto.ChangeUsernameDTO;
+import com.atlas.auth.domain.dto.InitPasswordDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
-import com.atlas.auth.domain.entity.UserProvider;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.domain.vo.UserProviderVO;
 import com.atlas.auth.enums.IdentifierType;
-import com.atlas.auth.enums.ProviderType;
 import com.atlas.common.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +30,10 @@ public class AccountService {
 
     private final UserProviderService userProviderService;
 
+    private final UserPasswordCredentialsService userPasswordCredentialsService;
+
     public AccountSecurityVO getAccountSecurity(Long userId){
+        // 账号标识
         List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
         Map<IdentifierType, UserIdentifier> identifierMap = userIdentifiers.stream()
                 .collect(Collectors.toMap(
@@ -43,57 +46,14 @@ public class AccountService {
         UserIdentifier phoneIdent = identifierMap.get(IdentifierType.PHONE);
 
         // 三方账号
-        List<UserProvider> userProviders = userProviderService.listByUserId(userId);
-        Map<String, UserProvider> providerMap = userProviders.stream()
-                .filter(item -> item.getProvider() != null)
-                .collect(Collectors.toMap(
-                        item -> item.getProvider().toUpperCase(),
-                        item -> item,
-                        (k1, k2) -> k1
-                ));
-        List<UserProviderVO> providers = Arrays.stream(ProviderType.values())
-                .map(supported -> {
-                    String code = supported.getCode();
-                    boolean isBound = providerMap.containsKey(code);
-                    String boundName = null;
-                    if (isBound) {
-                        UserProvider providerData = providerMap.get(code);
-                        Map<String, Object> extraInfo = providerData.getExtraInfo();
-                        boundName = "已关联账户";
-                        if (extraInfo != null && !extraInfo.isEmpty()) {
-                            if (ProviderType.GOOGLE.getCode().equals(code)) {
-                                // Google 授权通常返回 email
-                                Object emailObj = extraInfo.get("email");
-                                if (emailObj != null) {
-                                    boundName = emailObj.toString();
-                                }
-                            } else if (ProviderType.GITHUB.getCode().equals(code)) {
-                                // GitHub 标准字段是 login (用户名)
-                                Object loginObj = extraInfo.get("login");
-                                if (loginObj != null) {
-                                    boundName = loginObj.toString();
-                                }
-                            } else if (ProviderType.ATLAS.getCode().equals(code)) {
-                                // Atlas通常是 preferred_username
-                                Object preferredUsername = extraInfo.get("preferred_username");
-                                if (preferredUsername != null) {
-                                    boundName = preferredUsername.toString();
-                                }
-                            }
-                        }
-                    }
+        List<UserProviderVO> providers = userProviderService.getUserProviderViewList(userId);
 
-                    return UserProviderVO.builder()
-                            .provider(code.toLowerCase()) // 转小写给前端当 key (如 "google")
-                            .isBound(isBound)
-                            .boundName(boundName)
-                            .build();
-                })
-                .toList();
+        // 密码
+        boolean passwordSet = userPasswordCredentialsService.hasPassword(userId);
 
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
-                .passwordSet(true)
+                .passwordSet(passwordSet)
                 .passkeyBound(false)
 
                 // 来自 user_identifier 表 的基础通信资产
@@ -124,6 +84,14 @@ public class AccountService {
             throw new BusinessException("该账号名已被占用，请换一个试试");
         }
         userIdentifierService.updateUsername(userId, newUsername);
+    }
+
+    public void initPassword(Long userId, InitPasswordDTO initPasswordDTO){
+        userPasswordCredentialsService.setPassword(userId,initPasswordDTO.password());
+    }
+
+    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO){
+        userPasswordCredentialsService.updatePassword(userId,changePasswordDTO.oldPassword(),changePasswordDTO.newPassword());
     }
 
     private boolean isUsernameModified(UserIdentifier userIdentifier){

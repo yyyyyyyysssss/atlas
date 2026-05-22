@@ -38,67 +38,63 @@ const SecurityTab = () => {
         recoveryCodeGenerated
     } = data || {}
 
-    if (loading || !data) {
-        return (
-            <Loading tip="正在载入安全设置..." />
-        );
-    }
-
     return (
-        <div style={{ width: '100%' }}>
-            <Title level={4} style={{ marginBottom: 8, color: token.colorTextHeading }}>登录与绑定</Title>
-            <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                管理您可以用来登录 Atlas 账号的凭证和第三方服务。
-            </Paragraph>
-            {/* 系统账号组件 */}
-            <UsernameItem
-                username={username}
-                isUsernameModified={isUsernameModified}
-                refresh={refresh}
-            />
-            {/* 登录密码组件 */}
-            <PasswordItem
-                passwordSet={passwordSet}
-                refresh={refresh}
-            />
-            {/* 电子邮箱组件 */}
-            <EmailItem
-                boundEmail={boundEmail}
-                emailVerified={emailVerified}
-                refresh={refresh}
-            />
-            {/* 通行密钥 */}
-            <PasskeyItem
-                passkeyBound={passkeyBound}
-                refresh={refresh}
-            />
+        <Loading spinning={loading || !data} tip="正在载入安全设置...">
+            <div style={{ width: '100%' }}>
+                <Title level={4} style={{ marginBottom: 8, color: token.colorTextHeading }}>登录与绑定</Title>
+                <Paragraph type="secondary" style={{ marginBottom: 24 }}>
+                    管理您可以用来登录 Atlas 账号的凭证和第三方服务。
+                </Paragraph>
+                {/* 系统账号组件 */}
+                <UsernameItem
+                    username={username}
+                    isUsernameModified={isUsernameModified}
+                    refresh={refresh}
+                />
+                {/* 登录密码组件 */}
+                <PasswordItem
+                    passwordSet={passwordSet}
+                    refresh={refresh}
+                />
+                {/* 电子邮箱组件 */}
+                <EmailItem
+                    boundEmail={boundEmail}
+                    emailVerified={emailVerified}
+                    refresh={refresh}
+                />
+                {/* 通行密钥 */}
+                <PasskeyItem
+                    passkeyBound={passkeyBound}
+                    refresh={refresh}
+                />
 
 
 
 
-            <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>第三方账号</Title>
-            <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                关联第三方账号，实现一键快捷登录，同时为账号提供多渠道的身份验证保护。
-            </Paragraph>
-            <UserProviderItem
-                providers={providers}
-                refresh={refresh}
-            />
+                <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>第三方账号</Title>
+                <Paragraph type="secondary" style={{ marginBottom: 24 }}>
+                    关联第三方账号，实现一键快捷登录，同时为账号提供多渠道的身份验证保护。
+                </Paragraph>
+                <UserProviderItem
+                    providers={providers}
+                    refresh={refresh}
+                />
 
 
 
 
 
-            <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>两步验证 (2FA)</Title>
-            <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                为您的账号增加一层额外的安全保护。
-            </Paragraph>
-            <MfaSecurityItem
-                mfaEnabled={mfaEnabled}
-                recoveryCodeGenerated={recoveryCodeGenerated}
-                refresh={refresh}
-            />
-        </div>
+                <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>两步验证 (2FA)</Title>
+                <Paragraph type="secondary" style={{ marginBottom: 24 }}>
+                    为您的账号增加一层额外的安全保护。
+                </Paragraph>
+                <MfaSecurityItem
+                    mfaEnabled={mfaEnabled}
+                    recoveryCodeGenerated={recoveryCodeGenerated}
+                    refresh={refresh}
+                />
+            </div>
+        </Loading>
     );
 };
 

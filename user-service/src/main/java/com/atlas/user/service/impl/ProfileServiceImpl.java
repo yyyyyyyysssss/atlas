@@ -2,21 +2,17 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
-import com.atlas.user.domain.dto.ChangePasswordDTO;
-import com.atlas.user.domain.dto.ChangeUsernameDTO;
 import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.*;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -205,56 +201,5 @@ public class ProfileServiceImpl implements ProfileService {
         }
         Long orgId = userOrgMain.getOrgId();
         return organizationService.findMembers(orgId, "CHILDREN");
-    }
-
-    @Override
-    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
-        User user = userService.getById(userId);
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
-        if (!passwordEncoder.matches(changePasswordDTO.getOriginPassword(), user.getPassword())) {
-            throw new BusinessException("原密码不正确");
-        }
-        if (passwordEncoder.matches(changePasswordDTO.getNewPassword(), user.getPassword())) {
-            throw new BusinessException("新密码不能与原密码相同");
-        }
-        String newEncodedPassword = passwordEncoder.encode(changePasswordDTO.getNewPassword());
-        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-        userUpdateWrapper
-                .lambda()
-                .set(User::getPassword, newEncodedPassword)
-                .eq(User::getId, userId);
-        userService.update(userUpdateWrapper);
-    }
-
-    @Override
-    public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO) {
-        User user = userService.getById(userId);
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
-        Integer oldModifyCount = user.getUsernameModifyCount();
-        if (user.getUsernameModifyCount() >= 1) {
-            throw new BusinessException("账号只能修改一次，您已经修改过了");
-        }
-        String username = changeUsernameDTO.getUsername();
-        boolean exists = userService.lambdaQuery().eq(User::getUsername, username).exists();
-        if (exists) {
-            throw new BusinessException("该账号已被占用");
-        }
-
-        boolean success = userService.lambdaUpdate()
-                .set(User::getUsername, username)
-                .set(User::getUsernameModifyCount, oldModifyCount + 1)
-                .set(User::getUsernameLastModified, LocalDateTime.now())
-                // WHERE 条件
-                .eq(User::getId, userId)
-                .eq(User::getUsernameModifyCount, oldModifyCount) // 只有当数据库里的值没变时才更新
-                .lt(User::getUsernameModifyCount, 1)              // 再次强制限制小于1
-                .update();
-        if (!success) {
-            throw new BusinessException("操作过于频繁，请稍后重试");
-        }
     }
 }

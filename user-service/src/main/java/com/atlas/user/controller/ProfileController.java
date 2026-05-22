@@ -4,8 +4,6 @@ package com.atlas.user.controller;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.user.domain.dto.ChangePasswordDTO;
-import com.atlas.user.domain.dto.ChangeUsernameDTO;
 import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
@@ -57,20 +55,6 @@ public class ProfileController {
     public Result<?> profile(@RequestBody @Validated UserProfileDTO userProfileDTO) {
         Long userId = UserContext.getRequiredUserId();
         profileService.changeUserProfile(userId,userProfileDTO);
-        return ResultGenerator.ok();
-    }
-
-    @PostMapping("/username")
-    public Result<?> username(@RequestBody @Validated ChangeUsernameDTO changeUsernameDTO) {
-        Long userId = UserContext.getRequiredUserId();
-        profileService.changeUsername(userId, changeUsernameDTO);
-        return ResultGenerator.ok();
-    }
-
-    @PostMapping("/password")
-    public Result<?> password(@RequestBody @Validated ChangePasswordDTO changePasswordDTO) {
-        Long userId = UserContext.getRequiredUserId();
-        profileService.changePassword(userId, changePasswordDTO);
         return ResultGenerator.ok();
     }
 

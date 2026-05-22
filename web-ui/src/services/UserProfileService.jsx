@@ -18,15 +18,16 @@ export const fetchUserTeamMember = async () => {
     return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/team'))
 }
 
-export const changePassword = async (req) => {
-
-    return apiRequestWrapper(() => httpWrapper.post('/api/user/profile/password', req))
-}
-
 export const changeUserProfile = async (req) => {
 
     return apiRequestWrapper(() => httpWrapper.patch('/api/user/profile', req))
 }
+
+
+
+
+
+
 
 export const changeUsername = async (req) => {
 
@@ -37,6 +38,19 @@ export const fetchAccountSecurity = async () => {
 
     return apiRequestWrapper(() => httpWrapper.get('/api/auth/account/security'))
 }
+
+export const changePassword = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/password', req))
+}
+
+export const initPassword = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/init/password', req))
+}
+
+
+
 
 export const getUserWorkSchedule = async (startDate, endDate) => {
 

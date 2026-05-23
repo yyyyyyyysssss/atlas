@@ -2,20 +2,24 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.UserIdentifier;
-import com.atlas.auth.domain.vo.AccountSecurityVO;
-import com.atlas.auth.domain.vo.UserProviderVO;
-import com.atlas.auth.enums.CaptchaScene;
+import com.atlas.auth.domain.entity.UserPasswordCredentials;
+import com.atlas.auth.domain.entity.UserWebauthnCredentials;
+import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
+import com.atlas.auth.enums.SecurityScene;
+import com.atlas.auth.mapper.UserPasswordCredentialsMapper;
+import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.common.redis.utils.RedisHelper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.Duration;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +40,10 @@ public class AccountService {
 
     private final CaptchaFactory captchaFactory;
 
+    private final RedisHelper redisHelper;
+
+    private final UserWebauthnCredentialsMapper userWebauthnCredentialsMapper;
+
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
         List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
@@ -55,10 +63,29 @@ public class AccountService {
         // 密码
         boolean passwordSet = userPasswordCredentialsService.hasPassword(userId);
 
+        // 通行密钥
+        List<UserPasskeyVO> passkeyVOs = Collections.emptyList();
+        List<UserWebauthnCredentials> userPasswordCredentials = userWebauthnCredentialsMapper.selectList(
+                new LambdaQueryWrapper<UserWebauthnCredentials>()
+                        .eq(UserWebauthnCredentials::getUserId, userId)
+        );
+        if (!CollectionUtils.isEmpty(userPasswordCredentials)) {
+            passkeyVOs = userPasswordCredentials.stream()
+                    .map(crypto -> UserPasskeyVO.builder()
+                            .credentialId(crypto.getCredentialId())
+                            .userId(crypto.getUserId())
+                            .label(crypto.getLabel())
+                            .createTime(crypto.getCreateTime())
+                            .build())
+                    .toList();
+        }
+
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
                 .passwordSet(passwordSet)
-                .passkeyBound(false)
+
+                // 通行密钥
+                .passkeys(passkeyVOs)
 
                 // 来自 user_identifier 表 的基础通信资产
                 .username(usernameIdent != null ? usernameIdent.getIdentifierValue() : null)
@@ -97,47 +124,86 @@ public class AccountService {
         userPasswordCredentialsService.setPassword(userId, initPasswordDTO.password());
     }
 
-    public void changePassword(SecurityUser securityUser, ChangePasswordDTO changePasswordDTO) {
-        Long userId = securityUser.getId();
+    public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
         if (!Objects.equals(changePasswordDTO.newPassword(), changePasswordDTO.confirmPassword())) {
             throw new BusinessException("两次输入的新密码不一致");
         }
-        if("reset".equals(changePasswordDTO.verifyMethod())){
-            boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
-                    .verify(securityUser.getEmail(), changePasswordDTO.code(), CaptchaScene.RESET_PASSWORD);
-            if(!verify){
-                throw new BusinessException("验证码不正确或已过期");
-            }
-        } else {
-            if (Objects.equals(changePasswordDTO.oldPassword(), changePasswordDTO.newPassword())) {
-                throw new BusinessException("新密码不能与原密码相同");
-            }
-            boolean verify = userPasswordCredentialsService.verifyPassword(userId,changePasswordDTO.oldPassword());
-            // 严密校验旧密码
-            if (!verify) {
-                throw new BusinessException("当前原密码输入不正确");
-            }
+        boolean verify = userPasswordCredentialsService.verifyPassword(userId, changePasswordDTO.newPassword());
+        if (verify) {
+            throw new BusinessException("新密码不能与原密码相同");
         }
+        // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
+        validTicket(userId, SecurityScene.RESET_PASSWORD, changePasswordDTO.ticket());
         userPasswordCredentialsService.updatePassword(userId, changePasswordDTO.newPassword());
     }
 
-    public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {
-        Long exist = userIdentifierService.findUserIdByValueAndType(changeEmailDTO.newEmail(),IdentifierType.EMAIL);
+    public void initEmail(Long userId, InitEmailDTO initEmailDTO) {
+        Long exist = userIdentifierService.findUserIdByValueAndType(initEmailDTO.email(), IdentifierType.EMAIL);
         if (exist != null) {
             throw new BusinessException("该邮箱已被其他账号占用");
         }
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
-                .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
+                .verify(initEmailDTO.email(), initEmailDTO.code(), SecurityScene.MODIFY_EMAIL);
         if (!verify) {
             throw new BusinessException("验证码错误或已过期");
         }
+        userIdentifierService.addIdentifier(userId, new IdentifierSpec(IdentifierType.EMAIL, initEmailDTO.email(), true));
+    }
+
+    public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {
+        Long exist = userIdentifierService.findUserIdByValueAndType(changeEmailDTO.newEmail(), IdentifierType.EMAIL);
+        if (exist != null) {
+            throw new BusinessException("该邮箱已被其他账号占用");
+        }
+        boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
+                .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), SecurityScene.MODIFY_EMAIL);
+        if (!verify) {
+            throw new BusinessException("验证码错误或已过期");
+        }
+        // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
+        validTicket(userId, SecurityScene.MODIFY_EMAIL, changeEmailDTO.ticket());
         userIdentifierService.updateIdentifier(userId, IdentifierType.EMAIL, changeEmailDTO.newEmail(), true);
     }
 
-    public boolean verifyPassword(Long userId, VerifyPasswordDTO verifyPasswordDTO){
-
-        return userPasswordCredentialsService.verifyPassword(userId,verifyPasswordDTO.password());
+    public VerifyPasswordVO verifyPassword(Long userId, VerifyPasswordDTO verifyPasswordDTO) {
+        boolean verified = userPasswordCredentialsService.verifyPassword(userId, verifyPasswordDTO.password());
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, verifyPasswordDTO.securityScene());
+        }
+        return new VerifyPasswordVO(verified, ticket);
     }
+
+    public VerifyCaptchaVO verifyCaptcha(Long userId, CaptchaVerifyDTO captchaVerifyDTO) {
+        boolean verified = captchaFactory.getService(captchaVerifyDTO.captchaType())
+                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.securityScene());
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, captchaVerifyDTO.securityScene());
+        }
+        return new VerifyCaptchaVO(verified, ticket);
+    }
+
+    private String generateTicket(Long userId, SecurityScene securityScene) {
+        String ticket = UUID.randomUUID().toString().replace("-", "");
+        String redisKey = "account:ticket:" + securityScene.getCode() + ":" + ticket;
+        redisHelper.setValue(redisKey, userId, Duration.ofMinutes(5));
+        return ticket;
+    }
+
+    private Long validTicket(Long userId, SecurityScene securityScene, String ticket) {
+        String redisKey = "account:ticket:" + securityScene.getCode() + ":" + ticket;
+        Long ticketUserId = redisHelper.getValue(redisKey, Long.class);
+        if (ticketUserId == null) {
+            throw new BusinessException("安全验证已过期，请重新进行身份验证");
+        }
+        if (!ticketUserId.equals(userId)) {
+            throw new BusinessException("安全校验未通过，请重新进行身份验证");
+        }
+        redisHelper.delete(redisKey);
+        return ticketUserId;
+    }
+
 
     private boolean isUsernameModified(UserIdentifier userIdentifier) {
 

@@ -2,14 +2,14 @@ package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
+import com.atlas.auth.domain.vo.VerifyCaptchaVO;
+import com.atlas.auth.domain.vo.VerifyPasswordVO;
 import com.atlas.auth.service.AccountService;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -60,20 +60,26 @@ public class AccountController {
      */
     @PutMapping("/password")
     public Result<Void> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangePasswordDTO changePasswordDTO){
-        if(changePasswordDTO.verifyMethod().equals("change") && StringUtils.isBlank(changePasswordDTO.oldPassword())){
-            throw new BusinessException("原密码不能为空");
-        }
-        if(changePasswordDTO.verifyMethod().equals("reset") && StringUtils.isBlank(changePasswordDTO.code())){
-            throw new BusinessException("验证码不能为空");
-        }
-        accountService.changePassword(securityUser,changePasswordDTO);
+        accountService.changePassword(securityUser.getId(),changePasswordDTO);
         return ResultGenerator.ok();
     }
 
     @PostMapping("/verify/password")
-    public Result<Boolean> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO){
-        boolean verify = accountService.verifyPassword(securityUser.getId(), verifyPasswordDTO);
-        return ResultGenerator.ok(verify);
+    public Result<VerifyPasswordVO> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO){
+        VerifyPasswordVO verifyPasswordVO = accountService.verifyPassword(securityUser.getId(), verifyPasswordDTO);
+        return ResultGenerator.ok(verifyPasswordVO);
+    }
+
+    @PostMapping("/verify/captcha")
+    public Result<VerifyCaptchaVO> verifyCaptcha(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO){
+        VerifyCaptchaVO verifyCaptchaVO = accountService.verifyCaptcha(securityUser.getId(), captchaVerifyDTO);
+        return ResultGenerator.ok(verifyCaptchaVO);
+    }
+
+    @PutMapping("/init/email")
+    public Result<Void> initEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitEmailDTO initEmailDTO){
+        accountService.initEmail(securityUser.getId(),initEmailDTO);
+        return ResultGenerator.ok();
     }
 
     /**

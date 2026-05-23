@@ -48,7 +48,7 @@ const UniversalCaptchaVerifier = ({
 
     if (verifierRef) {
         verifierRef.current = {
-            getCaptchaCode: () => {
+            getValue: () => {
                 return form.getFieldValue('captchaCode');
             },
             validate: async () => {
@@ -57,13 +57,11 @@ const UniversalCaptchaVerifier = ({
             onVerify: async () => {
                 await form.validateFields(['captchaCode']);
                 const code = form.getFieldValue('captchaCode');
-                if (onVerifyAction) {
-                    const verify = await onVerifyAction(code);
-                    if (!verify) {
-                        throw new Error(errorMsg);
-                    }
+                const { verified, ticket } = await onVerifyAction(code);
+                if (!verified) {
+                    throw new Error(errorMsg);
                 }
-                return true;
+                return { verified, ticket };
             },
             reset: () => {
                 form.resetFields();
@@ -172,4 +170,4 @@ const UniversalCaptchaVerifier = ({
     );
 };
 
-export default UniversalCaptchaVerifier;
+export default UniversalCaptchaVerifier

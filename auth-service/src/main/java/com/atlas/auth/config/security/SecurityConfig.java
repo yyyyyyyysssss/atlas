@@ -130,11 +130,10 @@ public class SecurityConfig {
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
                 .webAuthn((webAuthn) -> webAuthn
-                        .rpId(securityProperties.getDomain())
-                        .rpName("Atlas Identity Server")
+                        .rpId(securityProperties.getWebauthn().getRpId())
+                        .rpName(securityProperties.getWebauthn().getRpName())
                         .allowedOrigins(
-                                securityProperties.getUiUrl(),
-                                securityProperties.getIssuerUrl()
+                                securityProperties.getWebauthn().getOrigins()
                         )
                 )
                 .securityContext(securityContext -> {
@@ -238,7 +237,7 @@ public class SecurityConfig {
 
     @Bean
     public PublicKeyCredentialCreationOptionsRepository creationOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
-        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate);
+        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate,securityProperties);
     }
 
     //三方登录认证
@@ -251,7 +250,7 @@ public class SecurityConfig {
     @Bean
     public RefreshAuthenticationProvider refreshAuthenticationProvider() {
 
-        return new RefreshAuthenticationProvider(userService,tokenService);
+        return new RefreshAuthenticationProvider(userService, tokenService);
     }
 
     @Bean

@@ -1,11 +1,13 @@
 package com.atlas.auth.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("user_webauthn_credentials")
@@ -14,8 +16,8 @@ public class UserWebauthnCredentials {
     @TableId("credential_id")
     private String credentialId;         // 对应数据库 VARCHAR
 
-    @TableField("user_entity_user_id")
-    private String userEntityUserId;     // 对应数据库 VARCHAR (Spring 内部其实是用 Base64 存的)
+    @TableField("user_id")
+    private Long userId;     // 对应数据库 VARCHAR (Spring 内部其实是用 Base64 存的)
 
     @TableField("public_key")
     private byte[] publicKey;            // 对应数据库 BLOB
@@ -44,11 +46,11 @@ public class UserWebauthnCredentials {
     @TableField("attestation_client_data_json")
     private byte[] attestationClientDataJson; // 对应数据库 BLOB
 
-    @TableField("created")
-    private Instant created;
+    @TableField(value = "create_time",fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
 
-    @TableField("last_used")
-    private Instant lastUsed;
+    @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 
     @TableField("label")
     private String label;

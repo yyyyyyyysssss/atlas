@@ -24,7 +24,7 @@ const UniversalPasswordVerifier = ({
 
     if (verifierRef) {
         verifierRef.current = {
-            getPassword: () => {
+            getValue: () => {
                 return form.getFieldValue('password');
             },
             validate: async () => {
@@ -37,13 +37,16 @@ const UniversalPasswordVerifier = ({
                 const values = form.getFieldValue('password');
 
                 // 2. 执行外部传入的 API
-                const verify = await onVerifyAction(values);
+                const { verified, ticket } = await onVerifyAction(values);
 
                 // 3. 校验不通过，抛出异常阻断父组件
-                if (!verify) {
+                if (!verified) {
                     throw new Error(errorMsg);
                 }
-                return true;
+                return { verified, ticket };
+            },
+            reset: () => {
+                form.resetFields();
             }
         };
     }
@@ -66,4 +69,4 @@ const UniversalPasswordVerifier = ({
     );
 };
 
-export default UniversalPasswordVerifier;
+export default UniversalPasswordVerifier

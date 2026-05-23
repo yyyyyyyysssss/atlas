@@ -5,17 +5,14 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * @Description
  * @Author ys
- * @Date 2026/5/22 14:16
+ * @Date 2025/6/10 9:15
  */
-public record ChangeEmailDTO (
-
-        @NotBlank(message = "安全验证凭证缺失，请重新进行身份验证")
-        String ticket,
-
+public record InitEmailDTO(
         @NotBlank(message = "邮箱不能为空")
-        String newEmail,
+        String email,
 
         @NotBlank(message = "验证码不为为空")
         String code
-){
+) {
+
 }

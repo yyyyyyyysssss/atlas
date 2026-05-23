@@ -42,7 +42,6 @@ spring:
 
 
 security:
-  domain: ys0921.sbs
   issuerUrl: https://atlas.ys0921.sbs:4443
   uiUrl: https://atlas.ys0921.sbs:4443
   authorize:
@@ -106,6 +105,11 @@ security:
           tokenEndpoint: https://github.com/login/oauth/access_token
           userInfoEndpoint: https://api.github.com/user
           userEmailsEndpoint: https://api.github.com/user/emails
+  webauthn:
+    rpId: atlas.ys0921.sbs
+    rpName: Atlas Identity Server
+    origins:
+      - https://atlas.ys0921.sbs:4443
 
 
 logging:

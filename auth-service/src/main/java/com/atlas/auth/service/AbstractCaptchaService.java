@@ -1,6 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.enums.CaptchaScene;
+import com.atlas.auth.enums.SecurityScene;
 import com.atlas.common.core.utils.VerificationCodeUtils;
 import com.atlas.common.redis.utils.RedisHelper;
 import jakarta.annotation.Resource;
@@ -23,15 +23,15 @@ public abstract class AbstractCaptchaService implements CaptchaVerificationServi
     // 由子类定义自己独特的 Redis 前缀，例如 "email:code:" 或 "sms:code:"
     protected abstract String getRedisKeyPrefix();
 
-    protected abstract void doSend(String target, String code, Duration duration, CaptchaScene scene);
+    protected abstract void doSend(String target, String code, Duration duration, SecurityScene scene);
 
     @Override
-    public void send(String target, CaptchaScene scene) {
+    public void send(String target, SecurityScene scene) {
         send(target, scene, Duration.ofMinutes(10));
     }
 
     @Override
-    public void send(String target, CaptchaScene scene, Duration duration) {
+    public void send(String target, SecurityScene scene, Duration duration) {
         String redisKey = buildRedisKey(target, scene);
         String code = VerificationCodeUtils.genVerificationCode();
         redisHelper.setValue(redisKey, code, duration);
@@ -40,7 +40,7 @@ public abstract class AbstractCaptchaService implements CaptchaVerificationServi
     }
 
     @Override
-    public boolean verify(String target, String inputCode, CaptchaScene scene) {
+    public boolean verify(String target, String inputCode, SecurityScene scene) {
         String redisKey = buildRedisKey(target, scene);
         String cacheCode = redisHelper.getValue(redisKey, String.class);
         if (cacheCode == null || !cacheCode.equals(inputCode)) {
@@ -51,7 +51,7 @@ public abstract class AbstractCaptchaService implements CaptchaVerificationServi
         return true;
     }
 
-    private String buildRedisKey(String target, CaptchaScene scene) {
+    private String buildRedisKey(String target, SecurityScene scene) {
         String redisKeyPrefix = getRedisKeyPrefix();
         if (redisKeyPrefix == null || redisKeyPrefix.trim().isEmpty()) {
             throw new IllegalArgumentException(

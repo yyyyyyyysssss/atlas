@@ -27,6 +27,12 @@ security:
   domain: localhost
   issuerUrl: http://localhost:9090
   uiUrl: http://localhost:3000
+  webauthn:
+    rpId: localhost
+    rpName: Atlas Identity Server
+    origins:
+      - http://localhost:9090
+      - http://localhost:3000
 
 atlas:
   user:

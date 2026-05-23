@@ -43,10 +43,7 @@ public class AccountSecurityVO {
      */
     private Boolean phoneVerified;
 
-    /**
-     * 通行密钥（WebAuthn / Passkey）是否已绑定
-     */
-    private Boolean passkeyBound;
+    private List<UserPasskeyVO> passkeys;
 
     /**
      * 第三方账号

@@ -2,19 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Flex, Tag, theme, Modal, Form, Input, Steps, Row, Col, App, Radio } from 'antd';
 import { MailOutlined, SafetyCertificateOutlined, LeftOutlined, LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sendCaptcha, verifyCaptcha } from '../../../services/LoginService';
+import { sendCaptcha } from '../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { changeEmail, verifyPassword } from '../../../services/UserProfileService';
-import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
-import UniversalPasswordVerifier from './UniversalPasswordVerifier';
+import { changeEmail, initEmail, verifyCaptcha, verifyPassword } from '../../../services/UserProfileService';
+import UniversalCaptchaVerifier from './verifiers/UniversalCaptchaVerifier';
+import UniversalPasswordVerifier from './verifiers/UniversalPasswordVerifier';
+import VerifyDropdown from './verifiers';
 
 const { Text, Title } = Typography;
 
-const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
+const EmailItem = ({ context, refresh }) => {
     const { token } = theme.useToken()
     const [form] = Form.useForm()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [currentStep, setCurrentStep] = useState(0)
+
+    const { passwordSet, boundEmail, emailVerified } = context || {}
 
     const { modal, message } = App.useApp()
 
@@ -23,23 +26,23 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
 
     const [sendLoading, setSendLoading] = useState(false)
 
+    const [verifyLoading, setVerifyLoading] = useState(false)
+
+    const [ticket, setTicket] = useState('')
+
     const verifierRef = useRef(null);
 
-    const [verifyMethod, setVerifyMethod] = useState('password')
-
     const { runAsync: sendCaptchaAsync, loading: sendCaptchaLoading } = useRequest(sendCaptcha, {
+        manual: true
+    })
+
+    const { runAsync: initEmailAsync, loading: initEmailLoading } = useRequest(initEmail, {
         manual: true
     })
 
     const { runAsync: changeEmailAsync, loading: changeEmailLoading } = useRequest(changeEmail, {
         manual: true
     })
-
-    const { runAsync: verifyCaptchaAsync, loading: verifyCaptchaLoading } = useRequest(verifyCaptcha, {
-        manual: true
-    })
-
-    const { runAsync: verifyPasswordAsync, loading: verifyPasswordLoading } = useRequest(verifyPassword, { manual: true })
 
     // 验证码倒计时逻辑
     useEffect(() => {
@@ -52,7 +55,6 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
 
     const handleEmailAction = () => {
         setCurrentStep(boundEmail ? 0 : 1);
-        setVerifyMethod(passwordSet ? 'password' : 'captcha');
         setIsModalOpen(true);
     }
 
@@ -66,7 +68,7 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
             await sendCaptchaAsync({
                 target: targetEmail,
                 captchaType: 'email',
-                captchaScene: 'MODIFY_EMAIL'
+                securityScene: 'MODIFY_EMAIL'
             })
 
             message.success(`验证码已成功发送至 ${targetEmail}`);
@@ -82,10 +84,11 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
     const handleNextStep = async () => {
         if (!verifierRef.current) return;
         try {
-            const success = await verifierRef.current.onVerify();
-            if (success) {
+            const { verified, ticket } = await verifierRef.current.onVerify();
+            if (verified) {
                 setCurrentStep(1);
-                setCountdown(0);
+                setCountdown(0)
+                setTicket(ticket)
             }
         } catch (error) {
             if (error?.message) {
@@ -99,12 +102,18 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
         try {
             // 校验新邮箱和新验证码
             const values = await form.validateFields(['newEmail', 'newCode']);
-            const targetEmail = form.getFieldValue('newEmail');
-            const newCode = form.getFieldValue('newCode');
-            await changeEmailAsync({
-                newEmail: targetEmail,
-                code: newCode
-            })
+            if (boundEmail) {
+                await changeEmailAsync({
+                    newEmail: values.newEmail,
+                    code: values.newCode,
+                    ticket: ticket
+                })
+            } else {
+                await initEmailAsync({
+                    email: values.newEmail,
+                    code: values.newCode
+                })
+            }
             message.success(boundEmail ? '邮箱变更成功' : '邮箱绑定成功');
             handleCancel();
             refresh?.();
@@ -114,10 +123,11 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
     };
 
     const handleCancel = () => {
-        setIsModalOpen(false);
-        setCurrentStep(0);
-        setCountdown(0);
-        form.resetFields();
+        setIsModalOpen(false)
+        setCurrentStep(0)
+        setCountdown(0)
+        setTicket('')
+        form.resetFields()
     };
 
     return (
@@ -205,56 +215,12 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
                             exit={{ opacity: 0, x: 10 }}
                             transition={{ duration: 0.2 }}
                         >
-                            {verifyMethod === 'password' ? (
-                                <UniversalPasswordVerifier
-                                    key="password"
-                                    verifierRef={verifierRef}
-                                    onVerifyAction={(pwd) => {
-                                        return verifyPasswordAsync({ password: pwd })
-                                    }}
-                                />
-                            ) : (
-                                <UniversalCaptchaVerifier
-                                    key="old-email"
-                                    verifierRef={verifierRef}
-                                    target={boundEmail}
-                                    onSendAction={async (email) => {
-                                        await sendCaptchaAsync({ target: email, captchaType: 'email', captchaScene: 'MODIFY_EMAIL' });
-                                        message.success(`验证码已成功发送至 ${email}`)
-                                    }}
-                                    onVerifyAction={async (code) => {
-                                        return await verifyCaptchaAsync({
-                                            target: boundEmail,
-                                            captchaType: 'email',
-                                            captchaScene: 'MODIFY_EMAIL',
-                                            code
-                                        });
-                                    }}
-                                />
-                            )}
-                            {passwordSet && (
-                                <Flex justify="flex-end" style={{ marginTop: 12 }}>
-                                    <Button
-                                        type="link"
-                                        size="small"
-                                        icon={verifyMethod === 'password' ? <MailOutlined /> : <KeyOutlined />}
-                                        onClick={() => setVerifyMethod(verifyMethod === 'password' ? 'captcha' : 'password')}
-                                        style={{
-                                            fontSize: 13,
-                                            color: token.colorTextDescription,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            padding: '0 4px',
-                                            height: 'auto'
-                                        }}
-                                        className="verify-method-switcher"
-                                        onMouseEnter={(e) => e.currentTarget.style.color = token.colorPrimary}
-                                        onMouseLeave={(e) => e.currentTarget.style.color = token.colorTextDescription}
-                                    >
-                                        {verifyMethod === 'password' ? '忘记密码？改用邮箱验证码' : '返回使用密码验证'}
-                                    </Button>
-                                </Flex>
-                            )}
+                            <VerifyDropdown
+                                verifierRef={verifierRef}
+                                context={context}
+                                scene="MODIFY_EMAIL"
+                                onLoadingChange={(loading) => setVerifyLoading(loading)}
+                            />
                         </motion.div>
                     ) : (
                         // 💻 步骤 1：填写新邮箱 (换绑或纯绑定公用此界面)
@@ -319,9 +285,9 @@ const EmailItem = ({ passwordSet, boundEmail, emailVerified, refresh }) => {
                     <Flex gap={12}>
                         <Button onClick={handleCancel}>取消</Button>
                         {currentStep === 0 ? (
-                            <Button type="primary" onClick={handleNextStep} loading={verifyCaptchaLoading || verifyPasswordLoading}>下一步</Button>
+                            <Button type="primary" onClick={handleNextStep} loading={verifyLoading}>下一步</Button>
                         ) : (
-                            <Button type="primary" onClick={handleSubmit} loading={changeEmailLoading}>完成修改</Button>
+                            <Button type="primary" onClick={handleSubmit} loading={initEmailLoading || changeEmailLoading}>完成修改</Button>
                         )}
                     </Flex>
                 </Flex>

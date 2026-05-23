@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -18,8 +19,6 @@ import java.util.stream.Stream;
 @Setter
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
-
-    private String domain;
 
     private String issuerUrl;
 
@@ -34,6 +33,8 @@ public class SecurityProperties {
     private KeyConfig rememberMe = new KeyConfig();
 
     private KeyConfig totp = new KeyConfig();
+
+    private WebauthnConfig webauthn = new WebauthnConfig();
 
     @Setter
     @Getter
@@ -124,6 +125,17 @@ public class SecurityProperties {
         private String scope;
 
 
+    }
+
+    @Setter
+    @Getter
+    public static class WebauthnConfig{
+
+        private String rpId;
+
+        private String rpName;
+
+        private Set<String> origins;
     }
 
 }

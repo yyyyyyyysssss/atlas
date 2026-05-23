@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.security.web.webauthn.api.*;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +46,7 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
     public List<CredentialRecord> findByUserId(Bytes userId) {
         List<UserWebauthnCredentials> entities = userWebauthnCredentialsMapper.selectList(
                 new LambdaQueryWrapper<UserWebauthnCredentials>()
-                        .eq(UserWebauthnCredentials::getUserEntityUserId, userId.toBase64UrlString())
+                        .eq(UserWebauthnCredentials::getUserId, Long.parseLong(new String(userId.getBytes())))
         );
         return entities.stream().map(this::toDomain).collect(Collectors.toList());
     }
@@ -51,7 +54,7 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
     private UserWebauthnCredentials toEntity(CredentialRecord record) {
         UserWebauthnCredentials entity = new UserWebauthnCredentials();
         entity.setCredentialId(record.getCredentialId().toBase64UrlString());
-        entity.setUserEntityUserId(record.getUserEntityUserId().toBase64UrlString());
+        entity.setUserId(Long.parseLong(new String(record.getUserEntityUserId().getBytes())));
         entity.setPublicKey(record.getPublicKey().getBytes());
         entity.setSignatureCount(record.getSignatureCount());
         entity.setUvInitialized(record.isUvInitialized());
@@ -60,8 +63,8 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
         entity.setBackupState(record.isBackupState());
         entity.setAttestationObject(record.getAttestationObject() != null ? record.getAttestationObject().getBytes() : null);
         entity.setAttestationClientDataJson(record.getAttestationClientDataJSON() != null ? record.getAttestationClientDataJSON().getBytes() : null);
-        entity.setCreated(record.getCreated());
-        entity.setLastUsed(record.getLastUsed());
+        entity.setCreateTime(LocalDateTime.ofInstant(record.getCreated(), ZoneId.systemDefault()));
+        entity.setUpdateTime(LocalDateTime.ofInstant(record.getLastUsed(), ZoneId.systemDefault()));
         entity.setLabel(record.getLabel());
 
         if (record.getTransports() != null) {
@@ -80,10 +83,12 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
                 transports.add(AuthenticatorTransport.valueOf(t.trim().toUpperCase()));
             }
         }
+        Long userId = entity.getUserId();
+        byte[] userIdBytes = String.valueOf(userId).getBytes(StandardCharsets.UTF_8);
 
         return ImmutableCredentialRecord.builder()
                 .credentialId(Bytes.fromBase64(entity.getCredentialId()))
-                .userEntityUserId(Bytes.fromBase64(entity.getUserEntityUserId()))
+                .userEntityUserId(new Bytes(userIdBytes))
                 .publicKey(new ImmutablePublicKeyCose(entity.getPublicKey()))
                 .signatureCount(entity.getSignatureCount())
                 .uvInitialized(entity.getUvInitialized())
@@ -92,8 +97,8 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
                 .backupState(entity.getBackupState())
                 .attestationObject(entity.getAttestationObject() != null ? new Bytes(entity.getAttestationObject()) : null)
                 .attestationClientDataJSON(entity.getAttestationClientDataJson() != null ? new Bytes(entity.getAttestationClientDataJson()) : null)
-                .created(entity.getCreated())
-                .lastUsed(entity.getLastUsed())
+                .created(entity.getCreateTime().atZone(ZoneId.systemDefault()).toInstant())
+                .lastUsed(entity.getUpdateTime().atZone(ZoneId.systemDefault()).toInstant())
                 .label(entity.getLabel())
                 .transports(transports)
                 .build();

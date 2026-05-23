@@ -2,7 +2,7 @@ package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
-import com.atlas.auth.enums.CaptchaScene;
+import com.atlas.auth.enums.SecurityScene;
 import com.atlas.auth.service.CaptchaFactory;
 import com.atlas.auth.service.CaptchaVerificationService;
 import com.atlas.auth.service.UserService;
@@ -51,7 +51,7 @@ public class CaptchaAuthenticationProvider implements AuthenticationProvider {
         }
         CaptchaVerificationService captchaVerificationService = captchaFactory.getService(type);
         // 先校验验证码
-        boolean verify = captchaVerificationService.verify(principal, captchaCode, CaptchaScene.LOGIN);
+        boolean verify = captchaVerificationService.verify(principal, captchaCode, SecurityScene.LOGIN);
         if (!verify){
             throw new BadCredentialsException("验证码错误!");
         }

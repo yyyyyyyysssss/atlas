@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Flex, theme, Modal, Form, Input, Progress, Space, App, Steps, Dropdown } from 'antd';
-import { CheckCircleFilled, CloseCircleOutlined, LockOutlined, MailOutlined, KeyOutlined, DownOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleOutlined, LockOutlined, MailOutlined, KeyOutlined, DownOutlined, LeftOutlined } from '@ant-design/icons';
 import { changePassword, initPassword, verifyCaptcha, verifyPassword } from '../../../services/UserProfileService';
 import { sendCaptcha } from '../../../services/LoginService';
 import { useRequest } from 'ahooks';
@@ -29,6 +29,8 @@ const PasswordItem = ({ context, refresh }) => {
     const [ticket, setTicket] = useState('')
 
     const [verifyLoading, setVerifyLoading] = useState(false)
+
+    const [verifyMethod, setVerifyMethod] = useState()
 
     const { message } = App.useApp();
 
@@ -78,6 +80,12 @@ const PasswordItem = ({ context, refresh }) => {
         mixed: /[A-Z]/.test(password),
         digit: /[0-9]/.test(password),
         special: /[^A-Za-z0-9]/.test(password)
+    };
+
+    const handlePrev = () => {
+        setCurrentStep(0);
+        setPassword('');
+        setPasswordStrength(0)
     };
 
     // 💡 下一步（第一步通往第二步）
@@ -150,19 +158,37 @@ const PasswordItem = ({ context, refresh }) => {
                 width={460}
                 centered
                 destroyOnHidden
-                footer={[
-                    <Button key="cancel" onClick={handleCancel}>取消</Button>,
-                    // 💡 根据当前步骤动态渲染“下一步”或“提交”按钮
-                    currentStep === 0 ? (
-                        <Button key="next" type="primary" loading={verifyLoading} onClick={handleNext}>
-                            下一步
-                        </Button>
-                    ) : (
-                        <Button key="submit" type="primary" loading={changeLoading || initLoading} onClick={handleOk}>
-                            确定修改
-                        </Button>
-                    )
-                ]}
+                footer={
+                    <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+                        {/* 左侧区域：仅在第二步且原先有密码（即有第一步验证流程）时显示带箭头的文本按钮 */}
+                        <div>
+                            {currentStep === 1 && passwordSet ? (
+                                <Button
+                                    type="text"
+                                    icon={<LeftOutlined />}
+                                    onClick={handlePrev}
+                                    style={{ paddingLeft: 0 }} // 消除内边距保证图标贴齐左边界
+                                >
+                                    返回上一步
+                                </Button>
+                            ) : null}
+                        </div>
+
+                        {/* 右侧区域：固定右侧对齐的通用控制按钮 */}
+                        <Flex gap={8}>
+                            <Button onClick={handleCancel}>取消</Button>
+                            {currentStep === 0 ? (
+                                <Button type="primary" loading={verifyLoading} onClick={handleNext}>
+                                    下一步
+                                </Button>
+                            ) : (
+                                <Button type="primary" loading={changeLoading || initLoading} onClick={handleOk}>
+                                    确定修改
+                                </Button>
+                            )}
+                        </Flex>
+                    </Flex>
+                }
             >
                 {/* 💡 增加了 Steps 进度条组件，让分步感知更明确 */}
                 {passwordSet && (
@@ -198,6 +224,8 @@ const PasswordItem = ({ context, refresh }) => {
                                         transition={{ duration: 0.15 }}
                                     >
                                         <VerifyDropdown
+                                            value={verifyMethod}
+                                            onChange={(value) => setVerifyMethod(value)}
                                             verifierRef={verifierRef}
                                             context={context}
                                             scene="RESET_PASSWORD"

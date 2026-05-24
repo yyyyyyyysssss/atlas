@@ -63,7 +63,7 @@ const SecurityTab = () => {
                 />
                 {/* 通行密钥 */}
                 <PasskeyItem
-                    passkeyBound={passkeyBound}
+                    context={data}
                     refresh={refresh}
                 />
 

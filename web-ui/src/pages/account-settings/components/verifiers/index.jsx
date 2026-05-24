@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dropdown, Button, Space, Flex, theme } from 'antd';
+import { Dropdown, Button, Space, Flex, theme, Empty } from 'antd';
 import { KeyOutlined, MailOutlined, DownOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,33 +14,23 @@ const VerifyDropdown = ({
     verifierRef,
     context,
     scene,
+    value,
+    onChange,
     onLoadingChange
 }) => {
     const { token } = theme.useToken();
 
     const { passwordSet, boundEmail } = context || {}
 
-    const { runAsync: sendCaptchaAsync } = useRequest(sendCaptcha, { manual: true });
+    const { runAsync: sendCaptchaAsync, cancel: cancelSend } = useRequest(sendCaptcha, { manual: true });
 
-    const { runAsync: verifyCaptchaAsync, loading: verifyCaptchaLoading } = useRequest(verifyCaptcha, {
+    const { runAsync: verifyCaptchaAsync, loading: verifyCaptchaLoading, cancel: cancelVerifyCaptcha } = useRequest(verifyCaptcha, {
         manual: true
     })
 
-    const { runAsync: verifyPasswordAsync, loading: verifyPasswordLoading } = useRequest(verifyPassword, { manual: true })
+    const { runAsync: verifyPasswordAsync, loading: verifyPasswordLoading, cancel: cancelVerifyPassword } = useRequest(verifyPassword, { manual: true })
 
-    // 1. 初始化默认的验证方式：优先密码，没密码用验证码
-    const [verifyMethod, setVerifyMethod] = useState(passwordSet ? 'password' : 'captcha');
-
-    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading;
-
-    // 🎯 实时将加载状态吐给父组件
-    useEffect(() => {
-        if (onLoadingChange) {
-            onLoadingChange(isComponentLoading)
-        }
-    }, [isComponentLoading, onLoadingChange])
-
-    // 2. 构建下拉菜单的项
+    // 构建下拉菜单的项
     const availableMethods = []
     if (passwordSet) {
         availableMethods.push({
@@ -74,7 +64,41 @@ const VerifyDropdown = ({
         });
     }
 
+    const [internalMethod, setInternalMethod] = useState(availableMethods[0]?.key);
+
+    const verifyMethod = value !== undefined ? value : internalMethod;
+
+
+    useEffect(() => {
+        return () => {
+            cancelSend()
+            cancelVerifyCaptcha()
+            cancelVerifyPassword()
+        }
+    }, [verifyMethod])
+
+    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading;
+
+    // 🎯 实时将加载状态吐给父组件
+    useEffect(() => {
+        if (onLoadingChange) {
+            onLoadingChange(isComponentLoading)
+        }
+    }, [isComponentLoading, onLoadingChange])
+
+    const handleMethodChange = (key) => {
+        if (onChange) {
+            onChange(key)
+        } else {
+            setInternalMethod(key)
+        }
+    }
+
     const currentMethod = availableMethods.find(m => m.key === verifyMethod);
+
+    if (availableMethods.length === 0) {
+        return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可用身份验证方式" />;
+    }
 
     return (
         <AnimatePresence mode="wait">
@@ -97,7 +121,7 @@ const VerifyDropdown = ({
                                     icon: m.icon,
                                     disabled: m.key === verifyMethod,
                                 })),
-                                onClick: ({ key }) => setVerifyMethod(key)
+                                onClick: ({ key }) => handleMethodChange(key)
                             }}
                             trigger={['click']}
                         >

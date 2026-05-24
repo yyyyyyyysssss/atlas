@@ -4,11 +4,11 @@ package com.atlas.auth.config.security;
 import com.atlas.auth.config.security.authentication.provider.CaptchaAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
-import com.atlas.auth.config.security.filter.HeaderAuthenticationFilter;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
+import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOptionsRepository;
 import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.auth.service.CaptchaFactory;
@@ -51,8 +51,11 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
+import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
 import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 
 @EnableWebSecurity
@@ -236,8 +239,26 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PublicKeyCredentialCreationOptionsRepository creationOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
-        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate,securityProperties);
+    public PublicKeyCredentialCreationOptionsRepository publicKeyCredentialCreationOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
+        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate, securityProperties);
+    }
+
+    @Bean
+    public PublicKeyCredentialRequestOptionsRepository publicKeyCredentialRequestOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
+        return new RedisPublicKeyCredentialRequestOptionsRepository(securityRedisTemplate, securityProperties);
+    }
+
+    @Bean
+    public Webauthn4JRelyingPartyOperations webauthn4JRelyingPartyOperations(PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository,
+                                                                             UserCredentialRepository userCredentialRepository) {
+        PublicKeyCredentialRpEntity rp = PublicKeyCredentialRpEntity.builder()
+                .id(securityProperties.getWebauthn().getRpId())
+                .name(securityProperties.getWebauthn().getRpName())
+                .build();
+        return new Webauthn4JRelyingPartyOperations(
+                publicKeyCredentialUserEntityRepository,
+                userCredentialRepository, rp, securityProperties.getWebauthn().getOrigins()
+        );
     }
 
     //三方登录认证
@@ -251,11 +272,6 @@ public class SecurityConfig {
     public RefreshAuthenticationProvider refreshAuthenticationProvider() {
 
         return new RefreshAuthenticationProvider(userService, tokenService);
-    }
-
-    @Bean
-    public HeaderAuthenticationFilter headerAuthenticationFilter() {
-        return new HeaderAuthenticationFilter();
     }
 
     @Bean

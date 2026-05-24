@@ -1,7 +1,10 @@
 package com.atlas.user.service.impl;
 
 import com.atlas.common.core.api.file.FileApi;
-import com.atlas.common.core.api.user.dto.*;
+import com.atlas.common.core.api.user.dto.CreateUserSpec;
+import com.atlas.common.core.api.user.dto.RoleAuthDTO;
+import com.atlas.common.core.api.user.dto.UserAuthDTO;
+import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
@@ -22,7 +25,6 @@ import com.atlas.user.utils.NameGenerator;
 import com.atlas.user.utils.PasswordGeneratorUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -34,8 +36,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -62,8 +62,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final UserOrgService userOrgService;
 
-    private final PasswordEncoder passwordEncoder;
-
     private final RoleAuthorityService roleAuthorityService;
 
     private final AuthorityService authorityService;
@@ -84,7 +82,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserAuthDTO loadUserByUsername(String username) {
         User user = this.findByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("用户不存在: " + username);
+            throw new BusinessException("用户不存在: " + username);
         }
         return getUserAuthDTO(user);
     }
@@ -172,7 +170,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
         }
         if (user == null) {
-            throw new UsernameNotFoundException("用户不存在: " + username);
+            throw new BusinessException("用户不存在: " + username);
         }
         return user;
     }
@@ -264,10 +262,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User saveUser(UserCreateDTO userCreateDTO) {
         User user = UserMapping.INSTANCE.toUser(userCreateDTO);
         user.setId(IdGen.genId());
-        if (user.getPassword() != null) {
-            String encryptPassword = passwordEncoder.encode(user.getPassword());
-            user.setPassword(encryptPassword);
-        }
         if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
             String defaultAvatar = generateDefaultAvatar(user.getUsername());
             user.setAvatar(defaultAvatar);
@@ -340,20 +334,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userOrgDTO.setPosId(posId);
         userOrgDTO.setIsMain(Boolean.TRUE);
         userOrgService.addUserOrg(List.of(userOrgDTO));
-    }
-
-    @Override
-    public String resetPassword(Long userId) {
-        checkAndResult(userId);
-        String newPassword = PasswordGeneratorUtils.generate(10);
-        String encryptPassword = passwordEncoder.encode(newPassword);
-        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-        userUpdateWrapper.lambda().eq(User::getId, userId).set(User::getPassword, encryptPassword);
-        int update = userMapper.update(null, userUpdateWrapper);
-        if (update <= 0) {
-            throw new BusinessException("密码重置失败");
-        }
-        return newPassword;
     }
 
     @Override

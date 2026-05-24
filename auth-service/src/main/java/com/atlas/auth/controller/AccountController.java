@@ -4,13 +4,18 @@ import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.AccountSecurityVO;
 import com.atlas.auth.domain.vo.VerifyCaptchaVO;
 import com.atlas.auth.domain.vo.VerifyPasswordVO;
+import com.atlas.auth.domain.vo.VerifyWebauthnVO;
+import com.atlas.auth.enums.SecurityScene;
 import com.atlas.auth.service.AccountService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +38,10 @@ public class AccountController {
      */
     @GetMapping("/security")
     public Result<AccountSecurityVO> accountSecurity(@AuthenticationPrincipal SecurityUser securityUser) {
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        Object principal = authentication.getPrincipal();
+        log.info("principal: {}", principal);
         AccountSecurityVO accountSecurity = accountService.getAccountSecurity(securityUser.getId());
         return ResultGenerator.ok(accountSecurity);
     }
@@ -81,6 +90,14 @@ public class AccountController {
         accountService.initEmail(securityUser.getId(),initEmailDTO);
         return ResultGenerator.ok();
     }
+
+    @PostMapping("/verify/webauthn")
+    public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
+                                                   @RequestParam("securityScene") String securityScene){
+        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(), SecurityScene.fromString(securityScene));
+        return ResultGenerator.ok(verifyWebauthnVO);
+    }
+
 
     /**
      * 修改邮箱

@@ -28,6 +28,8 @@ const EmailItem = ({ context, refresh }) => {
 
     const [verifyLoading, setVerifyLoading] = useState(false)
 
+    const [verifyMethod, setVerifyMethod] = useState()
+
     const [ticket, setTicket] = useState('')
 
     const verifierRef = useRef(null);
@@ -78,6 +80,11 @@ const EmailItem = ({ context, refresh }) => {
         } finally {
             setSendLoading(false);
         }
+    };
+
+    const handlePrev = () => {
+        setCurrentStep(0)
+        setCountdown(0)
     };
 
     // 下一步按钮的处理（需要验证第 0 步的表单项）
@@ -188,10 +195,36 @@ const EmailItem = ({ context, refresh }) => {
                 }
                 open={isModalOpen}
                 onCancel={handleCancel}
-                footer={null}
                 width={440}
                 centered
                 destroyOnHidden
+                footer={
+                    <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+                        {/* 左侧区域：仅在第二步且原先有密码（即有第一步验证流程）时显示带箭头的文本按钮 */}
+                        <div>
+                            {currentStep === 1 && passwordSet ? (
+                                <Button
+                                    type="text"
+                                    icon={<LeftOutlined />}
+                                    onClick={handlePrev}
+                                    style={{ paddingLeft: 0 }} // 消除内边距保证图标贴齐左边界
+                                >
+                                    返回上一步
+                                </Button>
+                            ) : null}
+                        </div>
+
+                        {/* 右侧区域：固定右侧对齐的通用控制按钮 */}
+                        <Flex gap={8}>
+                            <Button onClick={handleCancel}>取消</Button>
+                            {currentStep === 0 ? (
+                                <Button type="primary" onClick={handleNextStep} loading={verifyLoading}>下一步</Button>
+                            ) : (
+                                <Button type="primary" onClick={handleSubmit} loading={initEmailLoading || changeEmailLoading}>完成修改</Button>
+                            )}
+                        </Flex>
+                    </Flex>
+                }
             >
                 {/* 仅在“修改/换绑”且有旧邮箱时，才展示步骤条 */}
                 {boundEmail && (
@@ -216,6 +249,8 @@ const EmailItem = ({ context, refresh }) => {
                             transition={{ duration: 0.2 }}
                         >
                             <VerifyDropdown
+                                value={verifyMethod}
+                                onChange={(value) => setVerifyMethod(value)}
                                 verifierRef={verifierRef}
                                 context={context}
                                 scene="MODIFY_EMAIL"
@@ -271,26 +306,6 @@ const EmailItem = ({ context, refresh }) => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
-
-                {/* 底部操作按钮区域 */}
-                <Flex justify="space-between" align="center" style={{ marginTop: 24 }}>
-                    {/* 如果在第二步，且当前是换绑流程，允许点左下角按钮返回上一步 */}
-                    {currentStep === 1 && boundEmail ? (
-                        <Button type="text" icon={<LeftOutlined />} onClick={() => { setCurrentStep(0); setCountdown(0); }}>
-                            返回上一步
-                        </Button>
-                    ) : <div />}
-
-                    <Flex gap={12}>
-                        <Button onClick={handleCancel}>取消</Button>
-                        {currentStep === 0 ? (
-                            <Button type="primary" onClick={handleNextStep} loading={verifyLoading}>下一步</Button>
-                        ) : (
-                            <Button type="primary" onClick={handleSubmit} loading={initEmailLoading || changeEmailLoading}>完成修改</Button>
-                        )}
-                    </Flex>
-                </Flex>
             </Modal>
         </>
     );

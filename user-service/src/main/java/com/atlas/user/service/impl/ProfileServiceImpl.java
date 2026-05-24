@@ -9,7 +9,6 @@ import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -33,8 +32,6 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserService userService;
 
     private final RoleService roleService;
-
-    private final PasswordEncoder passwordEncoder;
 
     private final UserOrgService userOrgService;
 

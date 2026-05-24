@@ -2,22 +2,26 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.UserIdentifier;
-import com.atlas.auth.domain.entity.UserPasswordCredentials;
 import com.atlas.auth.domain.entity.UserWebauthnCredentials;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.enums.SecurityScene;
-import com.atlas.auth.mapper.UserPasswordCredentialsMapper;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.core.utils.ServletHolder;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.web.webauthn.api.Bytes;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +47,11 @@ public class AccountService {
     private final RedisHelper redisHelper;
 
     private final UserWebauthnCredentialsMapper userWebauthnCredentialsMapper;
+
+    private final WebauthnService webauthnService;
+
+    private final UserCredentialRepository userCredentialRepository;
+
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
@@ -182,6 +191,27 @@ public class AccountService {
             ticket = generateTicket(userId, captchaVerifyDTO.securityScene());
         }
         return new VerifyCaptchaVO(verified, ticket);
+    }
+
+    public VerifyWebauthnVO verifyWebauthn(Long userId, SecurityScene securityScene) {
+        HttpServletRequest request = ServletHolder.getRequest();
+        boolean verified = false;
+        try {
+            PublicKeyCredentialUserEntity authenticate = webauthnService.authenticate(request);
+            Bytes id = authenticate.getId();
+            long expectedUserId = Long.parseLong(new String(id.getBytes(), StandardCharsets.UTF_8));
+            if(userId.equals(expectedUserId)){
+                verified = true;
+            }
+        }catch (Exception e){
+            log.error("webauthn authenticate error", e);
+            verified = false;
+        }
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, securityScene);
+        }
+        return new VerifyWebauthnVO(verified, ticket);
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

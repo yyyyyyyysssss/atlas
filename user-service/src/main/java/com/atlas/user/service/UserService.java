@@ -42,8 +42,6 @@ public interface UserService extends IService<User> {
 
     Boolean updateUser(UserUpdateDTO userUpdateDTO, Boolean isFullUpdate);
 
-    String resetPassword(Long userId);
-
     PageInfo<UserVO> queryList(UserQueryDTO queryDTO);
 
     UserVO details(Long id);

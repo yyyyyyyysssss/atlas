@@ -40,12 +40,6 @@ public class UserController {
         return ResultGenerator.ok(b);
     }
 
-    @PutMapping("/{id}/password")
-    public Result<?> resetPassword(@PathVariable("id") Long id) {
-        String newPassword = userService.resetPassword(id);
-        return ResultGenerator.ok(newPassword);
-    }
-
     @PostMapping("/{id}/roles")
     public Result<?> bindRoles(@PathVariable Long id, @RequestBody UserBindRoleDTO userBindRoleDTO) {
         Boolean bindRoles = userService.bindRoles(id,userBindRoleDTO.getRoleIds());

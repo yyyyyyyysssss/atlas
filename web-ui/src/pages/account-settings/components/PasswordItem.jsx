@@ -236,7 +236,7 @@ const PasswordItem = ({ context, refresh }) => {
                                             context={context}
                                             scene="RESET_PASSWORD"
                                             onLoadingChange={(loading) => setVerifyLoading(loading)}
-                                            onSuccess={(ticket) => handleVerifySuccess(ticket)}
+                                            onSuccess={(res) => handleVerifySuccess(res.ticket)}
                                         />
                                     </motion.div>
                                 </AnimatePresence>

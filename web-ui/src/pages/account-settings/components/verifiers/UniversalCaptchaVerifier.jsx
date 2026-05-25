@@ -57,10 +57,14 @@ const UniversalCaptchaVerifier = ({
                 throw new Error(errorMsg);
             }
 
-            if (onSuccess) {
-                onSuccess(result.ticket);
+            if (result.verified === false) {
+                throw new Error(errorMsg);
             }
-            return { verified: result.verified, ticket: result.ticket };
+
+            if (onSuccess) {
+                onSuccess(result);
+            }
+            return result;
 
         } catch (error) {
             const finalErrorMsg = error?.response?.data?.message || error?.message || errorMsg;

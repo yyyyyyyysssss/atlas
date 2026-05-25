@@ -71,7 +71,7 @@ const UniversalPasskeyVerifier = ({
             };
 
             setHardwareLoading(true)
-            
+
 
             // 3. 唤起硬件
             const credential = await navigator.credentials.get({
@@ -85,17 +85,19 @@ const UniversalPasskeyVerifier = ({
             const credentialJson = credential.toJSON();
             const result = await onVerifyAction(credentialJson);
 
-            if (!result || !result.verified) {
+            if (!result) {
                 throw new Error('通行密钥验证失败，请重试');
             }
 
-            const successResult = { verified: result.verified, ticket: result.ticket }
-
-            if (onSuccess) {
-                onSuccess(result.ticket)
+            if (result.verified === false) {
+                throw new Error('通行密钥验证失败，请重试');
             }
 
-            return successResult
+            if (onSuccess) {
+                onSuccess(result)
+            }
+
+            return result
 
         } catch (error) {
             // 精准识别错误并转化为具体的文案向外抛出

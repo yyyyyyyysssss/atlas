@@ -261,7 +261,7 @@ const EmailItem = ({ context, refresh }) => {
                                 context={context}
                                 scene="MODIFY_EMAIL"
                                 onLoadingChange={(loading) => setVerifyLoading(loading)}
-                                onSuccess={(ticket) => handleVerifySuccess(ticket)}
+                                onSuccess={(res) => handleVerifySuccess(res.ticket)}
                             />
                         </motion.div>
                     ) : (

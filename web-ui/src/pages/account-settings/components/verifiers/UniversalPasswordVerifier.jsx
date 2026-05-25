@@ -39,13 +39,18 @@ const UniversalPasswordVerifier = ({
             const result = await onVerifyAction(values);
 
             // 3. 校验不通过，抛出异常阻断父组件
-            if (!result || !result.verified) {
+            if (!result) {
                 throw new Error(errorMsg);
             }
-            if (onSuccess) {
-                onSuccess(result.ticket);
+
+            if (result.verified === false) {
+                throw new Error(errorMsg)
             }
-            return { verified: result.verified, ticket: result.ticket }
+
+            if (onSuccess) {
+                onSuccess(result);
+            }
+            return result
         } finally {
             setLoading(false)
         }

@@ -444,9 +444,9 @@ const PasskeyItem = ({ context, refresh }) => {
                                 context={context}
                                 scene="UNBIND_WEBAUTHN" // 特定的后端风控场景值
                                 onLoadingChange={(loading) => setVerifyLoading(loading)}
-                                onSuccess={(resTicket) => {
-                                    setTicket(resTicket);
-                                    setCurrentStep(1);
+                                onSuccess={(res) => {
+                                    setTicket(res.ticket)
+                                    setCurrentStep(1)
                                 }}
                             />
                         </motion.div>

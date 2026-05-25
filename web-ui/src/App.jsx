@@ -162,6 +162,22 @@ const App = () => {
           // 6. 悬浮时的背景颜色
           itemHoverBg: 'rgba(255, 255, 255, 0.08)',
         },
+        Alert: {
+          // 1. Success 成功（微带绿意，低饱和度防刺眼）
+          colorInfoBg: 'rgba(73, 179, 114, 0.1)',
+          colorInfoBorder: 'rgba(73, 179, 114, 0.25)',
+          // 2. Info 信息（贴合你的系统主色，或者是低饱和蓝）
+          colorSuccessBg: 'rgba(56, 158, 248, 0.1)',
+          colorSuccessBorder: 'rgba(56, 158, 248, 0.25)',
+          // 3. Warning 警告（低饱和金黄，具有辨识度但不突兀）
+          colorWarningBg: 'rgba(232, 161, 62, 0.1)',
+          colorWarningBorder: 'rgba(232, 161, 62, 0.25)',
+          // 4. Error 错误（契合解绑/高危的极客红）
+          colorErrorBg: 'rgba(248, 81, 73, 0.1)',
+          colorErrorBorder: 'rgba(248, 81, 73, 0.25)',
+          // 统一调整边框圆角与厚度
+          borderRadiusLG: 6,
+        },
       },
     },
     light: {

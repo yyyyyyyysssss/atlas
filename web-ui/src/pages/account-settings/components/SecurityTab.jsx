@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import { Fingerprint } from 'lucide-react';
 import { useRequest } from 'ahooks';
-import { changeUsername, fetchAccountSecurity } from '../../../services/UserProfileService';
+import { fetchAccountSecurity } from '../../../services/AccountService';
 import Loading from '../../../components/loading';
 import UsernameItem from './UsernameItem';
 import PasswordItem from './PasswordItem';

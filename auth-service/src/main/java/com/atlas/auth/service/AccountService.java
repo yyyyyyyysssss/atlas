@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.Bytes;
+import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
@@ -95,6 +96,7 @@ public class AccountService {
 
                 // 通行密钥
                 .passkeys(passkeyVOs)
+                .passkeyEnabled(!passkeyVOs.isEmpty())
 
                 // 来自 user_identifier 表 的基础通信资产
                 .username(usernameIdent != null ? usernameIdent.getIdentifierValue() : null)
@@ -193,15 +195,18 @@ public class AccountService {
         return new VerifyCaptchaVO(verified, ticket);
     }
 
-    public VerifyWebauthnVO verifyWebauthn(Long userId, SecurityScene securityScene) {
-        HttpServletRequest request = ServletHolder.getRequest();
+    public VerifyWebauthnVO verifyWebauthn(Long userId,WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest, SecurityScene securityScene) {
         boolean verified = false;
         try {
-            PublicKeyCredentialUserEntity authenticate = webauthnService.authenticate(request);
-            Bytes id = authenticate.getId();
-            long expectedUserId = Long.parseLong(new String(id.getBytes(), StandardCharsets.UTF_8));
-            if(userId.equals(expectedUserId)){
-                verified = true;
+            WebauthnAuthenticateResponse webauthnAuthenticateResponse = webauthnService.authenticate(webauthnPublicKeyCredentialRequest);
+            String credentialId = webauthnAuthenticateResponse.credentialId();
+            CredentialRecord credentialRecord = userCredentialRepository.findByCredentialId(Bytes.fromBase64(credentialId));
+            if(credentialRecord != null){
+                Bytes userEntityUserId = credentialRecord.getUserEntityUserId();
+                long expectedUserId = Long.parseLong(new String(userEntityUserId.getBytes(), StandardCharsets.UTF_8));
+                if(userId.equals(expectedUserId)){
+                    verified = true;
+                }
             }
         }catch (Exception e){
             log.error("webauthn authenticate error", e);
@@ -212,6 +217,40 @@ public class AccountService {
             ticket = generateTicket(userId, securityScene);
         }
         return new VerifyWebauthnVO(verified, ticket);
+    }
+
+    public void unbindWebauthn(Long userId,UnbindWebauthnDTO unbindWebauthnDTO){
+        // 解码凭证 ID
+        Bytes credentialId;
+        try {
+            credentialId = Bytes.fromBase64(unbindWebauthnDTO.credentialId());
+        } catch (Exception e) {
+            log.warn("用户 {} 尝试使用非法的 Base64 凭证 ID 进行解绑", userId);
+            throw new BusinessException("设备凭证无效");
+        }
+        // 查找凭证
+        CredentialRecord credentialRecord = userCredentialRepository.findByCredentialId(credentialId);
+        if (credentialRecord == null) {
+            throw new BusinessException("设备凭证不存在");
+        }
+
+        Bytes userEntityUserId = credentialRecord.getUserEntityUserId();
+        long expectedUserId;
+        try {
+            expectedUserId = Long.parseLong(new String(userEntityUserId.getBytes(), StandardCharsets.UTF_8));
+        } catch (NumberFormatException e) {
+            log.error("WebAuthn 凭证用户ID解析失败，原始字节转字符串为: {}", new String(userEntityUserId.getBytes()));
+            throw new BusinessException("凭证用户数据不匹配");
+        }
+        // 越权校验
+        if(!userId.equals(expectedUserId)){
+            log.warn("用户 {} 尝试越权解绑用户 {} 的凭证", userId, expectedUserId);
+            throw new BusinessException("设备凭证不存在"); // 防枚举，保持模糊提示
+        }
+        // 风控验证码/Ticket 校验
+        validTicket(userId, SecurityScene.UNBIND_WEBAUTHN, unbindWebauthnDTO.ticket());
+        userCredentialRepository.delete(credentialId);
+        log.info("用户 {} 成功解绑 WebAuthn 凭证: {}", userId, unbindWebauthnDTO.credentialId());
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

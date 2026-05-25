@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Button, Typography, Flex, App, theme, Space, List } from 'antd';
-import { Fingerprint, Trash2, Plus, ChevronDown } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Button, Typography, Flex, App, theme, Space, List, Modal, Steps, Alert } from 'antd';
+import { Fingerprint, Trash2, Plus, ChevronDown, ShieldAlert } from 'lucide-react';
 import { useRequest } from 'ahooks';
 import {
     webauthnRegisterOptions,
@@ -8,9 +8,12 @@ import {
     unbindWebauthn,
     webauthnAuthenticateOptions,
     verifyWebauthn,
-} from '../../../services/UserProfileService';
+} from '../../../services/AccountService';
+import { LeftOutlined } from '@ant-design/icons';
+import VerifyDropdown from './verifiers';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const { Text } = Typography;
+const { Text, Title } = Typography
 
 // 精准识别当前设备信息
 const getDeviceLabel = () => {
@@ -50,8 +53,20 @@ const PasskeyItem = ({ context, refresh }) => {
     // 状态控制：控制下方已绑定设备列表的就地展示/收起
     const [isExpanded, setIsExpanded] = useState(false);
 
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
     const { passkeys = [] } = context || {};
-    const isBound = passkeys && passkeys.length > 0;
+    const isBound = passkeys && passkeys.length > 0
+
+    // 💡 移除解绑流的核心状态
+    const [currentStep, setCurrentStep] = useState(0); // 0-安全验证, 1-风险确认
+    const [targetItem, setTargetItem] = useState(null); // 当前准备移除的设备凭证
+    const [verifyMethod, setVerifyMethod] = useState();
+    const [verifyLoading, setVerifyLoading] = useState(false);
+    const [ticket, setTicket] = useState('');
+
+
+    const verifierRef = useRef(null)
 
     // 检测当前环境是否支持 WebAuthn
     const isWebAuthnSupported =
@@ -133,35 +148,51 @@ const PasskeyItem = ({ context, refresh }) => {
                 });
             }
         }
-    };
+    }
 
-    // 删除单个指定的密钥凭证
-    const handleUnbind = async (item, e) => {
+
+    // --- 💡 移除解绑流程控制 ---
+    const handleOpenUnbindModal = (item, e) => {
         if (e) e.stopPropagation();
-        doAuthenticate()
-        // modal.confirm({
-        //     title: `确认移除该密钥？`,
-        //     content: `移除 [${item.label}] 后，你将无法通过此设备快速登录。`,
-        //     okText: '确认移除',
-        //     cancelText: '取消',
-        //     okButtonProps: { danger: true, loading: unbindLoading },
-        //     onOk: async () => {
-        //         try {
-        //             await unbindWebauthnAsync(item.credentialId);
-        //             message.success({ content: '通行密钥已成功移除' });
+        setTargetItem(item);
+        setCurrentStep(0); // 每次打开默认第一步：验证身份
+        setTicket('');
+        setVerifyMethod(null);
+        setIsModalOpen(true);
+    }
 
-        //             if (refresh) refresh();
+    const handleCancelUnbind = () => {
+        setIsModalOpen(false);
+        setTargetItem(null);
+        setTicket('');
+        setCurrentStep(0);
+        setVerifyMethod(null);
+    }
 
-        //             if (passkeys.length <= 1) {
-        //                 setIsExpanded(false);
-        //             }
-        //         } catch (error) {
-        //             console.error('Passkey 解绑失败:', error);
-        //             message.error({ content: error.message || '移除失败，请稍后重试' });
-        //         }
-        //     }
-        // });
-    };
+    // 第一步：点击下一步触发下拉框验证器
+    const handleNextStep = async () => {
+        try {
+            if (!verifierRef.current) return;
+            const { verified, ticket: responseTicket } = await verifierRef.current.onVerify();
+            if (verified && responseTicket) {
+                setTicket(responseTicket);
+                setCurrentStep(1); // 验证成功，迈入第二步危险警告区
+            }
+        } catch (error) {
+            if (error?.message) message.error(error.message);
+        }
+    }
+
+    const handleConfirmDestroy = async () => {
+        if (!targetItem || !ticket) return
+        await unbindWebauthnAsync({
+            credentialId: targetItem.credentialId,
+            ticket: ticket
+        })
+        message.success(`已成功移除密钥凭证 [${targetItem.label || '未知设备'}]`);
+        handleCancelUnbind()
+        if (refresh) refresh()
+    }
 
     const doAuthenticate = async () => {
         try {
@@ -180,8 +211,8 @@ const PasskeyItem = ({ context, refresh }) => {
                 publicKey: nativePublicKeyOptions
             })
             console.log('硬件认证成功，收到原始凭证:', credential.toJSON());
-            const { verified, ticket } = await verifyWebauthnAsync(credential.toJSON(),'RESET_PASSWORD')
-            console.log('verified',verified)
+            const { verified, ticket } = await verifyWebauthnAsync(credential.toJSON(), 'RESET_PASSWORD')
+            console.log('verified', verified)
         } catch (error) {
             console.error('认证被取消或失败:', error);
         }
@@ -330,7 +361,7 @@ const PasskeyItem = ({ context, refresh }) => {
                                     danger
                                     size="small"
                                     icon={<Trash2 style={{ width: 14, height: 14 }} />}
-                                    onClick={(e) => handleUnbind(item, e)}
+                                    onClick={(e) => handleOpenUnbindModal(item, e)}
                                     style={{ display: 'flex', alignItems: 'center', gap: 4 }}
                                 >
                                     移除
@@ -340,6 +371,119 @@ const PasskeyItem = ({ context, refresh }) => {
                     />
                 </div>
             )}
+
+            {/* 💡 多步解绑风控安全弹窗 */}
+            <Modal
+                title={
+                    <div style={{ marginBottom: 16 }}>
+                        <Title level={4} style={{ margin: 0, fontWeight: 600 }}>移除安全凭证</Title>
+                    </div>
+                }
+                open={isModalOpen}
+                onCancel={handleCancelUnbind}
+                width={460}
+                centered
+                destroyOnHidden
+                footer={
+                    <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+                        <div>
+                            {currentStep === 1 && (
+                                <Button
+                                    type="text"
+                                    icon={<LeftOutlined style={{ width: 14, height: 14 }} />}
+                                    onClick={() => setCurrentStep(0)}
+                                    style={{ paddingLeft: 0 }}
+                                >
+                                    返回上一步
+                                </Button>
+                            )}
+                        </div>
+                        <Flex gap={8}>
+                            <Button onClick={handleCancelUnbind}>取消</Button>
+                            {currentStep === 0 ? (
+                                <Button type="primary" loading={verifyLoading} onClick={handleNextStep}>
+                                    下一步
+                                </Button>
+                            ) : (
+                                <Button type="primary" danger loading={unbindLoading} onClick={handleConfirmDestroy}>
+                                    确定解绑移除
+                                </Button>
+                            )}
+                        </Flex>
+                    </Flex>
+                }
+            >
+                {/* 顶部步骤条 */}
+                <Steps
+                    current={currentStep}
+                    size="small"
+                    style={{ marginBottom: 24 }}
+                    items={[
+                        { title: '安全验证' },
+                        { title: '风险确认' },
+                    ]}
+                />
+
+                <AnimatePresence mode="wait">
+                    {/* 第一步：利用你封装的全局多路下拉验证器进行强力身份识别 */}
+                    {currentStep === 0 && (
+                        <motion.div
+                            key="unbind-step-verify"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <Text type="secondary">正在为设备 <Text strong>{targetItem?.label}</Text> 执行敏感移除操作，请先进行主身份鉴权：</Text>
+                            </div>
+                            <VerifyDropdown
+                                value={verifyMethod}
+                                onChange={(value) => setVerifyMethod(value)}
+                                verifierRef={verifierRef}
+                                context={context}
+                                scene="UNBIND_WEBAUTHN" // 特定的后端风控场景值
+                                onLoadingChange={(loading) => setVerifyLoading(loading)}
+                                onSuccess={(resTicket) => {
+                                    setTicket(resTicket);
+                                    setCurrentStep(1);
+                                }}
+                            />
+                        </motion.div>
+                    )}
+
+                    {/* 第二步：核按钮按下前的极端警示警告区 */}
+                    {currentStep === 1 && (
+                        <motion.div
+                            key="unbind-step-confirm"
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <Flex vertical gap={14}>
+                                <Alert
+                                    message="不可逆的凭证移除警告"
+                                    description="移除后，您将无法再通过该硬件设备的指纹或面容快速登录该系统。如需重新启用，您必须在对应设备上重新进行物理绑定流程。"
+                                    type="warning"
+                                    showIcon
+                                    icon={<ShieldAlert style={{ color: token.colorWarning }} />}
+                                />
+                                <div style={{ padding: '4px 12px', background: token.colorFillAlter, borderRadius: 8, border: `1px solid ${token.colorBorderSecondary}` }}>
+                                    <Space direction="vertical" size={2} style={{ padding: '8px 0' }}>
+                                        <Text type="secondary" style={{ fontSize: 13 }}>即将断开的资产信息：</Text>
+                                        <Text strong style={{ fontSize: 15, color: token.colorText }}>{targetItem?.label || '未命名密钥'}</Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>创建时间: {targetItem?.createTime || '-'}</Text>
+                                    </Space>
+                                </div>
+                                <Text type="danger" style={{ fontSize: 13, fontWeight: 500 }}>
+                                    💡 确认无误请点击下方的 “确定解绑移除”。
+                                </Text>
+                            </Flex>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </Modal>
         </Flex>
     );
 };

@@ -2,23 +2,18 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOptionsRepository;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.common.core.exception.BusinessException;
-import com.fasterxml.jackson.databind.Module;
+import com.atlas.common.core.utils.ServletHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ResolvableType;
-import org.springframework.http.converter.GenericHttpMessageConverter;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.webauthn.api.*;
 import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
-import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
 import org.springframework.security.web.webauthn.management.*;
 import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 import org.springframework.stereotype.Service;
@@ -34,59 +29,64 @@ public class WebauthnService {
 
     private final PublicKeyCredentialRequestOptionsRepository publicKeyCredentialRequestOptionsRepository;
 
-    private GenericHttpMessageConverter<Object> genericHttpMessageConverter = new MappingJackson2HttpMessageConverter(Jackson2ObjectMapperBuilder.json().modules(new Module[]{new WebauthnJackson2Module()}).build());
-
-    public PublicKeyCredentialCreationOptions createRegistrationOptions(HttpServletRequest request, HttpServletResponse response) {
+    public WebAuthnRegistrationOptionsResponse createRegistrationOptions(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        PublicKeyCredentialCreationOptions options =
-                webauthn4JRelyingPartyOperations.createPublicKeyCredentialCreationOptions(
-                        new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication)
-                );
+        PublicKeyCredentialCreationOptions options = webauthn4JRelyingPartyOperations.createPublicKeyCredentialCreationOptions(
+                new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication)
+        );
         publicKeyCredentialCreationOptionsRepository.save(request, response, options);
-        return options;
+        return WebAuthnRegistrationOptionsResponse.of(options);
     }
 
-    public CredentialRecord registerCredential(HttpServletRequest request, RelyingPartyPublicKey publicKey) {
+    public WebauthnRegistrationResponse registerCredential(HttpServletRequest request, WebauthnRelyingPartyPublicKey webauthnRelyingPartyPublicKey) {
+        RelyingPartyPublicKey publicKey = webauthnRelyingPartyPublicKey.toRelyingPartyPublicKey();
         PublicKeyCredentialCreationOptions options = this.publicKeyCredentialCreationOptionsRepository.load(request);
         if (options == null) {
             throw new BusinessException("challenge expired");
         }
         try {
-            return webauthn4JRelyingPartyOperations.registerCredential(
+            CredentialRecord credentialRecord = webauthn4JRelyingPartyOperations.registerCredential(
                     new ImmutableRelyingPartyRegistrationRequest(options, publicKey)
             );
+            String credentialId = credentialRecord.getCredentialId().toBase64UrlString();
+            return new WebauthnRegistrationResponse(credentialId,true);
         } finally {
             ((RedisPublicKeyCredentialCreationOptionsRepository) publicKeyCredentialCreationOptionsRepository).remove(request);
         }
-
     }
 
-    public PublicKeyCredentialRequestOptions authenticateOptions(HttpServletRequest request, HttpServletResponse response) {
+    public WebauthnAuthenticateOptionsResponse authenticateOptions(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         ImmutablePublicKeyCredentialRequestOptionsRequest optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(authentication);
         PublicKeyCredentialRequestOptions credentialRequestOptions = webauthn4JRelyingPartyOperations.createCredentialRequestOptions(optionsRequest);
         publicKeyCredentialRequestOptionsRepository.save(request, response, credentialRequestOptions);
-        return credentialRequestOptions;
+        return WebauthnAuthenticateOptionsResponse.of(credentialRequestOptions);
     }
 
-    public PublicKeyCredentialUserEntity authenticate(HttpServletRequest request){
-        ServletServerHttpRequest httpRequest = new ServletServerHttpRequest(request);
-        ResolvableType resolvableType = ResolvableType.forClassWithGenerics(PublicKeyCredential.class, new Class[]{AuthenticatorAssertionResponse.class});
-        PublicKeyCredential<AuthenticatorAssertionResponse> publicKeyCredential = null;
-        try {
-            publicKeyCredential = (PublicKeyCredential)this.genericHttpMessageConverter.read(resolvableType.getType(), this.getClass(), httpRequest);
-        } catch (Exception ex) {
-            throw new BadCredentialsException("Unable to authenticate the PublicKeyCredential", ex);
-        }
+    public WebauthnAuthenticateResponse authenticate(WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest) {
+        // 转换 DTO
+        PublicKeyCredential<AuthenticatorAssertionResponse> publicKeyCredential = WebauthnPublicKeyCredentialRequest.toCredential(webauthnPublicKeyCredentialRequest);
+        // 加载挑战字 options
+        HttpServletRequest request = ServletHolder.getRequest();
         PublicKeyCredentialRequestOptions requestOptions = publicKeyCredentialRequestOptionsRepository.load(request);
         if (requestOptions == null) {
             throw new BadCredentialsException("Unable to authenticate the PublicKeyCredential. No PublicKeyCredentialRequestOptions found.");
         }
+        // 组装并执行认证
         RelyingPartyAuthenticationRequest authenticationRequest = new RelyingPartyAuthenticationRequest(requestOptions, publicKeyCredential);
-        // 删除
-        ((RedisPublicKeyCredentialRequestOptionsRepository) publicKeyCredentialRequestOptionsRepository).remove(request);
-        return webauthn4JRelyingPartyOperations.authenticate(authenticationRequest);
+        webauthn4JRelyingPartyOperations.authenticate(authenticationRequest);
+
+        // 认证成功后再安全移除
+        if (publicKeyCredentialRequestOptionsRepository instanceof RedisPublicKeyCredentialRequestOptionsRepository redisRepo) {
+            redisRepo.remove(request);
+        }
+
+        return new WebauthnAuthenticateResponse(
+                webauthnPublicKeyCredentialRequest.id(),
+                webauthnPublicKeyCredentialRequest.response().userHandle(),
+                true
+        );
     }
 
 }

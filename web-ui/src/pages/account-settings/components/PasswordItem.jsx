@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Flex, theme, Modal, Form, Input, Progress, Space, App, Steps, Dropdown } from 'antd';
 import { CheckCircleFilled, CloseCircleOutlined, LockOutlined, MailOutlined, KeyOutlined, DownOutlined, LeftOutlined } from '@ant-design/icons';
-import { changePassword, initPassword, verifyCaptcha, verifyPassword } from '../../../services/UserProfileService';
+import { changePassword, initPassword, verifyCaptcha, verifyPassword } from '../../../services/AccountService';
 import { sendCaptcha } from '../../../services/LoginService';
 import { useRequest } from 'ahooks';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,6 +54,7 @@ const PasswordItem = ({ context, refresh }) => {
         setPassword('');
         setCurrentStep(0);
         setTicket('');
+        setVerifyMethod(null)
     };
 
     const checkStrength = (value) => {
@@ -94,8 +95,7 @@ const PasswordItem = ({ context, refresh }) => {
             if (!verifierRef.current) return;
             const { verified, ticket } = await verifierRef.current.onVerify()
             if (verified) {
-                setCurrentStep(1)
-                setTicket(ticket)
+                handleVerifySuccess(ticket)
             }
         } catch (error) {
             if (error?.message) {
@@ -103,6 +103,12 @@ const PasswordItem = ({ context, refresh }) => {
             }
         }
     };
+
+    const handleVerifySuccess = (targetTicket) => {
+        if (!targetTicket) return
+        setTicket(targetTicket)
+        setCurrentStep(1)
+    }
 
     // 💡 最终提交（第二步的确定）
     const handleOk = async () => {
@@ -230,6 +236,7 @@ const PasswordItem = ({ context, refresh }) => {
                                             context={context}
                                             scene="RESET_PASSWORD"
                                             onLoadingChange={(loading) => setVerifyLoading(loading)}
+                                            onSuccess={(ticket) => handleVerifySuccess(ticket)}
                                         />
                                     </motion.div>
                                 </AnimatePresence>

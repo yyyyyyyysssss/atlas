@@ -1,5 +1,5 @@
-import React from 'react';
-import { Form, Input, Typography, theme } from 'antd';
+import React, { useState } from 'react';
+import { App, Form, Input, Typography, theme } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -15,12 +15,50 @@ const { Text } = Typography;
 const UniversalPasswordVerifier = ({
     verifierRef,
     onVerifyAction,
+    onSuccess,
     label = "账户登录密码",
     placeholder = "请输入当前账户的登录密码",
     errorMsg = "密码错误，请重新输入"
 }) => {
     const { token } = theme.useToken();
     const [form] = Form.useForm();
+
+    const { message } = App.useApp()
+
+    const [loading, setLoading] = useState(false)
+
+
+    const handlePasswordVerify = async () => {
+        setLoading(true)
+        try {
+            await form.validateFields(['password'])
+
+            const values = form.getFieldValue('password');
+
+            // 2. 执行外部传入的 API
+            const result = await onVerifyAction(values);
+
+            // 3. 校验不通过，抛出异常阻断父组件
+            if (!result || !result.verified) {
+                throw new Error(errorMsg);
+            }
+            if (onSuccess) {
+                onSuccess(result.ticket);
+            }
+            return { verified: result.verified, ticket: result.ticket }
+        } finally {
+            setLoading(false)
+        }
+
+    }
+
+    const handleInternalTrigger = async () => {
+        try {
+            await handlePasswordVerify()
+        } catch (error) {
+            message.error(error.message);
+        }
+    }
 
     if (verifierRef) {
         verifierRef.current = {
@@ -32,18 +70,7 @@ const UniversalPasswordVerifier = ({
             },
             onVerify: async () => {
 
-                await form.validateFields(['password'])
-
-                const values = form.getFieldValue('password');
-
-                // 2. 执行外部传入的 API
-                const { verified, ticket } = await onVerifyAction(values);
-
-                // 3. 校验不通过，抛出异常阻断父组件
-                if (!verified) {
-                    throw new Error(errorMsg);
-                }
-                return { verified, ticket };
+                return await handlePasswordVerify()
             },
             reset: () => {
                 form.resetFields();
@@ -60,9 +87,11 @@ const UniversalPasswordVerifier = ({
             >
                 <Input.Password
                     size="large"
+                    disabled={loading}
                     placeholder={placeholder}
                     style={{ borderRadius: 8 }}
                     prefix={<LockOutlined style={{ color: token.colorTextPlaceholder }} />}
+                    onPressEnter={handleInternalTrigger}
                 />
             </Form.Item>
         </Form>

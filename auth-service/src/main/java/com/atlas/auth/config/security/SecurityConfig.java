@@ -132,13 +132,14 @@ public class SecurityConfig {
                     //令牌生成成功处理器
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
-                .webAuthn((webAuthn) -> webAuthn
-                        .rpId(securityProperties.getWebauthn().getRpId())
-                        .rpName(securityProperties.getWebauthn().getRpName())
-                        .allowedOrigins(
-                                securityProperties.getWebauthn().getOrigins()
-                        )
-                )
+                // 不需要了 使用WebauthnController自定义了端点
+//                .webAuthn((webAuthn) -> webAuthn
+//                        .rpId(securityProperties.getWebauthn().getRpId())
+//                        .rpName(securityProperties.getWebauthn().getRpName())
+//                        .allowedOrigins(
+//                                securityProperties.getWebauthn().getOrigins()
+//                        )
+//                )
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })

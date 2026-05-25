@@ -4,7 +4,7 @@ import { MailOutlined, SafetyCertificateOutlined, LeftOutlined, LockOutlined, Ke
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendCaptcha } from '../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { changeEmail, initEmail, verifyCaptcha, verifyPassword } from '../../../services/UserProfileService';
+import { changeEmail, initEmail, verifyCaptcha, verifyPassword } from '../../../services/AccountService';
 import UniversalCaptchaVerifier from './verifiers/UniversalCaptchaVerifier';
 import UniversalPasswordVerifier from './verifiers/UniversalPasswordVerifier';
 import VerifyDropdown from './verifiers';
@@ -93,9 +93,7 @@ const EmailItem = ({ context, refresh }) => {
         try {
             const { verified, ticket } = await verifierRef.current.onVerify();
             if (verified) {
-                setCurrentStep(1);
-                setCountdown(0)
-                setTicket(ticket)
+                handleVerifySuccess(ticket)
             }
         } catch (error) {
             if (error?.message) {
@@ -103,6 +101,13 @@ const EmailItem = ({ context, refresh }) => {
             }
         }
     };
+
+    const handleVerifySuccess = (targetTicket) => {
+        if (!targetTicket) return
+        setCurrentStep(1)
+        setCountdown(0)
+        setTicket(targetTicket)
+    }
 
     // 最终提交
     const handleSubmit = async () => {
@@ -135,6 +140,7 @@ const EmailItem = ({ context, refresh }) => {
         setCountdown(0)
         setTicket('')
         form.resetFields()
+        setVerifyMethod(null)
     };
 
     return (
@@ -255,6 +261,7 @@ const EmailItem = ({ context, refresh }) => {
                                 context={context}
                                 scene="MODIFY_EMAIL"
                                 onLoadingChange={(loading) => setVerifyLoading(loading)}
+                                onSuccess={(ticket) => handleVerifySuccess(ticket)}
                             />
                         </motion.div>
                     ) : (

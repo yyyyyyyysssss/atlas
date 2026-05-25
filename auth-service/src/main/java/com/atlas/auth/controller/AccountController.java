@@ -58,7 +58,7 @@ public class AccountController {
     /**
      * 初始化/设置密码（仅限未设置密码时调用）
      */
-    @PutMapping("/init/password")
+    @PutMapping("/password/init")
     public Result<Void> initPassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitPasswordDTO initPasswordDTO){
         accountService.initPassword(securityUser.getId(),initPasswordDTO);
         return ResultGenerator.ok();
@@ -73,31 +73,23 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
-    @PostMapping("/verify/password")
+    @PostMapping("/password/verify")
     public Result<VerifyPasswordVO> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO){
         VerifyPasswordVO verifyPasswordVO = accountService.verifyPassword(securityUser.getId(), verifyPasswordDTO);
         return ResultGenerator.ok(verifyPasswordVO);
     }
 
-    @PostMapping("/verify/captcha")
+    @PostMapping("/captcha/verify")
     public Result<VerifyCaptchaVO> verifyCaptcha(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO){
         VerifyCaptchaVO verifyCaptchaVO = accountService.verifyCaptcha(securityUser.getId(), captchaVerifyDTO);
         return ResultGenerator.ok(verifyCaptchaVO);
     }
 
-    @PutMapping("/init/email")
+    @PutMapping("/email/init")
     public Result<Void> initEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitEmailDTO initEmailDTO){
         accountService.initEmail(securityUser.getId(),initEmailDTO);
         return ResultGenerator.ok();
     }
-
-    @PostMapping("/verify/webauthn")
-    public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
-                                                   @RequestParam("securityScene") String securityScene){
-        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(), SecurityScene.fromString(securityScene));
-        return ResultGenerator.ok(verifyWebauthnVO);
-    }
-
 
     /**
      * 修改邮箱
@@ -108,5 +100,19 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
+
+    @PostMapping("/webauthn/verify")
+    public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
+                                                   @RequestBody WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest,
+                                                   @RequestParam("securityScene") String securityScene){
+        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(),webauthnPublicKeyCredentialRequest, SecurityScene.fromString(securityScene));
+        return ResultGenerator.ok(verifyWebauthnVO);
+    }
+
+    @DeleteMapping("/webauthn/unbind")
+    public Result<Void> unbindWebauthn(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated UnbindWebauthnDTO unbindWebauthnDTO){
+        accountService.unbindWebauthn(securityUser.getId(), unbindWebauthnDTO);
+        return ResultGenerator.ok();
+    }
 
 }

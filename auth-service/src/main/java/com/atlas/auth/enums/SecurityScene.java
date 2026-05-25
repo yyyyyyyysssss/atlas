@@ -12,7 +12,10 @@ public enum SecurityScene {
     LOGIN("login", "登录"),
     REGISTER("register", "注册"),
     RESET_PASSWORD("reset_pwd", "重置密码"),
-    MODIFY_EMAIL("modify_email", "修改邮箱");
+    MODIFY_EMAIL("modify_email", "修改邮箱"),
+    UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
+
+    ;
 
     private final String code;
     private final String description;

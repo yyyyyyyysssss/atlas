@@ -3,7 +3,7 @@ import { Button, Typography, Flex, Input, Tooltip, Space, App, theme } from 'ant
 import { UserOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { useDispatch } from 'react-redux';
-import { changeUsername } from '../../../services/UserProfileService';
+import { changeUsername } from '../../../services/AccountService';
 import { updateUserInfoPartial } from '../../../redux/slices/userSlice';
 
 const { Text } = Typography;

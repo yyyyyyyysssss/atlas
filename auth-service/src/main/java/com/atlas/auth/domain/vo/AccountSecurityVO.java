@@ -43,7 +43,10 @@ public class AccountSecurityVO {
      */
     private Boolean phoneVerified;
 
+
     private List<UserPasskeyVO> passkeys;
+
+    private Boolean passkeyEnabled;
 
     /**
      * 第三方账号

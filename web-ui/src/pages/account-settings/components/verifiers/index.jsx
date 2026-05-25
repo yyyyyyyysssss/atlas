@@ -7,7 +7,9 @@ import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyPassword } from '../../../../services/UserProfileService';
+import { verifyCaptcha, verifyPassword, verifyWebauthn } from '../../../../services/AccountService';
+import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
+import { Fingerprint } from 'lucide-react';
 
 
 const VerifyDropdown = ({
@@ -16,11 +18,14 @@ const VerifyDropdown = ({
     scene,
     value,
     onChange,
-    onLoadingChange
+    onLoadingChange,
+    onSuccess
 }) => {
     const { token } = theme.useToken();
 
-    const { passwordSet, boundEmail } = context || {}
+    const { passwordSet, boundEmail, passkeyEnabled, passkeys } = context || {}
+
+    const hasPasskey = passkeyEnabled || (passkeys && passkeys.length > 0)
 
     const { runAsync: sendCaptchaAsync, cancel: cancelSend } = useRequest(sendCaptcha, { manual: true });
 
@@ -30,26 +35,52 @@ const VerifyDropdown = ({
 
     const { runAsync: verifyPasswordAsync, loading: verifyPasswordLoading, cancel: cancelVerifyPassword } = useRequest(verifyPassword, { manual: true })
 
+
+    const { runAsync: verifyWebauthnAsync, loading: verifyWebauthnLoading, cancel: cancelVerifyWebauthn } = useRequest(verifyWebauthn, {
+        manual: true
+    });
+
     // 构建下拉菜单的项
     const availableMethods = []
+
+    // 通行密钥验证选项
+    if (hasPasskey) {
+        availableMethods.push({
+            key: 'passkey',
+            label: '密钥认证',
+            icon: <Fingerprint style={{ width: 14, height: 14, marginRight: 4 }} />,
+            render: () => (
+                <UniversalPasskeyVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(credentialJson) => verifyWebauthnAsync(credentialJson, scene)}
+                    onSuccess={onSuccess}
+                />
+            )
+        });
+    }
+
+    // 密码验证选项
     if (passwordSet) {
         availableMethods.push({
             key: 'password',
-            label: '密码验证',
+            label: '密码认证',
             icon: <KeyOutlined />,
             // 直接把渲染函数挂在这里
             render: () => (
                 <UniversalPasswordVerifier
                     verifierRef={verifierRef}
                     onVerifyAction={(pwd) => verifyPasswordAsync({ password: pwd, securityScene: scene })}
+                    onSuccess={onSuccess}
                 />
             )
         });
     }
+    // 邮箱验证选项
     if (boundEmail) {
         availableMethods.push({
             key: 'captcha',
-            label: '邮箱验证',
+            label: '邮箱认证',
             icon: <MailOutlined />,
             render: () => (
                 <UniversalCaptchaVerifier
@@ -59,6 +90,7 @@ const VerifyDropdown = ({
                     codeLabel="安全验证码"
                     onSendAction={() => sendCaptchaAsync({ target: boundEmail, captchaType: 'email', securityScene: scene })}
                     onVerifyAction={(code) => verifyCaptchaAsync({ target: boundEmail, captchaType: 'email', securityScene: scene, code })}
+                    onSuccess={onSuccess}
                 />
             )
         });
@@ -66,18 +98,18 @@ const VerifyDropdown = ({
 
     const [internalMethod, setInternalMethod] = useState(availableMethods[0]?.key);
 
-    const verifyMethod = value !== undefined ? value : internalMethod;
-
+    const verifyMethod = value || internalMethod
 
     useEffect(() => {
         return () => {
             cancelSend()
             cancelVerifyCaptcha()
             cancelVerifyPassword()
+            cancelVerifyWebauthn()
         }
     }, [verifyMethod])
 
-    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading;
+    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading;
 
     // 🎯 实时将加载状态吐给父组件
     useEffect(() => {

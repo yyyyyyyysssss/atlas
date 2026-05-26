@@ -1,10 +1,7 @@
 package com.atlas.auth.service;
 
 
-import com.atlas.auth.domain.dto.CaptchaLoginDTO;
-import com.atlas.auth.domain.dto.OttLoginDTO;
-import com.atlas.auth.domain.dto.PasswordLoginDTO;
-import com.atlas.auth.domain.dto.RefreshTokenDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenResponse;
@@ -12,6 +9,7 @@ import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.service.TokenService;
 import com.atlas.security.token.CaptchaAuthenticationToken;
 import com.atlas.security.token.RefreshAuthenticationToken;
+import com.atlas.security.token.WebauthnAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -56,6 +54,11 @@ public class LoginService {
                 ottLoginDTO.token()
         );
         return login(oneTimeTokenAuthenticationToken, ottLoginDTO.clientType(), true, false);
+    }
+
+    public TokenResponse loginWebauthn(WebauthnLoginDTO webauthnLoginDTO){
+        WebauthnAuthenticationToken webauthnAuthenticationToken = new WebauthnAuthenticationToken(webauthnLoginDTO.webauthnAuthenticationRequest());
+        return login(webauthnAuthenticationToken, webauthnLoginDTO.clientType(), true, false);
     }
 
     public TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh, boolean rememberMe) {

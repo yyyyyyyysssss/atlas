@@ -1,4 +1,4 @@
-package com.atlas.auth.domain.dto;
+package com.atlas.security.token;
 
 import org.springframework.security.web.webauthn.api.*;
 
@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public record WebauthnPublicKeyCredentialRequest(
+public record WebauthnAuthenticationRequest(
         String id,
 
         String type,
@@ -20,7 +20,7 @@ public record WebauthnPublicKeyCredentialRequest(
         Map<String, Object> clientExtensionResults
 ) {
 
-    public static PublicKeyCredential<AuthenticatorAssertionResponse> toCredential(WebauthnPublicKeyCredentialRequest dto) {
+    public static PublicKeyCredential<AuthenticatorAssertionResponse> toCredential(WebauthnAuthenticationRequest dto) {
 
         // 1. convert response
         AuthenticatorAssertionResponse response =

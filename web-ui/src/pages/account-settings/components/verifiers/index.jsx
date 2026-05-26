@@ -25,7 +25,9 @@ const VerifyDropdown = ({
 
     const { passwordSet, boundEmail, passkeyEnabled, passkeys } = context || {}
 
-    const hasPasskey = passkeyEnabled || (passkeys && passkeys.length > 0)
+    const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
+
+    const hasPasskey = isWebAuthnSupported && (passkeyEnabled || (passkeys && passkeys.length > 0))
 
     const { runAsync: sendCaptchaAsync, cancel: cancelSend } = useRequest(sendCaptcha, { manual: true });
 
@@ -53,7 +55,7 @@ const VerifyDropdown = ({
                 <UniversalPasskeyVerifier
                     verifierRef={verifierRef}
                     // 触发挥手硬件后，回调后端的验证接口
-                    onVerifyAction={(credentialJson) => verifyWebauthnAsync(credentialJson, scene)}
+                    onVerifyAction={(webauthnId, credentialJson) => verifyWebauthnAsync(webauthnId, credentialJson, scene)}
                     onSuccess={onSuccess}
                 />
             )

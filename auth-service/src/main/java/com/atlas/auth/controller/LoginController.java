@@ -1,14 +1,12 @@
 package com.atlas.auth.controller;
 
 
-import com.atlas.auth.domain.dto.CaptchaLoginDTO;
-import com.atlas.auth.domain.dto.OttLoginDTO;
-import com.atlas.auth.domain.dto.PasswordLoginDTO;
-import com.atlas.auth.domain.dto.RefreshTokenDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.service.LoginService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.TokenResponse;
+import com.atlas.security.token.WebauthnAuthenticationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
@@ -41,6 +39,12 @@ public class LoginController {
     @PostMapping("/login/ott")
     public Result<?> loginOtt(@RequestBody @Validated OttLoginDTO ottLoginDTO) {
         TokenResponse tokenResponse = loginService.loginOtt(ottLoginDTO);
+        return ResultGenerator.ok(tokenResponse);
+    }
+
+    @PostMapping("/login/webauthn")
+    public Result<?> loginWebauthn(@RequestBody @Validated WebauthnLoginDTO webauthnLoginDTO) {
+        TokenResponse tokenResponse = loginService.loginWebauthn(webauthnLoginDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 

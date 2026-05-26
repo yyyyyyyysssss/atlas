@@ -1,9 +1,9 @@
-import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode } from 'antd';
+import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode, theme } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { QrCode, Monitor } from 'lucide-react';
+import { QrCode, Monitor, Fingerprint } from 'lucide-react';
 import { useAuth } from '../../../router/AuthProvider';
 import { useRequest } from 'ahooks';
-import { captchaLogin, passwordLogin, sendCaptcha, sendOttLink } from '../../../services/LoginService';
+import { captchaLogin, passwordLogin, sendCaptcha, sendOttLink, webauthnLogin } from '../../../services/LoginService';
 import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../services/Oauth2Service';
 import { useNavigate } from 'react-router-dom';
 import { useRedirect } from '../../../hooks/useRedirect';
@@ -12,10 +12,13 @@ import useFullParams from '../../../hooks/useFullParams';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { generateChallenge, generateVerifier } from '../../../utils/pkce';
+import UniversalPasskeyVerifier from '../../account-settings/components/verifiers/UniversalPasskeyVerifier';
 
 const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
 
     const { t } = useTranslation()
+
+    const { token } = theme.useToken()
 
     const { signin } = useAuth()
 
@@ -26,6 +29,8 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
     const navigate = useNavigate()
     const { ottToken, targetUrl } = useFullParams()
 
+    const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
+
     const redirect = useRedirect()
 
     const { runAsync: captchaLoginAsync, loading: captchaLoginLoading } = useRequest(captchaLogin, {
@@ -33,6 +38,10 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
     })
 
     const { runAsync: passwordLoginAsync, loading: passwordLoginLoading } = useRequest(passwordLogin, {
+        manual: true
+    })
+
+    const { runAsync: webauthnLoginAsync, loading: webauthnLoginLoading } = useRequest(webauthnLogin, {
         manual: true
     })
 
@@ -51,6 +60,8 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
 
 
     const [loginMethod, setLoginMethod] = useState("1")
+
+    const quickPasskeyRef = useRef(null)
 
 
     //验证码设置
@@ -199,6 +210,25 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
         window.open(deviceCodeResult.verification_uri_complete, '_blank');
     }
 
+    const passkeyLogin = async (webauthnId, credentialJson) => {
+        try {
+            return await webauthnLoginAsync(webauthnId, {
+                clientType: 'WEB',
+                webauthnAuthenticationRequest: credentialJson
+            })
+        } catch (error) {
+            if (error.response && error.response.status === 401) {
+                if (error.response.data && error.response.data.code === 2201) {
+                    message.error('账号已锁定，请联系系统管理员')
+                } else {
+                    message.warning('验证失败。该设备密钥可能尚未绑定，或不属于当前系统。请先使用密码或验证码登录，成功后前往[安全设置]完成绑定。', 5)
+                }
+
+            }
+        }
+
+    }
+
     const onFinish = async (values) => {
         let loginReq;
         try {
@@ -231,22 +261,6 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
 
             }
         }
-        // runAsync(loginReq)
-        //     .then(
-        //         (data) => {
-        //             loginSuccessHandler(data)
-        //         },
-        //         (error) => {
-        //             if (error.response && error.response.status === 401) {
-        //                 if (error.response.data && error.response.data.code === 2201) {
-        //                     message.error('账号已锁定，请联系系统管理员')
-        //                 } else {
-        //                     message.error('用户名或密码错误')
-        //                 }
-
-        //             }
-        //         }
-        //     )
     }
 
     return (
@@ -312,7 +326,13 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                             transition={{ duration: 0.2 }}
                         >
                             <Form.Item name="username" rules={[{ required: loginMethod === '1', message: '用户名不可为空' }]} style={{ marginBottom: 20 }}>
-                                <Input allowClear size="large" placeholder="用户名或邮箱" prefix={<UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
+                                <Input
+                                    allowClear
+                                    size="large" placeholder="用户名或邮箱"
+                                    prefix={
+                                        <UserOutlined style={{ color: '#9ca3af', marginRight: 8 }} />
+                                    }
+                                />
                             </Form.Item>
                             <Form.Item name="password" rules={[{ required: loginMethod === '1', message: '密码不可为空' }]} style={{ marginBottom: 20 }}>
                                 <Input.Password size="large" placeholder="密码" prefix={<LockOutlined style={{ color: '#9ca3af', marginRight: 8 }} />} />
@@ -382,6 +402,29 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                             </Form.Item>
                         </motion.div>
                     )}
+
+                    {loginMethod === '4' && (
+                        <motion.div
+                            key="passkey-login"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            onAnimationComplete={async () => {
+                                const res = await quickPasskeyRef.current.onVerify()
+                                loginSuccessHandler(res)
+                            }}
+                        >
+                            <div style={{ marginBottom: 24 }}>
+                                <UniversalPasskeyVerifier
+                                    verifierRef={quickPasskeyRef}
+                                    onVerifyAction={passkeyLogin} // 👈 绑定你后端的 Passkey 登录服务
+                                    onSuccess={loginSuccessHandler} // 👈 成了就走统一成功处理器
+                                    label=""
+                                />
+                            </div>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
 
                 <Flex justify="end" align="center" style={{ marginBottom: 32, marginTop: 8 }}>
@@ -391,13 +434,13 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                                 items: [
                                     {
                                         key: '2',
-                                        label: '邮箱登录',
+                                        label: '验证码登录',
                                         align: 'center',
                                         onClick: () => switchLoginMethod('2')
                                     },
                                     {
                                         key: '3',
-                                        label: '免密登录',
+                                        label: '免密链登录',
                                         align: 'center',
                                         onClick: () => switchLoginMethod('3')
                                     }
@@ -457,6 +500,42 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
                         title="Google"
                     />
                 </Flex>
+                {isWebAuthnSupported && (
+                    <Flex justify="center" style={{ marginTop: 24, marginBottom: 8 }}>
+                        <Typography.Link
+                            onClick={() => switchLoginMethod('4')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                padding: '6px 12px',
+                                borderRadius: token.borderRadiusSM,
+                                color: token.colorPrimary,                   // 🎯 字体和图标直接使用系统主色
+                                transition: 'all 0.2s ease',
+
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                        >
+                            <Fingerprint
+                                size={16}
+                                strokeWidth={2.5}
+                                style={{
+                                    animation: 'pulse 2s infinite',
+                                    color: token.colorPrimary
+                                }}
+                            />
+                            <span>{t('使用 指纹 / 面容 快捷登录')}</span>
+                        </Typography.Link>
+                    </Flex>
+                )}
+
             </Form>
         </Card>
     )

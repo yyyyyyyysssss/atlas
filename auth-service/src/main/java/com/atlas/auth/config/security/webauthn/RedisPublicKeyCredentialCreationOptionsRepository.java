@@ -1,16 +1,11 @@
 package com.atlas.auth.config.security.webauthn;
 
-import com.atlas.security.model.SecurityUser;
 import com.atlas.security.properties.SecurityProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialCreationOptions;
 import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 
@@ -40,7 +35,7 @@ public class RedisPublicKeyCredentialCreationOptionsRepository implements Public
             log.warn("options is null");
             return;
         }
-        String key = PREFIX + getIdentifier(request);
+        String key = PREFIX + resolveWebauthnId(request);
 
         WebauthnCredentialOptionsContext context = WebauthnCredentialOptionsContext.of(options);
 
@@ -49,7 +44,7 @@ public class RedisPublicKeyCredentialCreationOptionsRepository implements Public
 
     @Override
     public PublicKeyCredentialCreationOptions load(HttpServletRequest request) {
-        String key = PREFIX + getIdentifier(request);
+        String key = PREFIX + resolveWebauthnId(request);
         Object cachedValue = redisTemplate.opsForValue().get(key);
         if (!(cachedValue instanceof WebauthnCredentialOptionsContext webAuthnCreationContext)) {
             return null;
@@ -58,22 +53,18 @@ public class RedisPublicKeyCredentialCreationOptionsRepository implements Public
     }
 
     public void remove(HttpServletRequest request){
-        String key = PREFIX + getIdentifier(request);
+        String key = PREFIX + resolveWebauthnId(request);
         redisTemplate.delete(key);
     }
 
-    private String getIdentifier(HttpServletRequest request) {
-        // 如果已经是登录状态（如：绑定新设备、高危操作二次验证），优先用已登录的 userId
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken)) {
-            if (authentication.getPrincipal() instanceof SecurityUser securityUser) {
-                return "userId:" + securityUser.getId();
-            }
-            if (authentication.getPrincipal() instanceof UserDetails userDetails) {
-                return "username:" + userDetails.getUsername();
-            }
+    private String resolveWebauthnId(HttpServletRequest request) {
+        String webauthnId = request.getHeader("X-Webauthn-Id");
+        if (webauthnId == null || webauthnId.isBlank()) {
+            webauthnId = (String) request.getAttribute("webauthnId");
         }
-        throw new AccessDeniedException("无法建立有效的 Webauthn 挑战上下文追踪标识，请先登录");
+        if(webauthnId == null || webauthnId.isBlank()){
+            throw new AccessDeniedException("无法建立有效的 Webauthn 挑战上下文追踪标识");
+        }
+        return webauthnId;
     }
 }

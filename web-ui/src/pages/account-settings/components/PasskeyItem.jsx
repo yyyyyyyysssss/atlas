@@ -110,22 +110,24 @@ const PasskeyItem = ({ context, refresh }) => {
         if (e) e.stopPropagation();
 
         try {
-            const registerOptions = await getOptionsAsync();
+            const { webauthnId, publicKey } = await getOptionsAsync();
             message.loading({ content: '正在唤起设备凭证...', key: 'passkey_action' });
 
-            const nativeOptions = PublicKeyCredential.parseCreationOptionsFromJSON(registerOptions);
+            const nativeOptions = PublicKeyCredential.parseCreationOptionsFromJSON(publicKey);
             const credential = await navigator.credentials.create({ publicKey: nativeOptions });
 
             message.loading({ content: '正在向服务器验证...', key: 'passkey_action' });
             const credentialJson = credential.toJSON();
             const label = getDeviceLabel();
 
-            await webauthnRegisterAsync({
-                publicKey: {
-                    label: label,
-                    credential: credentialJson
+            await webauthnRegisterAsync(webauthnId,
+                {
+                    publicKey: {
+                        label: label,
+                        credential: credentialJson
+                    }
                 }
-            });
+            )
 
             message.success({ content: '通行密钥绑定成功！', key: 'passkey_action' });
             if (refresh) refresh();

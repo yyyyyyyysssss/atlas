@@ -1,10 +1,7 @@
 package com.atlas.auth.controller;
 
 
-import com.atlas.auth.domain.dto.WebAuthnRegistrationOptionsResponse;
-import com.atlas.auth.domain.dto.WebAuthnRegistrationRequest;
-import com.atlas.auth.domain.dto.WebauthnAuthenticateOptionsResponse;
-import com.atlas.auth.domain.dto.WebauthnRegistrationResponse;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.service.WebauthnService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

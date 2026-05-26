@@ -9,15 +9,13 @@ import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.enums.SecurityScene;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.utils.ServletHolder;
 import com.atlas.common.redis.utils.RedisHelper;
+import com.atlas.security.token.WebauthnAuthenticationRequest;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
-import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -195,18 +193,13 @@ public class AccountService {
         return new VerifyCaptchaVO(verified, ticket);
     }
 
-    public VerifyWebauthnVO verifyWebauthn(Long userId,WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest, SecurityScene securityScene) {
+    public VerifyWebauthnVO verifyWebauthn(Long userId, WebauthnAuthenticationRequest webauthnAuthenticationRequest, SecurityScene securityScene) {
         boolean verified = false;
         try {
-            WebauthnAuthenticateResponse webauthnAuthenticateResponse = webauthnService.authenticate(webauthnPublicKeyCredentialRequest);
-            String credentialId = webauthnAuthenticateResponse.credentialId();
-            CredentialRecord credentialRecord = userCredentialRepository.findByCredentialId(Bytes.fromBase64(credentialId));
-            if(credentialRecord != null){
-                Bytes userEntityUserId = credentialRecord.getUserEntityUserId();
-                long expectedUserId = Long.parseLong(new String(userEntityUserId.getBytes(), StandardCharsets.UTF_8));
-                if(userId.equals(expectedUserId)){
-                    verified = true;
-                }
+            WebauthnAuthenticateResponse webauthnAuthenticateResponse = webauthnService.authenticate(webauthnAuthenticationRequest);
+            Long expectedUserId = webauthnAuthenticateResponse.userId();
+            if(userId.equals(expectedUserId)){
+                verified = true;
             }
         }catch (Exception e){
             log.error("webauthn authenticate error", e);

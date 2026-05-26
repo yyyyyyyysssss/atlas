@@ -23,6 +23,7 @@ import com.atlas.security.service.TokenService;
 import com.atlas.security.token.CaptchaAuthenticationToken;
 import com.atlas.security.token.RefreshAuthenticationToken;
 import com.atlas.security.token.ThirdPartyAuthenticationToken;
+import com.atlas.security.token.WebauthnAuthenticationToken;
 import com.atlas.security.utils.JwtUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -154,6 +155,7 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
         objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);
         objectMapper.addMixIn(CaptchaAuthenticationToken.class, CaptchaAuthenticationToken.CaptchaAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(WebauthnAuthenticationToken.class, WebauthnAuthenticationToken.WebAuthnAuthenticationTokenMixin.class);
 
         // 屏蔽 WebAuthn 的类型信息
         @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)

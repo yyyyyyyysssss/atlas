@@ -10,6 +10,7 @@ import com.atlas.auth.service.AccountService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.SecurityUser;
+import com.atlas.security.token.WebauthnAuthenticationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -103,9 +104,9 @@ public class AccountController {
 
     @PostMapping("/webauthn/verify")
     public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
-                                                   @RequestBody WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest,
+                                                   @RequestBody WebauthnAuthenticationRequest webauthnAuthenticationRequest,
                                                    @RequestParam("securityScene") String securityScene){
-        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(),webauthnPublicKeyCredentialRequest, SecurityScene.fromString(securityScene));
+        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(),webauthnAuthenticationRequest, SecurityScene.fromString(securityScene));
         return ResultGenerator.ok(verifyWebauthnVO);
     }
 

@@ -49,9 +49,13 @@ export const webauthnRegisterOptions = async () => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/webauthn/register/options'), { raw: true })
 }
 
-export const webauthnRegister = async (req) => {
+export const webauthnRegister = async (webauthnId, req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/webauthn/register', req), { raw: true })
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/webauthn/register', req, {
+        headers: {
+            'X-Webauthn-Id': webauthnId
+        }
+    }), { raw: true })
 }
 
 export const webauthnAuthenticateOptions = async () => {
@@ -59,9 +63,17 @@ export const webauthnAuthenticateOptions = async () => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/webauthn/authenticate/options'), { raw: true })
 }
 
-export const verifyWebauthn = async (req, securityScene) => {
+export const verifyWebauthn = async (webauthnId, req, securityScene) => {
 
-    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/account/webauthn/verify?securityScene=${securityScene}`, req))
+    return apiRequestWrapper(() => httpWrapper.post(
+        `/api/auth/account/webauthn/verify?securityScene=${securityScene}`,
+        req,
+        {
+            headers: {
+                'X-Webauthn-Id': webauthnId
+            }
+        }
+    ))
 }
 
 export const unbindWebauthn = async (req) => {

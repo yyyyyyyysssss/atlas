@@ -46,10 +46,7 @@ const UniversalPasswordVerifier = ({
             if (result.verified === false) {
                 throw new Error(errorMsg)
             }
-
-            if (onSuccess) {
-                onSuccess(result);
-            }
+            
             return result
         } finally {
             setLoading(false)
@@ -59,7 +56,10 @@ const UniversalPasswordVerifier = ({
 
     const handleInternalTrigger = async () => {
         try {
-            await handlePasswordVerify()
+            const result =  await handlePasswordVerify()
+            if (result && onSuccess) {
+                onSuccess(result)
+            }
         } catch (error) {
             message.error(error.message);
         }

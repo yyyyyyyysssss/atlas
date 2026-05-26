@@ -4,6 +4,7 @@ package com.atlas.auth.config.security;
 import com.atlas.auth.config.security.authentication.provider.CaptchaAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticationProvider;
 import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
+import com.atlas.auth.config.security.authentication.provider.WebauthnAuthenticationProvider;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
@@ -11,10 +12,7 @@ import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationO
 import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOptionsRepository;
 import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
-import com.atlas.auth.service.CaptchaFactory;
-import com.atlas.auth.service.LogoutService;
-import com.atlas.auth.service.OneTimeTokenGenerationSuccessService;
-import com.atlas.auth.service.UserService;
+import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
@@ -71,6 +69,9 @@ public class SecurityConfig {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private WebauthnService webauthnService;
 
     @Resource
     private PasswordEncoder passwordEncoder;
@@ -175,6 +176,8 @@ public class SecurityConfig {
                 .authenticationProvider(rememberMeAuthenticationProvider())
                 //一次性令牌认证
                 .authenticationProvider(oneTimeTokenAuthenticationProvider())
+                //webauthn通行密钥认证
+                .authenticationProvider(webauthnAuthenticationProvider())
                 .parentAuthenticationManager(null)
                 .build();
     }
@@ -235,31 +238,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserCredentialRepository userCredentialRepository(UserWebauthnCredentialsMapper userWebauthnCredentialsMapper) {
-        return new UserWebauthnCredentialsRepository(userWebauthnCredentialsMapper);
-    }
+    public WebauthnAuthenticationProvider webauthnAuthenticationProvider(){
 
-    @Bean
-    public PublicKeyCredentialCreationOptionsRepository publicKeyCredentialCreationOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
-        return new RedisPublicKeyCredentialCreationOptionsRepository(securityRedisTemplate, securityProperties);
-    }
-
-    @Bean
-    public PublicKeyCredentialRequestOptionsRepository publicKeyCredentialRequestOptionsRepository(RedisTemplate<String, Object> securityRedisTemplate) {
-        return new RedisPublicKeyCredentialRequestOptionsRepository(securityRedisTemplate, securityProperties);
-    }
-
-    @Bean
-    public Webauthn4JRelyingPartyOperations webauthn4JRelyingPartyOperations(PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository,
-                                                                             UserCredentialRepository userCredentialRepository) {
-        PublicKeyCredentialRpEntity rp = PublicKeyCredentialRpEntity.builder()
-                .id(securityProperties.getWebauthn().getRpId())
-                .name(securityProperties.getWebauthn().getRpName())
-                .build();
-        return new Webauthn4JRelyingPartyOperations(
-                publicKeyCredentialUserEntityRepository,
-                userCredentialRepository, rp, securityProperties.getWebauthn().getOrigins()
-        );
+        return new WebauthnAuthenticationProvider(webauthnService,userService);
     }
 
     //三方登录认证

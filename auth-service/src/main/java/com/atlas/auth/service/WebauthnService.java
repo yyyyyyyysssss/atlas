@@ -5,6 +5,7 @@ import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOp
 import com.atlas.auth.domain.dto.*;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.ServletHolder;
+import com.atlas.security.token.WebauthnAuthenticationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,9 @@ import org.springframework.security.web.webauthn.authentication.PublicKeyCredent
 import org.springframework.security.web.webauthn.management.*;
 import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +39,10 @@ public class WebauthnService {
         PublicKeyCredentialCreationOptions options = webauthn4JRelyingPartyOperations.createPublicKeyCredentialCreationOptions(
                 new ImmutablePublicKeyCredentialCreationOptionsRequest(authentication)
         );
+        String webauthnId = UUID.randomUUID().toString().replace("-", "");
+        request.setAttribute("webauthnId",webauthnId);
         publicKeyCredentialCreationOptionsRepository.save(request, response, options);
-        return WebAuthnRegistrationOptionsResponse.of(options);
+        return new WebAuthnRegistrationOptionsResponse(webauthnId,WebAuthnRegistrationOptions.of(options));
     }
 
     public WebauthnRegistrationResponse registerCredential(HttpServletRequest request, WebauthnRelyingPartyPublicKey webauthnRelyingPartyPublicKey) {
@@ -60,13 +66,15 @@ public class WebauthnService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         ImmutablePublicKeyCredentialRequestOptionsRequest optionsRequest = new ImmutablePublicKeyCredentialRequestOptionsRequest(authentication);
         PublicKeyCredentialRequestOptions credentialRequestOptions = webauthn4JRelyingPartyOperations.createCredentialRequestOptions(optionsRequest);
+        String webauthnId = UUID.randomUUID().toString().replace("-", "");
+        request.setAttribute("webauthnId",webauthnId);
         publicKeyCredentialRequestOptionsRepository.save(request, response, credentialRequestOptions);
-        return WebauthnAuthenticateOptionsResponse.of(credentialRequestOptions);
+        return new WebauthnAuthenticateOptionsResponse(webauthnId,WebauthnAuthenticateOptions.of(credentialRequestOptions));
     }
 
-    public WebauthnAuthenticateResponse authenticate(WebauthnPublicKeyCredentialRequest webauthnPublicKeyCredentialRequest) {
+    public WebauthnAuthenticateResponse authenticate(WebauthnAuthenticationRequest webauthnAuthenticationRequest) {
         // 转换 DTO
-        PublicKeyCredential<AuthenticatorAssertionResponse> publicKeyCredential = WebauthnPublicKeyCredentialRequest.toCredential(webauthnPublicKeyCredentialRequest);
+        PublicKeyCredential<AuthenticatorAssertionResponse> publicKeyCredential = WebauthnAuthenticationRequest.toCredential(webauthnAuthenticationRequest);
         // 加载挑战字 options
         HttpServletRequest request = ServletHolder.getRequest();
         PublicKeyCredentialRequestOptions requestOptions = publicKeyCredentialRequestOptionsRepository.load(request);
@@ -75,16 +83,16 @@ public class WebauthnService {
         }
         // 组装并执行认证
         RelyingPartyAuthenticationRequest authenticationRequest = new RelyingPartyAuthenticationRequest(requestOptions, publicKeyCredential);
-        webauthn4JRelyingPartyOperations.authenticate(authenticationRequest);
+        PublicKeyCredentialUserEntity authenticate = webauthn4JRelyingPartyOperations.authenticate(authenticationRequest);
 
         // 认证成功后再安全移除
         if (publicKeyCredentialRequestOptionsRepository instanceof RedisPublicKeyCredentialRequestOptionsRepository redisRepo) {
             redisRepo.remove(request);
         }
-
+        Long userId = Long.parseLong(new String(authenticate.getId().getBytes(), StandardCharsets.UTF_8));
         return new WebauthnAuthenticateResponse(
-                webauthnPublicKeyCredentialRequest.id(),
-                webauthnPublicKeyCredentialRequest.response().userHandle(),
+                webauthnAuthenticationRequest.id(),
+                userId,
                 true
         );
     }

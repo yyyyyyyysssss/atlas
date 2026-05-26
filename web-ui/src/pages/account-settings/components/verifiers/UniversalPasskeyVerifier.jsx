@@ -34,9 +34,7 @@ const UniversalPasskeyVerifier = ({
 
     const { message } = App.useApp()
 
-    const isWebAuthnSupported =
-        window.PublicKeyCredential !== undefined &&
-        typeof window.PublicKeyCredential === 'function';
+    const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
     const { runAsync: getAuthOptionsAsync, loading: optionsLoading } = useRequest(webauthnAuthenticateOptions, {
         manual: true
@@ -58,13 +56,13 @@ const UniversalPasskeyVerifier = ({
 
         try {
             // 1. 获取挑战配置
-            const authenticateOptions = await getAuthOptionsAsync();
+            const { webauthnId, publicKey } = await getAuthOptionsAsync();
 
             // 2. 数据格式转换
             const nativePublicKeyOptions = {
-                ...authenticateOptions,
-                challenge: base64urlToArrayBuffer(authenticateOptions.challenge),
-                allowCredentials: authenticateOptions.allowCredentials?.map(cred => ({
+                ...publicKey,
+                challenge: base64urlToArrayBuffer(publicKey.challenge),
+                allowCredentials: publicKey.allowCredentials?.map(cred => ({
                     ...cred,
                     id: base64urlToArrayBuffer(cred.id)
                 }))
@@ -83,7 +81,7 @@ const UniversalPasskeyVerifier = ({
 
             // 4. 执行外部传入的验证 API
             const credentialJson = credential.toJSON();
-            const result = await onVerifyAction(credentialJson);
+            const result = await onVerifyAction(webauthnId, credentialJson);
 
             if (!result) {
                 throw new Error('通行密钥验证失败，请重试');
@@ -91,10 +89,6 @@ const UniversalPasskeyVerifier = ({
 
             if (result.verified === false) {
                 throw new Error('通行密钥验证失败，请重试');
-            }
-
-            if (onSuccess) {
-                onSuccess(result)
             }
 
             return result
@@ -122,9 +116,12 @@ const UniversalPasskeyVerifier = ({
 
     const handleInternalTrigger = async () => {
         try {
-            await doHardwareAuthenticate()
+            const result = await doHardwareAuthenticate()
+            if (result && onSuccess) {
+                onSuccess(result)
+            }
         } catch (error) {
-            message.error(error.message);
+            throw error
         }
     };
 

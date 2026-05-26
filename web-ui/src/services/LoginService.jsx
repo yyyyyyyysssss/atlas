@@ -15,10 +15,22 @@ export const passwordLogin = async (req) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/password', req))
 }
 
+// 免密登录
 export const ottLogin = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/ott',req))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/ott', req))
 }
+
+// 通行密钥登录
+export const webauthnLogin = async (webauthnId, req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/webauthn', req, {
+        headers: {
+            'X-Webauthn-Id': webauthnId
+        }
+    }))
+}
+
 
 export const sendOttLink = async (username, targetUrl = '') => {
 

@@ -61,9 +61,6 @@ const UniversalCaptchaVerifier = ({
                 throw new Error(errorMsg);
             }
 
-            if (onSuccess) {
-                onSuccess(result);
-            }
             return result;
 
         } catch (error) {
@@ -79,7 +76,10 @@ const UniversalCaptchaVerifier = ({
      */
     const handleInternalTrigger = async (currentFullCode) => {
         try {
-            await executeVerifyWorkflow(currentFullCode);
+            const result = await executeVerifyWorkflow(currentFullCode);
+            if (result && onSuccess) {
+                onSuccess(result)
+            }
         } catch (error) {
             message.error(error.message);
             focusAndClearLast();

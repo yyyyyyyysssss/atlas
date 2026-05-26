@@ -9,6 +9,7 @@ import org.springframework.security.web.webauthn.api.*;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -198,7 +199,7 @@ public class WebauthnCredentialOptionsContext implements Serializable {
 
     private List<PublicKeyCredentialDescriptor> toDescriptor(List<CredentialDescriptor> credentials){
         if(credentials == null || credentials.isEmpty()){
-            return null;
+            return Collections.emptyList();
         }
         return credentials.stream()
                 .map(dto -> {
@@ -210,7 +211,7 @@ public class WebauthnCredentialOptionsContext implements Serializable {
                     if (dto.getTransports() != null) {
                         Set<AuthenticatorTransport> transportEnums = dto.getTransports().stream()
                                 .map(tStr -> AuthenticatorTransport.valueOf(tStr.toUpperCase()))
-                                .collect(java.util.stream.Collectors.toSet());
+                                .collect(Collectors.toSet());
                         descBuilder.transports(transportEnums);
                     }
 

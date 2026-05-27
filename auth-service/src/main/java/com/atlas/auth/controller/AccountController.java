@@ -1,10 +1,7 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.dto.*;
-import com.atlas.auth.domain.vo.AccountSecurityVO;
-import com.atlas.auth.domain.vo.VerifyCaptchaVO;
-import com.atlas.auth.domain.vo.VerifyPasswordVO;
-import com.atlas.auth.domain.vo.VerifyWebauthnVO;
+import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.SecurityScene;
 import com.atlas.auth.service.AccountService;
 import com.atlas.common.core.response.Result;
@@ -113,6 +110,34 @@ public class AccountController {
     @DeleteMapping("/webauthn/unbind")
     public Result<Void> unbindWebauthn(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated UnbindWebauthnDTO unbindWebauthnDTO){
         accountService.unbindWebauthn(securityUser.getId(), unbindWebauthnDTO);
+        return ResultGenerator.ok();
+    }
+
+    // 验证 TOTP 动态验证码
+    @PostMapping("/totp/verify")
+    public Result<TotpVerifyVO> verifyTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpVerifyDTO totpVerifyDTO) {
+        TotpVerifyVO verifyTotpVO = accountService.verifyTotp(securityUser.getId(), totpVerifyDTO);
+        return ResultGenerator.ok(verifyTotpVO);
+    }
+
+    // 申请绑定/重置 TOTP 凭证
+    @PostMapping("/totp")
+    public Result<TotpInitVO> initTotp(@AuthenticationPrincipal SecurityUser securityUser) {
+        TotpInitVO totpInitVO = accountService.initTotp(securityUser.getId());
+        return ResultGenerator.ok(totpInitVO);
+    }
+
+    // 验证并激活
+    @PutMapping("/totp")
+    public Result<Void> activateTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody TotpActivateDTO totpActivateDTO) {
+        accountService.activateTotp(securityUser.getId(),totpActivateDTO);
+        return ResultGenerator.ok();
+    }
+
+    // 解绑
+    @DeleteMapping("/totp")
+    public Result<Void> unbindTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody TotpUnbindDTO totpUnbindDTO) {
+        accountService.unbindTotp(securityUser.getId(),totpUnbindDTO);
         return ResultGenerator.ok();
     }
 

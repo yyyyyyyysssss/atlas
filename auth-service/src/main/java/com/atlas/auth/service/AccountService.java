@@ -2,11 +2,13 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.UserIdentifier;
+import com.atlas.auth.domain.entity.UserTotpCredentials;
 import com.atlas.auth.domain.entity.UserWebauthnCredentials;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.CaptchaType;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.enums.SecurityScene;
+import com.atlas.auth.enums.UserTotpStatus;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
@@ -50,6 +52,10 @@ public class AccountService {
     private final WebauthnService webauthnService;
 
     private final UserCredentialRepository userCredentialRepository;
+
+    private final TotpService totpService;
+
+    private final UserTotpCredentialsService userTotpCredentialsService;
 
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
@@ -203,7 +209,6 @@ public class AccountService {
             }
         }catch (Exception e){
             log.error("webauthn authenticate error", e);
-            verified = false;
         }
         String ticket = null;
         if (verified) {
@@ -244,6 +249,74 @@ public class AccountService {
         validTicket(userId, SecurityScene.UNBIND_WEBAUTHN, unbindWebauthnDTO.ticket());
         userCredentialRepository.delete(credentialId);
         log.info("用户 {} 成功解绑 WebAuthn 凭证: {}", userId, unbindWebauthnDTO.credentialId());
+    }
+
+    public TotpVerifyVO verifyTotp(Long userId, TotpVerifyDTO totpVerifyDTO){
+        UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
+        if (credential == null || !UserTotpStatus.ACTIVATED.equals(credential.getStatus())) {
+            log.warn("用户 {} 尝试校验未激活或不存在的 TOTP 资源", userId);
+            throw new BusinessException("当前账户尚未开启双因子认证保护");
+        }
+        boolean verified = false;
+        boolean isMatched = totpService.verify(credential.getSecretKey(), totpVerifyDTO.code());
+        if(isMatched){
+            verified = true;
+        }
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, totpVerifyDTO.securityScene());
+        }
+        return new TotpVerifyVO(verified, ticket);
+    }
+
+    public TotpInitVO initTotp(Long userId){
+        log.info("用户 {} 开始申请绑定/更换 TOTP 设备", userId);
+        String secretKey = totpService.generateSecretKey();
+        userTotpCredentialsService.saveOrUpdateUnactivated(userId,secretKey);
+        // 获取该用户具备业务可读性的显示标识
+        String username = userIdentifierService.findValueByUserIdAndType(userId, IdentifierType.USERNAME);
+        if (username == null || username.isBlank()) {
+            // 尝试拿邮箱兜底，实在没有就用 userId 字符形式
+            username = userIdentifierService.findValueByUserIdAndType(userId, IdentifierType.EMAIL);
+            if (username == null || username.isBlank()) {
+                username = String.valueOf(userId);
+            }
+        }
+        // 组装标准的 otpauth:// 协议长链接
+        String otpAuthUrl = totpService.generateOtpAuthUrl(username, secretKey);
+        return new TotpInitVO(otpAuthUrl, secretKey);
+    }
+
+    public void activateTotp(Long userId, TotpActivateDTO totpActivateDTO){
+        log.info("用户 {} 提交首组验证码尝试激活 TOTP", userId);
+        UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
+        if (credential == null) {
+            throw new BusinessException("未找到处于待激活状态的 TOTP 配置，请先发起初始化");
+        }
+        if (UserTotpStatus.ACTIVATED.equals(credential.getStatus())) {
+            log.warn("用户 {} 尝试重复激活已开启的 TOTP 2FA", userId);
+            throw new BusinessException("双因子认证已处于激活状态，请勿重复操作");
+        }
+        String secretKey = credential.getSecretKey();
+        boolean isMatched = totpService.verify(secretKey, totpActivateDTO.code());
+        if (!isMatched) {
+            log.warn("用户 {} 激活 TOTP 失败：验证码错误或已过期", userId);
+            throw new BusinessException("验证码不正确或已过期，请重新输入");
+        }
+        userTotpCredentialsService.updateStatus(userId, UserTotpStatus.ACTIVATED);
+        log.info("用户 {} 的 TOTP 2FA 已成功激活并投入使用", userId);
+    }
+
+    public void unbindTotp(Long userId,TotpUnbindDTO totpUnbindDTO){
+        log.info("用户 {} 正在请求彻底解绑关闭 TOTP 双因子认证", userId);
+        validTicket(userId, SecurityScene.UNBIND_TOTP, totpUnbindDTO.ticket());
+        // 门票检查通过，确认是否存在已激活的 2FA 记录
+        UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
+        if (credential == null) {
+            return;
+        }
+        userTotpCredentialsService.removeByUserId(userId);
+        log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

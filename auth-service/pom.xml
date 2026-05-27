@@ -110,12 +110,6 @@
             <artifactId>googleauth</artifactId>
             <version>1.5.0</version>
             <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>httpclient</artifactId>
-                    <groupId>org.apache.httpcomponents</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
     </dependencies>

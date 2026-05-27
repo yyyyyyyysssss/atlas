@@ -14,7 +14,7 @@ public enum SecurityScene {
     RESET_PASSWORD("reset_pwd", "重置密码"),
     MODIFY_EMAIL("modify_email", "修改邮箱"),
     UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
-
+    UNBIND_TOTP("unbind_totp", "解绑TOTP"),
     ;
 
     private final String code;

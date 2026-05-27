@@ -15,7 +15,8 @@ import PasswordItem from './PasswordItem';
 import EmailItem from './EmailItem';
 import PasskeyItem from './PasskeyItem';
 import UserProviderItem from './UserProviderItem';
-import MfaSecurityItem from './MfaSecurityItem';
+import TotpSecurityItem from './TotpSecurityItem';
+import RecoverySecurityItem from './RecoverySecurityItem';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -87,9 +88,12 @@ const SecurityTab = () => {
                 <Paragraph type="secondary" style={{ marginBottom: 24 }}>
                     为您的账号增加一层额外的安全保护。
                 </Paragraph>
-                <MfaSecurityItem
-                    mfaEnabled={mfaEnabled}
-                    recoveryCodeGenerated={recoveryCodeGenerated}
+                <TotpSecurityItem
+                    context={data}
+                    refresh={refresh}
+                />
+                <RecoverySecurityItem
+                    context={data}
                     refresh={refresh}
                 />
             </div>

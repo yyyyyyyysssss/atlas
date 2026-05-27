@@ -80,3 +80,25 @@ export const unbindWebauthn = async (req) => {
 
     return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/webauthn/unbind', { data: req }))
 }
+
+
+export const initTotp = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp'))
+}
+
+export const activateTotp = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.put('/api/auth/account/totp', req))
+}
+
+export const unbindTotp = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/totp', req))
+}
+
+export const verifyTotp = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp/verify', req))
+}
+

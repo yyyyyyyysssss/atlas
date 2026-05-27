@@ -224,7 +224,11 @@ const App = () => {
         },
         Menu: {
           itemActiveBg: 'rgba(0,0,0,0.05)'
-        }
+        },
+        QRCode: {
+          colorBgContainer: '#ffffff',
+          colorBgMask: 'rgba(255, 255, 255, 0.75)',
+        },
       }
     }
   }), [colorPrimary, activeBgColor])

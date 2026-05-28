@@ -15,6 +15,7 @@ public enum SecurityScene {
     MODIFY_EMAIL("modify_email", "修改邮箱"),
     UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
     UNBIND_TOTP("unbind_totp", "解绑TOTP"),
+    GENERATE_TOTP_BACKUP_CODE("generate_totp_backup_code", "重新生成TOTP备份码"),
     ;
 
     private final String code;

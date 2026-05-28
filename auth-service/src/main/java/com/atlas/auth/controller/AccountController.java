@@ -48,8 +48,8 @@ public class AccountController {
      * 修改/设置用户名
      */
     @PutMapping("/username")
-    public Result<Void> changeUsername(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeUsernameDTO changeUsernameDTO){
-        accountService.changeUsername(securityUser.getId(),changeUsernameDTO);
+    public Result<Void> changeUsername(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeUsernameDTO changeUsernameDTO) {
+        accountService.changeUsername(securityUser.getId(), changeUsernameDTO);
         return ResultGenerator.ok();
     }
 
@@ -57,8 +57,8 @@ public class AccountController {
      * 初始化/设置密码（仅限未设置密码时调用）
      */
     @PutMapping("/password/init")
-    public Result<Void> initPassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitPasswordDTO initPasswordDTO){
-        accountService.initPassword(securityUser.getId(),initPasswordDTO);
+    public Result<Void> initPassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitPasswordDTO initPasswordDTO) {
+        accountService.initPassword(securityUser.getId(), initPasswordDTO);
         return ResultGenerator.ok();
     }
 
@@ -66,26 +66,26 @@ public class AccountController {
      * 修改密码
      */
     @PutMapping("/password")
-    public Result<Void> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangePasswordDTO changePasswordDTO){
-        accountService.changePassword(securityUser.getId(),changePasswordDTO);
+    public Result<Void> changePassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangePasswordDTO changePasswordDTO) {
+        accountService.changePassword(securityUser.getId(), changePasswordDTO);
         return ResultGenerator.ok();
     }
 
     @PostMapping("/password/verify")
-    public Result<VerifyPasswordVO> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO){
+    public Result<VerifyPasswordVO> verifyPassword(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated VerifyPasswordDTO verifyPasswordDTO) {
         VerifyPasswordVO verifyPasswordVO = accountService.verifyPassword(securityUser.getId(), verifyPasswordDTO);
         return ResultGenerator.ok(verifyPasswordVO);
     }
 
     @PostMapping("/captcha/verify")
-    public Result<VerifyCaptchaVO> verifyCaptcha(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO){
+    public Result<VerifyCaptchaVO> verifyCaptcha(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO) {
         VerifyCaptchaVO verifyCaptchaVO = accountService.verifyCaptcha(securityUser.getId(), captchaVerifyDTO);
         return ResultGenerator.ok(verifyCaptchaVO);
     }
 
     @PutMapping("/email/init")
-    public Result<Void> initEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitEmailDTO initEmailDTO){
-        accountService.initEmail(securityUser.getId(),initEmailDTO);
+    public Result<Void> initEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated InitEmailDTO initEmailDTO) {
+        accountService.initEmail(securityUser.getId(), initEmailDTO);
         return ResultGenerator.ok();
     }
 
@@ -93,7 +93,7 @@ public class AccountController {
      * 修改邮箱
      */
     @PutMapping("/email")
-    public Result<Void> changeEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeEmailDTO changeEmailDTO){
+    public Result<Void> changeEmail(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ChangeEmailDTO changeEmailDTO) {
         accountService.changeEmail(securityUser.getId(), changeEmailDTO);
         return ResultGenerator.ok();
     }
@@ -102,13 +102,13 @@ public class AccountController {
     @PostMapping("/webauthn/verify")
     public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
                                                    @RequestBody WebauthnAuthenticationRequest webauthnAuthenticationRequest,
-                                                   @RequestParam("securityScene") String securityScene){
-        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(),webauthnAuthenticationRequest, SecurityScene.fromString(securityScene));
+                                                   @RequestParam("securityScene") String securityScene) {
+        VerifyWebauthnVO verifyWebauthnVO = accountService.verifyWebauthn(securityUser.getId(), webauthnAuthenticationRequest, SecurityScene.fromString(securityScene));
         return ResultGenerator.ok(verifyWebauthnVO);
     }
 
     @DeleteMapping("/webauthn/unbind")
-    public Result<Void> unbindWebauthn(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated UnbindWebauthnDTO unbindWebauthnDTO){
+    public Result<Void> unbindWebauthn(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated UnbindWebauthnDTO unbindWebauthnDTO) {
         accountService.unbindWebauthn(securityUser.getId(), unbindWebauthnDTO);
         return ResultGenerator.ok();
     }
@@ -129,16 +129,22 @@ public class AccountController {
 
     // 验证并激活
     @PutMapping("/totp")
-    public Result<Void> activateTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody TotpActivateDTO totpActivateDTO) {
-        accountService.activateTotp(securityUser.getId(),totpActivateDTO);
-        return ResultGenerator.ok();
+    public Result<TotpActivateVO> activateTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody TotpActivateDTO totpActivateDTO) {
+        TotpActivateVO totpActivateVO = accountService.activateTotp(securityUser.getId(), totpActivateDTO);
+        return ResultGenerator.ok(totpActivateVO);
     }
 
     // 解绑
     @DeleteMapping("/totp")
     public Result<Void> unbindTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody TotpUnbindDTO totpUnbindDTO) {
-        accountService.unbindTotp(securityUser.getId(),totpUnbindDTO);
+        accountService.unbindTotp(securityUser.getId(), totpUnbindDTO);
         return ResultGenerator.ok();
+    }
+
+    @PostMapping("/totp/backupCode/refresh")
+    public Result<TotpRefreshBackupCodeVO> refreshTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO) {
+        TotpRefreshBackupCodeVO totpRefreshBackupCodeVO = accountService.refreshTotpBackupCode(securityUser.getId(), totpRefreshBackupCodeDTO);
+        return ResultGenerator.ok(totpRefreshBackupCodeVO);
     }
 
 }

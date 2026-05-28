@@ -58,11 +58,11 @@ public class AccountSecurityVO {
     /**
      * TOTP（身份验证器应用）是否已开启
      */
-    private Boolean mfaEnabled;
+    private Boolean totpEnabled;
 
     /**
      * 是否已生成恢复码（通常 mfaEnabled 为 true 时，它也为 true）
      */
-    private Boolean recoveryCodeGenerated;
+    private Boolean backupCodeGenerated;
 
 }

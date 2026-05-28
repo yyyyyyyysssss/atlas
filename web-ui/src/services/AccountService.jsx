@@ -102,3 +102,8 @@ export const verifyTotp = async (req) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp/verify', req))
 }
 
+export const refreshTotpBackupCode = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp/backupCode/refresh', req))
+}
+

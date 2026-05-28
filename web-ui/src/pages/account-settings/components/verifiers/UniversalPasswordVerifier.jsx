@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { App, Form, Input, Typography, theme } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 
@@ -27,6 +27,13 @@ const UniversalPasswordVerifier = ({
 
     const [loading, setLoading] = useState(false)
 
+    const pwdRef = useRef(null)
+
+    useEffect(() => {
+        if (pwdRef.current) {
+            pwdRef.current.focus()
+        }
+    }, [])
 
     const handlePasswordVerify = async () => {
         setLoading(true)
@@ -46,7 +53,7 @@ const UniversalPasswordVerifier = ({
             if (result.verified === false) {
                 throw new Error(errorMsg)
             }
-            
+
             return result
         } finally {
             setLoading(false)
@@ -56,7 +63,7 @@ const UniversalPasswordVerifier = ({
 
     const handleInternalTrigger = async () => {
         try {
-            const result =  await handlePasswordVerify()
+            const result = await handlePasswordVerify()
             if (result && onSuccess) {
                 onSuccess(result)
             }
@@ -91,6 +98,7 @@ const UniversalPasswordVerifier = ({
                 rules={[{ required: true, message: '密码不能为空' }]}
             >
                 <Input.Password
+                    ref={pwdRef}
                     size="large"
                     disabled={loading}
                     placeholder={placeholder}

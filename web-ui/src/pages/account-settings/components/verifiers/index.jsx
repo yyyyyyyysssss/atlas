@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, Button, Space, Flex, theme, Empty } from 'antd';
-import { KeyOutlined, MailOutlined, DownOutlined } from '@ant-design/icons';
+import { KeyOutlined, MailOutlined, DownOutlined, MobileOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyPassword, verifyWebauthn } from '../../../../services/AccountService';
+import { verifyCaptcha, verifyPassword, verifyTotp, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
 import { Fingerprint } from 'lucide-react';
+import UniversalTotpVerifier from './UniversalTotpVerifier';
 
 
 const VerifyDropdown = ({
@@ -23,7 +24,7 @@ const VerifyDropdown = ({
 }) => {
     const { token } = theme.useToken();
 
-    const { passwordSet, boundEmail, passkeyEnabled, passkeys } = context || {}
+    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled } = context || {}
 
     const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
@@ -42,6 +43,10 @@ const VerifyDropdown = ({
         manual: true
     });
 
+    const { runAsync: verifyTotpAsync, loading: verifyTotpLoading, cancel: cancelVerifyTotp } = useRequest(verifyTotp, {
+        manual: true
+    });
+
     // 构建下拉菜单的项
     const availableMethods = []
 
@@ -50,12 +55,28 @@ const VerifyDropdown = ({
         availableMethods.push({
             key: 'passkey',
             label: '密钥认证',
-            icon: <Fingerprint style={{ width: 14, height: 14, marginRight: 4 }} />,
+            icon: <Fingerprint style={{ width: 14, height: 14}} />,
             render: () => (
                 <UniversalPasskeyVerifier
                     verifierRef={verifierRef}
                     // 触发挥手硬件后，回调后端的验证接口
                     onVerifyAction={(webauthnId, credentialJson) => verifyWebauthnAsync(webauthnId, credentialJson, scene)}
+                    onSuccess={onSuccess}
+                />
+            )
+        });
+    }
+
+    // totp
+    if (totpEnabled) {
+        availableMethods.push({
+            key: 'totp',
+            label: 'TOTP认证',
+            icon: <MobileOutlined />,
+            render: () => (
+                <UniversalTotpVerifier
+                    verifierRef={verifierRef}
+                    onVerifyAction={(code) => verifyTotpAsync({ code: code, securityScene: scene })}
                     onSuccess={onSuccess}
                 />
             )
@@ -108,10 +129,11 @@ const VerifyDropdown = ({
             cancelVerifyCaptcha()
             cancelVerifyPassword()
             cancelVerifyWebauthn()
+            cancelVerifyTotp()
         }
     }, [verifyMethod])
 
-    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading;
+    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading || verifyTotpLoading;
 
     // 🎯 实时将加载状态吐给父组件
     useEffect(() => {
@@ -169,6 +191,7 @@ const VerifyDropdown = ({
                                 }}
                             >
                                 <Space size={4}>
+                                    {currentMethod?.icon}
                                     {currentMethod?.label}
                                     <DownOutlined style={{ fontSize: 10 }} />
                                 </Space>

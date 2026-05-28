@@ -20,6 +20,7 @@ import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -56,6 +57,8 @@ public class AccountService {
     private final TotpService totpService;
 
     private final UserTotpCredentialsService userTotpCredentialsService;
+
+    private final UserTotpBackupCodeService userTotpBackupCodeService;
 
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
@@ -94,6 +97,10 @@ public class AccountService {
                     .toList();
         }
 
+        // totp
+        UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getByUserId(userId);
+
+
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
                 .passwordSet(passwordSet)
@@ -113,9 +120,9 @@ public class AccountService {
                 // 来自 user_provider 表 的社交绑定资产
                 .providers(providers)
 
-                // 2FA 两步验证状态（暂不处理）
-                .mfaEnabled(false)
-                .recoveryCodeGenerated(false)
+                // 2FA 两步验证状态
+                .totpEnabled(userTotpCredentials != null && userTotpCredentials.getStatus().equals(UserTotpStatus.ACTIVATED))
+                .backupCodeGenerated(userTotpCredentials != null && userTotpCredentials.getStatus().equals(UserTotpStatus.ACTIVATED))
                 .build();
     }
 
@@ -287,7 +294,8 @@ public class AccountService {
         return new TotpInitVO(otpAuthUrl, secretKey);
     }
 
-    public void activateTotp(Long userId, TotpActivateDTO totpActivateDTO){
+    @Transactional(rollbackFor = Exception.class)
+    public TotpActivateVO activateTotp(Long userId, TotpActivateDTO totpActivateDTO){
         log.info("用户 {} 提交首组验证码尝试激活 TOTP", userId);
         UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
         if (credential == null) {
@@ -304,7 +312,10 @@ public class AccountService {
             throw new BusinessException("验证码不正确或已过期，请重新输入");
         }
         userTotpCredentialsService.updateStatus(userId, UserTotpStatus.ACTIVATED);
-        log.info("用户 {} 的 TOTP 2FA 已成功激活并投入使用", userId);
+        // 生成备份码
+        List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);
+        log.info("用户 {} 的 TOTP 2FA 已成功激活并投入使用，备份码已同步同步下发", userId);
+        return new TotpActivateVO(backupCodes);
     }
 
     public void unbindTotp(Long userId,TotpUnbindDTO totpUnbindDTO){
@@ -317,6 +328,12 @@ public class AccountService {
         }
         userTotpCredentialsService.removeByUserId(userId);
         log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
+    }
+
+    public TotpRefreshBackupCodeVO refreshTotpBackupCode(Long userId, TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO){
+        validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE,totpRefreshBackupCodeDTO.ticket());
+        List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);
+        return new TotpRefreshBackupCodeVO(backupCodes);
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UniversalPasswordVerifier from './verifiers/UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './verifiers/UniversalCaptchaVerifier';
 import VerifyDropdown from './verifiers';
+import SecurityStepVerify from './verifiers/SecurityStepVerify';
 
 const { Text, Title } = Typography;
 
@@ -16,19 +17,11 @@ const PasswordItem = ({ context, refresh }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
 
-
     const { passwordSet, boundEmail } = context || {}
-
-    // 💡 分步核心状态：0 - 验证身份 / 1 - 设置新密码
-    const [currentStep, setCurrentStep] = useState(0);
 
     const [passwordStrength, setPasswordStrength] = useState(0)
 
     const [password, setPassword] = useState('')
-
-    const [ticket, setTicket] = useState('')
-
-    const [verifyLoading, setVerifyLoading] = useState(false)
 
     const [verifyMethod, setVerifyMethod] = useState()
 
@@ -42,8 +35,6 @@ const PasswordItem = ({ context, refresh }) => {
 
     // 打开弹窗重置状态
     const handleOpenModal = () => {
-        // 如果原本就没有设置过密码，直接进入第二步（设置新密码）
-        setCurrentStep(passwordSet ? 0 : 1);
         setIsModalOpen(true);
     };
 
@@ -52,8 +43,6 @@ const PasswordItem = ({ context, refresh }) => {
         form.resetFields();
         setPasswordStrength(0);
         setPassword('');
-        setCurrentStep(0);
-        setTicket('');
         setVerifyMethod(null)
     };
 
@@ -83,36 +72,8 @@ const PasswordItem = ({ context, refresh }) => {
         special: /[^A-Za-z0-9]/.test(password)
     };
 
-    const handlePrev = () => {
-        setCurrentStep(0);
-        setPassword('');
-        setPasswordStrength(0)
-    };
 
-    // 💡 下一步（第一步通往第二步）
-    const handleNext = async () => {
-        try {
-            if (!verifierRef.current) return;
-            const { verified, ticket } = await verifierRef.current.onVerify()
-            if (verified) {
-                handleVerifySuccess(ticket)
-            }
-        } catch (error) {
-            if (error?.message) {
-                message.error(error.message);
-            }
-        }
-    };
-
-    const handleVerifySuccess = (targetTicket) => {
-        if (!targetTicket) return
-        setTicket(targetTicket)
-        setCurrentStep(1)
-    }
-
-    // 💡 最终提交（第二步的确定）
-    const handleOk = async () => {
-        // 校验第二步的密码字段
+    const handleConfirmPasswordSubmit = async (ticket) => {
         const pwdValues = await form.validateFields(['newPassword', 'confirmPassword']);
 
         if (passwordSet) {
@@ -127,12 +88,10 @@ const PasswordItem = ({ context, refresh }) => {
                 confirmPassword: pwdValues.confirmPassword,
             });
         }
-
-
         message.success(passwordSet ? '密码重置成功' : '初始密码设置成功');
         handleCancel();
         refresh?.();
-    };
+    }
 
     return (
         <>
@@ -162,193 +121,116 @@ const PasswordItem = ({ context, refresh }) => {
                 open={isModalOpen}
                 onCancel={handleCancel}
                 width={460}
+                footer={null}
                 centered
                 destroyOnHidden
-                footer={
-                    <Flex justify="space-between" align="center" style={{ width: '100%' }}>
-                        {/* 左侧区域：仅在第二步且原先有密码（即有第一步验证流程）时显示带箭头的文本按钮 */}
-                        <div>
-                            {currentStep === 1 && passwordSet ? (
-                                <Button
-                                    type="text"
-                                    icon={<LeftOutlined />}
-                                    onClick={handlePrev}
-                                    style={{ paddingLeft: 0 }} // 消除内边距保证图标贴齐左边界
-                                >
-                                    返回上一步
-                                </Button>
-                            ) : null}
-                        </div>
-
-                        {/* 右侧区域：固定右侧对齐的通用控制按钮 */}
-                        <Flex gap={8}>
-                            <Button onClick={handleCancel}>取消</Button>
-                            {currentStep === 0 ? (
-                                <Button type="primary" loading={verifyLoading} onClick={handleNext}>
-                                    下一步
-                                </Button>
-                            ) : (
-                                <Button type="primary" loading={changeLoading || initLoading} onClick={handleOk}>
-                                    确定修改
-                                </Button>
-                            )}
-                        </Flex>
-                    </Flex>
-                }
             >
-                {/* 💡 增加了 Steps 进度条组件，让分步感知更明确 */}
-                {passwordSet && (
-                    <Steps
-                        current={currentStep}
-                        size="small"
-                        style={{ marginBottom: 24 }}
-                        items={[
-                            { title: '验证身份' },
-                            { title: '设置新密码' },
-                        ]}
-                    />
-                )}
+                <SecurityStepVerify
+                    scene="RESET_PASSWORD"
+                    context={context}
+                    stepTitle={passwordSet ? "设置新密码" : "填写新密码"}
+                    confirmText={passwordSet ? "确认修改" : "确认设置"}
+                    confirmLoading={changeLoading || initLoading}
+                    initialStep={passwordSet ? 0 : 1}
+                    onCancel={handleCancel}
+                    onConfirm={handleConfirmPasswordSubmit}
+                >
+                    <Form form={form} layout="vertical" requiredMark={false}>
+                        <Form.Item
+                            label={<Text style={{ fontWeight: 500, fontSize: 13 }}>新密码</Text>}
+                            name="newPassword"
+                            rules={[
+                                { required: true, message: '请输入新密码' },
+                            ]}
+                        >
+                            <Input.Password
+                                placeholder="输入新密码"
+                                size="large"
+                                style={{ borderRadius: 8 }}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setPassword(val);
+                                    setPasswordStrength(checkStrength(val));
+                                }}
+                            />
+                        </Form.Item>
 
-                <Form form={form} layout="vertical" requiredMark={false}>
-                    <AnimatePresence mode="wait">
-                        {/* 💡 第一步：身份验证面板 */}
-                        {currentStep === 0 && passwordSet && (
-                            <motion.div
-                                key="step-verify"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <AnimatePresence mode="wait">
-
-                                    <motion.div
-                                        key="old-pwd-field"
-                                        initial={{ opacity: 0, y: -5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 5 }}
-                                        transition={{ duration: 0.15 }}
-                                    >
-                                        <VerifyDropdown
-                                            value={verifyMethod}
-                                            onChange={(value) => setVerifyMethod(value)}
-                                            verifierRef={verifierRef}
-                                            context={context}
-                                            scene="RESET_PASSWORD"
-                                            onLoadingChange={(loading) => setVerifyLoading(loading)}
-                                            onSuccess={(res) => handleVerifySuccess(res.ticket)}
-                                        />
-                                    </motion.div>
-                                </AnimatePresence>
-                            </motion.div>
-                        )}
-
-                        {/* 💡 第二步：新密码设置面板 */}
-                        {currentStep === 1 && (
-                            <motion.div
-                                key="step-password"
-                                initial={{ opacity: 0, x: 10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <Form.Item
-                                    label={<Text style={{ fontWeight: 500, fontSize: 13 }}>新密码</Text>}
-                                    name="newPassword"
-                                    rules={[
-                                        { required: true, message: '请输入新密码' },
-                                    ]}
+                        {/* 密码强度动态面板 */}
+                        <AnimatePresence>
+                            {password.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, y: -10 }}
+                                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                                    exit={{ opacity: 0, height: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    style={{
+                                        background: token.colorFillAlter,
+                                        padding: '12px 16px',
+                                        borderRadius: 8,
+                                        marginBottom: 24,
+                                        border: `1px solid ${token.colorBorderSecondary}`,
+                                        overflow: 'hidden'
+                                    }}
                                 >
-                                    <Input.Password
-                                        placeholder="输入新密码"
-                                        size="large"
-                                        style={{ borderRadius: 8 }}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setPassword(val);
-                                            setPasswordStrength(checkStrength(val));
-                                        }}
+                                    <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                                        <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>安全评级</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: 600, color: currentStrength.color }}>
+                                            {currentStrength.label}
+                                        </Text>
+                                    </Flex>
+
+                                    <Progress
+                                        percent={passwordStrength === 0 ? 8 : passwordStrength * 25}
+                                        showInfo={false}
+                                        strokeColor={currentStrength.color}
+                                        size="small"
+                                        style={{ margin: '0 0 12px 0' }}
                                     />
-                                </Form.Item>
 
-                                {/* 密码强度动态面板 */}
-                                <AnimatePresence>
-                                    {password.length > 0 && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0, y: -10 }}
-                                            animate={{ opacity: 1, height: 'auto', y: 0 }}
-                                            exit={{ opacity: 0, height: 0, y: -10 }}
-                                            transition={{ duration: 0.2 }}
-                                            style={{
-                                                background: token.colorFillAlter,
-                                                padding: '12px 16px',
-                                                borderRadius: 8,
-                                                marginBottom: 24,
-                                                border: `1px solid ${token.colorBorderSecondary}`,
-                                                overflow: 'hidden'
-                                            }}
-                                        >
-                                            <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-                                                <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>安全评级</Text>
-                                                <Text style={{ fontSize: 12, fontWeight: 600, color: currentStrength.color }}>
-                                                    {currentStrength.label}
-                                                </Text>
-                                            </Flex>
+                                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                        <Flex align="center" gap={6}>
+                                            {rulesCheck.length ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                            <Text style={{ fontSize: 12 }} type={rulesCheck.length ? 'success' : 'secondary'}>长度达到或超过 8 位</Text>
+                                        </Flex>
+                                        <Flex align="center" gap={6}>
+                                            {rulesCheck.mixed ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                            <Text style={{ fontSize: 12 }} type={rulesCheck.mixed ? 'success' : 'secondary'}>包含大写英文字母</Text>
+                                        </Flex>
+                                        <Flex align="center" gap={6}>
+                                            {rulesCheck.digit ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                            <Text style={{ fontSize: 12 }} type={rulesCheck.digit ? 'success' : 'secondary'}>包含数字字符 (0-9)</Text>
+                                        </Flex>
+                                        <Flex align="center" gap={6}>
+                                            {rulesCheck.special ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
+                                            <Text style={{ fontSize: 12 }} type={rulesCheck.special ? 'success' : 'secondary'}>包含特殊符号或标点</Text>
+                                        </Flex>
+                                    </Space>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                                            <Progress
-                                                percent={passwordStrength === 0 ? 8 : passwordStrength * 25}
-                                                showInfo={false}
-                                                strokeColor={currentStrength.color}
-                                                size="small"
-                                                style={{ margin: '0 0 12px 0' }}
-                                            />
-
-                                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                                <Flex align="center" gap={6}>
-                                                    {rulesCheck.length ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
-                                                    <Text style={{ fontSize: 12 }} type={rulesCheck.length ? 'success' : 'secondary'}>长度达到或超过 8 位</Text>
-                                                </Flex>
-                                                <Flex align="center" gap={6}>
-                                                    {rulesCheck.mixed ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
-                                                    <Text style={{ fontSize: 12 }} type={rulesCheck.mixed ? 'success' : 'secondary'}>包含大写英文字母</Text>
-                                                </Flex>
-                                                <Flex align="center" gap={6}>
-                                                    {rulesCheck.digit ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
-                                                    <Text style={{ fontSize: 12 }} type={rulesCheck.digit ? 'success' : 'secondary'}>包含数字字符 (0-9)</Text>
-                                                </Flex>
-                                                <Flex align="center" gap={6}>
-                                                    {rulesCheck.special ? <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 12 }} /> : <CloseCircleOutlined style={{ color: token.colorTextDescription, fontSize: 12 }} />}
-                                                    <Text style={{ fontSize: 12 }} type={rulesCheck.special ? 'success' : 'secondary'}>包含特殊符号或标点</Text>
-                                                </Flex>
-                                            </Space>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <Form.Item
-                                    label={<Text style={{ fontWeight: 500, fontSize: 13 }}>确认新密码</Text>}
-                                    name="confirmPassword"
-                                    dependencies={['newPassword']}
-                                    rules={[
-                                        { required: true, message: '请确认密码' },
-                                        ({ getFieldValue }) => ({
-                                            validator(_, value) {
-                                                if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                                                return Promise.reject(new Error('两次输入的密码不一致'));
-                                            },
-                                        }),
-                                    ]}
-                                >
-                                    <Input.Password
-                                        placeholder="请再次输入新密码"
-                                        size="large"
-                                        style={{ borderRadius: 8 }}
-                                    />
-                                </Form.Item>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </Form>
+                        <Form.Item
+                            label={<Text style={{ fontWeight: 500, fontSize: 13 }}>确认新密码</Text>}
+                            name="confirmPassword"
+                            dependencies={['newPassword']}
+                            rules={[
+                                { required: true, message: '请确认密码' },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                                        return Promise.reject(new Error('两次输入的密码不一致'));
+                                    },
+                                }),
+                            ]}
+                        >
+                            <Input.Password
+                                placeholder="请再次输入新密码"
+                                size="large"
+                                style={{ borderRadius: 8 }}
+                            />
+                        </Form.Item>
+                    </Form>
+                </SecurityStepVerify>
             </Modal>
         </>
     );

@@ -26,7 +26,15 @@ const UniversalCaptchaVerifier = ({
     const [verifyLoading, setVerifyLoading] = useState(false);
 
     const [codeArray, setCodeArray] = useState(['', '', '', '', '', '']);
-    const inputRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+    const inputRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()]
+
+    const pwdRef = useRef(null)
+
+    useEffect(() => {
+        if (inputRefs[0].current) {
+            inputRefs[0].current.focus()
+        }
+    }, [])
 
     useEffect(() => {
         let timer;
@@ -156,7 +164,7 @@ const UniversalCaptchaVerifier = ({
                 newArray[i] = pasteData[i];
             }
             setCodeArray(newArray);
-            
+
             const nextFocusIndex = Math.min(pasteData.length, 5);
             inputRefs[nextFocusIndex].current?.focus();
 
@@ -185,7 +193,7 @@ const UniversalCaptchaVerifier = ({
 
     return (
         <Form form={form} layout="vertical" requiredMark={false} style={{ width: '100%' }} component={false}>
-            
+
             {/* 1. 账号看板 */}
             <Card
                 variant="outlined"
@@ -216,7 +224,7 @@ const UniversalCaptchaVerifier = ({
                 <Text style={{ fontWeight: 600, fontSize: 13, color: token.colorTextDescription }}>
                     {codeLabel}
                 </Text>
-                
+
                 <Flex gap={4} justify="space-between" align="center" style={{ width: '100%' }}>
                     {codeArray.map((digit, index) => (
                         <div key={index} style={{ width: '14%' }}>
@@ -236,10 +244,10 @@ const UniversalCaptchaVerifier = ({
                                     width: '100%',
                                     height: 52,
                                     textAlign: 'center',
-                                    fontSize: 26, 
+                                    fontSize: 26,
                                     fontWeight: 700,
                                     color: token.colorTextHeading,
-                                    background: 'transparent', 
+                                    background: 'transparent',
                                     border: 'none',
                                     // 默认状态下：一条非常低调、淡雅的次级边框底线
                                     borderBottom: `2px solid ${token.colorBorder}`,
@@ -265,7 +273,7 @@ const UniversalCaptchaVerifier = ({
                         </Text>
                     )}
                 </div>
-                
+
                 <div style={{ height: 22 }}>
                     {countdown > 0 ? (
                         <Flex align="center" gap={6}>
@@ -275,8 +283,8 @@ const UniversalCaptchaVerifier = ({
                             </Text>
                         </Flex>
                     ) : (
-                        <Link 
-                            disabled={!target || sendLoading || verifyLoading} 
+                        <Link
+                            disabled={!target || sendLoading || verifyLoading}
                             onClick={handleSendCode}
                             style={{ fontSize: 12, fontWeight: 600, color: token.colorPrimary, letterSpacing: '0.02em' }}
                         >

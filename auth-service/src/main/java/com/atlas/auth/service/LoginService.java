@@ -80,7 +80,7 @@ public class LoginService {
      * @param refresh             是否同步签发用于续期的 RefreshToken
      * @return 统一的 Token 响应体（可能包含最终真 Token，或者 MFA 拦截信号）
      */
-    public TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh) {
+    private TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh) {
         // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();

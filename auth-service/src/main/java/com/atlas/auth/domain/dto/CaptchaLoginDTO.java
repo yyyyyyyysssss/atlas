@@ -13,7 +13,7 @@ public record CaptchaLoginDTO(
         @NotBlank(message = "验证码不能为空")
         String captcha,
 
-        @NotNull(message = "认证类型不能为空")
+        @NotNull(message = "验证码类型不能为空")
         CaptchaType captchaType,
 
         @NotNull(message = "客户端类型不能为空")

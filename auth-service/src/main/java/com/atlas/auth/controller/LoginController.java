@@ -23,33 +23,33 @@ public class LoginController {
 
     // 账号密码登录
     @PostMapping("/login/password")
-    public Result<?> loginPassword(@RequestBody @Validated PasswordLoginDTO passwordLoginDTO){
+    public Result<TokenResponse> loginPassword(@RequestBody @Validated PasswordLoginDTO passwordLoginDTO){
         TokenResponse tokenResponse = loginService.loginPassword(passwordLoginDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 
     // 验证码登录
     @PostMapping("/login/captcha")
-    public Result<?> loginCaptcha(@RequestBody @Validated CaptchaLoginDTO captchaLoginDTO){
+    public Result<TokenResponse> loginCaptcha(@RequestBody @Validated CaptchaLoginDTO captchaLoginDTO){
         TokenResponse tokenResponse = loginService.loginCaptcha(captchaLoginDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 
     // 一次令牌登录
     @PostMapping("/login/ott")
-    public Result<?> loginOtt(@RequestBody @Validated OttLoginDTO ottLoginDTO) {
+    public Result<TokenResponse> loginOtt(@RequestBody @Validated OttLoginDTO ottLoginDTO) {
         TokenResponse tokenResponse = loginService.loginOtt(ottLoginDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 
     @PostMapping("/login/webauthn")
-    public Result<?> loginWebauthn(@RequestBody @Validated WebauthnLoginDTO webauthnLoginDTO) {
+    public Result<TokenResponse> loginWebauthn(@RequestBody @Validated WebauthnLoginDTO webauthnLoginDTO) {
         TokenResponse tokenResponse = loginService.loginWebauthn(webauthnLoginDTO);
         return ResultGenerator.ok(tokenResponse);
     }
 
     @PostMapping("/refreshToken")
-    public Result<?> refreshToken(@RequestBody @Validated RefreshTokenDTO refreshTokenDTO) {
+    public Result<TokenResponse> refreshToken(@RequestBody @Validated RefreshTokenDTO refreshTokenDTO) {
         TokenResponse tokenResponse = loginService.refreshToken(refreshTokenDTO);
         return ResultGenerator.ok(tokenResponse);
     }

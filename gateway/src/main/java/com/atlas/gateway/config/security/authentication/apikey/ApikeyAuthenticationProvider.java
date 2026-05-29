@@ -41,13 +41,14 @@ public class ApikeyAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        String requestUrl = (String) authentication.getPrincipal();
-        String apiKey = (String) authentication.getCredentials();
-        List<String> allowedPatterns = apikeyPathMap.get(apiKey);
-        if (allowedPatterns != null && allowedPatterns.stream().anyMatch(p -> PATH_MATCHER.match(p, requestUrl))) {
-            return new PreAuthenticatedAuthenticationToken(requestUrl, null, REQUEST_HEADER_AUTHORITY);
+        if(authentication.getPrincipal() instanceof String requestUrl
+                && authentication.getCredentials() instanceof String apiKey){
+            List<String> allowedPatterns = apikeyPathMap.get(apiKey);
+            if (allowedPatterns != null && allowedPatterns.stream().anyMatch(p -> PATH_MATCHER.match(p, requestUrl))) {
+                return new PreAuthenticatedAuthenticationToken(requestUrl, null, REQUEST_HEADER_AUTHORITY);
+            }
         }
-        throw new BadCredentialsException("API Key invalid or unauthorized for path: " + requestUrl);
+        return null;
     }
 
     @Override

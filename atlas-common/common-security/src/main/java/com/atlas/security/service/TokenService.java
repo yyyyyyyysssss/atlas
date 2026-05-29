@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public interface TokenService {
 
-    TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag, boolean rememberMeFlag);
+    TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag);
 
     PayloadInfo verify(String token, TokenType tokenType);
 

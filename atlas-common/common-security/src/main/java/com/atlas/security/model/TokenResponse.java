@@ -8,7 +8,6 @@ public record TokenResponse(
         String tokenId,
         TokenDetail access,
         TokenDetail refresh,
-        TokenDetail rememberMe,
         TokenScheme tokenScheme
 ) {
 

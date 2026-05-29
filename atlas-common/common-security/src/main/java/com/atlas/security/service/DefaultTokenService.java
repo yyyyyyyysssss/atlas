@@ -47,7 +47,7 @@ public class DefaultTokenService implements TokenService {
     private final UserDetailsService userService;
 
     @Override
-    public TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag, boolean rememberMeFlag) {
+    public TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag) {
         Long userId = securityUser.getId();
         // 生成 Access Token
         TokenDetail access = createAccessToken(userId, clientType);
@@ -58,16 +58,10 @@ public class DefaultTokenService implements TokenService {
         if(refreshFlag){
             refresh = createRefreshToken(userId, tokenId, clientType);
         }
-        // 处理 RememberMe
-        TokenDetail rememberMe = null;
-        if (rememberMeFlag) {
-            rememberMe = createRememberMeToken(userId, securityUser.getPassword(), tokenId, clientType);
-        }
         return new TokenResponse(
                 tokenId,
                 access,
                 refresh,
-                rememberMe,
                 TokenScheme.BEARER
         );
     }

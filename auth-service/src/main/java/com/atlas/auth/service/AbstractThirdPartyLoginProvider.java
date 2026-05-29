@@ -1,9 +1,9 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
+import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.TokenResponse;
-import com.atlas.security.token.ThirdPartyAuthenticationToken;
 import jakarta.annotation.Resource;
 
 /**
@@ -23,8 +23,8 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         String provider = oAuth2UserInfo.getProvider();
         String sub = oAuth2UserInfo.getSub();
         Long userId = userService.ensureUserByProvider(provider, sub, oAuth2UserInfo);
-        ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(userId, null);
-        return loginService.login(thirdPartyAuthenticationToken, ClientType.WEB, true, false);
+        ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO(ClientType.WEB, userId);
+        return loginService.loginThirdParty(thirdPartyLoginDTO);
     }
 
 }

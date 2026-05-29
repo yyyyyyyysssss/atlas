@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Typography, Flex, theme, Modal, Alert, Space, App } from 'antd';
+import { Button, Typography, Flex, theme, Modal, Alert, Space, App, Badge } from 'antd';
 import { CopyOutlined, DownloadOutlined, FileProtectOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
 import { useRequest } from 'ahooks';
@@ -12,7 +12,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
 
     const { message } = App.useApp()
 
-    const { totpEnabled, backupCodeGenerated } = context || {};
+    const { totpEnabled, backupCodeGenerated, remainingBackupCodeCount = 0 } = context || {};
 
     const [backupCode, setBackupCode] = useState([])
 
@@ -61,9 +61,21 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
                         <FileProtectOutlined style={{ color: totpEnabled ? token.colorPrimary : token.colorTextDisabled, fontSize: 20 }} />
                     </div>
                     <Flex vertical gap={4}>
-                        <Text strong style={{ fontSize: 16, color: totpEnabled ? token.colorText : token.colorTextDisabled }}>
-                            备份码
-                        </Text>
+                        <Space size={8}>
+                            <Text strong style={{ fontSize: 16, color: totpEnabled ? token.colorText : token.colorTextDisabled }}>
+                                备份码
+                            </Text>
+                            {totpEnabled && backupCodeGenerated && (
+                                <Badge
+                                    count={`剩余 ${remainingBackupCodeCount} 个`}
+                                    style={{
+                                        backgroundColor: remainingBackupCodeCount <= 2 ? token.colorError : token.colorInfoBg,
+                                        color: remainingBackupCodeCount <= 2 ? token.colorTextLightSolid : token.colorPrimary,
+                                    }}
+                                />
+                            )}
+                        </Space>
+
                         <Text style={{ color: totpEnabled ? token.colorTextDescription : token.colorTextDisabled, fontSize: 14, lineHeight: '22px' }}>
                             {backupCodeGenerated
                                 ? '已生成。当您丢失移动设备或无法使用身份验证器时，这是您重新访问账号的唯一方式。'
@@ -104,6 +116,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
             >
                 <SecurityStepVerify
                     scene="GENERATE_TOTP_BACKUP_CODE"
+                    captchaScene='GENERATE_TOTP_BACKUP_CODE'
                     context={context}
                     stepTitle="确认生成"
                     confirmText="确认生成"
@@ -126,6 +139,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
                 codes={backupCode}
                 onClose={() => {
                     setIsCodesDisplayModalOpen(false)
+                    refresh?.()
                 }}
             />
         </>
@@ -136,7 +150,7 @@ export default TotpBackupCodeSecurityItem;
 
 
 
-const BackupCodesDisplayModal = ({
+export const BackupCodesDisplayModal = ({
     open = false,
     codes = [],
     onClose,

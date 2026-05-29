@@ -29,14 +29,14 @@ public class CaptchaController {
     @PostMapping("/send")
     public Result<Void> send(@RequestBody @Validated CaptchaSendDTO captchaSendDTO) {
         captchaFactory.getService(captchaSendDTO.captchaType())
-                .send(captchaSendDTO.target(), captchaSendDTO.securityScene());
+                .send(captchaSendDTO.target(), captchaSendDTO.captchaScene());
         return ResultGenerator.ok();
     }
 
     @PostMapping("/verify")
     public Result<Boolean> verify(@RequestBody @Validated CaptchaVerifyDTO captchaVerifyDTO) {
         boolean isValid = captchaFactory.getService(captchaVerifyDTO.captchaType())
-                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.securityScene());
+                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.captchaScene());
         return ResultGenerator.ok(isValid);
     }
 

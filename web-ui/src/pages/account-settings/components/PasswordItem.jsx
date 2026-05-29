@@ -127,6 +127,7 @@ const PasswordItem = ({ context, refresh }) => {
             >
                 <SecurityStepVerify
                     scene="RESET_PASSWORD"
+                    captchaScene='RESET_PASSWORD'
                     context={context}
                     stepTitle={passwordSet ? "设置新密码" : "填写新密码"}
                     confirmText={passwordSet ? "确认修改" : "确认设置"}

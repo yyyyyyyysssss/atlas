@@ -18,5 +18,8 @@ public interface UserTotpBackupCodeService extends IService<UserTotpBackupCode> 
 
     boolean verifyAndConsume(Long userId, String inputCode);
 
+    int countRemainingCodes(Long userId);
+
+    boolean removeByUserId(Long userId);
 }
 

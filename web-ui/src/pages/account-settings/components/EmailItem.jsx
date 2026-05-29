@@ -162,6 +162,7 @@ const EmailItem = ({ context, refresh }) => {
             >
                 <SecurityStepVerify
                     scene="MODIFY_EMAIL"
+                    captchaScene='MODIFY_EMAIL'
                     context={context}
                     stepTitle={boundEmail ? "设置邮箱" : "绑定新邮箱"}
                     confirmText="确认修改"

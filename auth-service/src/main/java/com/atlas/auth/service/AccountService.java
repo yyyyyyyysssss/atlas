@@ -5,10 +5,7 @@ import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.domain.entity.UserTotpCredentials;
 import com.atlas.auth.domain.entity.UserWebauthnCredentials;
 import com.atlas.auth.domain.vo.*;
-import com.atlas.auth.enums.CaptchaType;
-import com.atlas.auth.enums.IdentifierType;
-import com.atlas.auth.enums.SecurityScene;
-import com.atlas.auth.enums.UserTotpStatus;
+import com.atlas.auth.enums.*;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
@@ -99,7 +96,8 @@ public class AccountService {
 
         // totp
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getByUserId(userId);
-
+        // 剩余备份码数量
+        int remainingBackupCodeCount = userTotpBackupCodeService.countRemainingCodes(userId);
 
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
@@ -122,7 +120,8 @@ public class AccountService {
 
                 // 2FA 两步验证状态
                 .totpEnabled(userTotpCredentials != null && userTotpCredentials.getStatus().equals(UserTotpStatus.ACTIVATED))
-                .backupCodeGenerated(userTotpCredentials != null && userTotpCredentials.getStatus().equals(UserTotpStatus.ACTIVATED))
+                .backupCodeGenerated(remainingBackupCodeCount > 0)
+                .remainingBackupCodeCount(remainingBackupCodeCount)
                 .build();
     }
 
@@ -165,7 +164,7 @@ public class AccountService {
             throw new BusinessException("该邮箱已被其他账号占用");
         }
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
-                .verify(initEmailDTO.email(), initEmailDTO.code(), SecurityScene.MODIFY_EMAIL);
+                .verify(initEmailDTO.email(), initEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
         if (!verify) {
             throw new BusinessException("验证码错误或已过期");
         }
@@ -178,7 +177,7 @@ public class AccountService {
             throw new BusinessException("该邮箱已被其他账号占用");
         }
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
-                .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), SecurityScene.MODIFY_EMAIL);
+                .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
         if (!verify) {
             throw new BusinessException("验证码错误或已过期");
         }
@@ -198,7 +197,7 @@ public class AccountService {
 
     public VerifyCaptchaVO verifyCaptcha(Long userId, CaptchaVerifyDTO captchaVerifyDTO) {
         boolean verified = captchaFactory.getService(captchaVerifyDTO.captchaType())
-                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.securityScene());
+                .verify(captchaVerifyDTO.target(), captchaVerifyDTO.code(), captchaVerifyDTO.captchaScene());
         String ticket = null;
         if (verified) {
             ticket = generateTicket(userId, captchaVerifyDTO.securityScene());
@@ -318,6 +317,7 @@ public class AccountService {
         return new TotpActivateVO(backupCodes);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void unbindTotp(Long userId,TotpUnbindDTO totpUnbindDTO){
         log.info("用户 {} 正在请求彻底解绑关闭 TOTP 双因子认证", userId);
         validTicket(userId, SecurityScene.UNBIND_TOTP, totpUnbindDTO.ticket());
@@ -327,6 +327,8 @@ public class AccountService {
             return;
         }
         userTotpCredentialsService.removeByUserId(userId);
+        // 移除备份码
+        userTotpBackupCodeService.removeByUserId(userId);
         log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
     }
 

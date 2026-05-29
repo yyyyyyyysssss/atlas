@@ -1,7 +1,7 @@
 package com.atlas.auth.domain.dto;
 
+import com.atlas.auth.enums.CaptchaScene;
 import com.atlas.auth.enums.CaptchaType;
-import com.atlas.auth.enums.SecurityScene;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,7 +14,7 @@ public record CaptchaSendDTO(
         CaptchaType captchaType,
 
         @NotNull(message = "业务场景不能为空")
-        SecurityScene securityScene
+        CaptchaScene captchaScene
 ) {
 
 }

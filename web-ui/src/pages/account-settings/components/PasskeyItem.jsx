@@ -342,6 +342,7 @@ const PasskeyItem = ({ context, refresh }) => {
             >
                 <SecurityStepVerify
                     scene="UNBIND_WEBAUTHN"
+                    captchaScene='UNBIND_WEBAUTHN'
                     context={context}
                     stepTitle='风险确认'
                     confirmText="确定解绑移除"

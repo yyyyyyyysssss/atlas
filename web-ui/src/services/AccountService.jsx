@@ -94,7 +94,7 @@ export const activateTotp = async (req) => {
 
 export const unbindTotp = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/totp', req))
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/totp',  { data: req }))
 }
 
 export const verifyTotp = async (req) => {

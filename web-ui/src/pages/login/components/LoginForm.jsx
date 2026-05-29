@@ -161,7 +161,7 @@ const LoginFrom = ({ setIsQrLogin, loginSuccessHandler }) => {
         await sendCaptchaAsync({
             target: values.email,
             captchaType: 'email',
-            securityScene: 'login'
+            captchaScene: 'login'
         })
         // 清理旧定时器
         if (timerRef.current) clearInterval(timerRef.current)

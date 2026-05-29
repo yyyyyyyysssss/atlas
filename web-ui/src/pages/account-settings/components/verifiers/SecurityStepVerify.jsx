@@ -8,6 +8,7 @@ const { Text } = Typography;
 
 const SecurityStepVerify = ({
     scene,                         // 风控场景值 (例如: UNBIND_WEBAUTHN)
+    captchaScene,
     context,                       // 业务上下文
     confirmLoading = false,        // 第二步终极提交时的加载状态
     onCancel,                      // 取消/关闭按钮回调
@@ -87,6 +88,7 @@ const SecurityStepVerify = ({
                                 verifierRef={verifierRef}
                                 context={context}
                                 scene={scene}
+                                captchaScene={captchaScene}
                                 onLoadingChange={(loading) => setVerifyLoading(loading)}
                                 onSuccess={(res) => {
                                     setTicket(res.ticket);

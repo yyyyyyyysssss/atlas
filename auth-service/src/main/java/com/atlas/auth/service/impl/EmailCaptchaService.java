@@ -1,6 +1,6 @@
 package com.atlas.auth.service.impl;
 
-import com.atlas.auth.enums.SecurityScene;
+import com.atlas.auth.enums.CaptchaScene;
 import com.atlas.auth.service.AbstractCaptchaService;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.notification.builder.NotificationRequest;
@@ -29,7 +29,7 @@ public class EmailCaptchaService extends AbstractCaptchaService {
     }
 
     @Override
-    protected void doSend(String target, String code, Duration duration, SecurityScene scene) {
+    protected void doSend(String target, String code, Duration duration, CaptchaScene scene) {
         //准备通知变量
         Map<String, Object> variables = new HashMap<>();
         variables.put("code", code);

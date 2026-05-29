@@ -65,4 +65,9 @@ public class AccountSecurityVO {
      */
     private Boolean backupCodeGenerated;
 
+    /**
+     * 剩余备份码可用数量
+     */
+    private Integer remainingBackupCodeCount;
+
 }

@@ -17,6 +17,7 @@ const VerifyDropdown = ({
     verifierRef,
     context,
     scene,
+    captchaScene = 'default',
     value,
     onChange,
     onLoadingChange,
@@ -111,8 +112,8 @@ const VerifyDropdown = ({
                     target={boundEmail}
                     targetLabel="安全验证接收邮箱"
                     codeLabel="安全验证码"
-                    onSendAction={() => sendCaptchaAsync({ target: boundEmail, captchaType: 'email', securityScene: scene })}
-                    onVerifyAction={(code) => verifyCaptchaAsync({ target: boundEmail, captchaType: 'email', securityScene: scene, code })}
+                    onSendAction={() => sendCaptchaAsync({ target: boundEmail, captchaType: 'email', captchaScene: captchaScene })}
+                    onVerifyAction={(code) => verifyCaptchaAsync({ target: boundEmail, captchaType: 'email',captchaScene: captchaScene, securityScene: scene, code })}
                     onSuccess={onSuccess}
                 />
             )

@@ -4,6 +4,7 @@ import com.atlas.auth.domain.entity.UserTotpBackupCode;
 import com.atlas.auth.mapper.UserTotpBackupCodeMapper;
 import com.atlas.auth.service.UserTotpBackupCodeService;
 import com.atlas.common.core.idwork.IdGen;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,7 +69,7 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         // 批量插入数据库
         this.saveBatch(entityList);
 
-        log.info("用户 [{}] 成功重新生成了 16 个 GitHub 风格的安全备份码。", userId);
+        log.info("用户 [{}] 成功重新生成了 16 个 安全备份码。", userId);
 
         // 返回明文给前端
         return plainCodes;
@@ -109,6 +109,27 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         }
         log.warn("用户 [{}] 尝试使用备份码登录，但未匹配成功。", userId);
         return false;
+    }
+
+    @Override
+    public int countRemainingCodes(Long userId) {
+        if (userId == null) {
+            return 0;
+        }
+        long count = this.count(Wrappers.<UserTotpBackupCode>lambdaQuery()
+                .eq(UserTotpBackupCode::getUserId, userId));
+
+        return (int) count;
+    }
+
+    @Override
+    public boolean removeByUserId(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        return this.remove(new LambdaQueryWrapper<UserTotpBackupCode>()
+                .eq(UserTotpBackupCode::getUserId, userId)
+        );
     }
 
     private static String generateSingleBackupCode() {

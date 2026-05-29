@@ -31,16 +31,6 @@ spring:
     circuitbreaker:
       resilience4j:
         disable-thread-pool: false
-    openfeign:
-      circuitbreaker:
-        enabled: true
-      client:
-        config:
-          default:
-            loggerLevel: none
-      httpclient:
-        hc5:
-          enabled: true
 
 
 logging:

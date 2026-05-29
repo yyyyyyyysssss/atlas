@@ -1,6 +1,5 @@
 package com.atlas.common.core.autoconfigure;
 
-import com.atlas.common.core.api.feign.FeignConfiguration;
 import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.user.UserApi;
@@ -46,7 +45,7 @@ public class AtlasCoreAutoConfiguration {
      */
     @Configuration
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @Import({GlobalExceptionAdvice.class, FeignConfiguration.class, SpringUtils.class})
+    @Import({GlobalExceptionAdvice.class, SpringUtils.class})
     public static class WebFeatureConfiguration {
 
         /**

@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     const signin = async (tokenInfo) => {
         if (tokenInfo) {
             saveToken(tokenInfo)
-            setAccessToken(tokenInfo.access.token)
+            setAccessToken(tokenInfo.access.value)
         } else {
             setAccessToken(Cookies.get("accessToken"))
         }
@@ -75,10 +75,6 @@ export const AuthProvider = ({ children }) => {
         // 最后切换 Context 状态，触发 UI 跳转
         setIsLoginIn(false)
     }
-
-    // if (isLoginIn === null) {
-    //     return <Flex justify='center' align='center' style={{ width: '100vw', height: '100vh' }}><Loading fullscreen /></Flex>
-    // }
 
     return (
         <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth }}>

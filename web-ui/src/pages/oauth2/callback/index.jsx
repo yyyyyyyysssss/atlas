@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { message, Flex } from 'antd';
+import { message, Flex, App } from 'antd';
 import { useRequest } from 'ahooks';
 import { useAuth } from '../../../router/AuthProvider';
 import Loading from '../../../components/loading';
@@ -12,6 +12,8 @@ const OAuth2Callback = () => {
     const { code, error, error_description, error_uri, clientName, login_mode } = useFullParams()
     const navigate = useNavigate()
     const { signin } = useAuth()
+
+    const { message } = App.useApp()
 
     const redirect = useRedirect()
 
@@ -38,9 +40,25 @@ const OAuth2Callback = () => {
                     verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
                 }
                 // 根据你后端的接口调整参数
-                const data = await runAsync(code, verifier, clientName)
-                await signin(data)
-                redirect('/', data?.access?.token)
+                const loginResponse = await runAsync(code, verifier, clientName)
+                if (loginResponse.status === 'SUCCESS') {
+                    const { token } = loginResponse
+                    await signin(token)
+                    redirect('/', token.access.value)
+                    return
+                }
+
+                if (loginResponse.status === 'MFA_REQUIRED') {
+                    const { mfaTicket, mfaType } = loginResponse
+                    navigate('/login/mfa', {
+                        state: {
+                            ticket: mfaTicket,
+                            mfaType: mfaType
+                        }
+                    })
+                    return
+                }
+                message.error('登录失败')
             } catch (error) {
                 navigate('/500', {
                     state: {

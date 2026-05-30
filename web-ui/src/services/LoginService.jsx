@@ -89,10 +89,10 @@ export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
 
 
 export const saveToken = (tokenInfo) => {
-    Cookies.set('accessToken', tokenInfo.access.token)
-    Cookies.set('refreshToken', tokenInfo?.refresh?.token)
+    Cookies.set('accessToken', tokenInfo.access.value)
+    Cookies.set('refreshToken', tokenInfo?.refresh?.value)
     if (tokenInfo.rememberMe) {
-        localStorage.setItem('rememberMeToken', tokenInfo.rememberMe.token)
+        localStorage.setItem('rememberMeToken', tokenInfo.rememberMe.value)
     }
 }
 

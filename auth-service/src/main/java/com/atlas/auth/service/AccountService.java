@@ -10,6 +10,7 @@ import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.token.WebauthnAuthenticationRequest;
+import com.atlas.security.utils.TicketGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,10 @@ import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -339,7 +343,7 @@ public class AccountService {
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {
-        String ticket = UUID.randomUUID().toString().replace("-", "");
+        String ticket = TicketGenerator.generate();
         String redisKey = "account:ticket:" + securityScene.getCode() + ":" + ticket;
         redisHelper.setValue(redisKey, userId, Duration.ofMinutes(5));
         return ticket;

@@ -35,6 +35,15 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
     }
 
     @Override
+    public UserTotpCredentials getActivatedByUserId(Long userId) {
+        UserTotpCredentials userTotpCredentials = getByUserId(userId);
+        if (userTotpCredentials == null || userTotpCredentials.getStatus().equals(UserTotpStatus.UNACTIVATED)){
+            return null;
+        }
+        return userTotpCredentials;
+    }
+
+    @Override
     public void saveOrUpdateUnactivated(Long userId, String secretKey) {
         UserTotpCredentials record = this.getByUserId(userId);
         if (record == null) {

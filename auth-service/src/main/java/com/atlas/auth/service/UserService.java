@@ -4,6 +4,7 @@ import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
+import com.atlas.auth.domain.entity.UserTotpCredentials;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
@@ -36,6 +37,8 @@ public class UserService implements UserDetailsService {
 
     private final UserProviderService userProviderService;
 
+    private final UserTotpCredentialsService userTotpCredentialsService;
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -53,7 +56,12 @@ public class UserService implements UserDetailsService {
         }
         List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
         UserAuthDTO userAuthDTO = result.getData();
-        return securityUser(userAuthDTO,userIdentifiers);
+
+        SecurityUser securityUser = securityUser(userAuthDTO, userIdentifiers);
+
+        UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getActivatedByUserId(userId);
+        securityUser.setMfaEnabled(userTotpCredentials != null);
+        return securityUser;
     }
 
     @Transactional

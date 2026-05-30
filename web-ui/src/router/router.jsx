@@ -13,6 +13,7 @@ const AppLayout = lazy(() => import('../layouts'))
 const Workbench = lazy(() => import('../pages/workbench'))
 const Overview = lazy(() => import('../pages/dashboard/overview'))
 const Login = lazy(() => import('../pages/login'))
+const LoginMfa = lazy(() => import('../pages/login/mfa'))
 const OrgManage = lazy(() => import('../pages/system-manage/org-manage'))
 const UserManage = lazy(() => import('../pages/system-manage/user-manage'))
 const UserDetails = lazy(() => import('../pages/system-manage/user-manage/details'))
@@ -39,6 +40,11 @@ export const routes = [
     {
         path: 'login',
         element: <LoginRoute><Login /></LoginRoute>,
+        protected: false,
+    },
+    {
+        path: 'login/mfa',
+        element: <LoginRoute><LoginMfa /></LoginRoute>,
         protected: false,
     },
     { path: '/404', element: <NotFound />, protected: false },

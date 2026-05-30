@@ -35,6 +35,7 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String avatar = JsonNodeUtils.findStringValue(root, "avatar");
         String email = JsonNodeUtils.findStringValue(root, "email");
         String phone = JsonNodeUtils.findStringValue(root, "phone");
+        Boolean mfaEnabled = JsonNodeUtils.findBooleanValue(root, "mfaEnabled");
         List<? extends GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(root, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
         securityUser.setId(Long.parseLong(id));
         securityUser.setUsername(username);
@@ -44,6 +45,7 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         securityUser.setAvatar(avatar);
         securityUser.setEmail(email);
         securityUser.setPhone(phone);
+        securityUser.setMfaEnabled(mfaEnabled);
 
         securityUser.setDataScopes(dataScopes);
         securityUser.setOrgId(orgId != null ? Long.parseLong(orgId) : null);

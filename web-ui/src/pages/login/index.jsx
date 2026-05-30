@@ -25,7 +25,7 @@ const Login = () => {
     const { message } = App.useApp()
 
     const navigate = useNavigate()
-    
+
     const { ottToken, targetUrl } = useFullParams()
 
     const redirect = useRedirect()
@@ -62,9 +62,30 @@ const Login = () => {
         }
     }
 
-    const loginSuccessHandler = async (data) => {
-        await signin(data)
-        redirect('/', data?.access?.token)
+    const loginSuccessHandler = async (loginResponse) => {
+        if (loginResponse.status === 'SUCCESS') {
+            const { token } = loginResponse
+            await signin(token)
+            redirect('/', token.access.value)
+            return
+        }
+
+        if (loginResponse.status === 'MFA_REQUIRED') {
+            const { mfaTicket, mfaType } = loginResponse
+            let mfaPath = '/login/mfa'
+            if(targetUrl){
+                mfaPath += `?targetUrl=${encodeURIComponent(targetUrl)}`;
+            }
+            navigate(mfaPath, {
+                state: {
+                    ticket: mfaTicket,
+                    mfaType: mfaType
+                }
+            })
+            return
+        }
+
+        message.error('登录失败')
     }
 
     if (ottLoginRef.current) {

@@ -36,7 +36,7 @@ public class SecurityExceptionAdvice {
     public Result<?> handlerAuthenticationException(AuthenticationException authenticationException){
         if(authenticationException instanceof BadCredentialsException || authenticationException instanceof UsernameNotFoundException){
             log.error("用户名或密码错误: {}",authenticationException.getMessage());
-            return ResultGenerator.failed(ResultCode.AUTH_LOGIN_FAILED);
+            return ResultGenerator.failed(ResultCode.AUTH_LOGIN_FAILED,authenticationException.getMessage());
         }
         log.error("认证异常: ",authenticationException);
         return ResultGenerator.failed(ResultCode.UNAUTHORIZED,authenticationException.getMessage());

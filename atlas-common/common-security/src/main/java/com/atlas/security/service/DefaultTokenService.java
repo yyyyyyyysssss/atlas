@@ -8,8 +8,7 @@ import com.atlas.security.enums.TokenType;
 import com.atlas.security.exception.TokenAuthenticationException;
 import com.atlas.security.model.PayloadInfo;
 import com.atlas.security.model.SecurityUser;
-import com.atlas.security.model.TokenDetail;
-import com.atlas.security.model.TokenResponse;
+import com.atlas.security.model.TokenInfo;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.utils.EncryptUtils;
@@ -17,7 +16,6 @@ import com.atlas.security.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,18 +45,18 @@ public class DefaultTokenService implements TokenService {
     private final UserDetailsService userService;
 
     @Override
-    public TokenResponse createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag) {
+    public TokenInfo createToken(SecurityUser securityUser, ClientType clientType, boolean refreshFlag) {
         Long userId = securityUser.getId();
         // 生成 Access Token
-        TokenDetail access = createAccessToken(userId, clientType);
+        TokenInfo.Token access = createAccessToken(userId, clientType);
         // 提取 tokenId
-        String tokenId = jwtUtils.extractPayloadInfo(access.token(), PayloadInfo::getId);
+        String tokenId = jwtUtils.extractPayloadInfo(access.value(), PayloadInfo::getId);
         // 生成关联的 Refresh Token
-        TokenDetail refresh = null;
+        TokenInfo.Token refresh = null;
         if(refreshFlag){
             refresh = createRefreshToken(userId, tokenId, clientType);
         }
-        return new TokenResponse(
+        return new TokenInfo(
                 tokenId,
                 access,
                 refresh,
@@ -142,9 +140,9 @@ public class DefaultTokenService implements TokenService {
         return (payloadInfo != null) ? extractor.apply(payloadInfo) : null;
     }
 
-    private TokenDetail createAccessToken(Long userId, ClientType clientType) {
+    private TokenInfo.Token createAccessToken(Long userId, ClientType clientType) {
         String token = jwtUtils.genToken(userId.toString(), clientType);
-        return new TokenDetail(token, jwtUtils.extractPayloadInfo(token, PayloadInfo::getExpiration));
+        return new TokenInfo.Token(token, jwtUtils.extractPayloadInfo(token, PayloadInfo::getExpiration));
     }
 
     private PayloadInfo verifyAccessToken(String token) {
@@ -163,7 +161,7 @@ public class DefaultTokenService implements TokenService {
         return payloadInfo;
     }
 
-    private TokenDetail createRefreshToken(Long userId, String tokenId, ClientType clientType) {
+    private TokenInfo.Token createRefreshToken(Long userId, String tokenId, ClientType clientType) {
         Long configExpiration = securityProperties.getJwt().getRefreshExpiration();
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
@@ -185,7 +183,7 @@ public class DefaultTokenService implements TokenService {
                         signature
                 )
         );
-        return new TokenDetail(token, expiration);
+        return new TokenInfo.Token(token, expiration);
     }
 
     private PayloadInfo verifyRefreshToken(String token) {
@@ -216,7 +214,7 @@ public class DefaultTokenService implements TokenService {
         return extractCustomSimplePayloadInfo(parts);
     }
 
-    private TokenDetail createRememberMeToken(Long userId, String password, String tokenId, ClientType clientType) {
+    private TokenInfo.Token createRememberMeToken(Long userId, String password, String tokenId, ClientType clientType) {
         Long configExpiration = securityProperties.getRememberMe().getExpiration();
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
@@ -239,7 +237,7 @@ public class DefaultTokenService implements TokenService {
                         signature
                 )
         );
-        return new TokenDetail(token, expiration);
+        return new TokenInfo.Token(token, expiration);
     }
 
     private PayloadInfo verifyRememberMeToken(String token) {

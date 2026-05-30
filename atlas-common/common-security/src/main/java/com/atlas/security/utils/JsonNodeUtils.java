@@ -77,6 +77,14 @@ public class JsonNodeUtils {
         return (value != null && value.isNumber()) ? value.asText() : null;
     }
 
+    public static Boolean findBooleanValue(JsonNode jsonNode, String fieldName) {
+        if (jsonNode == null) {
+            return null;
+        }
+        JsonNode value = jsonNode.findValue(fieldName);
+        return (value != null && value.isBoolean()) ? value.asBoolean() : null;
+    }
+
     public static <T> T findValue(JsonNode jsonNode, String fieldName, TypeReference<T> valueTypeReference,
                            ObjectMapper mapper) {
         if (jsonNode == null) {

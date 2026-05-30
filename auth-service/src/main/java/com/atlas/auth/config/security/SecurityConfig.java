@@ -1,17 +1,12 @@
 package com.atlas.auth.config.security;
 
 
-import com.atlas.auth.config.security.authentication.provider.CaptchaAuthenticationProvider;
-import com.atlas.auth.config.security.authentication.provider.RefreshAuthenticationProvider;
-import com.atlas.auth.config.security.authentication.provider.ThirdPartyAuthenticationProvider;
-import com.atlas.auth.config.security.authentication.provider.WebauthnAuthenticationProvider;
+import com.atlas.auth.config.security.authentication.provider.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
+import com.atlas.auth.config.security.mfa.MfaTicketRepository;
+import com.atlas.auth.config.security.mfa.RedisMfaTicketRepository;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
-import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialCreationOptionsRepository;
-import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOptionsRepository;
-import com.atlas.auth.config.security.webauthn.UserWebauthnCredentialsRepository;
-import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.filter.TokenAuthenticationFilter;
@@ -49,12 +44,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
-import org.springframework.security.web.webauthn.authentication.PublicKeyCredentialRequestOptionsRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
-import org.springframework.security.web.webauthn.management.UserCredentialRepository;
-import org.springframework.security.web.webauthn.management.Webauthn4JRelyingPartyOperations;
-import org.springframework.security.web.webauthn.registration.PublicKeyCredentialCreationOptionsRepository;
 
 @EnableWebSecurity
 @Configuration
@@ -69,6 +59,15 @@ public class SecurityConfig {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private TotpService totpService;
+
+    @Resource
+    private UserTotpCredentialsService userTotpCredentialsService;
+
+    @Resource
+    private MfaTicketRepository mfaTicketRepository;
 
     @Resource
     private WebauthnService webauthnService;
@@ -133,14 +132,6 @@ public class SecurityConfig {
                     //令牌生成成功处理器
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
-                // 不需要了 使用WebauthnController自定义了端点
-//                .webAuthn((webAuthn) -> webAuthn
-//                        .rpId(securityProperties.getWebauthn().getRpId())
-//                        .rpName(securityProperties.getWebauthn().getRpName())
-//                        .allowedOrigins(
-//                                securityProperties.getWebauthn().getOrigins()
-//                        )
-//                )
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
@@ -178,6 +169,8 @@ public class SecurityConfig {
                 .authenticationProvider(oneTimeTokenAuthenticationProvider())
                 //webauthn通行密钥认证
                 .authenticationProvider(webauthnAuthenticationProvider())
+                // mfa双因子认证
+                .authenticationProvider(mfaAuthenticationProvider())
                 .parentAuthenticationManager(null)
                 .build();
     }
@@ -254,6 +247,17 @@ public class SecurityConfig {
     public RefreshAuthenticationProvider refreshAuthenticationProvider() {
 
         return new RefreshAuthenticationProvider(userService, tokenService);
+    }
+
+    @Bean
+    public MfaAuthenticationProvider mfaAuthenticationProvider(){
+
+        return new MfaAuthenticationProvider(
+                userService,
+                mfaTicketRepository,
+                userTotpCredentialsService,
+                totpService
+        );
     }
 
     @Bean

@@ -15,6 +15,8 @@ public interface UserTotpCredentialsService extends IService<UserTotpCredentials
 
     UserTotpCredentials getByUserId(Long userId);
 
+    UserTotpCredentials getActivatedByUserId(Long userId);
+
     void saveOrUpdateUnactivated(Long userId, String secretKey);
 
     void updateStatus(Long userId, UserTotpStatus status);

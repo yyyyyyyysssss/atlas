@@ -48,6 +48,12 @@ public class LoginController {
         return ResultGenerator.ok(tokenResponse);
     }
 
+    @PostMapping("/login/mfa")
+    public Result<TokenResponse> loginMfa(@RequestBody @Validated MfaLoginDTO mfaLoginDTO) {
+        TokenResponse tokenResponse = loginService.loginMfa(mfaLoginDTO);
+        return ResultGenerator.ok(tokenResponse);
+    }
+
     @PostMapping("/refreshToken")
     public Result<TokenResponse> refreshToken(@RequestBody @Validated RefreshTokenDTO refreshTokenDTO) {
         TokenResponse tokenResponse = loginService.refreshToken(refreshTokenDTO);

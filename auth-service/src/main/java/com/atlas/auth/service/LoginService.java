@@ -1,16 +1,18 @@
 package com.atlas.auth.service;
 
 
+import com.atlas.auth.config.security.mfa.MfaTicketContext;
+import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.security.enums.ClientType;
+import com.atlas.security.model.MfaType;
 import com.atlas.security.model.SecurityUser;
+import com.atlas.security.model.TokenInfo;
 import com.atlas.security.model.TokenResponse;
 import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.service.TokenService;
-import com.atlas.security.token.CaptchaAuthenticationToken;
-import com.atlas.security.token.RefreshAuthenticationToken;
-import com.atlas.security.token.ThirdPartyAuthenticationToken;
-import com.atlas.security.token.WebauthnAuthenticationToken;
+import com.atlas.security.token.*;
+import com.atlas.security.utils.TicketGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +22,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +37,8 @@ public class LoginService {
     private final TokenService tokenService;
 
     private final SessionControlService sessionControlService;
+
+    private final MfaTicketRepository mfaTicketRepository;
 
     // 验证码/手机号登录
     public TokenResponse loginCaptcha(CaptchaLoginDTO captchaLoginDTO) {
@@ -72,6 +78,12 @@ public class LoginService {
         return login(thirdPartyAuthenticationToken, thirdPartyLoginDTO.clientType(), true);
     }
 
+
+    public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO){
+        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaLoginDTO.code());
+        return this.login(mfaAuthenticationToken, ClientType.WEB, true);
+    }
+
     /**
      * 核心多渠道收拢登录方法（模板方法模式）
      *
@@ -84,13 +96,19 @@ public class LoginService {
         // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
+        // 如果是首次登录，且用户开启了 MFA，才进行拦截
+        if(securityUser.isMfaEnabled() && !(authenticationToken instanceof MfaAuthenticationToken)){
+            String ticket = TicketGenerator.generate();
+            mfaTicketRepository.save(ticket,new MfaTicketContext(securityUser.getId(),clientType), Duration.ofMinutes(5));
+            return TokenResponse.mfaRequired(ticket, MfaType.TOTP);
+        }
 
         // 会话控制
         sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
         // 发证
-        TokenResponse tokenResponse = tokenService.createToken(securityUser, clientType, refresh);
-        String tokenId = tokenResponse.tokenId();
+        TokenInfo token = tokenService.createToken(securityUser, clientType, refresh);
+        String tokenId = token.id();
 
         // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -99,8 +117,8 @@ public class LoginService {
         SecurityContextHolder.setContext(securityContext);
 
         // 注册会话
-        sessionControlService.registerSession(securityUser.getId(), tokenId, tokenResponse.access().expiresIn(), clientType);
-        return tokenResponse;
+        sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
+        return TokenResponse.success(token);
     }
 
     /**
@@ -116,8 +134,8 @@ public class LoginService {
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
 
         // 发证
-        TokenResponse tokenResponse = tokenService.createToken(securityUser, refreshTokenDTO.clientType(), true);
-        String tokenId = tokenResponse.tokenId();
+        TokenInfo token = tokenService.createToken(securityUser, refreshTokenDTO.clientType(), true);
+        String tokenId = token.id();
 
         // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -130,9 +148,9 @@ public class LoginService {
         sessionControlService.removeSession(securityUser.getId(),oldTokenId,refreshTokenDTO.clientType());
 
         // 注册会话
-        sessionControlService.registerSession(securityUser.getId(), tokenId, tokenResponse.access().expiresIn(), refreshTokenDTO.clientType());
+        sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), refreshTokenDTO.clientType());
 
-        return tokenResponse;
+        return TokenResponse.success(token);
     }
 
 }

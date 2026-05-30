@@ -36,6 +36,8 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private String phone;
 
+    private boolean mfaEnabled;
+
     private List<? extends GrantedAuthority> authorities;
 
     private boolean accountNonExpired;
@@ -56,7 +58,7 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     @Override
     public void eraseCredentials() {
-
+        this.password = null;
     }
 
     @Override

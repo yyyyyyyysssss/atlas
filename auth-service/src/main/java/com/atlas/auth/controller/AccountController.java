@@ -141,6 +141,13 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
+
+    @PostMapping("/totp/backupCode/verify")
+    public Result<TotpBackupCodeVerifyVO> verifyTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpBackupCodeVerifyDTO totpBackupCodeVerifyDTO) {
+        TotpBackupCodeVerifyVO totpBackupCodeVerifyVO = accountService.verifyTotpBackupCode(securityUser.getId(), totpBackupCodeVerifyDTO);
+        return ResultGenerator.ok(totpBackupCodeVerifyVO);
+    }
+
     @PostMapping("/totp/backupCode/refresh")
     public Result<TotpRefreshBackupCodeVO> refreshTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO) {
         TotpRefreshBackupCodeVO totpRefreshBackupCodeVO = accountService.refreshTotpBackupCode(securityUser.getId(), totpRefreshBackupCodeDTO);

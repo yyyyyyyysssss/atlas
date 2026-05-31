@@ -3,7 +3,6 @@ package com.atlas.security.autoconfigure;
 import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
-import com.atlas.common.redis.autoconfigure.PrefixStringSerializer;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.exception.SecurityExceptionAdvice;
 import com.atlas.security.filter.TokenAuthenticationFilter;
@@ -30,7 +29,6 @@ import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -63,9 +61,6 @@ import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
 @EnableConfigurationProperties(SecurityProperties.class)
 public class AtlasSecurityAutoConfiguration {
 
-
-    @Value("${spring.application.name:atlas}")
-    private String applicationName;
 
     @Bean
     @ConditionalOnMissingBean
@@ -123,7 +118,7 @@ public class AtlasSecurityAutoConfiguration {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        StringRedisSerializer stringRedisSerializer = new PrefixStringSerializer(applicationName);
+        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
         redisTemplate.setKeySerializer(stringRedisSerializer);
         redisTemplate.setHashKeySerializer(stringRedisSerializer);
 

@@ -42,6 +42,12 @@ export const sendOttLink = async (username, targetUrl = '') => {
     }))
 }
 
+
+export const mfaLogin = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/mfa', req))
+}
+
 // 登出
 export const logout = () => {
 

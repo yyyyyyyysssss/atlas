@@ -2,5 +2,8 @@ package com.atlas.security.model;
 
 public enum MfaType {
     TOTP,
-    SMS
+
+    SMS,
+
+    BACKUP_CODE
 }

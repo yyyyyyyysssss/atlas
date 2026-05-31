@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, Button, Space, Flex, theme, Empty } from 'antd';
-import { KeyOutlined, MailOutlined, DownOutlined, MobileOutlined } from '@ant-design/icons';
+import { KeyOutlined, MailOutlined, DownOutlined, MobileOutlined, FileProtectOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyPassword, verifyTotp, verifyWebauthn } from '../../../../services/AccountService';
+import { verifyCaptcha, verifyPassword, verifyTotp, verifyTotpBackupCode, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
 import { Fingerprint } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';
+import UniversalBackupCodeVerifier from './UniversalBackupCodeVerifier';
 
 
 const VerifyDropdown = ({
@@ -25,7 +26,7 @@ const VerifyDropdown = ({
 }) => {
     const { token } = theme.useToken();
 
-    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled } = context || {}
+    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled, backupCodeGenerated } = context || {}
 
     const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
@@ -48,15 +49,35 @@ const VerifyDropdown = ({
         manual: true
     });
 
+    const { runAsync: verifyTotpBackupCodeAsync, loading: verifyTotpBackupCodeLoading, cancel: cancelVerifyTotpBackupCode } = useRequest(verifyTotpBackupCode, {
+        manual: true
+    });
+
     // 构建下拉菜单的项
     const availableMethods = []
+
+    if (backupCodeGenerated) {
+        availableMethods.push({
+            key: 'backupCode',
+            label: '安全码认证',
+            icon: <FileProtectOutlined style={{ width: 14, height: 14 }} />,
+            render: () => (
+                <UniversalBackupCodeVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(code) => verifyTotpBackupCodeAsync({ code: code, securityScene: scene })}
+                    onSuccess={onSuccess}
+                />
+            )
+        });
+    }
 
     // 通行密钥验证选项
     if (hasPasskey) {
         availableMethods.push({
             key: 'passkey',
             label: '密钥认证',
-            icon: <Fingerprint style={{ width: 14, height: 14}} />,
+            icon: <Fingerprint style={{ width: 14, height: 14 }} />,
             render: () => (
                 <UniversalPasskeyVerifier
                     verifierRef={verifierRef}
@@ -113,7 +134,7 @@ const VerifyDropdown = ({
                     targetLabel="安全验证接收邮箱"
                     codeLabel="安全验证码"
                     onSendAction={() => sendCaptchaAsync({ target: boundEmail, captchaType: 'email', captchaScene: captchaScene })}
-                    onVerifyAction={(code) => verifyCaptchaAsync({ target: boundEmail, captchaType: 'email',captchaScene: captchaScene, securityScene: scene, code })}
+                    onVerifyAction={(code) => verifyCaptchaAsync({ target: boundEmail, captchaType: 'email', captchaScene: captchaScene, securityScene: scene, code })}
                     onSuccess={onSuccess}
                 />
             )

@@ -336,6 +336,15 @@ public class AccountService {
         log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
     }
 
+    public TotpBackupCodeVerifyVO verifyTotpBackupCode(Long userId,TotpBackupCodeVerifyDTO totpBackupCodeVerifyDTO){
+        boolean verified = userTotpBackupCodeService.verifyAndConsume(userId, totpBackupCodeVerifyDTO.code());
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, totpBackupCodeVerifyDTO.securityScene());
+        }
+        return new TotpBackupCodeVerifyVO(verified, ticket);
+    }
+
     public TotpRefreshBackupCodeVO refreshTotpBackupCode(Long userId, TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO){
         validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE,totpRefreshBackupCodeDTO.ticket());
         List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);

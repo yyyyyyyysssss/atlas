@@ -6,7 +6,7 @@ import java.time.Duration;
 
 public class RedisMfaTicketRepository implements MfaTicketRepository{
 
-    private static final String TICKET_KEY_PREFIX = "mfa:ticket:";
+    private static final String TICKET_KEY_PREFIX = "security:mfa:ticket:";
 
     private final RedisTemplate<String,Object> redisTemplate;
 

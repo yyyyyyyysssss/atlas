@@ -1,5 +1,8 @@
 package com.atlas.security.token;
 
+import com.atlas.security.enums.AuthAssuranceLevel;
+import com.atlas.security.model.MfaType;
+import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -10,7 +13,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.MissingNode;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -23,31 +25,34 @@ import java.util.List;
  * @Author ys
  * @Date 2024/8/6 9:29
  */
-public class MfaAuthenticationToken extends AbstractAuthenticationToken {
+public class MfaAuthenticationToken extends AbstractAuthenticationToken implements AssuranceLevelAware {
 
     private final Object principal;
     private Object credentials;
+    private MfaType mfaType;
 
-    public MfaAuthenticationToken(Object principal, Object credentials) {
+    public MfaAuthenticationToken(Object principal, Object credentials, MfaType mfaType) {
         super(null);
         this.principal = principal;
         this.credentials = credentials;
+        this.mfaType = mfaType;
         this.setAuthenticated(false);
     }
 
-    public MfaAuthenticationToken(Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
+    public MfaAuthenticationToken(Object principal, Object credentials,MfaType mfaType, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
         this.credentials = credentials;
+        this.mfaType = mfaType;
         super.setAuthenticated(true);
     }
 
-    public static MfaAuthenticationToken unauthenticated(Object principal, Object credentials) {
-        return new MfaAuthenticationToken(principal, credentials);
+    public static MfaAuthenticationToken unauthenticated(Object principal, Object credentials, MfaType mfaType) {
+        return new MfaAuthenticationToken(principal, credentials,mfaType);
     }
 
-    public static MfaAuthenticationToken authenticated(Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
-        return new MfaAuthenticationToken(principal, credentials, authorities);
+    public static MfaAuthenticationToken authenticated(Object principal, Object credentials,MfaType mfaType, Collection<? extends GrantedAuthority> authorities) {
+        return new MfaAuthenticationToken(principal, credentials,mfaType, authorities);
     }
 
     @Override
@@ -60,6 +65,14 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken {
         return this.principal;
     }
 
+    public MfaType getMfaType() {
+        return mfaType;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.MEDIUM;
+    }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
     @JsonDeserialize(using = MfaAuthenticationTokenDeserializer.class)
@@ -81,34 +94,27 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken {
         @Override
         public MfaAuthenticationToken deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             ObjectMapper mapper = (ObjectMapper)jsonParser.getCodec();
-            JsonNode jsonNode = (JsonNode)mapper.readTree(jsonParser);
-            boolean authenticated = this.readJsonNode(jsonNode, "authenticated").asBoolean();
-            JsonNode principalNode = this.readJsonNode(jsonNode, "principal");
-            Object principal = this.getPrincipal(mapper, principalNode);
-            JsonNode credentialsNode = this.readJsonNode(jsonNode, "credentials");
-            Object credentials = this.getCredentials(credentialsNode);
-            List<GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(jsonNode, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
-            MfaAuthenticationToken token = !authenticated ? MfaAuthenticationToken.unauthenticated(principal, credentials) : MfaAuthenticationToken.authenticated(principal, credentials, authorities);
-            JsonNode detailsNode = this.readJsonNode(jsonNode, "details");
-            if (!detailsNode.isNull() && !detailsNode.isMissingNode()) {
-                Object details = mapper.readValue(detailsNode.toString(), OBJECT);
-                token.setDetails(details);
-            } else {
-                token.setDetails((Object)null);
-            }
+            JsonNode jsonNode = mapper.readTree(jsonParser);
+
+            Object principal = JsonNodeUtils.getPrincipal(jsonNode, mapper);
+
+            Object credentials = JsonNodeUtils.getCredentials(jsonNode);
+
+            boolean authenticated = JsonNodeUtils.getAuthenticated(jsonNode);
+
+            String mfaTypeStr = JsonNodeUtils.findStringValue(jsonNode, "mfaType");
+
+            MfaType mfaType = MfaType.valueOf(mfaTypeStr);
+
+            List<GrantedAuthority> authorities =JsonNodeUtils.getAuthorities(jsonNode, mapper);
+
+            MfaAuthenticationToken token = !authenticated ? MfaAuthenticationToken.unauthenticated(principal, credentials,mfaType) : MfaAuthenticationToken.authenticated(principal, credentials,mfaType, authorities);
+
+            Object details = JsonNodeUtils.getDetails(jsonNode,mapper);
+
+            token.setDetails(details);
+
             return token;
-        }
-
-        private Object getCredentials(JsonNode credentialsNode) {
-            return !credentialsNode.isNull() && !credentialsNode.isMissingNode() ? credentialsNode.asText() : null;
-        }
-
-        private Object getPrincipal(ObjectMapper mapper, JsonNode principalNode) throws IOException {
-            return principalNode.isObject() ? mapper.readValue(principalNode.traverse(mapper), Object.class) : principalNode.asText();
-        }
-
-        private JsonNode readJsonNode(JsonNode jsonNode, String field) {
-            return (JsonNode)(jsonNode.has(field) ? jsonNode.get(field) : MissingNode.getInstance());
         }
 
     }

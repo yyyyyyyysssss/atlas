@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import router from './router/router';
 import { RouterProvider } from 'react-router-dom';
-import { ConfigProvider, message, App as AntdApp } from 'antd';
+import { ConfigProvider, message, App as AntdApp, theme } from 'antd';
 import { useSelector } from 'react-redux';
 import 'antd/dist/reset.css';
 import zhCN from 'antd/locale/zh_CN';

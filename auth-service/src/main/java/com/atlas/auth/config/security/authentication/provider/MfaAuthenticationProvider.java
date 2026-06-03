@@ -2,10 +2,11 @@ package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.config.security.mfa.MfaTicketContext;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
-import com.atlas.auth.domain.entity.UserTotpCredentials;
-import com.atlas.auth.service.TotpService;
+import com.atlas.auth.config.security.mfa.MfaVerifyStrategy;
+import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
 import com.atlas.auth.service.UserService;
-import com.atlas.auth.service.UserTotpCredentialsService;
+import com.atlas.security.enums.ClientType;
+import com.atlas.security.model.MfaType;
 import com.atlas.security.token.MfaAuthenticationToken;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -21,20 +22,16 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
 
     private final MfaTicketRepository mfaTicketRepository;
 
-    private final UserTotpCredentialsService userTotpCredentialsService;
-
-    private final TotpService totpService;
+    private final MfaVerifyStrategyFactory mfaVerifyStrategyFactory;
 
     private final UserDetailsChecker userDetailsChecker = new AccountStatusUserDetailsChecker();
 
     public MfaAuthenticationProvider(UserService userService,
                                      MfaTicketRepository mfaTicketRepository,
-                                     UserTotpCredentialsService userTotpCredentialsService,
-                                     TotpService totpService) {
+                                     MfaVerifyStrategyFactory mfaVerifyStrategyFactory) {
         this.userService = userService;
         this.mfaTicketRepository = mfaTicketRepository;
-        this.userTotpCredentialsService = userTotpCredentialsService;
-        this.totpService = totpService;
+        this.mfaVerifyStrategyFactory = mfaVerifyStrategyFactory;
     }
 
     @Override
@@ -46,24 +43,13 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         if(mfaTicketContext == null){
             throw new BadCredentialsException("登录凭证已过期，请重新登录");
         }
-
-        Long userId = mfaTicketContext.getUserId();
-        // 获取用户绑定的 TOTP 密钥
-        UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getActivatedByUserId(userId);
-        if(userTotpCredentials == null){
-            throw new BadCredentialsException("验证码错误或已失效");
-        }
+        ClientType clientType = mfaTicketContext.getClientType();
+        MfaType mfaType = mfaAuthenticationToken.getMfaType();
         String code = (String) mfaAuthenticationToken.getCredentials();
-        boolean verify;
-        try {
-            // 即使 totpService 接收 Integer，也在这里安全转换，防止非数字引发 500 崩溃
-            verify = totpService.verify(userTotpCredentials.getSecretKey(), Integer.parseInt(code));
-        } catch (NumberFormatException e) {
-            verify = false;
-        }
-        if(!verify){
-            throw new BadCredentialsException("验证码错误或已失效");
-        }
+        MfaVerifyStrategy strategy = mfaVerifyStrategyFactory.getStrategy(mfaType);
+        // 如果失败，策略内部会抛出异常
+        strategy.verify(mfaTicketContext, code);
+        Long userId = mfaTicketContext.getUserId();
         // 立刻销毁 Ticket，防止重放轰炸
         mfaTicketRepository.remove(ticket);
         // 加载用户核心主体并校验状态
@@ -73,9 +59,10 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         MfaAuthenticationToken authenticated = MfaAuthenticationToken.authenticated(
                 userDetails,
                 null,
+                mfaType,
                 userDetails.getAuthorities()
         );
-        authenticated.setDetails(authentication.getDetails());
+        authenticated.setDetails(clientType);
         return authenticated;
     }
 

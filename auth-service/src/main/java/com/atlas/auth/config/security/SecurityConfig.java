@@ -4,7 +4,7 @@ package com.atlas.auth.config.security;
 import com.atlas.auth.config.security.authentication.provider.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
-import com.atlas.auth.config.security.mfa.RedisMfaTicketRepository;
+import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.service.*;
@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
@@ -61,13 +60,10 @@ public class SecurityConfig {
     private UserService userService;
 
     @Resource
-    private TotpService totpService;
-
-    @Resource
-    private UserTotpCredentialsService userTotpCredentialsService;
-
-    @Resource
     private MfaTicketRepository mfaTicketRepository;
+
+    @Resource
+    private MfaVerifyStrategyFactory mfaVerifyStrategyFactory;
 
     @Resource
     private WebauthnService webauthnService;
@@ -255,8 +251,7 @@ public class SecurityConfig {
         return new MfaAuthenticationProvider(
                 userService,
                 mfaTicketRepository,
-                userTotpCredentialsService,
-                totpService
+                mfaVerifyStrategyFactory
         );
     }
 

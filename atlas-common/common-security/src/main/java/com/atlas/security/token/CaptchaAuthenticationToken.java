@@ -1,5 +1,6 @@
 package com.atlas.security.token;
 
+import com.atlas.security.enums.AuthAssuranceLevel;
 import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -22,7 +23,7 @@ import java.util.List;
  * @Author ys
  * @Date 2026/5/19 17:27
  */
-public class CaptchaAuthenticationToken extends AbstractAuthenticationToken {
+public class CaptchaAuthenticationToken extends AbstractAuthenticationToken implements AssuranceLevelAware {
 
     private final Object principal;
     private Object credentials;
@@ -65,6 +66,11 @@ public class CaptchaAuthenticationToken extends AbstractAuthenticationToken {
 
     public String getCaptchaType() {
         return captchaType;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.LOW;
     }
 
 

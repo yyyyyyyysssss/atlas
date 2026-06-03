@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Flex, Typography, ConfigProvider, App, Button } from 'antd';
-import { ShieldAlert, ArrowLeft, KeyRound, Smartphone } from 'lucide-react'; 
+import { ShieldAlert, ArrowLeft, KeyRound, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRequest } from 'ahooks';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import useFullParams from '../../../hooks/useFullParams';
 import { mfaLogin } from '../../../services/LoginService';
 
@@ -11,13 +11,21 @@ import { mfaLogin } from '../../../services/LoginService';
 import UniversalTotpVerifier from '../../account-settings/components/verifiers/UniversalTotpVerifier';
 import './index.css';
 import UniversalBackupCodeVerifier from '../../account-settings/components/verifiers/UniversalBackupCodeVerifier';
+import { useAuth } from '../../../router/AuthProvider';
+import { useRedirect } from '../../../hooks/useRedirect';
 
 const { Title, Paragraph } = Typography;
 
 const LoginMfa = () => {
-    const { ticket, mfaType } = useFullParams();
-    const { message } = App.useApp();
-    const navigate = useNavigate(); 
+    const { ticket, mfaType } = useFullParams()
+
+    const { message } = App.useApp()
+
+    const navigate = useNavigate()
+
+    const { signin } = useAuth()
+
+    const redirect = useRedirect()
 
     // 🔄 视图状态：'totp' (身份验证器) 或 'backup_code' (安全备份码)
     const [currentView, setCurrentView] = useState('totp');
@@ -33,7 +41,7 @@ const LoginMfa = () => {
         // 后端通常通过类型参数或备份码本身的特征（如带连字符）来区分业务
         // 如果后端需要明确的 mfaType，可以在切换视图时动态调整传参
         const finalMfaType = currentView === 'backup_code' ? 'BACKUP_CODE' : mfaType;
-        
+
         return await mfaLoginAsync({
             ticket: ticket,
             mfaType: finalMfaType,
@@ -41,10 +49,11 @@ const LoginMfa = () => {
         });
     };
 
-    const loginSuccess = (loginResponse) => {
-        console.log('mfa login response', loginResponse);
-        // 这里处理登录成功后的 Token 存储和重定向逻辑
-    };
+    const loginSuccess = async (loginResponse) => {
+        const { token } = loginResponse
+        await signin(token)
+        redirect('/', token.access.value)
+    }
 
     const handleBackToLogin = () => {
         navigate('/login', { replace: true });
@@ -78,7 +87,7 @@ const LoginMfa = () => {
                         hoverBorderColor: '#d1d5db',
                     },
                     Button: {
-                        paddingInline: 0, 
+                        paddingInline: 0,
                     }
                 }
             }}
@@ -93,7 +102,7 @@ const LoginMfa = () => {
                 position: 'relative',
                 overflow: 'hidden'
             }}>
-                
+
                 {/* 几何背景装饰 */}
                 <div style={{
                     position: 'absolute', top: '-20%', left: '-10%', width: '60vw', height: '60vw',
@@ -118,12 +127,12 @@ const LoginMfa = () => {
                 >
                     <div style={{
                         background: '#ffffff',
-                        padding: '40px 32px 32px 32px', 
+                        padding: '40px 32px 32px 32px',
                         borderRadius: '16px',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)',
                         border: '1px solid #f3f4f6'
                     }}>
-                        
+
                         {/* 头部区域：根据视图动态渲染 Icon 和文本 */}
                         <Flex vertical align="center" style={{ marginBottom: 32, textAlign: 'center' }}>
                             <div style={{
@@ -143,26 +152,26 @@ const LoginMfa = () => {
                                     <KeyRound size={26} strokeWidth={2} />
                                 )}
                             </div>
-                            
-                            <Title level={3} style={{ 
-                                margin: 0, 
-                                fontSize: '24px', 
-                                fontWeight: 700, 
+
+                            <Title level={3} style={{
+                                margin: 0,
+                                fontSize: '24px',
+                                fontWeight: 700,
                                 color: '#1f2937',
                                 letterSpacing: '-0.025em'
                             }}>
                                 {currentView === 'totp' ? '安全两步验证' : '使用备份码验证'}
                             </Title>
-                            
-                            <Paragraph style={{ 
-                                color: '#6b7280', 
-                                fontSize: '14px', 
+
+                            <Paragraph style={{
+                                color: '#6b7280',
+                                fontSize: '14px',
                                 marginTop: 8,
                                 marginBottom: 0,
                                 padding: '0 8px'
                             }}>
-                                {currentView === 'totp' 
-                                    ? '您的账户已开启两步验证保护，请输入身份验证器生成的 6 位核验码。' 
+                                {currentView === 'totp'
+                                    ? '您的账户已开启两步验证保护，请输入身份验证器生成的 6 位核验码。'
                                     : '请输入您保存的 10 位安全备份码。每个备份码只能使用一次。'
                                 }
                             </Paragraph>
@@ -207,7 +216,7 @@ const LoginMfa = () => {
                         {/* 交互操作区：动态切换入口 + 返回登录 */}
                         <Flex vertical gap={12} align="center" style={{ marginTop: 24 }}>
                             {currentView === 'totp' ? (
-                                <Button 
+                                <Button
                                     type="link"
                                     size="small"
                                     onClick={() => setCurrentView('backup_code')}
@@ -216,7 +225,7 @@ const LoginMfa = () => {
                                     丢失手机？尝试使用安全备份码登录
                                 </Button>
                             ) : (
-                                <Button 
+                                <Button
                                     type="link"
                                     size="small"
                                     icon={<Smartphone size={14} style={{ marginRight: 4 }} />}
@@ -227,8 +236,8 @@ const LoginMfa = () => {
                                 </Button>
                             )}
 
-                            <Button 
-                                type="link" 
+                            <Button
+                                type="link"
                                 size="small"
                                 onClick={handleBackToLogin}
                                 style={{

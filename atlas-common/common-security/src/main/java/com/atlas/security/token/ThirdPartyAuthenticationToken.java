@@ -1,5 +1,6 @@
 package com.atlas.security.token;
 
+import com.atlas.security.enums.AuthAssuranceLevel;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -23,7 +24,7 @@ import java.util.List;
  * @Author ys
  * @Date 2024/8/6 9:29
  */
-public class ThirdPartyAuthenticationToken extends AbstractAuthenticationToken {
+public class ThirdPartyAuthenticationToken extends AbstractAuthenticationToken implements AssuranceLevelAware {
 
     private final Object principal;
     private Object credentials;
@@ -58,6 +59,11 @@ public class ThirdPartyAuthenticationToken extends AbstractAuthenticationToken {
     @Override
     public Object getPrincipal() {
         return this.principal;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.LOW;
     }
 
 

@@ -4,6 +4,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.config.security.mfa.MfaTicketContext;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.domain.dto.*;
+import com.atlas.security.enums.AuthAssuranceLevel;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.MfaType;
 import com.atlas.security.model.SecurityUser;
@@ -16,6 +17,7 @@ import com.atlas.security.utils.TicketGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -80,8 +82,8 @@ public class LoginService {
 
 
     public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO){
-        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaLoginDTO.code());
-        return this.login(mfaAuthenticationToken, ClientType.WEB, true);
+        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaLoginDTO.code(),mfaLoginDTO.mfaType());
+        return login(mfaAuthenticationToken, null, true);
     }
 
     /**
@@ -95,9 +97,23 @@ public class LoginService {
     private TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh) {
         // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+        if (clientType == null && authenticate.getDetails() instanceof ClientType ct){
+            clientType = ct;
+        }
+        if(clientType == null){
+            throw new BadCredentialsException("客户端类型不能为空");
+        }
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
-        // 如果是首次登录，且用户开启了 MFA，才进行拦截
-        if(securityUser.isMfaEnabled() && !(authenticationToken instanceof MfaAuthenticationToken)){
+
+        // 确定当前用户账号被期望的安全信任等级：开启了 MFA 就是 MEDIUM，没开启则是 LOW
+        AuthAssuranceLevel requiredLevel = securityUser.isMfaEnabled() ? AuthAssuranceLevel.MEDIUM : AuthAssuranceLevel.LOW;
+        // 获取当前登录方式实际能够提供的安全信任等级
+        AuthAssuranceLevel currentLevel = AuthAssuranceLevel.LOW; // 默认给最低，防止未实现接口的自定义Token钻空子
+        if (authenticate instanceof AssuranceLevelAware awareToken) {
+            currentLevel = awareToken.getAssuranceLevel();
+        }
+        // 如果当前登录方式的等级低于用户期望的等级，才触发 MFA 拦截
+        if(currentLevel.getRank() < requiredLevel.getRank()){
             String ticket = TicketGenerator.generate();
             mfaTicketRepository.save(ticket,new MfaTicketContext(securityUser.getId(),clientType), Duration.ofMinutes(5));
             return TokenResponse.mfaRequired(ticket, MfaType.TOTP);
@@ -106,19 +122,7 @@ public class LoginService {
         // 会话控制
         sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
-        // 发证
-        TokenInfo token = tokenService.createToken(securityUser, clientType, refresh);
-        String tokenId = token.id();
-
-        // 存储 (Context)
-        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authenticate);
-        securityContextStore.saveContext(securityContext, tokenId);
-        SecurityContextHolder.setContext(securityContext);
-
-        // 注册会话
-        sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
-        return TokenResponse.success(token);
+        return createToken(authenticate,clientType,refresh);
     }
 
     /**
@@ -133,8 +137,17 @@ public class LoginService {
         Authentication authenticate = authenticationManager.authenticate(refreshAuthenticationToken);
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
 
+        // 移除旧会话
+        String oldTokenId = ((RefreshAuthenticationToken) authenticate).getOldTokenId();
+        sessionControlService.removeSession(securityUser.getId(),oldTokenId,refreshTokenDTO.clientType());
+
+        return createToken(authenticate,refreshTokenDTO.clientType(),true);
+    }
+
+    private TokenResponse createToken(Authentication authenticate, ClientType clientType, boolean refresh){
+        SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
         // 发证
-        TokenInfo token = tokenService.createToken(securityUser, refreshTokenDTO.clientType(), true);
+        TokenInfo token = tokenService.createToken(securityUser, clientType, refresh);
         String tokenId = token.id();
 
         // 存储 (Context)
@@ -143,13 +156,8 @@ public class LoginService {
         securityContextStore.saveContext(securityContext, tokenId);
         SecurityContextHolder.setContext(securityContext);
 
-        // 移除旧会话
-        String oldTokenId = ((RefreshAuthenticationToken) authenticate).getOldTokenId();
-        sessionControlService.removeSession(securityUser.getId(),oldTokenId,refreshTokenDTO.clientType());
-
         // 注册会话
-        sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), refreshTokenDTO.clientType());
-
+        sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
         return TokenResponse.success(token);
     }
 

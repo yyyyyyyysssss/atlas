@@ -1,5 +1,6 @@
 package com.atlas.security.token;
 
+import com.atlas.security.enums.AuthAssuranceLevel;
 import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -23,7 +24,7 @@ import java.util.List;
  * @Author ys
  * @Date 2026/5/26 14:08
  */
-public class WebauthnAuthenticationToken extends AbstractAuthenticationToken {
+public class WebauthnAuthenticationToken extends AbstractAuthenticationToken implements AssuranceLevelAware {
 
     private final Object principal;
 
@@ -71,6 +72,11 @@ public class WebauthnAuthenticationToken extends AbstractAuthenticationToken {
     public void eraseCredentials() {
         super.eraseCredentials();
         this.credentials = null;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.HIGH;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)

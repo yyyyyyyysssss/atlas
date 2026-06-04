@@ -7,7 +7,7 @@ import VerifyDropdown from '../verifiers'; // 请根据实际路径调整
 const { Text } = Typography;
 
 const SecurityStepVerify = ({
-    scene,                         // 风控场景值 (例如: UNBIND_WEBAUTHN)
+    scene = 'default',                         // 风控场景值 (例如: UNBIND_WEBAUTHN)
     captchaScene,
     context,                       // 业务上下文
     confirmLoading = false,        // 第二步终极提交时的加载状态

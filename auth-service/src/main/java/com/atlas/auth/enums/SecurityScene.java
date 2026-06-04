@@ -16,6 +16,8 @@ public enum SecurityScene {
     UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
     UNBIND_TOTP("unbind_totp", "解绑TOTP"),
     GENERATE_TOTP_BACKUP_CODE("generate_totp_backup_code", "重新生成TOTP备份码"),
+    BIND_GESTURE("bind_gesture", "绑定手势密码"),
+    UNBIND_GESTURE("unbind_gesture", "解绑手势密码"),
     ;
 
     private final String code;

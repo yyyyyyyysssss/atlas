@@ -17,6 +17,7 @@ import PasskeyItem from './PasskeyItem';
 import UserProviderItem from './UserProviderItem';
 import TotpSecurityItem from './TotpSecurityItem';
 import TotpBackupCodeSecurityItem from './TotpBackupCodeSecurityItem';
+import GestureItem from './GestureItem';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -68,6 +69,10 @@ const SecurityTab = () => {
                     refresh={refresh}
                 />
 
+                <GestureItem
+                    context={data}
+                    refresh={refresh}
+                />
 
 
 

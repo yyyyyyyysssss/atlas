@@ -154,4 +154,25 @@ public class AccountController {
         return ResultGenerator.ok(totpRefreshBackupCodeVO);
     }
 
+    // 绑定或修改（重置）手势凭证
+    @PostMapping("/gesture")
+    public Result<Void> bindGesture(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated GestureBindDTO gestureBindDTO) {
+        accountService.bindGesture(securityUser.getId(),gestureBindDTO);
+        return ResultGenerator.ok();
+    }
+
+    // 解绑手势凭证
+    @DeleteMapping("/gesture")
+    public Result<Void> unbindGesture(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated GestureUnbindDTO gestureUnbindDTO) {
+        accountService.unbindGesture(securityUser.getId(),gestureUnbindDTO);
+        return ResultGenerator.ok();
+    }
+
+    // 验证 手势 凭证
+    @PostMapping("/gesture/verify")
+    public Result<GestureVerifyVO> verifyGesture(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated GestureVerifyDTO gestureVerifyDTO) {
+        GestureVerifyVO gestureVerifyVO = accountService.verifyGesture(securityUser.getId(), gestureVerifyDTO);
+        return ResultGenerator.ok(gestureVerifyVO);
+    }
+
 }

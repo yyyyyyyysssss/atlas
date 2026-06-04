@@ -113,3 +113,18 @@ export const refreshTotpBackupCode = async (req) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp/backupCode/refresh', req))
 }
 
+
+export const bindGesture = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/gesture',  req))
+}
+
+export const unbindGesture = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/gesture',  { data: req }))
+}
+
+export const verifyGesture = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/gesture/verify', req))
+}

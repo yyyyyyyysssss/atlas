@@ -70,4 +70,7 @@ public class AccountSecurityVO {
      */
     private Integer remainingBackupCodeCount;
 
+    // 是否开启手势凭证
+    private Boolean gestureEnabled;
+
 }

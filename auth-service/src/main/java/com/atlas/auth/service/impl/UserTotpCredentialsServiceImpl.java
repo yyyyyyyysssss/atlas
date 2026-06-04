@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 
 /**
  * (UserTotpCredentials)表服务实现类
@@ -29,6 +31,7 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
 
     @Override
     public UserTotpCredentials getByUserId(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
         return userTotpCredentialsMapper.selectOne(
                 new LambdaQueryWrapper<UserTotpCredentials>().eq(UserTotpCredentials::getUserId, userId)
         );
@@ -36,6 +39,7 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
 
     @Override
     public UserTotpCredentials getActivatedByUserId(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
         UserTotpCredentials userTotpCredentials = getByUserId(userId);
         if (userTotpCredentials == null || userTotpCredentials.getStatus().equals(UserTotpStatus.UNACTIVATED)){
             return null;
@@ -45,6 +49,7 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
 
     @Override
     public void saveOrUpdateUnactivated(Long userId, String secretKey) {
+        Objects.requireNonNull(userId, "用户id不能为空");
         UserTotpCredentials record = this.getByUserId(userId);
         if (record == null) {
             record = new UserTotpCredentials();
@@ -66,6 +71,7 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
 
     @Override
     public void updateStatus(Long userId, UserTotpStatus status) {
+        Objects.requireNonNull(userId, "用户id不能为空");
         UserTotpCredentials updateRecord = new UserTotpCredentials();
         updateRecord.setStatus(status);
         userTotpCredentialsMapper.update(updateRecord, new LambdaUpdateWrapper<UserTotpCredentials>()
@@ -75,9 +81,7 @@ public class UserTotpCredentialsServiceImpl extends ServiceImpl<UserTotpCredenti
 
     @Override
     public boolean removeByUserId(Long userId) {
-        if (userId == null) {
-            return false;
-        }
+        Objects.requireNonNull(userId, "用户id不能为空");
         return this.remove(new LambdaQueryWrapper<UserTotpCredentials>()
                 .eq(UserTotpCredentials::getUserId, userId)
         );

@@ -1,6 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.*;
+import com.atlas.auth.domain.entity.UserGestureCredentials;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.domain.entity.UserTotpCredentials;
 import com.atlas.auth.domain.entity.UserWebauthnCredentials;
@@ -61,6 +62,8 @@ public class AccountService {
 
     private final UserTotpBackupCodeService userTotpBackupCodeService;
 
+    private final UserGestureCredentialsService userGestureCredentialsService;
+
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
@@ -98,6 +101,9 @@ public class AccountService {
                     .toList();
         }
 
+        // 手势凭证
+        UserGestureCredentials userGestureCredentials = userGestureCredentialsService.getByUserId(userId).orElse(null);
+
         // totp
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getByUserId(userId);
         // 剩余备份码数量
@@ -110,6 +116,9 @@ public class AccountService {
                 // 通行密钥
                 .passkeys(passkeyVOs)
                 .passkeyEnabled(!passkeyVOs.isEmpty())
+
+                // 手势凭证
+                .gestureEnabled(userGestureCredentials != null)
 
                 // 来自 user_identifier 表 的基础通信资产
                 .username(usernameIdent != null ? usernameIdent.getIdentifierValue() : null)
@@ -349,6 +358,28 @@ public class AccountService {
         validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE,totpRefreshBackupCodeDTO.ticket());
         List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);
         return new TotpRefreshBackupCodeVO(backupCodes);
+    }
+
+    public void bindGesture(Long userId,GestureBindDTO gestureBindDTO){
+        if (!Objects.equals(gestureBindDTO.gesture(), gestureBindDTO.confirmGesture())) {
+            throw new BusinessException("两次输入的手势密码不一致");
+        }
+        validTicket(userId,SecurityScene.BIND_GESTURE,gestureBindDTO.ticket());
+        userGestureCredentialsService.saveOrUpdateGesture(userId,gestureBindDTO.gesture());
+    }
+
+    public void unbindGesture(Long userId,GestureUnbindDTO gestureUnbindDTO){
+        validTicket(userId,SecurityScene.UNBIND_GESTURE,gestureUnbindDTO.ticket());
+        userGestureCredentialsService.removeByUserId(userId);
+    }
+
+    public GestureVerifyVO verifyGesture(Long userId,GestureVerifyDTO gestureVerifyDTO){
+        boolean verified = userGestureCredentialsService.matchGesture(userId, gestureVerifyDTO.gesture());
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, gestureVerifyDTO.securityScene());
+        }
+        return new GestureVerifyVO(verified,ticket);
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

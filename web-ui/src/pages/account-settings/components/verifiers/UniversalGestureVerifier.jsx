@@ -15,13 +15,14 @@ const POINT_RADIUS = 12; // 默认静态圆点半径
 const HIT_RADIUS = 26;   // 判定划过的触碰敏感半径
 
 /**
- * 全站通用的图案手势连线快速鉴权组件（物理穿透补点 + 越界无缝验证加固版）
+ * 全站通用的图案手势连线快速鉴权组件（原生 status 支持 + 物理穿透补点版）
  */
 const UniversalGestureVerifier = ({
     verifierRef,
     onVerifyAction,
     onSuccess,
-    label = "手势连线验证"
+    label = "手势连线验证",
+    status = 'default' // 🚀 新增原生支持：'default' | 'error'
 }) => {
     const { token } = theme.useToken();
     const { message } = App.useApp();
@@ -31,8 +32,10 @@ const UniversalGestureVerifier = ({
     const [selectedPoints, setSelectedPoints] = useState([]); 
     const [currentMousePos, setCurrentMousePos] = useState(null); 
     const [verifyLoading, setVerifyLoading] = useState(false);
-    const [isErrorState, setIsErrorState] = useState(false); 
+    const [localErrorState, setLocalErrorState] = useState(false); 
 
+    // 🚀 核心状态桥接：无论是父级传入 'error' 还是本地抛出错误，都判定为错误状态
+    const isErrorState = status === 'error' || localErrorState;
     const isGlobalLoading = verifyLoading;
 
     // 清空与重置画布状态
@@ -40,7 +43,7 @@ const UniversalGestureVerifier = ({
         setSelectedPoints([]);
         setCurrentMousePos(null);
         setIsDrawing(false);
-        setIsErrorState(false);
+        setLocalErrorState(false);
     }, []);
 
     // 核心重绘引擎：监听状态变更自动驱动 Canvas 2D 渲染流
@@ -58,6 +61,7 @@ const UniversalGestureVerifier = ({
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
+        // 🚀 核心优化：动态计算语义着色（如果是 error 状态，全部转成 AntD 官方红）
         const activeColor = isErrorState ? token.colorError : token.colorPrimary;
         const activeBgColor = isErrorState ? token.colorErrorBg : token.colorPrimaryBg;
 
@@ -104,11 +108,9 @@ const UniversalGestureVerifier = ({
         if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
         
-        // 兼容触摸屏与传统鼠标定位
         const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
         
-        // 针对外层提升后的定位防御，确保拿到准确的画布内部绝对坐标
         return {
             x: clientX - rect.left,
             y: clientY - rect.top
@@ -129,7 +131,7 @@ const UniversalGestureVerifier = ({
 
     const doServerAuthenticate = async (gestureSequence) => {
         if (gestureSequence.length < 4) {
-            setIsErrorState(true);
+            setLocalErrorState(true);
             message.warning('手势连线过短，请至少连接 4 个点');
             setTimeout(() => handleReset(), 400);
             return;
@@ -143,9 +145,7 @@ const UniversalGestureVerifier = ({
             }
             return result;
         } catch (error) {
-            setIsErrorState(true);
-            const apiErrorMsg = error?.response?.data?.message || error?.message || '服务器验证失败，请稍后重试';
-            message.error(apiErrorMsg);
+            setLocalErrorState(true);
             setTimeout(() => handleReset(), 1000);
             throw error;
         } finally {
@@ -222,7 +222,7 @@ const UniversalGestureVerifier = ({
             getValue: () => selectedPoints.join(''),
             validate: async () => {
                 if (selectedPoints.length < 4) {
-                    setIsErrorState(true);
+                    setLocalErrorState(true);
                     throw new Error('手势连线过短，无法提交验证。');
                 }
                 return true;
@@ -244,7 +244,8 @@ const UniversalGestureVerifier = ({
 
     return (
         <Flex vertical gap={8} style={{ width: '100%' }}>
-            <Text style={{ fontWeight: 500, fontSize: 13 }}>{label}</Text>
+            {/* 仅在传入 label 时渲染，避免影响外层定制排版 */}
+            {label && <Text style={{ fontWeight: 500, fontSize: 13 }}>{label}</Text>}
             <Flex
                 align="center"
                 justify="center"
@@ -252,7 +253,6 @@ const UniversalGestureVerifier = ({
                 tabIndex={isGlobalLoading ? -1 : 0}
                 onKeyDown={handleKeyDown}
                 
-                // 🚀 核心加固：在外层捕获释放、移出，全局接管生命周期
                 onMouseUp={handleInteractionEnd}
                 onTouchEnd={handleInteractionEnd}
                 onMouseLeave={handleInteractionEnd} 
@@ -263,7 +263,9 @@ const UniversalGestureVerifier = ({
                     background: isGlobalLoading ? token.colorFillTertiary : token.colorFillAlter,
                     transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                     outline: 'none',
-                    border: `1px solid ${isErrorState ? token.colorErrorBorder : 'transparent'}`
+                    border: `1px solid ${isErrorState ? token.colorErrorBorder : 'transparent'}`,
+                    // 🚀 如果父级判定为 error，同样拒绝鼠标交互乱划
+                    pointerEvents: isErrorState ? 'none' : 'auto'
                 }}
                 className={`gesture-verifier-card ${isErrorState ? 'shake-animation' : ''}`}
             >

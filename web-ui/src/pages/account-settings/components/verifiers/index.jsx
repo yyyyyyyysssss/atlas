@@ -7,7 +7,7 @@ import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyPassword, verifyTotp, verifyTotpBackupCode, verifyWebauthn } from '../../../../services/AccountService';
+import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyTotpBackupCode, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
 import { Fingerprint, Grip } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';
@@ -26,7 +26,7 @@ const VerifyDropdown = ({
 }) => {
     const { token } = theme.useToken();
 
-    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled } = context || {}
+    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled, gestureEnabled } = context || {}
 
     const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
@@ -49,26 +49,29 @@ const VerifyDropdown = ({
         manual: true
     });
 
-    const { runAsync: verifyTotpBackupCodeAsync, loading: verifyTotpBackupCodeLoading, cancel: cancelVerifyTotpBackupCode } = useRequest(verifyTotpBackupCode, {
+    const { runAsync: verifyGestureAsync, loading: verifyGestureLoading, cancel: cancelVerifyGesture } = useRequest(verifyGesture, {
         manual: true
     });
 
     // 构建下拉菜单的项
     const availableMethods = []
 
-    availableMethods.push({
-        key: 'gesture',
-        label: '手势认证',
-        icon: <NodeIndexOutlined style={{ width: 14, height: 14 }} />,
-        render: () => (
-            <UniversalGestureVerifier
-                verifierRef={verifierRef}
-                // 触发挥手硬件后，回调后端的验证接口
-                onVerifyAction={(gestureSequence) => verifyPasswordAsync({ code: gestureSequence, securityScene: scene })}
-                onSuccess={onSuccess}
-            />
-        )
-    });
+    if (gestureEnabled) {
+        availableMethods.push({
+            key: 'gesture',
+            label: '手势认证',
+            icon: <NodeIndexOutlined style={{ width: 14, height: 14 }} />,
+            render: () => (
+                <UniversalGestureVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(gestureSequence) => verifyGestureAsync({ gesture: gestureSequence, securityScene: scene })}
+                    onSuccess={onSuccess}
+                />
+            )
+        });
+    }
+
 
     // 通行密钥验证选项
     if (hasPasskey) {
@@ -150,10 +153,11 @@ const VerifyDropdown = ({
             cancelVerifyPassword()
             cancelVerifyWebauthn()
             cancelVerifyTotp()
+            cancelVerifyGesture()
         }
     }, [verifyMethod])
 
-    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading || verifyTotpLoading;
+    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading || verifyTotpLoading || verifyGestureLoading;
 
     // 🎯 实时将加载状态吐给父组件
     useEffect(() => {

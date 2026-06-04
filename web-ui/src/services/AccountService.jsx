@@ -51,7 +51,7 @@ export const webauthnRegisterOptions = async () => {
 
 export const webauthnRegister = async (webauthnId, req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/webauthn/register', req, {
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/webauthn/register', req, {
         headers: {
             'X-Webauthn-Id': webauthnId
         }
@@ -82,9 +82,9 @@ export const unbindWebauthn = async (req) => {
 }
 
 
-export const initTotp = async () => {
+export const initTotp = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp'))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/totp', req))
 }
 
 export const activateTotp = async (req) => {

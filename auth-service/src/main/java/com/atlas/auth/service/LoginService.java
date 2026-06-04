@@ -49,7 +49,7 @@ public class LoginService {
                 captchaLoginDTO.captcha(),
                 captchaLoginDTO.captchaType().name()
         );
-        return login(captchaAuthenticationToken, captchaLoginDTO.clientType(), true);
+        return login(captchaAuthenticationToken, captchaLoginDTO.clientType());
     }
 
     // 常规账密登录
@@ -57,7 +57,7 @@ public class LoginService {
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 passwordLoginDTO.username(), passwordLoginDTO.password()
         );
-        return login(usernamePasswordAuthenticationToken, passwordLoginDTO.clientType(), true);
+        return login(usernamePasswordAuthenticationToken, passwordLoginDTO.clientType());
     }
 
     // 凭证式一次性 Token 登录 (OTT)
@@ -65,25 +65,25 @@ public class LoginService {
         OneTimeTokenAuthenticationToken oneTimeTokenAuthenticationToken = new OneTimeTokenAuthenticationToken(
                 ottLoginDTO.token()
         );
-        return login(oneTimeTokenAuthenticationToken, ottLoginDTO.clientType(), true);
+        return login(oneTimeTokenAuthenticationToken, ottLoginDTO.clientType());
     }
 
     // FIDO2 / WebAuthn 生物特征或硬件密钥登录
     public TokenResponse loginWebauthn(WebauthnLoginDTO webauthnLoginDTO){
         WebauthnAuthenticationToken webauthnAuthenticationToken = new WebauthnAuthenticationToken(webauthnLoginDTO.webauthnAuthenticationRequest());
-        return login(webauthnAuthenticationToken, webauthnLoginDTO.clientType(), true);
+        return login(webauthnAuthenticationToken, webauthnLoginDTO.clientType());
     }
 
     // 第三方 OAuth2 / 外部身份源导入登录
     public TokenResponse loginThirdParty(ThirdPartyLoginDTO thirdPartyLoginDTO){
         ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(thirdPartyLoginDTO.userId(), null);
-        return login(thirdPartyAuthenticationToken, thirdPartyLoginDTO.clientType(), true);
+        return login(thirdPartyAuthenticationToken, thirdPartyLoginDTO.clientType());
     }
 
 
     public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO){
         MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaLoginDTO.code(),mfaLoginDTO.mfaType());
-        return login(mfaAuthenticationToken, null, true);
+        return login(mfaAuthenticationToken, null);
     }
 
     /**
@@ -91,10 +91,9 @@ public class LoginService {
      *
      * @param authenticationToken 各个渠道组装的、未认证的 Authentication 载体
      * @param clientType          客户端类型 (Web, App, MiniProgram) 用于做多端动态会话隔离
-     * @param refresh             是否同步签发用于续期的 RefreshToken
      * @return 统一的 Token 响应体（可能包含最终真 Token，或者 MFA 拦截信号）
      */
-    private TokenResponse login(Authentication authenticationToken, ClientType clientType, boolean refresh) {
+    private TokenResponse login(Authentication authenticationToken, ClientType clientType) {
         // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         if (clientType == null && authenticate.getDetails() instanceof ClientType ct){
@@ -122,7 +121,7 @@ public class LoginService {
         // 会话控制
         sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
-        return createToken(authenticate,clientType,refresh);
+        return createToken(authenticate,clientType);
     }
 
     /**
@@ -141,13 +140,18 @@ public class LoginService {
         String oldTokenId = ((RefreshAuthenticationToken) authenticate).getOldTokenId();
         sessionControlService.removeSession(securityUser.getId(),oldTokenId,refreshTokenDTO.clientType());
 
-        return createToken(authenticate,refreshTokenDTO.clientType(),true);
+        return createToken(authenticate,refreshTokenDTO.clientType());
     }
 
-    private TokenResponse createToken(Authentication authenticate, ClientType clientType, boolean refresh){
-        SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
+    private TokenResponse createToken(Authentication authenticate, ClientType clientType){
+        if(!authenticate.isAuthenticated()){
+            throw new BadCredentialsException("Unauthenticated");
+        }
+        if (!(authenticate.getPrincipal() instanceof SecurityUser securityUser)) {
+            throw new BadCredentialsException("Unsupported principal");
+        }
         // 发证
-        TokenInfo token = tokenService.createToken(securityUser, clientType, refresh);
+        TokenInfo token = tokenService.createToken(securityUser, clientType, true);
         String tokenId = token.id();
 
         // 存储 (Context)

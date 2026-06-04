@@ -8,6 +8,7 @@ import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.token.WebauthnAuthenticationRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -98,6 +99,11 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
+    @PostMapping("/webauthn/register")
+    public Result<WebauthnRegistrationResponse> registerWebauthn(HttpServletRequest request,  @AuthenticationPrincipal SecurityUser securityUser, @RequestBody WebAuthnRegistrationRequest webAuthnRegistrationRequest){
+        WebauthnRegistrationResponse response = accountService.registerWebauthn(request, securityUser.getId(),webAuthnRegistrationRequest);
+        return ResultGenerator.ok(response);
+    }
 
     @PostMapping("/webauthn/verify")
     public Result<VerifyWebauthnVO> verifyWebauthn(@AuthenticationPrincipal SecurityUser securityUser,
@@ -122,8 +128,8 @@ public class AccountController {
 
     // 申请绑定/重置 TOTP 凭证
     @PostMapping("/totp")
-    public Result<TotpInitVO> initTotp(@AuthenticationPrincipal SecurityUser securityUser) {
-        TotpInitVO totpInitVO = accountService.initTotp(securityUser.getId());
+    public Result<TotpInitVO> initTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpInitDTO totpInitDTO) {
+        TotpInitVO totpInitVO = accountService.initTotp(securityUser.getId(),totpInitDTO);
         return ResultGenerator.ok(totpInitVO);
     }
 

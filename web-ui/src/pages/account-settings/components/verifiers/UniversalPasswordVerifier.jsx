@@ -105,6 +105,7 @@ const UniversalPasswordVerifier = ({
                     style={{ borderRadius: 8 }}
                     prefix={<LockOutlined style={{ color: token.colorTextPlaceholder }} />}
                     onPressEnter={handleInternalTrigger}
+                    autoComplete="new-password"
                 />
             </Form.Item>
         </Form>

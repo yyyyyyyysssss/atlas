@@ -13,9 +13,15 @@ public enum SecurityScene {
     REGISTER("register", "注册"),
     RESET_PASSWORD("reset_pwd", "重置密码"),
     MODIFY_EMAIL("modify_email", "修改邮箱"),
+
+    BIND_WEBAUTHN("bind_webauthn", "绑定通行密钥"),
     UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
+
+    BIND_TOTP("bind_totp", "解绑TOTP"),
     UNBIND_TOTP("unbind_totp", "解绑TOTP"),
+
     GENERATE_TOTP_BACKUP_CODE("generate_totp_backup_code", "重新生成TOTP备份码"),
+
     BIND_GESTURE("bind_gesture", "绑定手势密码"),
     UNBIND_GESTURE("unbind_gesture", "解绑手势密码"),
     ;

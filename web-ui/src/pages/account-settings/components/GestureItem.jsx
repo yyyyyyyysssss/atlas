@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Typography, Flex, theme, Modal, Form, Space, App } from 'antd';
+import { Button, Typography, Flex, theme, Modal, Form, Space, App, Alert } from 'antd';
 import { NodeIndexOutlined } from '@ant-design/icons';
 import { bindGesture, unbindGesture } from '../../../services/AccountService';
 import { useRequest } from 'ahooks';
@@ -138,17 +138,26 @@ const GestureItem = ({ context, refresh }) => {
                         captchaScene="default"
                         context={context}
                         stepTitle="确认关闭手势密码"
-                        confirmText="确认关闭"
+                        confirmText="确认解绑并关闭"
                         confirmLoading={unbindGestureLoading}
                         initialStep={0}
                         onCancel={handleCancel}
                         onConfirm={handleUnbindSubmit}
                     >
-                        <div style={{ padding: '8px 0 24px 0' }}>
-                            <Text type="danger" style={{ fontSize: 14 }}>
-                                警告：关闭手势密码凭证后，您在移动端设备上将无法通过快捷滑动解锁。请确认是否继续？
-                            </Text>
-                        </div>
+                        <Flex vertical gap={16} style={{ padding: '8px 0 16px 0' }}>
+                            <Alert
+                                message="手势密码解绑警告"
+                                description="关闭手势密码凭证后，您在移动端设备上将无法再通过快捷滑动解锁。此操作不可逆，后续如需使用必须重新在移动端进行物理录入。"
+                                type="warning" // 💡 橙色警示，或者用 error 变红
+                                showIcon
+                            />
+
+                            <div style={{ padding: '0 4px' }}>
+                                <Text type="secondary" style={{ fontSize: 13, lineHeight: '20px' }}>
+                                    💡 您的账户身份已通过前置安全审计。如果您确认不再需要此快捷通道，请点击下方的 <Text strong>“确认解绑并关闭”</Text> 按钮完成最终移除。
+                                </Text>
+                            </div>
+                        </Flex>
                     </SecurityStepVerify>
                 )}
             </Modal>
@@ -163,9 +172,9 @@ const FormItemSingleCanvasAdaptor = ({ form, adaptorRef }) => {
     const { token } = theme.useToken();
     const [stage, setStage] = useState('INIT'); // 'INIT' | 'CONFIRM'
     const [firstSequence, setFirstSequence] = useState('');
-    
+
     // 控制传递给底层的状态 'default' | 'error'
-    const [verifyStatus, setVerifyStatus] = useState('default'); 
+    const [verifyStatus, setVerifyStatus] = useState('default');
 
     // 原生画布的内部真正引用
     const canvasRef = useRef(null);
@@ -218,7 +227,7 @@ const FormItemSingleCanvasAdaptor = ({ form, adaptorRef }) => {
                 form.setFields([
                     { name: 'confirmGesture', errors: ['两次绘制的手势图案不一致，请重新绘制'] }
                 ]);
-                
+
                 setTimeout(() => {
                     canvasRef.current?.reset?.();
                     setVerifyStatus('default');
@@ -244,11 +253,11 @@ const FormItemSingleCanvasAdaptor = ({ form, adaptorRef }) => {
 
     return (
         <Flex vertical gap={12} style={{ position: 'relative', marginTop: 8 }}>
-            
+
             {/* 顶栏排版层 */}
             <Flex justify="space-between" align="center" style={{ padding: '0 2px', height: 24 }}>
                 {getHighlightedLabel()}
-                
+
                 {/* 右侧动作与状态槽 */}
                 <div>
                     {stage === 'INIT' ? (
@@ -257,7 +266,7 @@ const FormItemSingleCanvasAdaptor = ({ form, adaptorRef }) => {
                         </Text>
                     ) : (
                         /* 🚀 核心改良：当处于确认阶段或错误阶段时，右侧提供可点击的文本“重新录入” */
-                        <span 
+                        <span
                             onClick={verifyStatus === 'error' ? undefined : handleReturnToFirstStep}
                             style={{
                                 fontSize: 12,
@@ -279,9 +288,9 @@ const FormItemSingleCanvasAdaptor = ({ form, adaptorRef }) => {
 
             {/* 画布容器 */}
             <UniversalGestureVerifier
-                verifierRef={canvasRef} 
-                label={null} 
-                status={verifyStatus} 
+                verifierRef={canvasRef}
+                label={null}
+                status={verifyStatus}
                 onVerifyAction={handleLocalVerifyAction}
                 onSuccess={handleCanvasSuccess}
             />

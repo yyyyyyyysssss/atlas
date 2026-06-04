@@ -12,7 +12,8 @@ const SecurityStepVerify = ({
     context,                       // 业务上下文
     confirmLoading = false,        // 第二步终极提交时的加载状态
     onCancel,                      // 取消/关闭按钮回调
-    onConfirm,                     // 终极确认回调: (ticket) => void
+    onVerifySuccess,               // 第一步身份验证通过后的回调
+    onConfirm,                     // 第二步最终确定的回调
     confirmText = '确定',           // 确认按钮文本
     confirmDanger = false,         // 确认按钮是否呈现红色警告态
     stepTitle = '风险确认',         // 第二步的步骤标题
@@ -33,16 +34,21 @@ const SecurityStepVerify = ({
     const handleNextStep = async () => {
         if (!verifierRef.current) return
         try {
-            const { verified, ticket: responseTicket } = await verifierRef.current.onVerify()
+            const { verified, ticket: responseTicket } = (await verifierRef.current.onVerify()) || {}
             if (verified && responseTicket) {
-                setTicket(responseTicket);
-                setCurrentStep(1)
+                handleAuthPass(responseTicket)
             }
         } catch (error) {
             if (error?.message) {
                 message.error(error.message);
             }
         }
+    }
+
+    const handleAuthPass = (responseTicket) => {
+        setTicket(responseTicket);
+        setCurrentStep(1)
+        onVerifySuccess?.(responseTicket)
     }
 
     // 返回上一步
@@ -91,8 +97,7 @@ const SecurityStepVerify = ({
                                 captchaScene={captchaScene}
                                 onLoadingChange={(loading) => setVerifyLoading(loading)}
                                 onSuccess={(res) => {
-                                    setTicket(res.ticket);
-                                    setCurrentStep(1);
+                                    handleAuthPass(res.ticket)
                                 }}
                             />
                         </motion.div>

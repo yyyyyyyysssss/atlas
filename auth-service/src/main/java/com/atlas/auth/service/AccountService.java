@@ -13,6 +13,7 @@ import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.token.WebauthnAuthenticationRequest;
 import com.atlas.security.utils.TicketGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.Bytes;
@@ -236,6 +237,12 @@ public class AccountService {
         return new VerifyWebauthnVO(verified, ticket);
     }
 
+    public WebauthnRegistrationResponse registerWebauthn(HttpServletRequest request, Long userId, WebAuthnRegistrationRequest webAuthnRegistrationRequest){
+        Objects.requireNonNull(webAuthnRegistrationRequest.ticket(),"安全验证凭证缺失，请重新进行身份验证");
+        validTicket(userId,SecurityScene.BIND_WEBAUTHN,webAuthnRegistrationRequest.ticket());
+        return webauthnService.registerCredential(request, webAuthnRegistrationRequest.publicKey());
+    }
+
     public void unbindWebauthn(Long userId,UnbindWebauthnDTO unbindWebauthnDTO){
         // 解码凭证 ID
         Bytes credentialId;
@@ -288,8 +295,9 @@ public class AccountService {
         return new TotpVerifyVO(verified, ticket);
     }
 
-    public TotpInitVO initTotp(Long userId){
+    public TotpInitVO initTotp(Long userId,TotpInitDTO totpInitDTO){
         log.info("用户 {} 开始申请绑定/更换 TOTP 设备", userId);
+        validTicket(userId,SecurityScene.BIND_TOTP,totpInitDTO.ticket());
         String secretKey = totpService.generateSecretKey();
         userTotpCredentialsService.saveOrUpdateUnactivated(userId,secretKey);
         // 获取该用户具备业务可读性的显示标识

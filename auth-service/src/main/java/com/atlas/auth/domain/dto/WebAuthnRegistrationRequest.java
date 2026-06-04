@@ -7,7 +7,9 @@ public record WebAuthnRegistrationRequest(
 
         @Valid
         @NotNull
-        WebauthnRelyingPartyPublicKey publicKey
+        WebauthnRelyingPartyPublicKey publicKey,
+
+        String ticket
 ) {
 
 

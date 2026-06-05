@@ -10,7 +10,7 @@ import { generateChallenge, generateVerifier } from '../../../utils/pkce';
 import { useNavigate } from 'react-router-dom';
 
 
-const QrLoginCard = ({ isQrLogin, setIsQrLogin, loginSuccessHandler }) => {
+const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
     const { t } = useTranslation()
 
@@ -100,12 +100,12 @@ const QrLoginCard = ({ isQrLogin, setIsQrLogin, loginSuccessHandler }) => {
     }
 
     useEffect(() => {
-        if (isQrLogin) {
+        if (loginPanel === 'qr') {
             refreshQrCode()
         } else {
             stopPolling()
         }
-    }, [isQrLogin])
+    }, [loginPanel])
 
     useEffect(() => {
         // 组件卸载时清理定时器
@@ -118,18 +118,12 @@ const QrLoginCard = ({ isQrLogin, setIsQrLogin, loginSuccessHandler }) => {
         <Card
             style={{
                 width: '100%',
+                height: '100%',
                 borderRadius: '24px',
                 boxShadow: '0 25px 50px -12px rgba(0,0,0,0.05)',
                 border: 'none',
                 background: '#ffffff',
                 padding: '16px',
-                backfaceVisibility: 'hidden',
-                position: 'absolute', // 绝对定位使其与正面重合
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                transform: 'rotateY(180deg)' // 初始状态背面翻转
             }}
         >
             {/* 右上角切回电脑图标 (折角图片) */}
@@ -142,8 +136,7 @@ const QrLoginCard = ({ isQrLogin, setIsQrLogin, loginSuccessHandler }) => {
                     zIndex: 10,
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
-                className="qr-toggle-btn"
-                onClick={() => setIsQrLogin(false)}
+                onClick={() => setLoginPanel('main')}
                 title="密码登录"
                 onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'scale(1.1)';

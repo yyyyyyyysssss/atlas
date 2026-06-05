@@ -32,6 +32,12 @@ export const webauthnLogin = async (webauthnId, req) => {
 }
 
 
+// 手势登录
+export const gestureLogin = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/gesture', req))
+}
+
 export const sendOttLink = async (username, targetUrl = '') => {
 
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/ott/generate', null, {

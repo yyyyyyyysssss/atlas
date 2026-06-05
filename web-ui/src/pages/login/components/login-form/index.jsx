@@ -17,7 +17,7 @@ import CaptchaLogin from './CaptchaLogin';
 import MagicLinkLogin from './MagicLinkLogin';
 import PasskeyLogin from './PasskeyLogin';
 
-const LoginForm = ({ setIsQrLogin, loginSuccessHandler }) => {
+const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
 
@@ -50,7 +50,6 @@ const LoginForm = ({ setIsQrLogin, loginSuccessHandler }) => {
                 border: 'none',
                 background: '#ffffff',
                 padding: '32px 24px 24px 24px', // 优化四周内边距，使视觉更聚拢
-                backfaceVisibility: 'hidden',
                 position: 'relative'
             }}
         >
@@ -64,7 +63,7 @@ const LoginForm = ({ setIsQrLogin, loginSuccessHandler }) => {
                     zIndex: 10,
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
-                onClick={() => setIsQrLogin(true)}
+                onClick={() => setLoginPanel('qr')}
                 title={t('扫码登录')}
                 onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'scale(1.1) rotate(90deg)';
@@ -97,6 +96,7 @@ const LoginForm = ({ setIsQrLogin, loginSuccessHandler }) => {
                     borderRadius: '50%', // 建立隐形圆形热区，让 Hover 动画以圆心为锚点爆发
                     transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // 弹性贝塞尔曲线，带有一点点生动的回弹
                 }}
+                onClick={() => setLoginPanel('gesture')}
                 title={t('手势登录')}
                 onMouseEnter={(e) => {
                     // 1. 整体放大、大幅度旋转，产生更强的动能感

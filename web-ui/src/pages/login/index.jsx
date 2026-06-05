@@ -13,6 +13,7 @@ import useFullParams from '../../hooks/useFullParams';
 import Loading from '../../components/loading';
 import LoginForm from './components/login-form';
 import QrLoginCard from './components/QrLoginCard';
+import GestureLoginCard from './components/GestureLoginCard';
 
 const Login = () => {
 
@@ -35,8 +36,7 @@ const Login = () => {
         manual: true
     })
 
-    // 是否显示扫码登录 (翻转状态)
-    const [isQrLogin, setIsQrLogin] = useState(false)
+    const [loginPanel, setLoginPanel] = useState('main')
 
     const ottLoginRef = useRef(false)
 
@@ -160,7 +160,7 @@ const Login = () => {
                 }} />
 
                 <motion.div
-                    animate={{ rotateY: isQrLogin ? 180 : 0 }}
+                    animate={{ rotateY: getRotationY() }}
                     transition={{ duration: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
                     style={{
                         width: '100%',
@@ -170,18 +170,64 @@ const Login = () => {
                         position: 'relative'
                     }}
                 >
-                    {/* 密码/表单登录面 (Front) */}
-                    <LoginForm
-                        setIsQrLogin={setIsQrLogin}
-                        loginSuccessHandler={loginSuccessHandler}
-                    />
+                    {/* 正面：表单登录面 */}
+                    <div
+                        style={{
+                            backfaceVisibility: 'hidden',
+                            width: '100%',
+                            height: '100%',
+                        }}
+                    >
+                        <LoginForm
+                            loginPanel={loginPanel}
+                            setLoginPanel={setLoginPanel}
+                            loginSuccessHandler={loginSuccessHandler}
+                        />
+                    </div>
 
                     {/* 扫码登录面 (Back) */}
-                    <QrLoginCard
-                        isQrLogin={isQrLogin}
-                        setIsQrLogin={setIsQrLogin}
-                        loginSuccessHandler={loginSuccessHandler}
-                    />
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            width: '100%',
+                            height: '100%',
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)',
+                            pointerEvents: loginPanel === 'qr' ? 'auto' : 'none',
+                            opacity: loginPanel === 'qr' ? 1 : 0,
+                            transition: 'opacity 0.3s ease'
+                        }}
+                    >
+                        <QrLoginCard
+                            loginPanel={loginPanel}
+                            setLoginPanel={setLoginPanel}
+                            loginSuccessHandler={loginSuccessHandler}
+                        />
+                    </div>
+
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            width: '100%', height: '100%',
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(-180deg)', // 🔑 在舞台层面翻转到左背面
+                            pointerEvents: loginPanel === 'gesture' ? 'auto' : 'none',
+                            opacity: loginPanel === 'gesture' ? 1 : 0,
+                            transition: 'opacity 0.3s ease'
+                        }}
+                    >
+                        <GestureLoginCard
+                            loginPanel={loginPanel}
+                            setLoginPanel={setLoginPanel}
+                            loginSuccessHandler={loginSuccessHandler}
+                        />
+                    </div>
+
                 </motion.div>
             </div>
         </ConfigProvider>

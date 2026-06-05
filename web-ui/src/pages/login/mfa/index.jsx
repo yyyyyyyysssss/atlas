@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Flex, Typography, ConfigProvider, App, Button } from 'antd';
+import { Flex, Typography, ConfigProvider, App, Button, theme } from 'antd';
 import { ShieldAlert, ArrowLeft, KeyRound, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRequest } from 'ahooks';
@@ -13,10 +13,14 @@ import './index.css';
 import UniversalBackupCodeVerifier from '../../account-settings/components/verifiers/UniversalBackupCodeVerifier';
 import { useAuth } from '../../../router/AuthProvider';
 import { useRedirect } from '../../../hooks/useRedirect';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
 
 const LoginMfa = () => {
+
+    const { t } = useTranslation()
+
     const { ticket, mfaType } = useFullParams()
 
     const { message } = App.useApp()
@@ -241,18 +245,41 @@ const LoginMfa = () => {
                                 size="small"
                                 onClick={handleBackToLogin}
                                 style={{
-                                    display: 'flex',
+                                    display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '6px',
+                                    gap: '4px', // 紧凑的间距更显精致
                                     fontSize: '13px',
                                     fontWeight: 500,
                                     height: 'auto',
+                                    padding: 0, // 移除 link 按钮默认的左右内边距，确保对齐
                                     color: '#6b7280',
+                                    transition: 'all 0.2s ease',
                                 }}
                                 className="mfa-back-link"
+                                onMouseEnter={(e) => {
+                                    // 悬浮时：文字变深，图标向左微移
+                                    e.currentTarget.style.color = '#4f46e5' // 或者使用 '#111827'
+                                    const icon = e.currentTarget.querySelector('.mfa-back-icon');
+                                    if (icon) icon.style.transform = 'translateX(-3px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    // 移出时：恢复原状
+                                    e.currentTarget.style.color = '#6b7280';
+                                    const icon = e.currentTarget.querySelector('.mfa-back-icon');
+                                    if (icon) icon.style.transform = 'translateX(0)';
+                                }}
                             >
-                                <ArrowLeft size={14} />
-                                返回登录页
+                                <div
+                                    className="mfa-back-icon"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        transition: 'transform 0.2s ease'
+                                    }}
+                                >
+                                    <ArrowLeft size={14} strokeWidth={2.5} />
+                                </div>
+                                <span>{t('返回登录页')}</span>
                             </Button>
                         </Flex>
                     </div>

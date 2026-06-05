@@ -73,7 +73,7 @@ const Login = () => {
         if (loginResponse.status === 'MFA_REQUIRED') {
             const { mfaTicket, mfaType } = loginResponse
             let mfaPath = '/login/mfa'
-            if(targetUrl){
+            if (targetUrl) {
                 mfaPath += `?targetUrl=${encodeURIComponent(targetUrl)}`;
             }
             navigate(mfaPath, {
@@ -87,6 +87,12 @@ const Login = () => {
 
         message.error('登录失败')
     }
+
+    const getRotationY = () => {
+        if (loginPanel === 'qr') return 180;        // 向右翻转 180 度展示扫码
+        if (loginPanel === 'gesture') return -180;   // 向左翻转 180 度（即 -180）展示手势
+        return 0;                                    // 回归正面标准表单
+    };
 
     if (ottLoginRef.current) {
         return <Loading fullscreen tip="正在通过快捷链接登录..." />

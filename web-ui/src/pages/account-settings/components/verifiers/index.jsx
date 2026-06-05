@@ -9,7 +9,7 @@ import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
 import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyTotpBackupCode, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
-import { Fingerprint, Grip } from 'lucide-react';
+import { Fingerprint, Grid3x3, Grip } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';
 import UniversalGestureVerifier from './UniversalGestureVerifier';
 
@@ -94,7 +94,7 @@ const VerifyDropdown = ({
         availableMethods.push({
             key: 'gesture',
             label: '手势认证',
-            icon: <NodeIndexOutlined style={{ width: 14, height: 14 }} />,
+            icon: <Grid3x3 style={{ width: 14, height: 14 }} />,
             render: () => (
                 <UniversalGestureVerifier
                     verifierRef={verifierRef}
@@ -124,7 +124,7 @@ const VerifyDropdown = ({
         });
     }
 
-    
+
     // 邮箱验证选项
     if (boundEmail) {
         availableMethods.push({

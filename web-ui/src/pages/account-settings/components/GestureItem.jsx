@@ -5,6 +5,7 @@ import { bindGesture, unbindGesture } from '../../../services/AccountService';
 import { useRequest } from 'ahooks';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
 import UniversalGestureVerifier from './verifiers/UniversalGestureVerifier';
+import { Grid3x3 } from 'lucide-react';
 
 const { Text, Title } = Typography;
 
@@ -73,7 +74,7 @@ const GestureItem = ({ context, refresh }) => {
             <Flex justify="space-between" align="center" style={{ padding: '20px 0', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
                 <Flex gap={16} align="flex-start" style={{ flex: 1 }}>
                     <div style={{ padding: 12, background: token.colorFillAlter, borderRadius: '50%' }}>
-                        <NodeIndexOutlined style={{ color: token.colorPrimary, fontSize: 20 }} />
+                        <Grid3x3 style={{ color: token.colorPrimary, fontSize: 20 }} />
                     </div>
                     <Flex vertical gap={4}>
                         <Text strong style={{ fontSize: 16 }}>手势密码</Text>

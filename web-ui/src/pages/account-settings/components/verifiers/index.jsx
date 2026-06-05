@@ -56,23 +56,6 @@ const VerifyDropdown = ({
     // 构建下拉菜单的项
     const availableMethods = []
 
-    if (gestureEnabled) {
-        availableMethods.push({
-            key: 'gesture',
-            label: '手势认证',
-            icon: <NodeIndexOutlined style={{ width: 14, height: 14 }} />,
-            render: () => (
-                <UniversalGestureVerifier
-                    verifierRef={verifierRef}
-                    // 触发挥手硬件后，回调后端的验证接口
-                    onVerifyAction={(gestureSequence) => verifyGestureAsync({ gesture: gestureSequence, securityScene: scene })}
-                    onSuccess={onSuccess}
-                />
-            )
-        });
-    }
-
-
     // 通行密钥验证选项
     if (hasPasskey) {
         availableMethods.push({
@@ -106,6 +89,24 @@ const VerifyDropdown = ({
         });
     }
 
+    // 手势验证选项
+    if (gestureEnabled) {
+        availableMethods.push({
+            key: 'gesture',
+            label: '手势认证',
+            icon: <NodeIndexOutlined style={{ width: 14, height: 14 }} />,
+            render: () => (
+                <UniversalGestureVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(gestureSequence) => verifyGestureAsync({ gesture: gestureSequence, securityScene: scene })}
+                    onSuccess={onSuccess}
+                />
+            )
+        });
+    }
+
+
     // 密码验证选项
     if (passwordSet) {
         availableMethods.push({
@@ -122,6 +123,8 @@ const VerifyDropdown = ({
             )
         });
     }
+
+    
     // 邮箱验证选项
     if (boundEmail) {
         availableMethods.push({

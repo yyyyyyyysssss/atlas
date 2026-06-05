@@ -177,6 +177,7 @@ public class AccountService {
         if (exist != null) {
             throw new BusinessException("该邮箱已被其他账号占用");
         }
+        validTicket(userId, SecurityScene.MODIFY_EMAIL, initEmailDTO.ticket());
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
                 .verify(initEmailDTO.email(), initEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
         if (!verify) {

@@ -11,7 +11,7 @@ import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
 import Loading from '../../components/loading';
-import LoginFrom from './components/LoginForm';
+import LoginForm from './components/login-form';
 import QrLoginCard from './components/QrLoginCard';
 
 const Login = () => {
@@ -165,7 +165,7 @@ const Login = () => {
                     }}
                 >
                     {/* 密码/表单登录面 (Front) */}
-                    <LoginFrom
+                    <LoginForm
                         setIsQrLogin={setIsQrLogin}
                         loginSuccessHandler={loginSuccessHandler}
                     />

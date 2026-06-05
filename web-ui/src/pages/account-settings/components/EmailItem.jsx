@@ -65,7 +65,7 @@ const EmailItem = ({ context, refresh }) => {
             await sendCaptchaAsync({
                 target: targetEmail,
                 captchaType: 'email',
-                securityScene: 'MODIFY_EMAIL'
+                captchaScene: 'MODIFY_EMAIL'
             })
 
             message.success(`验证码已成功发送至 ${targetEmail}`);
@@ -164,10 +164,10 @@ const EmailItem = ({ context, refresh }) => {
                     scene="MODIFY_EMAIL"
                     captchaScene='MODIFY_EMAIL'
                     context={context}
-                    stepTitle={boundEmail ? "设置邮箱" : "绑定新邮箱"}
+                    stepTitle={boundEmail ? "绑定新邮箱" : "设置邮箱"}
                     confirmText="确认修改"
                     confirmLoading={initEmailLoading || changeEmailLoading}
-                    initialStep={boundEmail ? 0 : 1}
+                    initialStep={passwordSet ? 0 : 1}
                     onCancel={handleCancel}
                     onConfirm={handleConfirmSubmit}
                 >

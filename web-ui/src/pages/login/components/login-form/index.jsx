@@ -81,53 +81,6 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                 />
             </div>
 
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: 20,
-                    left: 20,
-                    cursor: 'pointer',
-                    zIndex: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%', // 建立隐形圆形热区，让 Hover 动画以圆心为锚点爆发
-                    transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)', // 弹性贝塞尔曲线，带有一点点生动的回弹
-                }}
-                onClick={() => setLoginPanel('gesture')}
-                title={t('手势登录')}
-                onMouseEnter={(e) => {
-                    // 1. 整体放大、大幅度旋转，产生更强的动能感
-                    e.currentTarget.style.transform = 'scale(1.25) rotate(45deg)';
-
-                    // 2. 内部图标精准染色（通过类名或子节点直接控制图标颜色）
-                    const icon = e.currentTarget.querySelector('.anticon');
-                    if (icon) {
-                        icon.style.filter = `drop-shadow(0 2px 8px ${token.colorPrimary}40)`; // 增加微弱的主色调霓虹发光感
-                    }
-                }}
-                onMouseLeave={(e) => {
-                    // 恢复初始状态
-                    e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
-
-                    const icon = e.currentTarget.querySelector('.anticon');
-                    if (icon) {
-                        icon.style.color = '#9ca3af';
-                        icon.style.filter = 'none';
-                    }
-                }}
-            >
-                <Grid3x3
-                    style={{
-                        fontSize: 26,
-                        color: '#9ca3af',
-                        transition: 'all 0.3s ease' // 确保颜色和滤镜过渡同样平滑
-                    }}
-                />
-            </div>
-
             {/* 头部 Logo 与 欢迎语 */}
             <Flex vertical align="center" style={{ marginBottom: 24 }}>
                 <Avatar src={'/logo128_eclipse.svg'} size={72} style={{ background: 'transparent' }} />

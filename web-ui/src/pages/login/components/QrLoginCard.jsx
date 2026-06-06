@@ -125,6 +125,11 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                 background: '#ffffff',
                 padding: '16px',
             }}
+            styles={{
+                body: {
+                    height: '100%',
+                }
+            }}
         >
             {/* 右上角切回电脑图标 (折角图片) */}
             <div
@@ -154,7 +159,7 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                 />
             </div>
 
-            <Flex vertical align="center" justify="center" style={{ height: '100%', paddingTop: 20 }}>
+            <Flex vertical align="center" justify="center" style={{ height: '100%' }}>
                 <Typography.Title level={3} style={{ margin: '0 0 8px 0', fontWeight: 600, color: '#111827' }}>
                     {t('扫码安全登录')}
                 </Typography.Title>

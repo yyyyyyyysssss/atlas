@@ -49,11 +49,12 @@ const OAuth2Callback = () => {
                 }
 
                 if (loginResponse.status === 'MFA_REQUIRED') {
-                    const { mfaTicket, mfaType } = loginResponse
+                    const { mfaTicket, mfaType, activeMfaStrategies } = loginResponse
                     navigate('/login/mfa', {
                         state: {
                             ticket: mfaTicket,
-                            mfaType: mfaType
+                            mfaType: mfaType,
+                            activeMfaStrategies: activeMfaStrategies
                         }
                     })
                     return

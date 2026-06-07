@@ -21,7 +21,7 @@ const { Title, Paragraph } = Typography;
 
 const LoginMfa = () => {
     const { t } = useTranslation();
-    const { ticket, mfaType: initialMfaType, activeMfaStrategies } = useFullParams()
+    const { ticket, mfaType: initialMfaType, activeMfaStrategies = [] } = useFullParams()
     const navigate = useNavigate();
     const { signin } = useAuth();
     const redirect = useRedirect();

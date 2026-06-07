@@ -147,17 +147,10 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
-
-    @PostMapping("/totp/backupCode/verify")
-    public Result<TotpBackupCodeVerifyVO> verifyTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpBackupCodeVerifyDTO totpBackupCodeVerifyDTO) {
-        TotpBackupCodeVerifyVO totpBackupCodeVerifyVO = accountService.verifyTotpBackupCode(securityUser.getId(), totpBackupCodeVerifyDTO);
-        return ResultGenerator.ok(totpBackupCodeVerifyVO);
-    }
-
-    @PostMapping("/totp/backupCode/refresh")
-    public Result<TotpRefreshBackupCodeVO> refreshTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO) {
-        TotpRefreshBackupCodeVO totpRefreshBackupCodeVO = accountService.refreshTotpBackupCode(securityUser.getId(), totpRefreshBackupCodeDTO);
-        return ResultGenerator.ok(totpRefreshBackupCodeVO);
+    @PostMapping("/backupCode/refresh")
+    public Result<MfaRefreshBackupCodeVO> refreshTotpBackupCode(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated MfaRefreshBackupCodeDTO mfaRefreshBackupCodeDTO) {
+        MfaRefreshBackupCodeVO mfaRefreshBackupCodeVO = accountService.refreshTotpBackupCode(securityUser.getId(), mfaRefreshBackupCodeDTO);
+        return ResultGenerator.ok(mfaRefreshBackupCodeVO);
     }
 
     // 绑定或修改（重置）手势凭证

@@ -12,19 +12,19 @@ import lombok.experimental.Tolerate;
 import java.time.LocalDateTime;
 
 /**
- * (UserTotpBackupCode)实体类
+ * (UserMfaBackupCode)实体类
  *
  * @author ys
  * @since 2026-05-28 14:22:20
  */
 @Getter
 @Setter
-@TableName(value = "user_totp_backup_code", autoResultMap = true)
+@TableName(value = "user_mfa_backup_code", autoResultMap = true)
 @Builder
-public class UserTotpBackupCode extends BaseIdEntity {
+public class UserMfaBackupCode extends BaseIdEntity {
 
     @Tolerate
-    public UserTotpBackupCode() {
+    public UserMfaBackupCode() {
     }
 
     @TableField("user_id")

@@ -5,5 +5,7 @@ public enum MfaType {
 
     SMS,
 
-    BACKUP_CODE
+    BACKUP_CODE,
+
+    GESTURE
 }

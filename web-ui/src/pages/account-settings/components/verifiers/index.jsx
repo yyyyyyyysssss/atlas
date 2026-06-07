@@ -7,7 +7,7 @@ import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyTotpBackupCode, verifyWebauthn } from '../../../../services/AccountService';
+import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
 import { Fingerprint, Grid3x3, Grip } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';

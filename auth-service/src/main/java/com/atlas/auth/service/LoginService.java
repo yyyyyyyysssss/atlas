@@ -115,7 +115,7 @@ public class LoginService {
         if(currentLevel.getRank() < requiredLevel.getRank()){
             String ticket = TicketGenerator.generate();
             mfaTicketRepository.save(ticket,new MfaTicketContext(securityUser.getId(),clientType), Duration.ofMinutes(5));
-            return TokenResponse.mfaRequired(ticket, MfaType.TOTP);
+            return TokenResponse.mfaRequired(ticket, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
         }
 
         // 会话控制

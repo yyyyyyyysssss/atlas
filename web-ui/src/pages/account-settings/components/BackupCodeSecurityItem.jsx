@@ -3,11 +3,11 @@ import { Button, Typography, Flex, theme, Modal, Alert, Space, App, Badge } from
 import { CopyOutlined, DownloadOutlined, FileProtectOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
 import { useRequest } from 'ahooks';
-import { refreshTotpBackupCode } from '../../../services/AccountService';
+import { refreshBackupCode } from '../../../services/AccountService';
 
 const { Text } = Typography;
 
-const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
+const BackupCodeSecurityItem = ({ context, refresh }) => {
     const { token } = theme.useToken();
 
     const { message } = App.useApp()
@@ -20,7 +20,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
 
     const [isBackupCodeModalOpen, setIsBackupCodeModalOpen] = useState(false)
 
-    const { runAsync: refreshTotpBackupCodeAsync, loading: refreshTotpBackupCodeLoading } = useRequest(refreshTotpBackupCode, {
+    const { runAsync: refreshBackupCodeAsync, loading: refreshBackupCodeLoading } = useRequest(refreshBackupCode, {
         manual: true
     });
 
@@ -38,7 +38,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
     };
 
     const handleConfirm = async (ticket) => {
-        const res = await refreshTotpBackupCodeAsync({
+        const res = await refreshBackupCodeAsync({
             ticket: ticket
         })
         setIsBackupCodeModalOpen(false)
@@ -121,7 +121,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
                     stepTitle="确认生成"
                     confirmText="确认生成"
                     confirmDanger={true}
-                    confirmLoading={refreshTotpBackupCodeLoading}
+                    confirmLoading={refreshBackupCodeLoading}
                     onCancel={() => setIsBackupCodeModalOpen(false)}
                     onConfirm={handleConfirm}
                 >
@@ -146,7 +146,7 @@ const TotpBackupCodeSecurityItem = ({ context, refresh }) => {
     );
 };
 
-export default TotpBackupCodeSecurityItem;
+export default BackupCodeSecurityItem;
 
 
 

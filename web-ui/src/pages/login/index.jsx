@@ -70,7 +70,7 @@ const Login = () => {
         }
 
         if (loginResponse.status === 'MFA_REQUIRED') {
-            const { mfaTicket, mfaType } = loginResponse
+            const { mfaTicket, mfaType, activeMfaStrategies } = loginResponse
             let mfaPath = '/login/mfa'
             if (targetUrl) {
                 mfaPath += `?targetUrl=${encodeURIComponent(targetUrl)}`;
@@ -78,7 +78,8 @@ const Login = () => {
             navigate(mfaPath, {
                 state: {
                     ticket: mfaTicket,
-                    mfaType: mfaType
+                    mfaType: mfaType,
+                    activeMfaStrategies: activeMfaStrategies
                 }
             })
             return

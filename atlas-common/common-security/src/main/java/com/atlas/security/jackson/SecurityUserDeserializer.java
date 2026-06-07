@@ -1,5 +1,6 @@
 package com.atlas.security.jackson;
 
+import com.atlas.security.model.MfaType;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.core.JsonParser;
@@ -20,6 +21,8 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
     private final TypeReference<List<GrantedAuthority>> GRANTED_AUTHORITY_LIST = new TypeReference<>() {
     };
 
+    private final TypeReference<Set<MfaType>> MFA_STRATEGIES_SET = new TypeReference<>() {};
+
     @Override
     public SecurityUser deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         ObjectMapper mapper = (ObjectMapper) jsonParser.getCodec();
@@ -36,6 +39,17 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String email = JsonNodeUtils.findStringValue(root, "email");
         String phone = JsonNodeUtils.findStringValue(root, "phone");
         Boolean mfaEnabled = JsonNodeUtils.findBooleanValue(root, "mfaEnabled");
+
+        String preferredMfaStr = JsonNodeUtils.findStringValue(root, "preferredMfaType");
+        MfaType preferredMfaType = (preferredMfaStr != null && !preferredMfaStr.isEmpty())
+                ? MfaType.valueOf(preferredMfaStr)
+                : null;
+        JsonNode mfaStrategiesNode = this.readJsonNode(root, "activeMfaStrategies");
+        Set<MfaType> activeMfaStrategies = null;
+        if (!mfaStrategiesNode.isMissingNode() && !mfaStrategiesNode.isNull()) {
+            activeMfaStrategies = mapper.readValue(mfaStrategiesNode.traverse(mapper), MFA_STRATEGIES_SET);
+        }
+
         List<? extends GrantedAuthority> authorities = (List)mapper.readValue(this.readJsonNode(root, "authorities").traverse(mapper), GRANTED_AUTHORITY_LIST);
         securityUser.setId(Long.parseLong(id));
         securityUser.setUsername(username);
@@ -46,6 +60,8 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         securityUser.setEmail(email);
         securityUser.setPhone(phone);
         securityUser.setMfaEnabled(mfaEnabled);
+        securityUser.setPreferredMfaType(preferredMfaType);
+        securityUser.setActiveMfaStrategies(activeMfaStrategies);
 
         securityUser.setDataScopes(dataScopes);
         securityUser.setOrgId(orgId != null ? Long.parseLong(orgId) : null);

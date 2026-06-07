@@ -16,7 +16,7 @@ import EmailItem from './EmailItem';
 import PasskeyItem from './PasskeyItem';
 import UserProviderItem from './UserProviderItem';
 import TotpSecurityItem from './TotpSecurityItem';
-import TotpBackupCodeSecurityItem from './TotpBackupCodeSecurityItem';
+import BackupCodeSecurityItem from './BackupCodeSecurityItem';
 import GestureItem from './GestureItem';
 
 const { Title, Text, Paragraph } = Typography;
@@ -97,7 +97,7 @@ const SecurityTab = () => {
                     context={data}
                     refresh={refresh}
                 />
-                <TotpBackupCodeSecurityItem
+                <BackupCodeSecurityItem
                     context={data}
                     refresh={refresh}
                 />

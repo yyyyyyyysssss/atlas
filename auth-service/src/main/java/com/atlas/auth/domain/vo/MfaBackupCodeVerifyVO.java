@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.vo;
 
-public record TotpBackupCodeVerifyVO(
+public record MfaBackupCodeVerifyVO(
         boolean verified,
 
         String ticket

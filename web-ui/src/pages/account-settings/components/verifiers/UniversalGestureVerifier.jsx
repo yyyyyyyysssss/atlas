@@ -5,9 +5,9 @@ const { Text } = Typography;
 
 // 3x3 矩阵的 9 个标准圆点相对比例坐标 (基于 300x300 画布)
 const GRID_POINTS = [
-    { id: '1', x: 50,  y: 50  }, { id: '2', x: 150, y: 50  }, { id: '3', x: 250, y: 50  },
-    { id: '4', x: 50,  y: 150 }, { id: '5', x: 150, y: 150 }, { id: '6', x: 250, y: 150 },
-    { id: '7', x: 50,  y: 250 }, { id: '8', x: 150, y: 250 }, { id: '9', x: 250, y: 250 }
+    { id: '1', x: 50, y: 50 }, { id: '2', x: 150, y: 50 }, { id: '3', x: 250, y: 50 },
+    { id: '4', x: 50, y: 150 }, { id: '5', x: 150, y: 150 }, { id: '6', x: 250, y: 150 },
+    { id: '7', x: 50, y: 250 }, { id: '8', x: 150, y: 250 }, { id: '9', x: 250, y: 250 }
 ];
 
 const CANVAS_SIZE = 300;
@@ -29,10 +29,10 @@ const UniversalGestureVerifier = ({
 
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [selectedPoints, setSelectedPoints] = useState([]); 
-    const [currentMousePos, setCurrentMousePos] = useState(null); 
+    const [selectedPoints, setSelectedPoints] = useState([]);
+    const [currentMousePos, setCurrentMousePos] = useState(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
-    const [localErrorState, setLocalErrorState] = useState(false); 
+    const [localErrorState, setLocalErrorState] = useState(false);
 
     // 🚀 核心状态桥接：无论是父级传入 'error' 还是本地抛出错误，都判定为错误状态
     const isErrorState = status === 'error' || localErrorState;
@@ -51,13 +51,13 @@ const UniversalGestureVerifier = ({
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        
+
         const dpr = window.devicePixelRatio || 1;
         if (canvas.width !== CANVAS_SIZE * dpr || canvas.height !== CANVAS_SIZE * dpr) {
             canvas.width = CANVAS_SIZE * dpr;
             canvas.height = CANVAS_SIZE * dpr;
         }
-        
+
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
@@ -107,10 +107,10 @@ const UniversalGestureVerifier = ({
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
-        
+
         const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
-        
+
         return {
             x: clientX - rect.left,
             y: clientY - rect.top
@@ -157,7 +157,7 @@ const UniversalGestureVerifier = ({
         if (isGlobalLoading || isErrorState) return;
         e.preventDefault();
         setIsDrawing(true);
-        
+
         const pos = getCanvasRelativePosition(e);
         const hitId = detectCollisionPoint(pos, []);
         if (hitId) {
@@ -168,32 +168,43 @@ const UniversalGestureVerifier = ({
     const handleInteractionMove = (e) => {
         if (!isDrawing || isGlobalLoading || isErrorState) return;
         e.preventDefault();
-        
+
         const pos = getCanvasRelativePosition(e);
         setCurrentMousePos(pos);
 
-        const hitId = detectCollisionPoint(pos, selectedPoints);
-        if (hitId) {
-            setSelectedPoints(prev => {
-                if (prev.length === 0) return [hitId];
-                
-                const lastId = prev[prev.length - 1];
-                const lastPt = GRID_POINTS.find(p => p.id === lastId);
-                const currPt = GRID_POINTS.find(p => p.id === hitId);
+        // 💡 核心修复：将检测逻辑内聚到 setState 的 callback 内部，确保拿到最新的 prev 状态
+        setSelectedPoints(prev => {
+            // 1. 使用当前最真实的 prev 队列进行碰撞检测
+            const hitId = detectCollisionPoint(pos, prev);
+            if (!hitId) return prev; // 没碰触到任何新点，保持原样
 
-                const midX = (lastPt.x + currPt.x) / 2;
-                const midY = (lastPt.y + currPt.y) / 2;
+            if (prev.length === 0) return [hitId];
 
-                const middlePoint = GRID_POINTS.find(p => Math.abs(p.x - midX) < 1 && Math.abs(p.y - midY) < 1);
+            // 2. 严格判定：如果检测到的新点与当前序列的最后一个点相同，直接丢弃，防止数据重复
+            const lastId = prev[prev.length - 1];
+            if (hitId === lastId) return prev;
 
-                if (middlePoint && !prev.includes(middlePoint.id)) {
-                    return [...prev, middlePoint.id, hitId];
+            // 3. 物理穿透补点逻辑（保持你原有的优秀特性）
+            const lastPt = GRID_POINTS.find(p => p.id === lastId);
+            const currPt = GRID_POINTS.find(p => p.id === hitId);
+
+            const midX = (lastPt.x + currPt.x) / 2;
+            const midY = (lastPt.y + currPt.y) / 2;
+
+            // 寻找中心过渡点
+            const middlePoint = GRID_POINTS.find(p => Math.abs(p.x - midX) < 1 && Math.abs(p.y - midY) < 1);
+
+            if (middlePoint && !prev.includes(middlePoint.id)) {
+                // 规避极端边界下，补点可能引发的二次重复
+                if (middlePoint.id === lastId || middlePoint.id === hitId) {
+                    return [...prev, hitId];
                 }
+                return [...prev, middlePoint.id, hitId];
+            }
 
-                return [...prev, hitId];
-            });
-        }
-    };
+            return [...prev, hitId];
+        })
+    }
 
     const handleInteractionEnd = useCallback(async () => {
         if (!isDrawing || isGlobalLoading || isErrorState) return;
@@ -252,11 +263,11 @@ const UniversalGestureVerifier = ({
                 vertical
                 tabIndex={isGlobalLoading ? -1 : 0}
                 onKeyDown={handleKeyDown}
-                
+
                 onMouseUp={handleInteractionEnd}
                 onTouchEnd={handleInteractionEnd}
-                onMouseLeave={handleInteractionEnd} 
-                
+                onMouseLeave={handleInteractionEnd}
+
                 style={{
                     padding: '24px',
                     borderRadius: token.borderRadiusLG,
@@ -269,15 +280,15 @@ const UniversalGestureVerifier = ({
                 }}
                 className={`gesture-verifier-card ${isErrorState ? 'shake-animation' : ''}`}
             >
-                <div 
-                    style={{ 
-                        position: 'relative', 
-                        width: `${CANVAS_SIZE}px`, 
+                <div
+                    style={{
+                        position: 'relative',
+                        width: `${CANVAS_SIZE}px`,
                         height: `${CANVAS_SIZE}px`,
                         minWidth: `${CANVAS_SIZE}px`,
                         minHeight: `${CANVAS_SIZE}px`,
                         marginBottom: 16,
-                        overflow: 'visible' 
+                        overflow: 'visible'
                     }}
                 >
                     <canvas
@@ -286,7 +297,7 @@ const UniversalGestureVerifier = ({
                         onMouseMove={handleInteractionMove}
                         onTouchStart={handleInteractionStart}
                         onTouchMove={handleInteractionMove}
-                        style={{ 
+                        style={{
                             cursor: isGlobalLoading ? 'not-allowed' : 'crosshair',
                             touchAction: 'none',
                             borderRadius: token.borderRadiusLG,

@@ -151,7 +151,6 @@ const UniversalBackupCodeVerifier = ({
                         <Input
                             ref={inputRef1}
                             size="large"
-                            placeholder="pemag"
                             maxLength={5}
                             value={part1}
                             disabled={verifyLoading}
@@ -187,7 +186,6 @@ const UniversalBackupCodeVerifier = ({
                         <Input
                             ref={inputRef2}
                             size="large"
-                            placeholder="rgkqe"
                             maxLength={5}
                             value={part2}
                             disabled={verifyLoading}

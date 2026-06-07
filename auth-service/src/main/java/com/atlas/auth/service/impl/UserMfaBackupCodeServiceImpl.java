@@ -1,8 +1,8 @@
 package com.atlas.auth.service.impl;
 
-import com.atlas.auth.domain.entity.UserTotpBackupCode;
-import com.atlas.auth.mapper.UserTotpBackupCodeMapper;
-import com.atlas.auth.service.UserTotpBackupCodeService;
+import com.atlas.auth.domain.entity.UserMfaBackupCode;
+import com.atlas.auth.mapper.UserMfaBackupCodeMapper;
+import com.atlas.auth.service.UserMfaBackupCodeService;
 import com.atlas.common.core.idwork.IdGen;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -19,7 +19,7 @@ import java.util.List;
 
 
 /**
- * (UserTotpBackupCode)表服务实现类
+ * (UserMfaBackupCode)表服务实现类
  *
  * @author ys
  * @since 2026-05-28 14:22:20
@@ -27,9 +27,9 @@ import java.util.List;
 @Service("userTotpBackupCodeService")
 @RequiredArgsConstructor
 @Slf4j
-public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCodeMapper, UserTotpBackupCode> implements UserTotpBackupCodeService {
+public class UserMfaBackupCodeServiceImpl extends ServiceImpl<UserMfaBackupCodeMapper, UserMfaBackupCode> implements UserMfaBackupCodeService {
 
-    private final UserTotpBackupCodeMapper userTotpBackupCodeMapper;
+    private final UserMfaBackupCodeMapper userMfaBackupCodeMapper;
 
 
     private final PasswordEncoder passwordEncoder;
@@ -54,12 +54,12 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         }
 
         // 物理删除该用户之前残留的所有老旧备份码
-        this.remove(Wrappers.<UserTotpBackupCode>lambdaQuery().eq(UserTotpBackupCode::getUserId, userId));
+        this.remove(Wrappers.<UserMfaBackupCode>lambdaQuery().eq(UserMfaBackupCode::getUserId, userId));
 
         // 批量哈希落库
-        List<UserTotpBackupCode> entityList = new ArrayList<>(CODE_COUNT);
+        List<UserMfaBackupCode> entityList = new ArrayList<>(CODE_COUNT);
         for (String plain : plainCodes) {
-            UserTotpBackupCode entity = new UserTotpBackupCode();
+            UserMfaBackupCode entity = new UserMfaBackupCode();
             entity.setId(IdGen.genId());
             entity.setUserId(userId);
             entity.setBackupCode(passwordEncoder.encode(plain));
@@ -93,12 +93,12 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         String cleanInput = inputCode.trim().toLowerCase();
 
         // 查询该用户数据库中现存的所有哈希备份码
-        List<UserTotpBackupCode> dbCodes = this.list(
-                Wrappers.<UserTotpBackupCode>lambdaQuery().eq(UserTotpBackupCode::getUserId, userId)
+        List<UserMfaBackupCode> dbCodes = this.list(
+                Wrappers.<UserMfaBackupCode>lambdaQuery().eq(UserMfaBackupCode::getUserId, userId)
         );
 
         // 遍历进行 BCrypt 匹配
-        for (UserTotpBackupCode dbRecord : dbCodes) {
+        for (UserMfaBackupCode dbRecord : dbCodes) {
             if (passwordEncoder.matches(cleanInput, dbRecord.getBackupCode())) {
                 // 匹配成功：执行极简设计，用完即删（物理删除）
                 this.removeById(dbRecord.getId());
@@ -116,10 +116,23 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         if (userId == null) {
             return 0;
         }
-        long count = this.count(Wrappers.<UserTotpBackupCode>lambdaQuery()
-                .eq(UserTotpBackupCode::getUserId, userId));
+        long count = this.count(Wrappers.<UserMfaBackupCode>lambdaQuery()
+                .eq(UserMfaBackupCode::getUserId, userId));
 
         return (int) count;
+    }
+
+    @Override
+    public boolean hasActiveCodes(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        // 数据库查到一条就立即返回，避免全表或全索引扫描计数
+        List<UserMfaBackupCode> list = this.lambdaQuery()
+                .select(UserMfaBackupCode::getId)
+                .eq(UserMfaBackupCode::getUserId, userId)
+                .list();
+        return list != null && !list.isEmpty();
     }
 
     @Override
@@ -127,8 +140,8 @@ public class UserTotpBackupCodeServiceImpl extends ServiceImpl<UserTotpBackupCod
         if (userId == null) {
             return false;
         }
-        return this.remove(new LambdaQueryWrapper<UserTotpBackupCode>()
-                .eq(UserTotpBackupCode::getUserId, userId)
+        return this.remove(new LambdaQueryWrapper<UserMfaBackupCode>()
+                .eq(UserMfaBackupCode::getUserId, userId)
         );
     }
 

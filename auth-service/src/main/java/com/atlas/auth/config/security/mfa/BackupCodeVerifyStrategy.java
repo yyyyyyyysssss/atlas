@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.mfa;
 
-import com.atlas.auth.service.UserTotpBackupCodeService;
+import com.atlas.auth.service.UserMfaBackupCodeService;
 import com.atlas.security.model.MfaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
@@ -13,16 +13,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class BackupCodeVerifyStrategy implements MfaVerifyStrategy{
 
-    private final UserTotpBackupCodeService userTotpBackupCodeService;
+    private final UserMfaBackupCodeService userMfaBackupCodeService;
 
-    public BackupCodeVerifyStrategy(UserTotpBackupCodeService userTotpBackupCodeService) {
-        this.userTotpBackupCodeService = userTotpBackupCodeService;
+    public BackupCodeVerifyStrategy(UserMfaBackupCodeService userMfaBackupCodeService) {
+        this.userMfaBackupCodeService = userMfaBackupCodeService;
     }
 
     @Override
     public void verify(MfaTicketContext mfaTicketContext, String code) {
         Long userId = mfaTicketContext.getUserId();
-        boolean valid = userTotpBackupCodeService.verifyAndConsume(userId, code);
+        boolean valid = userMfaBackupCodeService.verifyAndConsume(userId, code);
         if (!valid) {
             throw new BadCredentialsException("备份码无效或已被使用");
         }

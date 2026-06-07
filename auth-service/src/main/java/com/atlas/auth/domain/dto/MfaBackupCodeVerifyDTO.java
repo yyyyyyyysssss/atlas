@@ -3,7 +3,7 @@ package com.atlas.auth.domain.dto;
 import com.atlas.auth.enums.SecurityScene;
 import jakarta.validation.constraints.NotNull;
 
-public record TotpBackupCodeVerifyDTO(
+public record MfaBackupCodeVerifyDTO(
 
         @NotNull(message = "验证码不能为空")
         String code,

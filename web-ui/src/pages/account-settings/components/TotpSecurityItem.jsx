@@ -3,7 +3,7 @@ import { Button, Typography, Flex, App, Alert, theme, Modal, QRCode, Input, Spac
 import { MobileOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { activateTotp, initTotp, unbindTotp } from '../../../services/AccountService';
-import { BackupCodesDisplayModal } from './TotpBackupCodeSecurityItem';
+import { BackupCodesDisplayModal } from './BackupCodeSecurityItem';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
 
 const { Text, Paragraph, Title } = Typography;

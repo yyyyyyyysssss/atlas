@@ -38,6 +38,10 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private boolean mfaEnabled;
 
+    private MfaType preferredMfaType;
+
+    private Set<MfaType> activeMfaStrategies;
+
     private List<? extends GrantedAuthority> authorities;
 
     private boolean accountNonExpired;

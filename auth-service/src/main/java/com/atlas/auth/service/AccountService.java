@@ -61,7 +61,7 @@ public class AccountService {
 
     private final UserTotpCredentialsService userTotpCredentialsService;
 
-    private final UserTotpBackupCodeService userTotpBackupCodeService;
+    private final UserMfaBackupCodeService userMfaBackupCodeService;
 
     private final UserGestureCredentialsService userGestureCredentialsService;
 
@@ -108,7 +108,7 @@ public class AccountService {
         // totp
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getByUserId(userId);
         // 剩余备份码数量
-        int remainingBackupCodeCount = userTotpBackupCodeService.countRemainingCodes(userId);
+        int remainingBackupCodeCount = userMfaBackupCodeService.countRemainingCodes(userId);
 
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
@@ -334,7 +334,7 @@ public class AccountService {
         }
         userTotpCredentialsService.updateStatus(userId, UserTotpStatus.ACTIVATED);
         // 生成备份码
-        List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);
+        List<String> backupCodes = userMfaBackupCodeService.refreshBackupCodes(userId);
         log.info("用户 {} 的 TOTP 2FA 已成功激活并投入使用，备份码已同步同步下发", userId);
         return new TotpActivateVO(backupCodes);
     }
@@ -350,23 +350,14 @@ public class AccountService {
         }
         userTotpCredentialsService.removeByUserId(userId);
         // 移除备份码
-        userTotpBackupCodeService.removeByUserId(userId);
+        userMfaBackupCodeService.removeByUserId(userId);
         log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
     }
 
-    public TotpBackupCodeVerifyVO verifyTotpBackupCode(Long userId,TotpBackupCodeVerifyDTO totpBackupCodeVerifyDTO){
-        boolean verified = userTotpBackupCodeService.verifyAndConsume(userId, totpBackupCodeVerifyDTO.code());
-        String ticket = null;
-        if (verified) {
-            ticket = generateTicket(userId, totpBackupCodeVerifyDTO.securityScene());
-        }
-        return new TotpBackupCodeVerifyVO(verified, ticket);
-    }
-
-    public TotpRefreshBackupCodeVO refreshTotpBackupCode(Long userId, TotpRefreshBackupCodeDTO totpRefreshBackupCodeDTO){
-        validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE,totpRefreshBackupCodeDTO.ticket());
-        List<String> backupCodes = userTotpBackupCodeService.refreshBackupCodes(userId);
-        return new TotpRefreshBackupCodeVO(backupCodes);
+    public MfaRefreshBackupCodeVO refreshTotpBackupCode(Long userId, MfaRefreshBackupCodeDTO mfaRefreshBackupCodeDTO){
+        validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE, mfaRefreshBackupCodeDTO.ticket());
+        List<String> backupCodes = userMfaBackupCodeService.refreshBackupCodes(userId);
+        return new MfaRefreshBackupCodeVO(backupCodes);
     }
 
     public void bindGesture(Long userId,GestureBindDTO gestureBindDTO){

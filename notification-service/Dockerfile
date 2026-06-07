@@ -19,4 +19,4 @@ ENV JAVA_OPTS="-Xms768m -Xmx768m -XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=prod -jar app.jar"]

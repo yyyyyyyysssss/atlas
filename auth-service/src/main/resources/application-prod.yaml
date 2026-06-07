@@ -16,3 +16,7 @@ spring:
           max-idle: 20
           max-active: 100
           max-wait: 5000
+
+
+http:
+    proxy: 'http://192.168.31.121:1081'

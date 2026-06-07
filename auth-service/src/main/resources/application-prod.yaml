@@ -19,4 +19,5 @@ spring:
 
 
 http:
+  config:
     proxy: 'http://192.168.31.121:1081'

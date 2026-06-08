@@ -23,4 +23,6 @@ public interface CommonConstant {
 
     String DATA_MASKING = "x-data-masking";
 
+    String TOKEN_ID = "x-token-id";
+
 }

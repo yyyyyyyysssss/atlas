@@ -45,6 +45,7 @@ public class GatewayHeaderHeaderPropagationFilter extends OncePerRequestFilter {
 
     private void fillHeadersFromSecurityUser(HeaderEnhanceRequestWrapper wrappedRequest, SecurityUser securityUser) {
         wrappedRequest.addHeader(CommonConstant.USER_ID,securityUser.getId().toString());
+        wrappedRequest.addHeader(CommonConstant.TOKEN_ID,securityUser.getTokenId());
         if(securityUser.getOrgId() != null){
             wrappedRequest.addHeader(CommonConstant.ORG_ID,securityUser.getOrgId().toString());
         }

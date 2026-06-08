@@ -36,7 +36,7 @@ const SecurityTab = () => {
         boundPhone,
         phoneVerified,
         providers,
-        mfaEnabled,
+        totpEnabled,
         recoveryCodeGenerated
     } = data || {}
 
@@ -69,10 +69,10 @@ const SecurityTab = () => {
                     refresh={refresh}
                 />
 
-                <GestureItem
+                {/* <GestureItem
                     context={data}
                     refresh={refresh}
-                />
+                /> */}
 
 
 
@@ -89,14 +89,21 @@ const SecurityTab = () => {
 
 
 
-                <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>两步验证 (2FA)</Title>
+                <Title level={4} style={{ marginBottom: 8, marginTop: 48, color: token.colorTextHeading }}>多重身份验证 (MFA)</Title>
                 <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                    为您的账号增加一层额外的安全保护。
+                    为您的账号增加一层额外的安全保护。首选身份验证器；若未绑定，将启用手势密码作为次选的二次校验手段。
                 </Paragraph>
+
                 <TotpSecurityItem
                     context={data}
                     refresh={refresh}
                 />
+
+                <GestureItem
+                    context={data}
+                    refresh={refresh}
+                />
+
                 <BackupCodeSecurityItem
                     context={data}
                     refresh={refresh}

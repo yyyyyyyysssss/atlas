@@ -2,8 +2,6 @@ package com.atlas.auth.config.security.oauth2;
 
 
 import com.atlas.common.core.utils.RsaUtils;
-import com.atlas.security.filter.TokenAuthenticationFilter;
-import com.atlas.security.oauth2.JwtGrantedScopeAuthoritiesConverter;
 import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +13,6 @@ import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -46,10 +43,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
 import org.springframework.util.DigestUtils;
 
 import java.security.interfaces.RSAPrivateKey;
@@ -74,9 +69,6 @@ public class OAuth2AuthorizationServerConfig {
 
     @Resource
     private OAuth2BearerTokenResolver oAuth2BearerTokenResolver;
-
-    @Resource
-    private TokenAuthenticationFilter tokenAuthenticationFilter;
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
@@ -124,7 +116,6 @@ public class OAuth2AuthorizationServerConfig {
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
-                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
                 // oauth2资源服务器
                 .oauth2ResourceServer((resourceServer) -> {
                     resourceServer.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter));

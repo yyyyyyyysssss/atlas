@@ -79,7 +79,7 @@ const GestureItem = ({ context, refresh }) => {
                     <Flex vertical gap={4}>
                         <Text strong style={{ fontSize: 16 }}>手势密码</Text>
                         <Text type="secondary" style={{ fontSize: 14 }}>
-                            {gestureEnabled ? '已开启。可通过移动端手势轨迹快速完成二次身份验证。' : '未开启。建议开启以提升移动端快捷操作的安全性。'}
+                            {gestureEnabled ? '已开启。可通过绘制手势轨迹快速完成二次身份验证。' : '未开启。开启后可通过手势轨迹进行多因素安全校验。'}
                         </Text>
                     </Flex>
                 </Flex>

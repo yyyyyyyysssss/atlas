@@ -51,10 +51,10 @@ public class GatewaySecurityConfig {
     private SecurityProperties securityProperties;
 
     @Resource
-    private TokenAuthenticationFilter tokenAuthenticationFilter;
+    private TokenService tokenService;
 
     @Resource
-    private TokenService tokenService;
+    private NormalBearerTokenResolver normalBearerTokenResolver;
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
@@ -111,7 +111,7 @@ public class GatewaySecurityConfig {
                     authorize.anyRequest().access(requestPathAuthorizationManager());
                 })
                 // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
-                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
+                .addFilterBefore(tokenAuthenticationFilter(), SecurityContextHolderFilter.class)
                 // 用于文件访问的过滤器
                 .addFilterBefore(fileCookieAuthenticationFilter(), SecurityContextHolderFilter.class)
                 // 基于请求头apikey认证的过滤器
@@ -138,6 +138,12 @@ public class GatewaySecurityConfig {
                 .authenticationProvider(apikeyAuthenticationProvider())
                 .parentAuthenticationManager(null)
                 .build();
+    }
+
+    @Bean
+    public TokenAuthenticationFilter tokenAuthenticationFilter(){
+
+        return new TokenAuthenticationFilter(tokenService, normalBearerTokenResolver);
     }
 
     @Bean

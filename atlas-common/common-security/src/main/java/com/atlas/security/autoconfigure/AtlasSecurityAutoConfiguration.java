@@ -5,7 +5,6 @@ import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.exception.SecurityExceptionAdvice;
-import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.jackson.AuthorityUrlMixin;
 import com.atlas.security.jackson.OneTimeTokenAuthenticationTokenMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
@@ -31,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -86,22 +84,6 @@ public class AtlasSecurityAutoConfiguration {
             @Autowired(required = false) UserDetailsService userService) {
 
         return new DefaultTokenService(jwtUtils, redisHelper, securityProperties, securityContextRepository, userService);
-    }
-
-    @Bean
-    @ConditionalOnProperty(
-            prefix = "security.token-filter",
-            name = "enabled",
-            havingValue = "true",
-            matchIfMissing = true
-    )
-    @ConditionalOnMissingBean
-    public TokenAuthenticationFilter tokenAuthenticationFilter(
-            TokenService tokenService,
-            NormalBearerTokenResolver normalBearerTokenResolver,
-            SecurityProperties securityProperties){
-
-        return new TokenAuthenticationFilter(tokenService, normalBearerTokenResolver,securityProperties);
     }
 
     @Bean

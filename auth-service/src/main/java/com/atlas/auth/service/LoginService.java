@@ -153,6 +153,7 @@ public class LoginService {
         // 发证
         TokenInfo token = tokenService.createToken(securityUser, clientType, true);
         String tokenId = token.id();
+        securityUser.setTokenId(tokenId);
 
         // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();

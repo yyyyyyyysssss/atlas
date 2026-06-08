@@ -3,7 +3,6 @@ package com.atlas.security.filter;
 
 import com.atlas.security.enums.TokenType;
 import com.atlas.security.model.PayloadInfo;
-import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.RedisSecurityContextRepository;
 import com.atlas.security.resolver.NormalBearerTokenResolver;
 import com.atlas.security.service.TokenService;
@@ -15,11 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * @Description OncePerRequestFilter 一次请求中只会执行一次的过滤器
@@ -29,18 +26,13 @@ import java.util.Objects;
 @Slf4j
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
     private final NormalBearerTokenResolver normalBearerTokenResolver;
 
     private final TokenService tokenService;
 
-    private final SecurityProperties securityProperties;
-
-    public TokenAuthenticationFilter(TokenService tokenService, NormalBearerTokenResolver normalBearerTokenResolver, SecurityProperties securityProperties) {
+    public TokenAuthenticationFilter(TokenService tokenService, NormalBearerTokenResolver normalBearerTokenResolver) {
         this.tokenService = tokenService;
         this.normalBearerTokenResolver = normalBearerTokenResolver;
-        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -72,18 +64,4 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         }
 
     }
-
-    // 忽略已配置放行的url
-//    @Override
-//    protected boolean shouldNotFilter(HttpServletRequest request) {
-//        if (securityProperties == null || securityProperties.getAuthorize() == null || securityProperties.getAuthorize().getPermit() == null) {
-//            return false;
-//        }
-//        String requestUri = request.getRequestURI();
-//        return securityProperties.getAuthorize()
-//                .getPermit()
-//                .stream()
-//                .filter(Objects::nonNull)
-//                .anyMatch(pattern -> pathMatcher.match(pattern, requestUri));
-//    }
 }

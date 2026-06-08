@@ -59,6 +59,9 @@ const LoginMfa = () => {
     };
 
     const mfaStrategies = useMemo(() => {
+
+        const hasBackupCode = activeMfaStrategies.includes('BACKUP_CODE')
+
         const allPool = {
             TOTP: {
                 icon: <ShieldAlert size={26} strokeWidth={2} />,
@@ -72,7 +75,7 @@ const LoginMfa = () => {
                     />
                 ),
                 // 该策略下的辅助切换按钮
-                actionButton: (
+                actionButton: hasBackupCode && (
                     <Button
                         type="link"
                         size="small"
@@ -120,7 +123,7 @@ const LoginMfa = () => {
                         onSuccess={loginSuccess}
                     />
                 ),
-                actionButton: (
+                actionButton: hasBackupCode && (
                     <Button
                         type="link"
                         size="small"

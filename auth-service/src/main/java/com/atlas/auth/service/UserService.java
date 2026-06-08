@@ -77,7 +77,6 @@ public class UserService implements UserDetailsService {
         securityUser.setMfaEnabled(mfaEnabled);
         if (mfaEnabled) {
             Set<MfaType> strategies = new HashSet<>();
-            strategies.add(MfaType.BACKUP_CODE);
             if (hasTotp){
                 strategies.add(MfaType.TOTP);
             }

@@ -9,7 +9,6 @@ import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.security.filter.TokenAuthenticationFilter;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
 import com.atlas.security.properties.SecurityProperties;
@@ -41,7 +40,6 @@ import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
 
@@ -82,9 +80,6 @@ public class SecurityConfig {
 
     @Resource
     private OneTimeTokenGenerationSuccessService oneTimeTokenGenerationSuccessService;
-
-    @Resource
-    private TokenAuthenticationFilter tokenAuthenticationFilter;
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
@@ -131,7 +126,6 @@ public class SecurityConfig {
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
-                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
                 //记住我过滤器
                 .addFilterBefore(rememberMeFilter(authenticationManager(http), rememberMeServices()), UsernamePasswordAuthenticationFilter.class)
                 .logout(logout ->

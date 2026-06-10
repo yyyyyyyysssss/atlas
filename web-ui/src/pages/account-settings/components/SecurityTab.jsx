@@ -18,6 +18,7 @@ import UserProviderItem from './UserProviderItem';
 import TotpSecurityItem from './TotpSecurityItem';
 import BackupCodeSecurityItem from './BackupCodeSecurityItem';
 import GestureItem from './GestureItem';
+import WalletItem from './WalletItem';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -69,10 +70,11 @@ const SecurityTab = () => {
                     refresh={refresh}
                 />
 
-                {/* <GestureItem
+                {/* 加密钱包 */}
+                <WalletItem
                     context={data}
                     refresh={refresh}
-                /> */}
+                />
 
 
 

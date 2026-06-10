@@ -174,4 +174,17 @@ public class AccountController {
         return ResultGenerator.ok(gestureVerifyVO);
     }
 
+
+    @PostMapping("/web3/wallet")
+    public Result<Void> bindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletBindDTO web3WalletBindDTO){
+        accountService.bindWeb3Wallet(securityUser.getId(), web3WalletBindDTO);
+        return ResultGenerator.ok();
+    }
+
+    @DeleteMapping("/web3/wallet")
+    public Result<Void> unbindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletUnbindDTO web3WalletUnbindDTO){
+        accountService.unbindWeb3Wallet(securityUser.getId(), web3WalletUnbindDTO);
+        return ResultGenerator.ok();
+    }
+
 }

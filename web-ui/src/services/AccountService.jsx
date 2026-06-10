@@ -94,7 +94,7 @@ export const activateTotp = async (req) => {
 
 export const unbindTotp = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/totp',  { data: req }))
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/totp', { data: req }))
 }
 
 export const verifyTotp = async (req) => {
@@ -110,15 +110,37 @@ export const refreshBackupCode = async (req) => {
 
 export const bindGesture = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/gesture',  req))
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/gesture', req))
 }
 
 export const unbindGesture = async (req) => {
 
-    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/gesture',  { data: req }))
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/gesture', { data: req }))
 }
 
 export const verifyGesture = async (req) => {
 
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/gesture/verify', req))
+}
+
+
+export const web3RegisterOptions = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/web3/wallet/register/options', req))
+}
+
+export const web3Bind = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/web3/wallet', req))
+}
+
+export const web3Unbind = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/web3/wallet', { data: req }))
+}
+
+
+export const verifyWeb3Wallet = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/web3/wallet/verify', req))
 }

@@ -164,7 +164,7 @@ public class AtlasRedisAutoConfiguration {
     }
 
     @Bean
-    public RedisHelper redisHelper(RedisTemplate<String, Object> redisTemplate, ObjectMapper redisObjectMapper) {
+    public RedisHelper redisHelper(RedisTemplate<String, Object> redisTemplate, @Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper) {
         return new RedisHelper(redisTemplate,redisObjectMapper);
     }
 

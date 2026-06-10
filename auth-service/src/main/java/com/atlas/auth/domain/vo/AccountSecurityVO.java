@@ -73,4 +73,17 @@ public class AccountSecurityVO {
     // 是否开启手势凭证
     private Boolean gestureEnabled;
 
+
+    // ================== Web3 加密凭证 ==================
+
+    /**
+     * 是否已启用/绑定 Web3 加密钱包
+     */
+    private Boolean web3Enabled;
+
+    /**
+     * 已绑定的 Web3 钱包凭证列表
+     */
+    private List<UserWeb3WalletVO> web3Wallets;
+
 }

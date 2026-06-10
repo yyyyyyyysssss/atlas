@@ -24,6 +24,9 @@ public enum SecurityScene {
 
     BIND_GESTURE("bind_gesture", "绑定手势密码"),
     UNBIND_GESTURE("unbind_gesture", "解绑手势密码"),
+
+    BIND_WEB3_WALLET("bind_web3_wallet", "绑定Web3钱包"),
+    UNBIND_WEB3_WALLET("unbind_web3_wallet", "解绑Web3钱包"),
     ;
 
     private final String code;

@@ -10,6 +10,7 @@ import Loading from '../components/loading';
 import Cookies from 'js-cookie'
 import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
 import { useDispatch } from 'react-redux';
+import { useDisconnect } from 'wagmi';
 
 const AuthContext = createContext({
     isLoginIn: null,
@@ -26,6 +27,8 @@ export const AuthProvider = ({ children }) => {
     const [accessToken, setAccessToken] = useState(null)
 
     const dispatch = useDispatch()
+
+    const { disconnect } = useDisconnect();
 
     useEffect(() => {
         setGlobalSignout(signout)
@@ -66,6 +69,13 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signout = async () => {
+        // 强行断开 Web3 钱包连接（防止业务退出后，钱包还挂着）
+        try {
+            disconnect()
+        } catch (error) {
+            console.error("Wagmi 断开钱包失败:", error);
+        }
+
         // 清理持久化存储
         clearToken()
         // 清理内存状态 (Redux)

@@ -7,11 +7,12 @@ import UniversalPasswordVerifier from './UniversalPasswordVerifier';
 import UniversalCaptchaVerifier from './UniversalCaptchaVerifier';
 import { sendCaptcha } from '../../../../services/LoginService';
 import { useRequest } from 'ahooks';
-import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyWebauthn } from '../../../../services/AccountService';
+import { verifyCaptcha, verifyGesture, verifyPassword, verifyTotp, verifyWeb3Wallet, verifyWebauthn } from '../../../../services/AccountService';
 import UniversalPasskeyVerifier from './UniversalPasskeyVerifier';
-import { Fingerprint, Grid3x3, Grip } from 'lucide-react';
+import { Fingerprint, Grid3x3, Grip, Wallet } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';
 import UniversalGestureVerifier from './UniversalGestureVerifier';
+import UniversalWeb3WalletVerifier from './UniversalWeb3WalletVerifier';
 
 
 const VerifyDropdown = ({
@@ -51,10 +52,29 @@ const VerifyDropdown = ({
 
     const { runAsync: verifyGestureAsync, loading: verifyGestureLoading, cancel: cancelVerifyGesture } = useRequest(verifyGesture, {
         manual: true
+    })
+
+    const { runAsync: verifyWeb3WalletAsync, loading: verifyWeb3WalletLoading, cancel: cancelVerifyWeb3Wallet } = useRequest(verifyWeb3Wallet, {
+        manual: true
     });
 
     // 构建下拉菜单的项
     const availableMethods = []
+
+    availableMethods.push({
+        key: 'web3-wallet',
+        label: 'Web3钱包',
+        icon: <Wallet style={{ width: 14, height: 14 }} />,
+        render: () => (
+            <UniversalWeb3WalletVerifier
+                verifierRef={verifierRef}
+                // 触发挥手硬件后，回调后端的验证接口
+                onVerifyAction={(signature, web3Id) => verifyWeb3WalletAsync({signature: signature, web3Id: web3Id, securityScene: scene})}
+                onSuccess={onSuccess}
+            />
+        )
+    });
+
 
     // 通行密钥验证选项
     if (hasPasskey) {
@@ -157,10 +177,11 @@ const VerifyDropdown = ({
             cancelVerifyWebauthn()
             cancelVerifyTotp()
             cancelVerifyGesture()
+            cancelVerifyWeb3Wallet()
         }
     }, [verifyMethod])
 
-    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading || verifyTotpLoading || verifyGestureLoading;
+    const isComponentLoading = verifyCaptchaLoading || verifyPasswordLoading || verifyWebauthnLoading || verifyTotpLoading || verifyGestureLoading || verifyWeb3WalletLoading;
 
     // 🎯 实时将加载状态吐给父组件
     useEffect(() => {

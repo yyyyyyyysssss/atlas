@@ -1,10 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.*;
-import com.atlas.auth.domain.entity.UserGestureCredentials;
-import com.atlas.auth.domain.entity.UserIdentifier;
-import com.atlas.auth.domain.entity.UserTotpCredentials;
-import com.atlas.auth.domain.entity.UserWebauthnCredentials;
+import com.atlas.auth.domain.entity.*;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.*;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
@@ -25,10 +22,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -64,6 +58,10 @@ public class AccountService {
     private final UserMfaBackupCodeService userMfaBackupCodeService;
 
     private final UserGestureCredentialsService userGestureCredentialsService;
+
+    private final UserWeb3CredentialsService userWeb3CredentialsService;
+
+    private final Web3WalletService web3WalletService;
 
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
@@ -110,6 +108,22 @@ public class AccountService {
         // 剩余备份码数量
         int remainingBackupCodeCount = userMfaBackupCodeService.countRemainingCodes(userId);
 
+        // web3.0凭证
+        List<UserWeb3WalletVO> web3Wallets = Collections.emptyList();
+        List<UserWeb3Credentials> userWeb3Credentials = userWeb3CredentialsService.listByUserId(userId);
+        if (!CollectionUtils.isEmpty(userWeb3Credentials)) {
+            web3Wallets = userWeb3Credentials.stream()
+                    .map(crypto -> UserWeb3WalletVO.builder()
+                            .id(crypto.getId())
+                            .userId(crypto.getUserId())
+                            .address(crypto.getAddress())
+                            .walletType(crypto.getWalletType())
+                            .source(crypto.getSource())
+                            .label(crypto.getLabel())
+                            .createTime(crypto.getCreateTime())
+                            .build())
+                    .toList();
+        }
         return AccountSecurityVO.builder()
                 // 密码和密钥（暂不处理）
                 .passwordSet(passwordSet)
@@ -120,6 +134,10 @@ public class AccountService {
 
                 // 手势凭证
                 .gestureEnabled(userGestureCredentials != null)
+
+                // web3凭证
+                .web3Enabled(!web3Wallets.isEmpty())
+                .web3Wallets(web3Wallets)
 
                 // 来自 user_identifier 表 的基础通信资产
                 .username(usernameIdent != null ? usernameIdent.getIdentifierValue() : null)
@@ -380,6 +398,60 @@ public class AccountService {
             ticket = generateTicket(userId, gestureVerifyDTO.securityScene());
         }
         return new GestureVerifyVO(verified,ticket);
+    }
+
+    public void bindWeb3Wallet(Long userId, Web3WalletBindDTO web3WalletBindDTO){
+        String ticket = web3WalletBindDTO.ticket();
+        // 安全风控凭证核验
+        validTicket(userId,SecurityScene.BIND_WEB3_WALLET, ticket);
+        // 签名核验
+        Web3WalletVerifySignatureResponse res = web3WalletService.verifySignature(new Web3WalletVerifySignatureDTO(web3WalletBindDTO.web3Id(), web3WalletBindDTO.signature()));
+        // 验证通过的标准化钱包地址
+        String address = res.address();
+        Web3WalletType walletType = res.walletType();
+        String label = res.label();
+        String source = res.source();
+        // 查询这个钱包地址在系统里有没有被别人占坑
+        Optional<UserWeb3Credentials> existingCredentialOpt = userWeb3CredentialsService.getByAddress(address);
+        if (existingCredentialOpt.isPresent()) {
+            UserWeb3Credentials existingCredential = existingCredentialOpt.get();
+            // 这个钱包已经被当前登录的用户自己绑定过了
+            if (existingCredential.getUserId().equals(userId)) {
+                log.info("【Web3 钱包绑定】用户 {} 重复绑定同一钱包 {}, 触发幂等直接返回成功", userId, address);
+                return; // 幂等处理，直接返回成功，不重复落库
+            }
+            // 这个钱包已经被系统的【其他用户】给强占了
+            throw new BusinessException("该加密钱包已被其他账号绑定，请先在原账号执行解绑");
+        }
+        boolean success = userWeb3CredentialsService.saveCredential(userId,address, walletType,label, source);
+        if (!success) {
+            throw new BusinessException("钱包绑定失败，数据写入异常");
+        }
+        log.info("【Web3 钱包核验成功】当前登录用户 userId: {}, 事务 web3Id: {}, " +
+                        "反解出安全的钱包地址 address: {}, 钱包协议 walletType: {}, 请求来源 source: {}",
+                userId, web3WalletBindDTO.web3Id(), address, walletType, source);
+    }
+
+    public void unbindWeb3Wallet(Long userId, Web3WalletUnbindDTO web3WalletUnbindDTO){
+        Long credentialId = web3WalletUnbindDTO.credentialId();
+        String ticket = web3WalletUnbindDTO.ticket();
+        // 安全风控凭证核验
+        validTicket(userId,SecurityScene.UNBIND_WEB3_WALLET, ticket);
+        UserWeb3Credentials credential = userWeb3CredentialsService.getById(credentialId);
+        if (credential == null) {
+            throw new BusinessException("未找到该钱包绑定记录");
+        }
+        if (!credential.getUserId().equals(userId)) {
+            log.warn("【Web3 钱包解绑越权警告】用户 {} 尝试解绑不属于自己的凭证 ID: {}, 凭证实际所属用户: {}",
+                    userId, credentialId, credential.getUserId());
+            throw new BusinessException("操作非法，您无权解绑该钱包凭证");
+        }
+        boolean success = userWeb3CredentialsService.removeCredential(userId, credential.getAddress());
+        if (!success) {
+            throw new BusinessException("钱包解绑失败，数据写入异常");
+        }
+        log.info("【Web3 钱包解绑成功】用户 userId: {}, 成功解除钱包地址: {} [协议: {}, 标签: {}] 的绑定关系",
+                userId, credential.getAddress(), credential.getWalletType(), credential.getLabel());
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

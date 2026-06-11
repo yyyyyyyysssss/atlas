@@ -135,6 +135,7 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);
         objectMapper.addMixIn(CaptchaAuthenticationToken.class, CaptchaAuthenticationToken.CaptchaAuthenticationTokenMixin.class);
         objectMapper.addMixIn(WebauthnAuthenticationToken.class, WebauthnAuthenticationToken.WebAuthnAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(Web3WalletAuthenticationToken.class, Web3WalletAuthenticationToken.Web3WalletAuthenticationTokenMixin.class);
         objectMapper.addMixIn(MfaAuthenticationToken.class, MfaAuthenticationToken.MfaAuthenticationTokenMixin.class);
 
         // 屏蔽 WebAuthn 的类型信息

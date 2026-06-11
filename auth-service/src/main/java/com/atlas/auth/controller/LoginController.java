@@ -48,6 +48,12 @@ public class LoginController {
         return ResultGenerator.ok(tokenResponse);
     }
 
+    @PostMapping("/login/web3")
+    public Result<TokenResponse> loginWeb3(@RequestBody @Validated Web3LoginDTO web3LoginDTO) {
+        TokenResponse tokenResponse = loginService.loginWeb3(web3LoginDTO);
+        return ResultGenerator.ok(tokenResponse);
+    }
+
     @PostMapping("/login/mfa")
     public Result<TokenResponse> loginMfa(@RequestBody @Validated MfaLoginDTO mfaLoginDTO) {
         TokenResponse tokenResponse = loginService.loginMfa(mfaLoginDTO);

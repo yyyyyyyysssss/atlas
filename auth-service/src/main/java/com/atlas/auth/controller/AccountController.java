@@ -181,6 +181,12 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
+    @PostMapping("/web3/wallet/verify")
+    public Result<Web3WalletVerifyVO> verifyWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletVerifyDTO web3WalletVerifyDTO){
+        Web3WalletVerifyVO web3WalletVerifyVO = accountService.verifyWeb3Wallet(securityUser.getId(), web3WalletVerifyDTO);
+        return ResultGenerator.ok(web3WalletVerifyVO);
+    }
+
     @DeleteMapping("/web3/wallet")
     public Result<Void> unbindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletUnbindDTO web3WalletUnbindDTO){
         accountService.unbindWeb3Wallet(securityUser.getId(), web3WalletUnbindDTO);

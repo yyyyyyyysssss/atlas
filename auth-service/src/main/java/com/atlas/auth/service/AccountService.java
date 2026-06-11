@@ -432,6 +432,28 @@ public class AccountService {
                 userId, web3WalletBindDTO.web3Id(), address, walletType, source);
     }
 
+    public Web3WalletVerifyVO verifyWeb3Wallet(Long userId,Web3WalletVerifyDTO web3WalletVerifyDTO){
+        // 签名核验
+        boolean verified = false;
+        try {
+            Web3WalletVerifySignatureResponse res = web3WalletService.verifySignature(new Web3WalletVerifySignatureDTO(web3WalletVerifyDTO.web3Id(), web3WalletVerifyDTO.signature()));
+            Optional<UserWeb3Credentials> credentialsOpt = userWeb3CredentialsService.getByAddress(res.address());
+            if(credentialsOpt.isPresent()){
+                UserWeb3Credentials credentials = credentialsOpt.get();
+                if (credentials.getUserId().equals(userId)) {
+                    verified = true;
+                }
+            }
+        }catch (Exception e){
+            log.error("web3 wallet authenticate error", e);
+        }
+        String ticket = null;
+        if (verified) {
+            ticket = generateTicket(userId, web3WalletVerifyDTO.securityScene());
+        }
+        return new Web3WalletVerifyVO(verified,ticket);
+    }
+
     public void unbindWeb3Wallet(Long userId, Web3WalletUnbindDTO web3WalletUnbindDTO){
         Long credentialId = web3WalletUnbindDTO.credentialId();
         String ticket = web3WalletUnbindDTO.ticket();

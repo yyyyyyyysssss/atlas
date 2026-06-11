@@ -105,14 +105,13 @@ public class UserService implements UserDetailsService {
         if(userId != null){
             return userId;
         }
-        if(IdentifierType.USERNAME.equals(type)){
-            throw new IllegalArgumentException("不支持对【用户名】类型执行自动创建用户操作");
-        }
         // 创建用户
         userId = invokeCreateUser(CreateUserSpec.empty());
         // 创建用户标识
         List<IdentifierSpec> specs = new ArrayList<>();
-        specs.add(new IdentifierSpec(IdentifierType.USERNAME, null, null));
+        if(!type.equals(IdentifierType.USERNAME)){
+            specs.add(new IdentifierSpec(IdentifierType.USERNAME, null, null));
+        }
         specs.add(new IdentifierSpec(type, value, true));
         userIdentifierService.addIdentifier(userId, specs);
         return userId;

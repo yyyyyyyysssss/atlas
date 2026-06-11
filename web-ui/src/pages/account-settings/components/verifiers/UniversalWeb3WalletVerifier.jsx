@@ -5,11 +5,12 @@ import { Wallet, ShieldCheck, KeyRound, LogOut } from 'lucide-react';
 
 // 🌟 引入 Wagmi & RainbowKit 核心 Hooks 和核心组件
 import { useSignMessage, useDisconnect, useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit';
 
 // 🌟 引入后端接口与你的胶囊组件
 import { web3RegisterOptions } from '../../../../services/AccountService';
 import { WalletConnectionCapsule } from '../WalletItem';
+import Loading from '../../../../components/loading';
 
 const { Text } = Typography;
 
@@ -28,6 +29,9 @@ const UniversalWeb3WalletVerifier = ({
     // 🌟 Wagmi 核心控制
     const { signMessageAsync } = useSignMessage();
     const { disconnect } = useDisconnect()
+    const { openConnectModal } = useConnectModal();
+
+    const { address, isConnected, connector } = useAccount()
 
     // 异步获取后端签名挑战项配置
     const { runAsync: web3RegisterOptionsAsync, loading: optionsLoading } = useRequest(web3RegisterOptions, {
@@ -88,6 +92,17 @@ const UniversalWeb3WalletVerifier = ({
     if (verifierRef) {
         verifierRef.current = {
             getValue: () => 'WEB3_WALLET_MODE',
+            validate: async () => {
+
+                return true;
+            },
+            onVerify: async () => {
+                if (!isConnected) {
+                    openConnectModal()
+                    return
+                }
+                return await doWalletAuthenticate(address, connector)
+            },
             reset: () => { }
         };
     }
@@ -100,7 +115,7 @@ const UniversalWeb3WalletVerifier = ({
             </Text>
 
             <ConnectButton.Custom>
-                {({ account, chain, openConnectModal,openAccountModal, mounted, authenticationStatus }) => {
+                {({ account, chain, openConnectModal, openAccountModal, mounted, authenticationStatus }) => {
                     const ready = mounted && authenticationStatus !== 'loading';
                     const connected = !!(ready && account && chain);
 
@@ -120,7 +135,7 @@ const UniversalWeb3WalletVerifier = ({
                         if (verifyLoading) {
                             return '正在进行链下签名密码学核验，请稍候...';
                         }
-                        return '区块链身份已准备就绪，点击上方唤起私钥签名';
+                        return '钱包已就绪，请点击按钮唤起钱包进行签名认证';
                     };
 
                     const handleActionTrigger = async () => {
@@ -252,13 +267,15 @@ const UniversalWeb3WalletVerifier = ({
                                             animation: isGlobalLoading ? 'wallet-pulse 1.5s infinite' : 'none'
                                         }}
                                     >
-                                        <Wallet
-                                            style={{
-                                                width: 28,
-                                                height: 28,
-                                                color: token.colorPrimary // 🌟 显式采用高亮主题色
-                                            }}
-                                        />
+                                        <Loading spinning={isGlobalLoading}>
+                                            <Wallet
+                                                style={{
+                                                    width: 28,
+                                                    height: 28,
+                                                    color: token.colorPrimary
+                                                }}
+                                            />
+                                        </Loading>
                                     </div>
 
                                     {/* 居中核心信息：直接展示格式化后的地址 */}

@@ -1,8 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.Web3WalletVerifySignatureDTO;
-import com.atlas.auth.domain.dto.Web3WalletVerifySignatureResponse;
-import com.atlas.auth.domain.dto.Web3WalletRegisterOptionsDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.Web3WalletRegisterOptionsVO;
 import com.atlas.auth.enums.Web3WalletType;
 import com.atlas.common.core.exception.BusinessException;
@@ -11,6 +9,7 @@ import com.atlas.security.utils.TicketGenerator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;

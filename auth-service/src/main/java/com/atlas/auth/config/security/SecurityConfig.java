@@ -87,6 +87,12 @@ public class SecurityConfig {
     @Resource
     private CaptchaFactory captchaFactory;
 
+    @Resource
+    private Web3WalletService web3WalletService;
+
+    @Resource
+    private UserWeb3CredentialsService userWeb3CredentialsService;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -159,6 +165,8 @@ public class SecurityConfig {
                 .authenticationProvider(oneTimeTokenAuthenticationProvider())
                 //webauthn通行密钥认证
                 .authenticationProvider(webauthnAuthenticationProvider())
+                // web3认证
+                .authenticationProvider(web3WalletAuthenticationProvider())
                 // mfa双因子认证
                 .authenticationProvider(mfaAuthenticationProvider())
                 .parentAuthenticationManager(null)
@@ -221,9 +229,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public WebauthnAuthenticationProvider webauthnAuthenticationProvider(){
+    public WebauthnAuthenticationProvider webauthnAuthenticationProvider() {
 
-        return new WebauthnAuthenticationProvider(webauthnService,userService);
+        return new WebauthnAuthenticationProvider(webauthnService, userService);
+    }
+
+    // web3凭证
+    @Bean
+    public Web3WalletAuthenticationProvider web3WalletAuthenticationProvider() {
+
+        return new Web3WalletAuthenticationProvider(userService, web3WalletService, userWeb3CredentialsService);
     }
 
     //三方登录认证
@@ -240,7 +255,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public MfaAuthenticationProvider mfaAuthenticationProvider(){
+    public MfaAuthenticationProvider mfaAuthenticationProvider() {
 
         return new MfaAuthenticationProvider(
                 userService,

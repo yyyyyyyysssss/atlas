@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Typography, theme, Flex, App, Badge, Button } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Typography, theme, Flex, App, Badge, Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
 import { Wallet, ShieldCheck, KeyRound, LogOut } from 'lucide-react';
 
@@ -21,6 +21,7 @@ const UniversalWeb3WalletVerifier = ({
     verifierRef,
     onVerifyAction,
     onSuccess,
+    onConnected,
     label = "加密钱包签名认证"
 }) => {
     const { token } = theme.useToken();
@@ -33,6 +34,11 @@ const UniversalWeb3WalletVerifier = ({
 
     const { address, isConnected, connector } = useAccount()
 
+    const connectionTrackRef = useRef({
+        wasConnected: isConnected,
+        hasFired: false
+    })
+
     // 异步获取后端签名挑战项配置
     const { runAsync: web3RegisterOptionsAsync, loading: optionsLoading } = useRequest(web3RegisterOptions, {
         manual: true
@@ -41,7 +47,25 @@ const UniversalWeb3WalletVerifier = ({
     const [hardwareLoading, setHardwareLoading] = useState(false); // 唤起钱包等待签名状态
     const [verifyLoading, setVerifyLoading] = useState(false);   // 后端验签状态
 
-    const isGlobalLoading = optionsLoading || hardwareLoading || verifyLoading;
+    const isGlobalLoading = optionsLoading || hardwareLoading || verifyLoading
+
+    useEffect(() => {
+        // 只有当组件挂载时是未连接状态，随后变为已连接状态时，才视为“初次连接成功”
+        if (!connectionTrackRef.current.wasConnected && isConnected) {
+            if (onConnected && !connectionTrackRef.current.hasFired) {
+                connectionTrackRef.current.hasFired = true;
+                onConnected({ address, connector });
+            }
+        }
+
+        // 持续同步底层连接历史
+        connectionTrackRef.current.wasConnected = isConnected
+
+        // 如果中途断开连接，重置开关，允许下一次连接再次触发
+        if (!isConnected) {
+            connectionTrackRef.current.hasFired = false
+        }
+    }, [isConnected, address, connector, onConnected])
 
     /**
      * 核心身份鉴权确核逻辑
@@ -50,7 +74,7 @@ const UniversalWeb3WalletVerifier = ({
         if (isGlobalLoading) return;
 
         try {
-            const walletLabel = currentConnector?.name || 'Unknown';
+            const walletLabel = currentConnector?.name || null;
             const registerOptionsRes = await web3RegisterOptionsAsync({
                 address: currentAddress,
                 walletType: 'EOA',
@@ -74,7 +98,15 @@ const UniversalWeb3WalletVerifier = ({
             setHardwareLoading(false);
             setVerifyLoading(true);
 
-            const result = await onVerifyAction(signature, registerOptionsRes.web3Id);
+            const result = await onVerifyAction(signature, registerOptionsRes.web3Id)
+
+            if (!result) {
+                throw new Error('web3钱包验证失败，请重试');
+            }
+
+            if (result.verified === false) {
+                throw new Error('web3钱包验证验证失败，请重试')
+            }
             return result;
 
         } catch (error) {
@@ -232,26 +264,26 @@ const UniversalWeb3WalletVerifier = ({
                                     }}
                                     className="web3-wallet-trigger"
                                 >
-                                    <Button
-                                        type="text"
-                                        size="small"
-                                        disabled={isGlobalLoading}
-                                        icon={<LogOut size={12} />}
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // 阻止冒泡，避免触发卡片签名
-                                            openAccountModal?.(); // 唤起 RainbowKit 的切换账户/断开面板
-                                        }}
-                                        style={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            zIndex: 10,
-                                            fontSize: 12,
-                                            color: token.colorTextDescription
-                                        }}
-                                    >
-                                        切换账户
-                                    </Button>
+                                    <Tooltip title='切换用户'>
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            disabled={isGlobalLoading}
+                                            icon={<LogOut size={12} />}
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // 阻止冒泡，避免触发卡片签名
+                                                openAccountModal?.(); // 唤起 RainbowKit 的切换账户/断开面板
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                right: 8,
+                                                top: 8,
+                                                zIndex: 10,
+                                                fontSize: 12,
+                                                color: token.colorTextDescription
+                                            }}
+                                        />
+                                    </Tooltip>
 
                                     {/* 激活态的主题色大图标容器，加载时自带柔和脉冲呼吸感 */}
                                     <div

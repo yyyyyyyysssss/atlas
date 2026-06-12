@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
+import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierType;
@@ -118,41 +119,42 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public Long ensureUserByProvider(String provider, String sub, OAuth2UserInfo extraInfo){
+    public Long ensureUserByProvider(String provider, ThirdPartyUserIdentity userIdentity){
+        String sub = userIdentity.getSub();
         UserProviderDTO existingIdentity = userProviderService.getByProvider(provider, sub);
         if(existingIdentity != null){
             return existingIdentity.getUserId();
         }
         // 用三方带回的原生标识（邮箱/手机）去本地撞库，防止同人多号
-        Long matchedEmailUserId = StringUtils.hasText(extraInfo.getEmail()) ? userIdentifierService.findUserIdByValueAndType(extraInfo.getEmail(), IdentifierType.EMAIL) : null;
-        Long matchedPhoneUserId = StringUtils.hasText(extraInfo.getPhone()) ? userIdentifierService.findUserIdByValueAndType(extraInfo.getPhone(), IdentifierType.PHONE) : null;
+        Long matchedEmailUserId = StringUtils.hasText(userIdentity.getEmail()) ? userIdentifierService.findUserIdByValueAndType(userIdentity.getEmail(), IdentifierType.EMAIL) : null;
+        Long matchedPhoneUserId = StringUtils.hasText(userIdentity.getPhone()) ? userIdentifierService.findUserIdByValueAndType(userIdentity.getPhone(), IdentifierType.PHONE) : null;
         // 优先使用邮箱撞库命中的 ID，其次是手机
         Long userId = matchedEmailUserId != null ? matchedEmailUserId : matchedPhoneUserId;
         if (userId != null) {
             // 命中本地老账号！直接为老账号绑定该三方关系（静默绑定），不建新号
-            userProviderService.addUserProvider(userId, provider,sub,extraInfo.getExtraInfo());
+            userProviderService.addUserProvider(userId, provider,sub,userIdentity.getExtraInfo());
             List<IdentifierSpec> missingSpecs = new ArrayList<>();
-            if(StringUtils.hasText(extraInfo.getEmail()) && matchedEmailUserId == null){
-                missingSpecs.add(new IdentifierSpec(IdentifierType.EMAIL, extraInfo.getEmail(), extraInfo.getEmailVerified()));
+            if(StringUtils.hasText(userIdentity.getEmail()) && matchedEmailUserId == null){
+                missingSpecs.add(new IdentifierSpec(IdentifierType.EMAIL, userIdentity.getEmail(), userIdentity.getEmailVerified()));
             }
-            if(StringUtils.hasText(extraInfo.getPhone()) && matchedPhoneUserId == null){
-                missingSpecs.add(new IdentifierSpec(IdentifierType.PHONE, extraInfo.getPhone(), extraInfo.getPhoneVerified()));
+            if(StringUtils.hasText(userIdentity.getPhone()) && matchedPhoneUserId == null){
+                missingSpecs.add(new IdentifierSpec(IdentifierType.PHONE, userIdentity.getPhone(), userIdentity.getPhoneVerified()));
             }
             userIdentifierService.addIdentifier(userId, missingSpecs);
             return userId;
         }
         // 创建用户
-        userId = invokeCreateUser(new CreateUserSpec(extraInfo.getFullName(),extraInfo.getAvatar(),null));
+        userId = invokeCreateUser(new CreateUserSpec(userIdentity.getFullName(),userIdentity.getAvatar(),null));
         // 创建身份关联记录
-        userProviderService.addUserProvider(userId, provider,sub,extraInfo.getExtraInfo());
+        userProviderService.addUserProvider(userId, provider,sub,userIdentity.getExtraInfo());
         // 创建用户标识
         List<IdentifierSpec> specs = new ArrayList<>();
         specs.add(new IdentifierSpec(IdentifierType.USERNAME, null, null));
-        if(StringUtils.hasText(extraInfo.getEmail())){
-            specs.add(new IdentifierSpec(IdentifierType.EMAIL, extraInfo.getEmail(), extraInfo.getEmailVerified()));
+        if(StringUtils.hasText(userIdentity.getEmail())){
+            specs.add(new IdentifierSpec(IdentifierType.EMAIL, userIdentity.getEmail(), userIdentity.getEmailVerified()));
         }
-        if(StringUtils.hasText(extraInfo.getPhone())){
-            specs.add(new IdentifierSpec(IdentifierType.PHONE, extraInfo.getPhone(), extraInfo.getPhoneVerified()));
+        if(StringUtils.hasText(userIdentity.getPhone())){
+            specs.add(new IdentifierSpec(IdentifierType.PHONE, userIdentity.getPhone(), userIdentity.getPhoneVerified()));
         }
         userIdentifierService.addIdentifier(userId, specs);
         return userId;

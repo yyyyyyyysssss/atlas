@@ -29,6 +29,25 @@ spring:
     circuitbreaker:
       resilience4j:
         disable-thread-pool: false
+  security:
+    saml2:
+      relyingparty:
+        registration:
+          auth0:
+            entity-id: "urn:atlas:sp"
+            acs:
+              location: ${security.issuerUrl}/api/auth/saml2/sso/auth0
+            assertingparty:
+              # 身份提供商唯一标识
+              entity-id: "urn:dev-u4j747mxw85uvr18.us.auth0.com"
+              # 对应你的身份提供商的登录url
+              singlesignon:
+                url: https://dev-u4j747mxw85uvr18.us.auth0.com/samlp/4drxTRRCX7h4LRQyTdTvO3wxmTXhfnE9
+                binding: post
+                sign-request: false
+              verification:
+                credentials:
+                  - certificate-location: "classpath:certs/auth0-idp.pem"
 
 
 security:

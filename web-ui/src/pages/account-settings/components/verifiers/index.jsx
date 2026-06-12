@@ -13,6 +13,7 @@ import { Fingerprint, Grid3x3, Grip, Wallet } from 'lucide-react';
 import UniversalTotpVerifier from './UniversalTotpVerifier';
 import UniversalGestureVerifier from './UniversalGestureVerifier';
 import UniversalWeb3WalletVerifier from './UniversalWeb3WalletVerifier';
+import { useAccount } from 'wagmi';
 
 
 const VerifyDropdown = ({
@@ -27,7 +28,7 @@ const VerifyDropdown = ({
 }) => {
     const { token } = theme.useToken();
 
-    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled, gestureEnabled } = context || {}
+    const { passwordSet, boundEmail, passkeyEnabled, passkeys, totpEnabled, web3Enabled, gestureEnabled } = context || {}
 
     const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
@@ -61,19 +62,23 @@ const VerifyDropdown = ({
     // 构建下拉菜单的项
     const availableMethods = []
 
-    availableMethods.push({
-        key: 'web3-wallet',
-        label: 'Web3钱包',
-        icon: <Wallet style={{ width: 14, height: 14 }} />,
-        render: () => (
-            <UniversalWeb3WalletVerifier
-                verifierRef={verifierRef}
-                // 触发挥手硬件后，回调后端的验证接口
-                onVerifyAction={(signature, web3Id) => verifyWeb3WalletAsync({signature: signature, web3Id: web3Id, securityScene: scene})}
-                onSuccess={onSuccess}
-            />
-        )
-    });
+    // web3钱包
+    if (web3Enabled) {
+        availableMethods.push({
+            key: 'web3-wallet',
+            label: 'Web3钱包',
+            icon: <Wallet style={{ width: 14, height: 14 }} />,
+            render: () => (
+                <UniversalWeb3WalletVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(signature, web3Id) => verifyWeb3WalletAsync({ signature: signature, web3Id: web3Id, securityScene: scene })}
+                    onSuccess={onSuccess}
+                />
+            )
+        })
+    }
+
 
 
     // 通行密钥验证选项

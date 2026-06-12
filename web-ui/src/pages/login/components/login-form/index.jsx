@@ -1,6 +1,6 @@
 import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode, theme } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled, ArrowLeftOutlined, NodeIndexOutlined, BorderInnerOutlined, SlidersOutlined } from '@ant-design/icons';
-import { QrCode, Monitor, Fingerprint, Grid3X3, Grid3x3 } from 'lucide-react';
+import { QrCode, Monitor, Fingerprint, Grid3X3, Grid3x3, Wallet } from 'lucide-react';
 import { useAuth } from '../../../../router/AuthProvider';
 import { useRequest } from 'ahooks';
 import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../../services/Oauth2Service';
@@ -16,6 +16,7 @@ import PasswordLogin from './PasswordLogin';
 import CaptchaLogin from './CaptchaLogin';
 import MagicLinkLogin from './MagicLinkLogin';
 import PasskeyLogin from './PasskeyLogin';
+import Web3WalletLogin from './Web3WalletLogin';
 
 const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation();
@@ -99,6 +100,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                     {loginMethod === '2' && <CaptchaLogin onSuccess={loginSuccessHandler} />}
                     {loginMethod === '3' && <MagicLinkLogin onSuccess={loginSuccessHandler} />}
                     {loginMethod === '4' && <PasskeyLogin onSuccess={loginSuccessHandler} />}
+                    {loginMethod === '5' && <Web3WalletLogin onSuccess={loginSuccessHandler} />}
                 </AnimatePresence>
             </div>
 
@@ -124,7 +126,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                                     strokeWidth={2.5}
                                     style={{ animation: 'pulse 2s infinite' }}
                                 />
-                                <span>{t('指纹/面容登录')}</span>
+                                <span>{t('通行密钥')}</span>
                             </Typography.Link>
                         ) : (
                             <div /> /* 优雅占位以维持 space-between 布局 */
@@ -225,6 +227,30 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                     title="Google"
                 />
             </Flex>
+
+            {loginMethod === '1' && (
+                <div style={{ textAlign: 'center', marginTop: 20, marginBottom: 0 }}>
+                    <Typography.Link
+                        onClick={() => setLoginMethod('5')}
+                        style={{
+                            fontSize: 12,
+                            fontWeight: 400,
+                            color: '#9ca3af',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'inline-block',
+                            letterSpacing: '0.02em'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = token.colorPrimary; // 悬停时才温和地亮起主色
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#9ca3af';
+                        }}
+                    >
+                        <span>{t('已经是 Web3 用户？一键连接钱包登录')}</span>
+                    </Typography.Link>
+                </div>
+            )}
         </Card>
     );
 };

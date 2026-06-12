@@ -262,13 +262,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User saveUser(UserCreateDTO userCreateDTO) {
         User user = UserMapping.INSTANCE.toUser(userCreateDTO);
         user.setId(IdGen.genId());
-        if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
-            String defaultAvatar = generateDefaultAvatar(user.getUsername());
-            user.setAvatar(defaultAvatar);
-        }
         if(userCreateDTO.getFullName() == null || userCreateDTO.getFullName().isEmpty()){
             String defaultName = NameGenerator.generateFunnyName();
             user.setFullName(defaultName);
+        }
+        if (userCreateDTO.getAvatar() == null || userCreateDTO.getAvatar().isEmpty()) {
+            String defaultAvatar = generateDefaultAvatar(user.getFullName());
+            user.setAvatar(defaultAvatar);
         }
         // 添加用户所属组织
         if (userCreateDTO.getOrgId() != null) {
@@ -320,9 +320,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     private String generateDefaultAvatar(String username) {
-        Result<String> result = fileApi.generateAvatar(username);
-        if (result.isSucceed()) {
-            return result.getData();
+        try {
+            Result<String> result = fileApi.generateAvatar(username);
+            if (result.isSucceed()) {
+                return result.getData();
+            }
+        }catch (Exception e){
+            log.warn("[{}]头像生成失败", username);
         }
         return null;
     }

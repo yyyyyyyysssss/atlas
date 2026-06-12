@@ -71,7 +71,7 @@ const WalletItem = ({ context, refresh }) => {
             }
             message.loading({ content: '正在向钱包发起持有权签名...', key: 'wallet_action' })
             const walletType = 'EOA'
-            const walletLabel = connector?.name || 'Unknown'
+            const walletLabel = connector?.name || null
             const registerOptionsRes = await web3RegisterOptionsAsync({
                 address: address,
                 walletType: walletType,
@@ -105,11 +105,7 @@ const WalletItem = ({ context, refresh }) => {
             setIsExpanded(true)
 
         } catch (error) {
-            console.error('Wallet 绑定失败:', error);
-            message.error({
-                content: error?.response?.data?.message || error?.message || '签名失败或用户取消',
-                key: 'wallet_action'
-            });
+            console.error('Wallet 绑定失败:', error)
         }
     }
 

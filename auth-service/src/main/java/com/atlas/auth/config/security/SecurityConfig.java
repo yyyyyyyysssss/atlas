@@ -5,6 +5,8 @@ import com.atlas.auth.config.security.authentication.provider.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
+import com.atlas.auth.config.security.saml2.Saml2FailureHandler;
+import com.atlas.auth.config.security.saml2.Saml2SuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.service.*;
@@ -35,6 +37,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
+import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationToken;
+import org.springframework.security.saml2.provider.service.registration.InMemoryRelyingPartyRegistrationRepository;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrations;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -42,6 +50,8 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
+
+import java.util.ArrayList;
 
 @EnableWebSecurity
 @Configuration
@@ -93,6 +103,12 @@ public class SecurityConfig {
     @Resource
     private UserWeb3CredentialsService userWeb3CredentialsService;
 
+    @Resource
+    private Saml2SuccessHandler saml2SuccessHandler;
+
+    @Resource
+    private Saml2FailureHandler saml2FailureHandler;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -114,6 +130,12 @@ public class SecurityConfig {
                             // 必须通过身份认证
                             .anyRequest().authenticated();
                 })
+                .saml2Login(saml2 -> saml2
+                        // 会自动匹配 application.yml 里的 auth0
+                        .loginProcessingUrl("/saml2/sso/{registrationId}")
+                        .successHandler(saml2SuccessHandler)
+                        .failureHandler(saml2FailureHandler)
+                )
                 //记住我
                 .rememberMe(rememberMe -> rememberMe.rememberMeServices(rememberMeServices()))
                 //一次性令牌

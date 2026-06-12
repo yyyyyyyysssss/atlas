@@ -16,7 +16,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OAuth2UserInfo {
+public class OAuth2UserInfo implements ThirdPartyUserIdentity{
 
     /** 唯一标识 (授权服务器返回的 sub) */
     private String sub;

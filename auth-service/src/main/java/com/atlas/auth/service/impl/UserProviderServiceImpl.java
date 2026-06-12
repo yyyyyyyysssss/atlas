@@ -41,7 +41,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
     @Override
     public UserProviderDTO getByProvider(String identityType, String identifier) {
         UserProvider entity = this.userProviderMapper.selectOne(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getProvider, identityType)
+                .eq(UserProvider::getProvider, identityType.toUpperCase().trim())
                 .eq(UserProvider::getProviderUserId, identifier));
 
         // 如果查询结果为空，直接返回 null
@@ -58,8 +58,9 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         if (!StringUtils.hasText(provider) || !StringUtils.hasText(providerUserId)) {
             throw new BusinessException("provider or providerUserId is empty");
         }
+        String uppercaseProvider = provider.toUpperCase().trim();
         UserProvider entity = this.userProviderMapper.selectOne(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getProvider, provider)
+                .eq(UserProvider::getProvider, uppercaseProvider)
                 .eq(UserProvider::getProviderUserId, providerUserId));
         if (entity != null) {
             if (!entity.getUserId().equals(userId)) {
@@ -72,7 +73,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         UserProvider userIdentity = UserProvider
                 .builder()
                 .providerUserId(providerUserId)
-                .provider(provider)
+                .provider(uppercaseProvider)
                 .userId(userId)
                 .extraInfo(extraInfo)
                 .build();

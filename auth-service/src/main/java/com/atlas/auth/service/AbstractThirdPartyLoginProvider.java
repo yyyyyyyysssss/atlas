@@ -21,8 +21,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
 
     protected TokenResponse doLogin(OAuth2UserInfo oAuth2UserInfo){
         String provider = oAuth2UserInfo.getProvider();
-        String sub = oAuth2UserInfo.getSub();
-        Long userId = userService.ensureUserByProvider(provider, sub, oAuth2UserInfo);
+        Long userId = userService.ensureUserByProvider(provider, oAuth2UserInfo);
         ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO(ClientType.WEB, userId);
         return loginService.loginThirdParty(thirdPartyLoginDTO);
     }

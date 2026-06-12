@@ -13,8 +13,6 @@ const PasskeyLogin = ({ onSuccess }) => {
 
     const { t } = useTranslation()
 
-    const [form] = Form.useForm()
-
     const { message } = App.useApp()
 
     const quickPasskeyRef = useRef(null)

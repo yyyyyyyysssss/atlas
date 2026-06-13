@@ -30,11 +30,13 @@ const NotificationMessage = lazy(() => import('../pages/notification-center/mess
 
 const AccountSettings = lazy(() => import('../pages/account-settings'))
 
-const Oauth2Consent = lazy(() => import('../pages/oauth2/consent'))
-const Oauth2Activate = lazy(() => import('../pages/oauth2/activate'))
-const Oauth2Activated = lazy(() => import('../pages/oauth2/activated'))
-const Oauth2QrScan = lazy(() => import('../pages/oauth2/qr-scan'))
-const Oauth2Callback = lazy(() => import('../pages/oauth2/callback'))
+const Oauth2Consent = lazy(() => import('../pages/login/oauth2/consent'))
+const Oauth2Activate = lazy(() => import('../pages/login/oauth2/activate'))
+const Oauth2Activated = lazy(() => import('../pages/login/oauth2/activated'))
+const Oauth2QrScan = lazy(() => import('../pages/login/oauth2/qr-scan'))
+const Oauth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
+
+const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 
 export const routes = [
     {
@@ -81,6 +83,11 @@ export const routes = [
     {
         path: 'oauth2/callback/:clientName',
         element: <Oauth2Callback />,
+        protected: false,
+    },
+    {
+        path: 'saml2/callback/:providerName?',
+        element: <Saml2Callback />,
         protected: false,
     },
     {

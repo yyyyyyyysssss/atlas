@@ -4,9 +4,9 @@
 import { Flex, Typography, Button, theme, Card, Input, Form, message } from "antd"
 import { MonitorOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
-import httpWrapper from '../../../services/AxiosWrapper'
-import useFullParams from "../../../hooks/useFullParams"
-import { useAuth } from "../../../router/AuthProvider"
+import httpWrapper from '../../../../services/AxiosWrapper'
+import useFullParams from "../../../../hooks/useFullParams"
+import { useAuth } from "../../../../router/AuthProvider"
 
 const Activate = () => {
 

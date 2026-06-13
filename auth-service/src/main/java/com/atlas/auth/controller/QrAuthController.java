@@ -5,10 +5,10 @@ import com.atlas.auth.domain.vo.QrAuthTicketVO;
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.security.resolver.NormalBearerTokenResolver;
-import jakarta.servlet.http.HttpServletRequest;
+import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class QrAuthController {
 
     private final QrAuthService qrAuthService;
-
-    private final NormalBearerTokenResolver normalBearerTokenResolver;
 
     @GetMapping("/ticket")
     public Result<QrAuthTicketVO> ticket(@RequestParam("client_id") String clientId,
@@ -38,9 +36,8 @@ public class QrAuthController {
     }
 
     @PostMapping("/confirm")
-    public Result<QrAuthStatusVO> confirm(@RequestParam("sceneId") String sceneId, HttpServletRequest request) {
-        String token = normalBearerTokenResolver.resolve(request);
-        qrAuthService.confirm(sceneId, token);
+    public Result<QrAuthStatusVO> confirm(@AuthenticationPrincipal SecurityUser securityUser, @RequestParam("sceneId") String sceneId) {
+        qrAuthService.confirm(sceneId, securityUser.getTokenId());
         return ResultGenerator.ok();
     }
 

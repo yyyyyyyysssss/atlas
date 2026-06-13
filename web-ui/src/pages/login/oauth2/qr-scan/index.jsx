@@ -2,9 +2,9 @@ import { Flex, theme, message, Result, Button } from 'antd';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import ScopeConfirm from '../components/ScopeConfirm';
 import './index.css'
-import useFullParams from '../../../hooks/useFullParams';
+import useFullParams from '../../../../hooks/useFullParams';
 import { useRequest } from 'ahooks';
-import { qrConfirm, qrScan } from '../../../services/Oauth2Service';
+import { qrConfirm, qrScan } from '../../../../services/Oauth2Service';
 import { useEffect, useState } from 'react';
 
 const QrScan = () => {

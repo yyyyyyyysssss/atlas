@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { message, Flex, App } from 'antd';
 import { useRequest } from 'ahooks';
-import { useAuth } from '../../../router/AuthProvider';
-import Loading from '../../../components/loading';
-import { AUTHORIZE_CODE_PKCE_VERIFIER, oauth2Callback, QR_SCAN_PKCE_VERIFIER } from '../../../services/Oauth2Service';
-import { useRedirect } from '../../../hooks/useRedirect';
-import useFullParams from '../../../hooks/useFullParams';
+import { useAuth } from '../../../../router/AuthProvider';
+import Loading from '../../../../components/loading';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, oauth2Callback, QR_SCAN_PKCE_VERIFIER } from '../../../../services/Oauth2Service';
+import { useRedirect } from '../../../../hooks/useRedirect';
+import useFullParams from '../../../../hooks/useFullParams';
 
 const OAuth2Callback = () => {
     const { code, error, error_description, error_uri, clientName, login_mode } = useFullParams()

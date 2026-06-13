@@ -3,14 +3,14 @@ import { useSearchParams } from 'react-router-dom'
 import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover, theme } from "antd"
 import logo from '/favicon.ico'
 import './index.css'
-import useFullParams from '../../../hooks/useFullParams'
-import httpWrapper from '../../../services/AxiosWrapper'
-import { urlParamParse } from '../../../utils/UrlUtil'
+import useFullParams from '../../../../hooks/useFullParams'
+import httpWrapper from '../../../../services/AxiosWrapper'
+import { urlParamParse } from '../../../../utils/UrlUtil'
 import { useSelector } from 'react-redux'
 import { useRequest } from 'ahooks'
-import Loading from '../../../components/loading'
+import Loading from '../../../../components/loading'
 import ScopeConfirm from '../components/ScopeConfirm'
-import { useAuth } from '../../../router/AuthProvider'
+import { useAuth } from '../../../../router/AuthProvider'
 
 const Consent = () => {
     const { token } = theme.useToken()

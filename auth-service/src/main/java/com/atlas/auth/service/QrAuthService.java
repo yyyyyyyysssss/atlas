@@ -4,6 +4,7 @@ import com.atlas.auth.config.security.oauth2.AdapterAuthorizationSuccessHandler;
 import com.atlas.auth.config.security.oauth2.CustomClientSettings;
 import com.atlas.auth.domain.vo.QrAuthStatusVO;
 import com.atlas.auth.domain.vo.QrAuthTicketVO;
+import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.properties.SecurityProperties;
@@ -113,7 +114,7 @@ public class QrAuthService {
         }
     }
 
-    public void confirm(String sceneId,String accessToken){
+    public void confirm(String sceneId,String tokenId){
         String redisKey = QR_SCENE_KEY + sceneId;
         Map<String, Object> context = redisHelper.getHashAll(redisKey);
         if (context == null || context.isEmpty()) {
@@ -128,7 +129,6 @@ public class QrAuthService {
         if (CONFIRMED.equals(currentStatus)) {
             throw new BusinessException("请勿重复确认");
         }
-
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromPath("/oauth2/authorize")
                 .queryParam("client_id", context.get("clientId"))
                 .queryParam("response_type", "code")
@@ -144,7 +144,7 @@ public class QrAuthService {
         AdapterAuthorizationSuccessHandler.AuthorizationResponse authorizationResponse = localRestClient
                 .get()
                 .uri(uriBuilder.build().toUriString())
-                .header("Authorization","Bearer " + accessToken)
+                .header(CommonConstant.TOKEN_ID,tokenId)
                 .retrieve()
                 .body(AdapterAuthorizationSuccessHandler.AuthorizationResponse.class);
         String code = authorizationResponse.code();

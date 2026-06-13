@@ -1,7 +1,7 @@
 import { Flex, Typography, Result, Button, theme, Card } from "antd"
 import { CheckCircleFilled } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import useFullParams from '../../../hooks/useFullParams'
+import useFullParams from '../../../../hooks/useFullParams'
 
 const Activated = () => {
     const { token } = theme.useToken();

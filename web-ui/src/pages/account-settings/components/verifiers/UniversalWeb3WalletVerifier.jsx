@@ -99,12 +99,12 @@ const UniversalWeb3WalletVerifier = ({
             setVerifyLoading(true);
 
             const result = await onVerifyAction(signature, registerOptionsRes.web3Id)
-
+            
             if (!result) {
                 throw new Error('web3钱包验证失败，请重试');
             }
 
-            if (result.verified === false) {
+            if (result?.verified === false) {
                 throw new Error('web3钱包验证验证失败，请重试')
             }
             return result;

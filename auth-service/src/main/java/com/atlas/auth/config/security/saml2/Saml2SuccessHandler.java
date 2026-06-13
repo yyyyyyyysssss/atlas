@@ -37,7 +37,7 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final LoginService loginService;
 
-    public Saml2SuccessHandler(SecurityProperties securityProperties,UserService userService, LoginService loginService){
+    public Saml2SuccessHandler(SecurityProperties securityProperties, UserService userService, LoginService loginService) {
         this.securityProperties = securityProperties;
         this.userService = userService;
         this.loginService = loginService;
@@ -56,8 +56,8 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
         TokenResponse tokenResponse = loginService.loginThirdParty(thirdPartyLoginDTO);
 
         String uiUrl = securityProperties.getUiUrl();
-        String targetUrl = String.format("%s/login/saml2/callback?accessToken=%s&refreshToken=%s",
-                uiUrl, tokenResponse.token().access().value(), tokenResponse.token().refresh().value());
+        String targetUrl = String.format("%s/saml2/callback/%s?accessToken=%s&refreshToken=%s",
+                uiUrl, registrationId, tokenResponse.token().access().value(), tokenResponse.token().refresh().value());
         response.sendRedirect(targetUrl);
     }
 
@@ -82,7 +82,8 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
                 saml2User.setFullName(principal.getFirstAttribute("name"));
                 saml2User.setAvatar(principal.getFirstAttribute("avatar"));
         }
-        Map<String, Object> extraInfo = JsonUtils.convert(principal, new TypeReference<>() {});
+        Map<String, Object> extraInfo = JsonUtils.convert(principal, new TypeReference<>() {
+        });
         saml2User.setExtraInfo(extraInfo);
         return saml2User;
     }

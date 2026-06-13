@@ -43,7 +43,7 @@ public class Saml2FailureHandler implements AuthenticationFailureHandler {
         String encodedDetail = URLEncoder.encode(detailMessage != null ? detailMessage : "", StandardCharsets.UTF_8);
 
         String uiUrl = securityProperties.getUiUrl();
-        String targetUrl = String.format("%s/login/saml2/callback?error=%s&msg=%s",uiUrl, encodedError, encodedDetail);
+        String targetUrl = String.format("%s/saml2/callback?error=%s&error_description=%s",uiUrl, encodedError, encodedDetail);
 
         log.warn("SAML2 认证彻底失败，正在将用户重定向回前端登录页: {}", targetUrl);
         response.sendRedirect(targetUrl);

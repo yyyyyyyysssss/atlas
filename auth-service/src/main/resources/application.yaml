@@ -53,6 +53,7 @@ spring:
 security:
   issuerUrl: https://atlas.ys0921.sbs:4443
   uiUrl: https://atlas.ys0921.sbs:4443
+  saml2AuthUrl: ${security.issuerUrl}/api/auth/saml2/authenticate/{registrationId}
   authorize:
     permit:
       - /login/*

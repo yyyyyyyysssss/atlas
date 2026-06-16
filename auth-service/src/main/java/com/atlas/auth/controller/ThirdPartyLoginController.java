@@ -1,5 +1,6 @@
 package com.atlas.auth.controller;
 
+import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -21,9 +22,9 @@ public class ThirdPartyLoginController {
 
 
     @GetMapping("/authorizeUrl/{clientName}")
-    public Result<String> authorizeUrl(@PathVariable("clientName") String clientName) {
-        String authorizeUrl = providerFactory.getProvider(clientName).getAuthorizeUrl();
-        return ResultGenerator.ok(authorizeUrl);
+    public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName) {
+        ThirdPartyAuthorizeUrlVO authorizeVO = providerFactory.getProvider(clientName).getAuthorizeVO();
+        return ResultGenerator.ok(authorizeVO);
     }
 
     @GetMapping("/qrScanUrl/{clientName}")
@@ -33,7 +34,7 @@ public class ThirdPartyLoginController {
     }
 
     @GetMapping("/callback/{clientName}")
-    public Result<?> callback(@PathVariable("clientName") String clientName,
+    public Result<TokenResponse> callback(@PathVariable("clientName") String clientName,
                               @RequestParam("code") String code,
                               @RequestParam(value = "state", required = false) String state,
                               @RequestParam(value = "code_verifier", required = false) String codeVerifier) {

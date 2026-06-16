@@ -60,6 +60,11 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     }
 
     @Override
+    public boolean isPKCERequired() {
+        return true;
+    }
+
+    @Override
     public TokenResponse processCallback(String code, String state, String codeVerifier) {
         log.info("Processing Github OAuth2 callback. Client: {}, Code: {}",
                 githubOauth2Properties.getClientName(), code);

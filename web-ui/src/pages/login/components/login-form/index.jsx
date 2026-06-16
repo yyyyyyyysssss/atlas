@@ -1,4 +1,4 @@
-import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode, theme } from 'antd';
+import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode, theme, Tooltip } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled, ArrowLeftOutlined, NodeIndexOutlined, BorderInnerOutlined, SlidersOutlined } from '@ant-design/icons';
 import { QrCode, Monitor, Fingerprint, Grid3X3, Grid3x3, Wallet } from 'lucide-react';
 import { useAuth } from '../../../../router/AuthProvider';
@@ -9,7 +9,7 @@ import { useRedirect } from '../../../../hooks/useRedirect';
 import { useTranslation } from 'react-i18next';
 import useFullParams from '../../../../hooks/useFullParams';
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, color, motion } from 'framer-motion';
 import { generateChallenge, generateVerifier } from '../../../../utils/pkce';
 import UniversalPasskeyVerifier from '../../../account-settings/components/verifiers/UniversalPasskeyVerifier';
 import PasswordLogin from './PasswordLogin';
@@ -17,6 +17,7 @@ import CaptchaLogin from './CaptchaLogin';
 import MagicLinkLogin from './MagicLinkLogin';
 import PasskeyLogin from './PasskeyLogin';
 import Web3WalletLogin from './Web3WalletLogin';
+import { AtlasLogo, Auth0Icon } from '../../../../components/icons';
 
 const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation();
@@ -33,12 +34,14 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const [loginMethod, setLoginMethod] = useState("1");
 
     const authorizeCodeLogin = async (clientName) => {
-        const authorizeUrl = await getAuthorizeUrlAsync(clientName);
-        const verifier = generateVerifier();
-        const challenge = await generateChallenge(verifier);
-        sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier);
-        const finalUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`;
-        // 授权码模式跳转逻辑
+        const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(clientName);
+        let finalUrl = authorizeUrl
+        if (isPKCERequired) {
+            const verifier = generateVerifier()
+            const challenge = await generateChallenge(verifier)
+            sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
+            finalUrl = finalUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
+        }
         window.location.href = finalUrl;
     };
 
@@ -84,7 +87,12 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
             {/* 头部 Logo 与 欢迎语 */}
             <Flex vertical align="center" style={{ marginBottom: 24 }}>
-                <Avatar src={'/logo128_eclipse.svg'} size={72} style={{ background: 'transparent' }} />
+                <AtlasLogo
+                    style={{
+                        width: '72px',
+                        height: '72px'
+                    }}
+                />
                 <Typography.Title level={3} style={{ margin: '16px 0 4px 0', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
                     {t('登录 Atlas')}
                 </Typography.Title>
@@ -199,33 +207,50 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
             {/* 第三方登录渠道按钮组 */}
             <Flex justify="center" align="center" gap={28} style={{ marginTop: 16 }}>
-                <GithubOutlined
-                    style={{ fontSize: 22, color: '#374151', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.color = '#111827'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#374151'; }}
-                    onClick={() => authorizeCodeLogin('gitHub')}
-                    title="GitHub"
-                />
-                <Avatar
-                    src="/logo128.png"
-                    size={24}
-                    style={{
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        background: 'transparent',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                    onClick={() => authorizeCodeLogin('atlas')}
-                    title="Atlas ID"
-                />
-                <GoogleOutlined
-                    style={{ fontSize: 22, color: '#6b7280', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.color = '#EA4335'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.color = '#6b7280'; }}
-                    onClick={() => authorizeCodeLogin('google')}
-                    title="Google"
-                />
+                <Tooltip title='GitHub'>
+                    <GithubOutlined
+                        style={{ fontSize: 22, color: '#111827', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onClick={() => authorizeCodeLogin('gitHub')}
+                    />
+                </Tooltip>
+                <Tooltip title='Atlas'>
+                    <AtlasLogo
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            background: 'transparent',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onClick={() => authorizeCodeLogin('atlas')}
+                    />
+                </Tooltip>
+                <Tooltip title='Google'>
+                    <GoogleOutlined
+                        style={{ fontSize: 22, color: '#EA4335', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onClick={() => authorizeCodeLogin('google')}
+                        title="Google"
+                    />
+                </Tooltip>
+                <Tooltip title='Auth0'>
+                    <Auth0Icon
+                        style={{
+                            width: '22px',
+                            height: '22px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onClick={() => authorizeCodeLogin('auth0')}
+                    />
+                </Tooltip>
             </Flex>
 
             {loginMethod === '1' && (

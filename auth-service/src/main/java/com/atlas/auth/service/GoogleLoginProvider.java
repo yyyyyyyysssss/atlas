@@ -59,6 +59,11 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
+    public boolean isPKCERequired() {
+        return true;
+    }
+
+    @Override
     public TokenResponse processCallback(String code,String state,String codeVerifier) {
         log.info("Processing Google OAuth2 callback. Client: {}, Code: {}",
                 googleOauth2Properties.getClientName(), code);

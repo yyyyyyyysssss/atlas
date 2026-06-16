@@ -24,6 +24,8 @@ public class SecurityProperties {
 
     private String uiUrl;
 
+    private String saml2AuthUrl;
+
     private AuthorizeConfig authorize = new AuthorizeConfig();
 
     private Integer coexistToken;

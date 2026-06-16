@@ -8,9 +8,9 @@ import lombok.Getter;
 @Getter
 public enum ProviderType implements MybatisBaseEnum<String> {
 
-    GOOGLE("GOOGLE", "Google 账号"),
-    GITHUB("GITHUB", "GitHub 账号"),
-    ATLAS("ATLAS", "Atlas 账号"),
+    GOOGLE("google", "Google 账号"),
+    GITHUB("github", "GitHub 账号"),
+    ATLAS("atlas", "Atlas 账号"),
 
     ;
 

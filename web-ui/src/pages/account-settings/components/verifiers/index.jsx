@@ -62,25 +62,6 @@ const VerifyDropdown = ({
     // 构建下拉菜单的项
     const availableMethods = []
 
-    // web3钱包
-    if (web3Enabled) {
-        availableMethods.push({
-            key: 'web3-wallet',
-            label: 'Web3钱包',
-            icon: <Wallet style={{ width: 14, height: 14 }} />,
-            render: () => (
-                <UniversalWeb3WalletVerifier
-                    verifierRef={verifierRef}
-                    // 触发挥手硬件后，回调后端的验证接口
-                    onVerifyAction={(signature, web3Id) => verifyWeb3WalletAsync({ signature: signature, web3Id: web3Id, securityScene: scene })}
-                    onSuccess={onSuccess}
-                />
-            )
-        })
-    }
-
-
-
     // 通行密钥验证选项
     if (hasPasskey) {
         availableMethods.push({
@@ -96,6 +77,23 @@ const VerifyDropdown = ({
                 />
             )
         });
+    }
+
+    // web3钱包
+    if (web3Enabled) {
+        availableMethods.push({
+            key: 'web3-wallet',
+            label: 'Web3钱包',
+            icon: <Wallet style={{ width: 14, height: 14 }} />,
+            render: () => (
+                <UniversalWeb3WalletVerifier
+                    verifierRef={verifierRef}
+                    // 触发挥手硬件后，回调后端的验证接口
+                    onVerifyAction={(signature, web3Id) => verifyWeb3WalletAsync({ signature: signature, web3Id: web3Id, securityScene: scene })}
+                    onSuccess={onSuccess}
+                />
+            )
+        })
     }
 
     // totp

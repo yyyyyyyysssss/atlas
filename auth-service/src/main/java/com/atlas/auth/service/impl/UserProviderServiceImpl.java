@@ -41,7 +41,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
     @Override
     public UserProviderDTO getByProvider(String identityType, String identifier) {
         UserProvider entity = this.userProviderMapper.selectOne(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getProvider, identityType.toUpperCase().trim())
+                .eq(UserProvider::getProvider, identityType.toLowerCase().trim())
                 .eq(UserProvider::getProviderUserId, identifier));
 
         // 如果查询结果为空，直接返回 null
@@ -58,9 +58,9 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         if (!StringUtils.hasText(provider) || !StringUtils.hasText(providerUserId)) {
             throw new BusinessException("provider or providerUserId is empty");
         }
-        String uppercaseProvider = provider.toUpperCase().trim();
+        String lowercaseProvider = provider.toLowerCase().trim();
         UserProvider entity = this.userProviderMapper.selectOne(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getProvider, uppercaseProvider)
+                .eq(UserProvider::getProvider, lowercaseProvider)
                 .eq(UserProvider::getProviderUserId, providerUserId));
         if (entity != null) {
             if (!entity.getUserId().equals(userId)) {
@@ -73,7 +73,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         UserProvider userIdentity = UserProvider
                 .builder()
                 .providerUserId(providerUserId)
-                .provider(uppercaseProvider)
+                .provider(lowercaseProvider)
                 .userId(userId)
                 .extraInfo(extraInfo)
                 .build();
@@ -97,7 +97,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         Map<String, UserProvider> providerMap = userProviders.stream()
                 .filter(item -> item.getProvider() != null)
                 .collect(Collectors.toMap(
-                        item -> item.getProvider().toUpperCase(),
+                        item -> item.getProvider().toLowerCase(),
                         item -> item,
                         (k1, k2) -> k1 // 并发冲突时保留第一个
                 ));
@@ -114,7 +114,7 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
                     }
 
                     return UserProviderVO.builder()
-                            .provider(code.toLowerCase()) // 转换为小写供前端作为 key (如 "google")
+                            .provider(code)
                             .isBound(isBound)
                             .boundName(boundName)
                             .build();

@@ -65,6 +65,11 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
+    public boolean isPKCERequired() {
+        return true;
+    }
+
+    @Override
     public String getQrScanUrl() {
         String clientId = atlasOauth2Properties.getClientId();
         String scope = atlasOauth2Properties.getScope();

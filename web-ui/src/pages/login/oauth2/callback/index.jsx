@@ -9,7 +9,7 @@ import { useRedirect } from '../../../../hooks/useRedirect';
 import useFullParams from '../../../../hooks/useFullParams';
 
 const OAuth2Callback = () => {
-    const { code, error, error_description, error_uri, clientName, login_mode } = useFullParams()
+    const { code, state, error, error_description, error_uri, clientName, login_mode } = useFullParams()
     const navigate = useNavigate()
     const { signin } = useAuth()
 
@@ -31,7 +31,7 @@ const OAuth2Callback = () => {
             return
         }
 
-        const handleAuth = async (code, clientName, loginMode) => {
+        const handleAuth = async (code, state, clientName, loginMode) => {
             try {
                 let verifier
                 if (loginMode && loginMode === 'qr') {
@@ -40,7 +40,7 @@ const OAuth2Callback = () => {
                     verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
                 }
                 // 根据你后端的接口调整参数
-                const loginResponse = await runAsync(code, verifier, clientName)
+                const loginResponse = await runAsync(code, state, verifier, clientName)
                 if (loginResponse.status === 'SUCCESS') {
                     const { token } = loginResponse
                     await signin(token)
@@ -69,8 +69,8 @@ const OAuth2Callback = () => {
                 })
             }
         }
-        handleAuth(code, clientName, login_mode)
-    }, [code, clientName, login_mode])
+        handleAuth(code, state, clientName, login_mode)
+    }, [code, state, clientName, login_mode])
 
     return (
         <Loading fullscreen tip="正在完成登录..." />

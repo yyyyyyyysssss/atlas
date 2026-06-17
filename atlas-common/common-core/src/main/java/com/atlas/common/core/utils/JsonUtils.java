@@ -91,4 +91,11 @@ public class JsonUtils {
         return getMapper().convertValue(fromValue, toValueTypeRef);
     }
 
+    public static <T> T convert(Object fromValue, Class<T> tClass) {
+        if (fromValue == null) {
+            return null;
+        }
+        return getMapper().convertValue(fromValue, tClass);
+    }
+
 }

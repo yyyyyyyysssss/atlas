@@ -15,6 +15,7 @@ import com.atlas.common.core.web.filter.UserContextFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -94,10 +95,19 @@ public class AtlasCoreAutoConfiguration {
         }
 
         @Bean
-        @ConditionalOnMissingBean
+        @ConditionalOnMissingBean(name = "defaultRestClient")
         public RestClient defaultRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory) {
             return restClientFactory.create(httpClientFactory.create(), builder -> {
             });
+        }
+
+        @Bean
+        @ConditionalOnExpression("'${http.config.proxy:}' != ''")
+        public RestClient proxyRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory) {
+            return restClientFactory.create(
+                    httpClientFactory.create(true),
+                    builder -> {}
+            );
         }
 
 

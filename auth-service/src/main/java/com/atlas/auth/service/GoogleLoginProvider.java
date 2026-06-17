@@ -1,7 +1,9 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.config.properties.GoogleOauth2Properties;
+import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
+import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
+import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
@@ -9,14 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -30,32 +25,21 @@ import java.util.Map;
 @Slf4j
 public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
 
-    private final GoogleOauth2Properties googleOauth2Properties;
-
-    private final RestClient proxyRestClient;
 
     @Override
     public String getProviderName() {
-        return googleOauth2Properties.getClientName();
+
+        return "google";
     }
 
     @Override
     public String getAuthorizeUrl() {
-        String authorizeCodeEndpoint = googleOauth2Properties.getAuthorizeCodeEndpoint();
-        String clientId = googleOauth2Properties.getClientId();
-        String redirectUri = googleOauth2Properties.getRedirectUrl();
-        String scope = googleOauth2Properties.getScope();
-        return UriComponentsBuilder.fromUriString(authorizeCodeEndpoint)
-                .queryParam("client_id", clientId)
-                .queryParam("response_type", "code") // OAuth2 标准
-                .queryParam("redirect_uri", redirectUri)
-                .queryParam("scope", scope)
-                .queryParam("access_type", "offline")
-                .queryParam("prompt", "consent")
-                .queryParam("state", "Google")
-                .build()
-                .encode()
-                .toUriString();
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+        String state = generateState();
+        Map<String, String> extraParams = Map.of(
+                "state", state
+        );
+        return oAuth2ProviderEngine.buildAuthorizeUrl(auth2ProviderSettings, extraParams);
     }
 
     @Override
@@ -65,33 +49,24 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
 
     @Override
     public TokenResponse processCallback(String code,String state,String codeVerifier) {
-        log.info("Processing Google OAuth2 callback. Client: {}, Code: {}",
-                googleOauth2Properties.getClientName(), code);
-        //获取token
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("client_id", googleOauth2Properties.getClientId());
-        body.add("client_secret", googleOauth2Properties.getClientSecret());
-        body.add("code", code);
-        body.add("redirect_uri", googleOauth2Properties.getRedirectUrl());
-        body.add("grant_type", "authorization_code");
-        if (StringUtils.hasText(codeVerifier)) {
-            body.add("code_verifier", codeVerifier);
-        }
-        GoogleTokenResponse googleTokenResponse = proxyRestClient
-                .post()
-                .uri(googleOauth2Properties.getTokenEndpoint())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED) // 必须是表单格式
-                .body(body)
-                .retrieve()
-                .body(GoogleTokenResponse.class);
+        String providerName = getProviderName();
+        log.info("Processing Google OAuth2 callback. provider: {}, state: {}, code: {}, codeVerifier: {}",
+                providerName, state, code, codeVerifier);
+
+        // 校验state
+        validateState(state);
+
+        // 获取配置
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+
+        // 获取token
+        GoogleTokenResponse googleTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, GoogleTokenResponse.class);
         log.info("GoogleTokenResponse: {}",googleTokenResponse);
 
-        GoogleUserInfoResponse googleUserInfoResponse = proxyRestClient
-                .post()
-                .uri(googleOauth2Properties.getUserInfoEndpoint())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + googleTokenResponse.accessToken)
-                .retrieve()
-                .body(GoogleUserInfoResponse.class);
+        // 根据token获取用户信息
+        OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(googleTokenResponse.accessToken, googleTokenResponse.tokenType);
+        GoogleUserInfoResponse googleUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, GoogleUserInfoResponse.class);
+
         if (googleUserInfoResponse.emailVerified() != null && !googleUserInfoResponse.emailVerified()) {
             throw new BusinessException("Google 账号邮箱未验证，安全起见拒绝登录。请先前往 Google 账户完成邮箱验证。");
         }
@@ -99,7 +74,7 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
         OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
                 .builder()
                 .sub(googleUserInfoResponse.sub)
-                .provider(googleOauth2Properties.getClientName())
+                .provider(providerName)
                 .fullName(googleUserInfoResponse.familyName + googleUserInfoResponse.givenName)
                 .avatar(googleUserInfoResponse.picture)
                 .email(googleUserInfoResponse.email)

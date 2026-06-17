@@ -25,11 +25,12 @@ export const fetchDeviceCode = async () => {
 }
 
 
-export const oauth2Callback = async (code, verifier, clientName) => {
+export const oauth2Callback = async (code, state, verifier, clientName) => {
 
     return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/callback/${clientName}`, {
         params: {
             code: code,
+            state: state,
             code_verifier: verifier
         }
     }))

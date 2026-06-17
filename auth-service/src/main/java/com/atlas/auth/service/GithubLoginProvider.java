@@ -1,7 +1,9 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.config.properties.GithubOauth2Properties;
+import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
+import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
+import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
@@ -10,14 +12,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.Serializable;
 import java.util.List;
@@ -33,30 +28,19 @@ import java.util.Map;
 @Slf4j
 public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
 
-    private final GithubOauth2Properties githubOauth2Properties;
-
-    private final RestClient proxyRestClient;
-
     @Override
     public String getProviderName() {
-        return githubOauth2Properties.getClientName();
+        return "github";
     }
 
     @Override
     public String getAuthorizeUrl() {
-        String authorizeCodeEndpoint = githubOauth2Properties.getAuthorizeCodeEndpoint();
-        String clientId = githubOauth2Properties.getClientId();
-        String redirectUri = githubOauth2Properties.getRedirectUrl();
-        String scope = githubOauth2Properties.getScope();
-        return UriComponentsBuilder.fromUriString(authorizeCodeEndpoint)
-                .queryParam("client_id", clientId)
-                .queryParam("redirect_uri", redirectUri)
-                .queryParam("scope", scope)
-                .queryParam("state", "Github")
-                .queryParam("prompt", "true")
-                .build()
-                .encode()
-                .toUriString();
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+        String state = generateState();
+        Map<String, String> extraParams = Map.of(
+                "state", state
+        );
+        return oAuth2ProviderEngine.buildAuthorizeUrl(auth2ProviderSettings, extraParams);
     }
 
     @Override
@@ -66,42 +50,31 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
 
     @Override
     public TokenResponse processCallback(String code, String state, String codeVerifier) {
-        log.info("Processing Github OAuth2 callback. Client: {}, Code: {}",
-                githubOauth2Properties.getClientName(), code);
-        //获取token
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("client_id", githubOauth2Properties.getClientId());
-        body.add("client_secret", githubOauth2Properties.getClientSecret());
-        body.add("code", code);
-        body.add("redirect_uri", githubOauth2Properties.getRedirectUrl());
-        if (StringUtils.hasText(codeVerifier)) {
-            body.add("code_verifier", codeVerifier);
-        }
-        GitHubTokenResponse gitHubTokenResponse = proxyRestClient
-                .post()
-                .uri(githubOauth2Properties.getTokenEndpoint())
-                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED) // 必须是表单格式
-                .body(body)
-                .retrieve()
-                .body(GitHubTokenResponse.class);
-        log.info("GitHubTokenResponse: {}", gitHubTokenResponse);
-        // 用户信息
-        GitHubUserInfoResponse gitHubUserInfoResponse = proxyRestClient
-                .post()
-                .uri(githubOauth2Properties.getUserInfoEndpoint())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubTokenResponse.accessToken)
-                .retrieve()
-                .body(GitHubUserInfoResponse.class);
+        String providerName = getProviderName();
+        log.info("Processing Github OAuth2 callback. provider: {}, state: {}, code: {}, codeVerifier: {}",
+                providerName, state, code, codeVerifier);
+
+        // 校验state
+        validateState(state);
+
+        // 获取配置
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+
+        // 获取token
+        GitHubTokenResponse gitHubTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, GitHubTokenResponse.class);
+        log.info("GitHubTokenResponse: {}",gitHubTokenResponse);
+        String accessToken = gitHubTokenResponse.accessToken;
+
+        // 根据token获取用户信息
+        OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(gitHubTokenResponse.accessToken, gitHubTokenResponse.tokenType);
+        GitHubUserInfoResponse gitHubUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, GitHubUserInfoResponse.class);
         log.info("GitHubUserInfoResponse : {}", gitHubUserInfoResponse);
-        // 获取邮箱
-        List<GitHubUserEmailResponse> gitHubUserEmailResponses = proxyRestClient
-                .get()
-                .uri(githubOauth2Properties.getUserEmailsEndpoint())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubTokenResponse.accessToken)
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+
+        // 根据token获取用户邮箱
+        String url = auth2ProviderSettings.endpoints().userEmail().url();
+        List<GitHubUserEmailResponse> gitHubUserEmailResponses = oAuth2ProviderEngine.getResource(providerName, url, oAuth2ProviderToken, new ParameterizedTypeReference<>() {});
         log.info("GitHubUserEmailResponses : {}", gitHubUserEmailResponses);
+
         GitHubUserEmailResponse primaryEmail = gitHubUserEmailResponses.stream()
                 // 核心安全校验：必须是已经验证通过的邮箱
                 .filter(GitHubUserEmailResponse::verified)
@@ -118,7 +91,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
         OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
                 .builder()
                 .sub(gitHubUserInfoResponse.id.toString())
-                .provider(githubOauth2Properties.getClientName())
+                .provider(providerName)
                 .fullName(gitHubUserInfoResponse.name)
                 .avatar(gitHubUserInfoResponse.avatarUrl)
                 .email(primaryEmail.email)

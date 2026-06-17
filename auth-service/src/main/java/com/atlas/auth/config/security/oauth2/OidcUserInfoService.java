@@ -32,6 +32,7 @@ public class OidcUserInfoService {
         // 邮箱
         if (authorizedScopes.contains(OidcScopes.EMAIL)) {
             builder.email(securityUser.getEmail());
+            builder.emailVerified(true);
         }
         // 手机号
         if (authorizedScopes.contains(OidcScopes.PHONE)) {

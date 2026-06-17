@@ -97,6 +97,9 @@ public class OAuth2AuthorizationServerConfig {
                                     // 自定义处理器
                                     authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler());
                                 })
+                                .tokenEndpoint(tokenEndpoint -> {
+                                    tokenEndpoint.accessTokenResponseHandler(new OAuth2TokenResponseAuthenticationSuccessHandler());
+                                })
                                 .deviceAuthorizationEndpoint(deviceAuthorizationEndpoint -> {
                                     deviceAuthorizationEndpoint.verificationUri(securityProperties.getUiUrl() + "/oauth2/activate");
                                 })

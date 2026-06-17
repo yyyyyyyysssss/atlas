@@ -31,12 +31,4 @@ public class RestClientConfig {
         );
     }
 
-    @Bean
-    public RestClient proxyRestClient(HttpClientFactory httpClientFactory, RestClientFactory restClientFactory) {
-        return restClientFactory.create(
-                httpClientFactory.create(true),
-                builder -> {}
-        );
-    }
-
 }

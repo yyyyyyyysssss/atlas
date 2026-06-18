@@ -1,26 +1,26 @@
 package com.atlas.auth.enums;
 
-import com.atlas.common.mybatis.enums.MybatisBaseEnum;
-import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
+import com.atlas.auth.domain.dto.Saml2ProviderSettings;
+import com.atlas.auth.domain.dto.SsoSettings;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
-public enum SsoProviderProtocol implements MybatisBaseEnum<String> {
+@Slf4j
+public enum SsoProviderProtocol {
 
-    OAUTH2("OAUTH2", "OAuth 2.0 基础授权"),
-    SAML2("SAML2", "SAML 2.0 企业协议"),
+    OAUTH2(OAuth2ProviderSettings.class),
+    SAML2(Saml2ProviderSettings.class),
 
     ;
 
-    @EnumValue
-    private final String code;
-    private final String description;
+    private final Class<? extends SsoSettings> settingsClass;
 
     // 构造函数
-    SsoProviderProtocol(String code, String description) {
-        this.code = code;
-        this.description = description;
+    SsoProviderProtocol(Class<? extends SsoSettings> settingsClass) {
+        this.settingsClass = settingsClass;
     }
 
     @JsonCreator
@@ -32,8 +32,8 @@ public enum SsoProviderProtocol implements MybatisBaseEnum<String> {
             // 核心：去除空格并转为大写后再匹配
             return SsoProviderProtocol.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            // 可选：如果匹配不上，可以返回 null 让后面的 @NotNull 校验去挡住，或者直接抛出友好异常
-            throw new IllegalArgumentException("不支持的类型: " + value);
+            log.warn("收到未知的协议类型: {}", value);
+            return null;
         }
     }
 }

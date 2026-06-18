@@ -57,8 +57,8 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
                 if (currentStatus === 'CONFIRMED') {
                     stopPolling()
-                    const { code, clientName } = statusRes
-                    navigate(`/oauth2/callback/${clientName}?code=${code}&login_mode=qr`)
+                    const { code, state, clientName } = statusRes
+                    navigate(`/oauth2/callback/${clientName}?code=${code}&state=${state}&login_mode=qr`)
                 } else if (currentStatus === 'EXPIRED') {
                     stopPolling()
                 }
@@ -76,12 +76,16 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
         if (!qrScanUrlRef.current) {
             qrScanUrlRef.current = await getQrScanUrlAsync('atlas')
         }
-        // 生成新的 Verifier
-        const verifier = generateVerifier()
-        sessionStorage.setItem(QR_SCAN_PKCE_VERIFIER, verifier)
-        // 生成 Challenge
-        const challenge = await generateChallenge(verifier)
-        const qrTicketUrl = qrScanUrlRef.current + `&code_challenge=${challenge}&code_challenge_method=S256`
+        const { authorizeUrl, isPKCERequired } = qrScanUrlRef.current
+        let qrTicketUrl = authorizeUrl
+        if (isPKCERequired && isPKCERequired === true) {
+            // 生成新的 Verifier
+            const verifier = generateVerifier()
+            sessionStorage.setItem(QR_SCAN_PKCE_VERIFIER, verifier)
+            // 生成 Challenge
+            const challenge = await generateChallenge(verifier)
+            qrTicketUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
+        }
         qrTicketAsync(qrTicketUrl)
             .then((data) => {
                 setQrCodeData({

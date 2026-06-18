@@ -71,7 +71,7 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static record AuthorizationResponse(
+    public record AuthorizationResponse(
             String code,
             String state,
             String message

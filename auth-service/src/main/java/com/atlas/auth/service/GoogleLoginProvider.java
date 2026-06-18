@@ -1,5 +1,7 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
+import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -33,8 +36,8 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public String getAuthorizeUrl() {
-        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl() {
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
         String state = generateState();
         Map<String, String> extraParams = Map.of(
                 "state", state
@@ -43,11 +46,11 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public boolean isPKCERequired() {
-        return true;
+    public TokenResponse authenticate(Authentication authentication) {
+        OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
+        return processCallback(authenticationToken.code(),authenticationToken.state(),authenticationToken.codeVerifier());
     }
 
-    @Override
     public TokenResponse processCallback(String code,String state,String codeVerifier) {
         String providerName = getProviderName();
         log.info("Processing Google OAuth2 callback. provider: {}, state: {}, code: {}, codeVerifier: {}",
@@ -57,7 +60,7 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider{
         validateState(state);
 
         // 获取配置
-        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
 
         // 获取token
         GoogleTokenResponse googleTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, GoogleTokenResponse.class);

@@ -11,7 +11,7 @@ import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenInfo;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.SecurityContextStore;
-import com.atlas.security.utils.EncryptUtils;
+import com.atlas.security.utils.DigestUtils;
 import com.atlas.security.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +22,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -166,23 +170,22 @@ public class DefaultTokenService implements TokenService {
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
-        String data = EncryptUtils.concatTokens(
+        String data = concatTokens(
                 userId,
                 Long.toString(expiration),
                 clientType.name()
         );
         // 生成签名
-        String signature = EncryptUtils.hmacSha256(data, securityProperties.getJwt().getSecretKey());
-        String token = EncryptUtils.base64Encode(
-                String.join(":",
-                        userId.toString(),
-                        tokenId,
-                        Long.toString(expiration),
-                        clientType.name(),
-                        "HmacSHA256",
-                        signature
-                )
+        String signature = DigestUtils.hmacSha256(data, securityProperties.getJwt().getSecretKey());
+        String rawData = String.join(":",
+                userId.toString(),
+                tokenId,
+                Long.toString(expiration),
+                clientType.name(),
+                "HmacSHA256",
+                signature
         );
+        String token = Base64.getEncoder().encodeToString(rawData.getBytes(StandardCharsets.UTF_8));
         return new TokenInfo.Token(token, expiration);
     }
 
@@ -190,8 +193,8 @@ public class DefaultTokenService implements TokenService {
         if (StringUtils.isEmpty(token)) {
             throw new InsufficientAuthenticationException("刷新令牌不能为空");
         }
-        String decoded = EncryptUtils.base64Decode(token);
-        String[] parts = EncryptUtils.splitToken(decoded);
+        String decoded = new String(Base64.getDecoder().decode(token), StandardCharsets.UTF_8);
+        String[] parts = splitToken(decoded);
         if (parts.length != 6) {
             throw new TokenAuthenticationException("刷新令牌格式非法");
         }
@@ -207,7 +210,7 @@ public class DefaultTokenService implements TokenService {
         }
         // 重新计算签名并比对 (验签)
         String dataToVerify = String.join(":", userId, Long.toString(expiration), clientType);
-        String expectedSignature = EncryptUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
+        String expectedSignature = DigestUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             throw new TokenAuthenticationException("刷新令牌已无效");
         }
@@ -219,24 +222,23 @@ public class DefaultTokenService implements TokenService {
         long timestamp = configExpiration * 1000;
         long expiration = System.currentTimeMillis() + timestamp;
         // 数据部分
-        String data = EncryptUtils.concatTokens(
+        String data = concatTokens(
                 userId,
                 Long.toString(expiration),
                 password,
                 clientType.name()
         );
         // 生成签名
-        String signature = EncryptUtils.hmacSha256(data, securityProperties.getRememberMe().getSecretKey());
-        String token = EncryptUtils.base64Encode(
-                String.join(":",
-                        userId.toString(),
-                        tokenId,
-                        Long.toString(expiration),
-                        clientType.name(),
-                        "HmacSHA256",
-                        signature
-                )
+        String signature = DigestUtils.hmacSha256(data, securityProperties.getRememberMe().getSecretKey());
+        String rawData = String.join(":",
+                userId.toString(),
+                tokenId,
+                Long.toString(expiration),
+                clientType.name(),
+                "HmacSHA256",
+                signature
         );
+        String token = Base64.getEncoder().encodeToString(rawData.getBytes(StandardCharsets.UTF_8));
         return new TokenInfo.Token(token, expiration);
     }
 
@@ -244,8 +246,8 @@ public class DefaultTokenService implements TokenService {
         if (StringUtils.isEmpty(token)) {
             throw new InsufficientAuthenticationException("记住我令牌不能为空");
         }
-        String decoded = EncryptUtils.base64Decode(token);
-        String[] parts = EncryptUtils.splitToken(decoded);
+        String decoded = new String(Base64.getDecoder().decode(token), StandardCharsets.UTF_8);
+        String[] parts = splitToken(decoded);
         if (parts.length != 6) {
             throw new TokenAuthenticationException("记住我令牌格式非法");
         }
@@ -268,7 +270,7 @@ public class DefaultTokenService implements TokenService {
                 userDetails.getPassword(),
                 clientType
         );
-        String expectedSignature = EncryptUtils.hmac(dataToVerify, securityProperties.getRememberMe().getSecretKey(), algorithm);
+        String expectedSignature = DigestUtils.hmac(dataToVerify, securityProperties.getRememberMe().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             // 签名不匹配通常意味着令牌被伪造，或者用户修改了密码
             throw new TokenAuthenticationException("记住我令牌已失效");
@@ -280,8 +282,8 @@ public class DefaultTokenService implements TokenService {
         if (StringUtils.isEmpty(token)){
             return null;
         }
-        String decoded = EncryptUtils.base64Decode(token);
-        String[] parts = EncryptUtils.splitToken(decoded);
+        String decoded = new String(Base64.getDecoder().decode(token), StandardCharsets.UTF_8);
+        String[] parts = splitToken(decoded);
         return extractCustomSimplePayloadInfo(parts);
     }
 
@@ -296,6 +298,20 @@ public class DefaultTokenService implements TokenService {
                 .clientType(ClientType.valueOf(parts[3]))
                 .expiration(Long.parseLong(parts[2]))
                 .build();
+    }
+
+    private String concatTokens(Object... parts) {
+        if (parts == null || parts.length == 0) return "";
+        return Arrays.stream(parts)
+                .map(String::valueOf)
+                .collect(Collectors.joining(":"));
+    }
+
+    private String[] splitToken(String token) {
+        if (token == null || token.isEmpty()) {
+            return new String[0];
+        }
+        return token.split(":", -1);
     }
 
 }

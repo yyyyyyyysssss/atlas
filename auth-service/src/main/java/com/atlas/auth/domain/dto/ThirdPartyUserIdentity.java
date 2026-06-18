@@ -5,6 +5,8 @@ import java.util.Map;
 
 public interface ThirdPartyUserIdentity {
 
+    String getProvider();
+
     /**
      * 获取外部身份源的用户永久唯一标识
      * <p>例如：OAuth2 的 sub, SAML2 的 NameID/Subject</p>

@@ -1,32 +1,20 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.config.properties.AtlasOauth2Properties;
+import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
+import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
-import com.atlas.security.properties.SecurityProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -39,63 +27,37 @@ import java.util.Map;
 @Slf4j
 public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
 
-    private final SecurityProperties securityProperties;
-
-    private final AtlasOauth2Properties atlasOauth2Properties;
-
-    private final RestClient localRestClient;
-
-    private final JwtDecoder jwtDecoder;
-
     @Override
     public String getProviderName() {
         return "atlas";
     }
 
     @Override
-    public String getAuthorizeUrl() {
-        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl() {
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
         String state = generateState();
         Map<String, String> extraParams = Map.of(
                 "state", state
         );
         return oAuth2ProviderEngine.buildAuthorizeUrl(auth2ProviderSettings, extraParams);
-
-//        String authorizeCodeUrl = securityProperties.getIssuerUrl() + atlasOauth2Properties.getAuthorizeCodeEndpoint();
-//        String clientId = atlasOauth2Properties.getClientId();
-//        String redirectUri = atlasOauth2Properties.getRedirectUrl();
-//        String scope = atlasOauth2Properties.getScope();
-//        return UriComponentsBuilder.fromUriString(authorizeCodeUrl)
-//                .queryParam("client_id", clientId)
-//                .queryParam("response_type", "code") // OAuth2 标准
-//                .queryParam("redirect_uri", redirectUri)
-//                .queryParam("scope", scope)
-//                .build()
-//                .encode()
-//                .toUriString();
     }
 
     @Override
-    public boolean isPKCERequired() {
-        return true;
+    public OAuth2ProviderAuthorizeUrlResponse getQrScanUrl() {
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        String state = generateState();
+        Map<String, String> extraParams = Map.of(
+                "state", state
+        );
+        return oAuth2ProviderEngine.buildQrScanUrl(auth2ProviderSettings, extraParams);
     }
 
     @Override
-    public String getQrScanUrl() {
-        String clientId = atlasOauth2Properties.getClientId();
-        String scope = atlasOauth2Properties.getScope();
-        String redirectUri = atlasOauth2Properties.getRedirectUrl();
-        return UriComponentsBuilder.fromUriString(atlasOauth2Properties.getQrScanEndpoint())
-                .queryParam("client_id", clientId)
-                .queryParam("response_type", "code") // OAuth2 标准
-                .queryParam("redirect_uri", redirectUri)
-                .queryParam("scope", scope)
-                .build()
-                .encode()
-                .toUriString();
+    public TokenResponse authenticate(Authentication authentication) {
+        OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
+        return processCallback(authenticationToken.code(),authenticationToken.state(),authenticationToken.codeVerifier());
     }
 
-    @Override
     public TokenResponse processCallback(String code,String state,String codeVerifier) {
         String providerName = getProviderName();
         log.info("Processing Atlas OAuth2 callback. provider: {}, state: {}, code: {}, codeVerifier: {}",
@@ -105,12 +67,11 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
         validateState(state);
 
         // 获取配置
-        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2, OAuth2ProviderSettings.class);
+        OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
 
         // 获取token
         AtlasTokenResponse atlasTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, AtlasTokenResponse.class);
         log.info("AtlasTokenResponse: {}",atlasTokenResponse);
-        String accessToken = atlasTokenResponse.accessToken;
 
         // 根据token获取用户信息
         OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(atlasTokenResponse.accessToken, atlasTokenResponse.tokenType);
@@ -118,10 +79,10 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
         log.info("AtlasUserInfoResponse : {}", atlasUserInfoResponse);
 
         Map<String, Object> extraInfo = JsonUtils.convert(atlasUserInfoResponse, new TypeReference<>() {});
-        OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
+        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfo
                 .builder()
-                .sub(atlasUserInfoResponse.sub())
                 .provider(providerName)
+                .sub(atlasUserInfoResponse.sub)
                 .fullName(atlasUserInfoResponse.name)
                 .avatar(atlasUserInfoResponse.picture)
                 .email(atlasUserInfoResponse.email)
@@ -129,50 +90,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
                 .phone(atlasUserInfoResponse.phoneNumber)
                 .extraInfo(extraInfo)
                 .build();
-
-        return doLogin(externalIdentityDTO);
-
-//        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-//        formData.add("grant_type", "authorization_code");
-//        formData.add("code", code);
-//        formData.add("client_id", atlasOauth2Properties.getClientId());
-//        formData.add("client_secret", atlasOauth2Properties.getClientSecret());
-//        formData.add("redirect_uri", atlasOauth2Properties.getRedirectUrl());
-//        if (StringUtils.hasText(codeVerifier)) {
-//            formData.add("code_verifier", codeVerifier);
-//        }
-//        try {
-//            OAuth2TokenResponse oAuth2TokenResponse = localRestClient
-//                    .post()
-//                    .uri(atlasOauth2Properties.getTokenEndpoint())
-//                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-//                    .body(formData)
-//                    .retrieve()
-//                    .onStatus(HttpStatusCode::isError, (request, clientResponse) -> {
-//                        String errorBody = StreamUtils.copyToString(clientResponse.getBody(), StandardCharsets.UTF_8);
-//                        JsonNode jsonNode = JsonUtils.parseObject(errorBody, JsonNode.class);
-//                        log.error("OAuth2 Server Error Body: {}", errorBody);
-//                        throw new BusinessException(jsonNode.get("error").asText());
-//                    })
-//                    .body(OAuth2TokenResponse.class);
-//
-//            String idToken = oAuth2TokenResponse.idToken;
-//            Jwt jwt = jwtDecoder.decode(idToken);
-//            Map<String, Object> claims = jwt.getClaims();
-//            OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
-//                    .builder()
-//                    .sub(jwt.getSubject())
-//                    .provider(atlasOauth2Properties.getClientName())
-//                    .fullName(jwt.getClaimAsString("name"))
-//                    .avatar(jwt.getClaimAsString("picture"))
-//                    .email(jwt.getClaimAsString("email"))
-//                    .phone(jwt.getClaimAsString("phone_number"))
-//                    .extraInfo(claims)
-//                    .build();
-//            return doLogin(externalIdentityDTO);
-//        }catch (Exception e){
-//            throw new BusinessException(e.getMessage());
-//        }
+        return doLogin(oAuth2UserInfo);
     }
 
     private record AtlasTokenResponse(

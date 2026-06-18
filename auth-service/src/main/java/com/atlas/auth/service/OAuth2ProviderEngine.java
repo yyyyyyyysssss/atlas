@@ -1,5 +1,6 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.entity.SsoProvider;
@@ -41,22 +42,15 @@ public class OAuth2ProviderEngine {
     private final SecurityProperties securityProperties;
 
     // 组装授权 URL
-    public String buildAuthorizeUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
+    public OAuth2ProviderAuthorizeUrlResponse buildAuthorizeUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().authorizeCode().url());
-        String redirectUrl = securityProperties.getUiUrl() + settings.redirectUrl();
-        // oauth2基础必传参数
-        builder.queryParam("client_id", settings.clientId())
-                .queryParam("response_type", "code")
-                .queryParam("redirect_uri", redirectUrl)
-                .queryParam("scope", settings.scope());
-        if (settings.extraParams() != null && settings.extraParams().authorize() != null) {
-            settings.extraParams().authorize().forEach(builder::queryParam);
-        }
-        // 注入动态额外参数
-        if(params != null && !params.isEmpty()){
-            params.forEach(builder::queryParam);
-        }
-        return builder.build().encode().toUriString();
+        return appendBaseParams(builder, settings, params);
+    }
+
+    // 扫码登录复用oauth2的授权码模式
+    public OAuth2ProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().qrScan().url());
+        return appendBaseParams(builder, settings, params);
     }
 
     public <T> T fetchToken(String provider, OAuth2ProviderSettings settings, String code, String codeVerifier, Class<T> responseClass) {
@@ -75,6 +69,10 @@ public class OAuth2ProviderEngine {
         // 注入 extraParams 中的 token 参数
         if (settings.extraParams() != null && settings.extraParams().token() != null) {
             settings.extraParams().token().forEach(body::add);
+        }
+        if(settings.pkceRequired() && !StringUtils.hasText(codeVerifier)){
+            log.error("[{}] 安全校验失败：开启了 PKCE 但缺失 code_verifier", provider);
+            throw new BusinessException("认证凭证缺失 (code_verifier)");
         }
         if (StringUtils.hasText(codeVerifier)) {
             body.add("code_verifier", codeVerifier);
@@ -132,9 +130,11 @@ public class OAuth2ProviderEngine {
 
     public <T> T getResource(String provider, String url, OAuth2ProviderToken token, ParameterizedTypeReference<T> responseType) {
         RestClient restClient = getClient(provider);
-        return restClient.get()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader())
+        var request = restClient.get().uri(url);
+        if (token != null && StringUtils.hasText(token.accessToken())) {
+            request.header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader());
+        }
+        return request
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
                 .body(responseType);
@@ -150,9 +150,11 @@ public class OAuth2ProviderEngine {
      */
     public <T> T postResource(String provider, String url, OAuth2ProviderToken token, Object body, ParameterizedTypeReference<T> responseType) {
         RestClient restClient = getClient(provider);
-        return restClient.post()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader())
+        var request = restClient.post().uri(url);
+        if (token != null && StringUtils.hasText(token.accessToken())) {
+            request.header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader());
+        }
+        return request
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .body(body)
                 .retrieve()
@@ -167,6 +169,24 @@ public class OAuth2ProviderEngine {
         return (ssoProvider != null && ssoProvider.getUseProxy()) ? proxyRestClient : defaultRestClient;
     }
 
+    private OAuth2ProviderAuthorizeUrlResponse appendBaseParams(UriComponentsBuilder builder, OAuth2ProviderSettings settings, Map<String, String> params) {
+        String redirectUrl = securityProperties.getUiUrl() + settings.redirectUrl();
+        builder.queryParam("client_id", settings.clientId())
+                .queryParam("response_type", "code")
+                .queryParam("redirect_uri", redirectUrl)
+                .queryParam("scope", settings.scope());
+
+        // 注入静态额外参数
+        if (settings.extraParams() != null && settings.extraParams().authorize() != null) {
+            settings.extraParams().authorize().forEach(builder::queryParam);
+        }
+        // 注入动态额外参数
+        if (params != null && !params.isEmpty()) {
+            params.forEach(builder::queryParam);
+        }
+        String uriString = builder.build().encode().toUriString();
+        return new OAuth2ProviderAuthorizeUrlResponse(uriString, settings.pkceRequired());
+    }
 
 
 }

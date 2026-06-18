@@ -37,6 +37,7 @@ spring:
             entity-id: "urn:atlas:sp"
             acs:
               location: ${security.issuerUrl}/api/auth/saml2/sso/auth0
+              binding: post
             assertingparty:
               # 身份提供商唯一标识
               entity-id: "urn:dev-u4j747mxw85uvr18.us.auth0.com"
@@ -85,38 +86,6 @@ security:
     secretKey: 209E335266556A586E3272357538782F413A4428472B4B6250645367566B5B76
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 7d
-  oauth2:
-    login:
-      providers:
-        atlas:
-          clientName: Atlas
-          clientId: 32b00b1e89af-90d2e0e46d20ebb92f6c
-          clientSecret: ${OAUTH2_ATLAS_CLIENT_SECRET}
-          redirectUrl: ${security.uiUrl}/oauth2/callback/atlas
-          scope: "openid profile email phone"
-          authorizeCodeEndpoint: /api/auth/oauth2/authorize
-          qrScanEndpoint: /api/auth/oauth2/qr/ticket
-          tokenEndpoint: /oauth2/token
-          userInfoEndpoint: /userinfo
-        google:
-          clientName: Google
-          clientId: 848791233261-gsq163m89ik7u9od9erunaudnvekf2r5.apps.googleusercontent.com
-          clientSecret: ${OAUTH2_GOOGLE_CLIENT_SECRET}
-          redirectUrl: ${security.uiUrl}/oauth2/callback/google
-          scope: https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile+openid
-          authorizeCodeEndpoint: https://accounts.google.com/o/oauth2/v2/auth
-          tokenEndpoint: https://oauth2.googleapis.com/token
-          userInfoEndpoint: https://www.googleapis.com/oauth2/v3/userinfo
-        github:
-          clientName: Github
-          clientId: bbf124ed2c08a0ea0ad0
-          clientSecret: ${OAUTH2_GITHUB_CLIENT_SECRET}
-          redirectUrl: ${security.uiUrl}/oauth2/callback/github
-          scope: "user user:email"
-          authorizeCodeEndpoint: https://github.com/login/oauth/authorize
-          tokenEndpoint: https://github.com/login/oauth/access_token
-          userInfoEndpoint: https://api.github.com/user
-          userEmailsEndpoint: https://api.github.com/user/emails
   webauthn:
     rpId: atlas.ys0921.sbs
     rpName: Atlas Identity Server

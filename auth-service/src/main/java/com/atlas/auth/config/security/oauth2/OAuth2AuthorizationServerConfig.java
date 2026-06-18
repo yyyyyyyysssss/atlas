@@ -82,8 +82,9 @@ public class OAuth2AuthorizationServerConfig {
         Function<OidcUserInfoAuthenticationContext, OidcUserInfo> userInfoMapper = (context) -> {
             OidcUserInfoAuthenticationToken authentication = context.getAuthentication();
             JwtAuthenticationToken principal = (JwtAuthenticationToken) authentication.getPrincipal();
+            Long userId = Long.valueOf(principal.getName());
             Set<String> scopes = context.getAccessToken().getScopes();
-            return oidcUserInfoService.loadUser(principal.getName(),scopes);
+            return oidcUserInfoService.loadUserByUserId(userId,scopes);
         };
         http
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
@@ -134,7 +135,7 @@ public class OAuth2AuthorizationServerConfig {
         return context -> {
             String name = context.getPrincipal().getName();
             Set<String> authorizedScopes = context.getAuthorizedScopes();
-            OidcUserInfo oidcUserInfo = oidcUserInfoService.loadUser(name,authorizedScopes);
+            OidcUserInfo oidcUserInfo = oidcUserInfoService.loadUserByUsername(name,authorizedScopes);
             //自定义id_token中包含的信息
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
                 context.getClaims().claims(claims -> claims.putAll(oidcUserInfo.getClaims()));

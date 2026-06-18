@@ -15,4 +15,6 @@ public class QrAuthStatusVO {
 
     private String clientName;
 
+    private String state;
+
 }

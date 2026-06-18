@@ -1,5 +1,7 @@
 package com.atlas.auth.controller;
 
+import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
+import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.common.core.response.Result;
@@ -28,9 +30,9 @@ public class ThirdPartyLoginController {
     }
 
     @GetMapping("/qrScanUrl/{clientName}")
-    public Result<String> qrScanUrl(@PathVariable("clientName") String clientName) {
-        String authorizeUrl = providerFactory.getProvider(clientName).getQrScanUrl();
-        return ResultGenerator.ok(authorizeUrl);
+    public Result<ThirdPartyAuthorizeUrlVO> qrScanUrl(@PathVariable("clientName") String clientName) {
+        OAuth2ProviderAuthorizeUrlResponse response = providerFactory.getProvider(clientName).getQrScanUrl();
+        return ResultGenerator.ok(new ThirdPartyAuthorizeUrlVO(response.url(), response.pkceRequired()));
     }
 
     @GetMapping("/callback/{clientName}")
@@ -38,7 +40,8 @@ public class ThirdPartyLoginController {
                               @RequestParam("code") String code,
                               @RequestParam(value = "state", required = false) String state,
                               @RequestParam(value = "code_verifier", required = false) String codeVerifier) {
-        TokenResponse tokenResponse = providerFactory.getProvider(clientName).processCallback(code, state,codeVerifier);
+        OAuth2ProviderAuthenticationToken token = new OAuth2ProviderAuthenticationToken(code, state, codeVerifier);
+        TokenResponse tokenResponse = providerFactory.getProvider(clientName).authenticate(token);
         return ResultGenerator.ok(tokenResponse);
     }
 

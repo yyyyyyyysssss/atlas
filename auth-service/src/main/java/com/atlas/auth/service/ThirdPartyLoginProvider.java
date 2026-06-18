@@ -1,24 +1,25 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.security.model.TokenResponse;
+import org.springframework.security.core.Authentication;
 
 public interface ThirdPartyLoginProvider {
 
     String getProviderName();
 
-    boolean isPKCERequired();
+    OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl();
 
-    String getAuthorizeUrl();
-
-    default String getQrScanUrl(){
+    default OAuth2ProviderAuthorizeUrlResponse getQrScanUrl(){
         throw new UnsupportedOperationException("暂不支持");
     }
 
-    TokenResponse processCallback(String code,String state,String codeVerifier);
+    TokenResponse authenticate(Authentication authentication);
 
     default ThirdPartyAuthorizeUrlVO getAuthorizeVO() {
-        return new ThirdPartyAuthorizeUrlVO(getAuthorizeUrl(), isPKCERequired());
+        OAuth2ProviderAuthorizeUrlResponse response = getAuthorizeUrl();
+        return new ThirdPartyAuthorizeUrlVO(response.url(), response.pkceRequired());
     }
 
 }

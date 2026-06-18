@@ -1,6 +1,7 @@
 package com.atlas.auth.service;
 
 
+import com.atlas.auth.domain.dto.SsoSettings;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.domain.entity.SsoProviderSettings;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -16,7 +17,7 @@ public interface SsoProviderService extends IService<SsoProvider> {
 
     SsoProvider getProvider(String provider);
 
-    <T> T getSettings(String provider, SsoProviderProtocol protocol, Class<T> clazz);
+    <T extends SsoSettings> T getSettings(String provider, SsoProviderProtocol protocol);
 
 }
 

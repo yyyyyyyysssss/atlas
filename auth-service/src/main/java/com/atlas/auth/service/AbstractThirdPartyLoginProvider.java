@@ -1,6 +1,5 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.common.core.exception.BusinessException;

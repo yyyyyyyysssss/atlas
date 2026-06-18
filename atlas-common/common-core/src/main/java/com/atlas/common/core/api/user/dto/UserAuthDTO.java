@@ -14,8 +14,6 @@ public class UserAuthDTO {
 
     private String username;
 
-    private String password;
-
     private String fullName;
 
     private boolean enabled;

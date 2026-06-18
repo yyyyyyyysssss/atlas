@@ -18,13 +18,7 @@ public interface UserApi {
 
 
     @GetExchange("/auth")
-    Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username);
-
-    @GetExchange("/auth/v2")
     Result<UserAuthDTO> loadUserByUserId(@RequestParam("userId") Long userId);
-
-    @GetExchange("/findByUserId")
-    Result<UserDTO> findByUserId(@RequestParam("userId") Long userId);
 
     @PostExchange("/create")
     Result<Long> createUser(@RequestBody CreateUserSpec createUserSpec);
@@ -32,8 +26,8 @@ public interface UserApi {
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();
 
-    @PostExchange("/identifiers")
-    Result<List<UserDTO>> findByIdentifier(@RequestBody List<String> identifiers);
+    @PostExchange("/ids")
+    Result<List<UserDTO>> findByIds(@RequestBody List<Long> ids);
 
     @PostExchange("/emails")
     Result<List<UserDTO>> findByEmails(@RequestBody List<String> emails);

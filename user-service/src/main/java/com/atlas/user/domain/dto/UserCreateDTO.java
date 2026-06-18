@@ -29,8 +29,6 @@ public class UserCreateDTO {
     @NotBlank(message = "账号不能为空")
     private String username;
 
-    private String password;
-
     private String fullName;
 
     private String email;

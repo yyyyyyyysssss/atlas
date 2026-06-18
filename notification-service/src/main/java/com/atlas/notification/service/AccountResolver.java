@@ -58,7 +58,7 @@ public class AccountResolver {
 
         List<UserDTO> users = switch (targetType) {
             case ALL -> safeGetData(userApi.findAll());
-            case USER_ID -> safeGetData(userApi.findByIdentifier(targets));
+            case USER_ID -> safeGetData(userApi.findByIds(targets.stream().map(Long::parseLong).toList()));
             case EMAIL -> safeGetData(userApi.findByEmails(targets));
             case PHONE -> safeGetData(userApi.findByPhones(targets));
         };

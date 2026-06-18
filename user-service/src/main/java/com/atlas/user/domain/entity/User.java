@@ -25,9 +25,6 @@ public class User extends BaseEntity {
     @TableField("username")
     private String username;
 
-    @TableField("password")
-    private String password;
-
     @TableField("full_name")
     private String fullName;
 

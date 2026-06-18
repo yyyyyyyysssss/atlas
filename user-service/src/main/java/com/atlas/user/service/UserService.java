@@ -20,21 +20,11 @@ public interface UserService extends IService<User> {
 
     boolean saveOrUpdate(User user);
 
-    UserAuthDTO loadUserByUsername(String username);
-
     Long createCoreUser(CreateUserSpec userSpec);
 
     UserAuthDTO loadUserByUserId(Long id);
 
-    User findByUsername(String username);
-
-    UserDTO findByUserId(Serializable userId);
-
-    List<UserDTO> findByIdentifier(Collection<?> identifiers);
-
-    List<UserDTO> findByEmail(Collection<String> emails);
-
-    List<UserDTO> findByPhone(Collection<String> phones);
+    User findByUserId(Serializable userId);
 
     List<UserVO> findByRoleId(Long roleId);
 

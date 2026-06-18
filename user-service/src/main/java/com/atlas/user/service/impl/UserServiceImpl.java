@@ -4,7 +4,6 @@ import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
-import com.atlas.common.core.api.user.dto.UserDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
@@ -23,16 +22,13 @@ import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import com.atlas.user.utils.NameGenerator;
 import com.atlas.user.utils.PasswordGeneratorUtils;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,7 +37,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -77,15 +76,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final int BASE = ALPHABET.length();
 
     private static final int TARGET_LENGTH = 8;
-
-    @Override
-    public UserAuthDTO loadUserByUsername(String username) {
-        User user = this.findByUsername(username);
-        if (user == null) {
-            throw new BusinessException("用户不存在: " + username);
-        }
-        return getUserAuthDTO(user);
-    }
 
     @Override
     public UserAuthDTO loadUserByUserId(Long id) {
@@ -135,7 +125,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean saveOrUpdate(User user) {
-        User u = findByUsername(user.getUsername());
+        User u = findByUserId(user.getId());
         if (u == null) {
             user.setId(IdGen.genId());
             return userMapper.insert(user) > 0;
@@ -145,66 +135,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
-
     @Override
-    public User findByUsername(String username) {
-        // 先去匹配类型相同的字符串字段 (确保走普通索引)
-        LambdaQueryWrapper<User> stringQueryWrapper = new LambdaQueryWrapper<>();
-        stringQueryWrapper
-                .and(wrapper -> wrapper
-                        .eq(User::getUsername, username)
-                        .or().eq(User::getPhone, username)
-                        .or().eq(User::getEmail, username)
-                );
-        User user = userMapper.selectOne(stringQueryWrapper);
-        // 如果上面没搜到，且入参是纯数字，再尝试根据 ID 查询 (确保走主键索引)
-        if (user == null && username.matches("^\\d+$")) {
-            try {
-                // 转换为 Long 类型，规避隐式转换，确保数字对数字，主键索引绝对生效
-                Long userId = Long.parseLong(username);
-                user = userMapper.selectOne(new LambdaQueryWrapper<User>()
-                        .eq(User::getId, userId)
-                );
-            } catch (NumberFormatException e) {
-                // 防御性容错：如果数字太大超出了 Long 的范围，直接忽略，不抛异常
-            }
-        }
-        if (user == null) {
-            throw new BusinessException("用户不存在: " + username);
-        }
-        return user;
-    }
+    public User findByUserId(Serializable userId) {
 
-    @Override
-    public UserDTO findByUserId(Serializable userId) {
-        User user = userMapper.selectById(userId);
-        return UserMapping.INSTANCE.toUserDTO(user);
-    }
-
-    @Override
-    public List<UserDTO> findByIdentifier(Collection<?> identifiers) {
-
-        if (CollectionUtils.isEmpty(identifiers)) return Collections.emptyList();
-
-        Object first = identifiers.iterator().next();
-
-        // 判断是 ID 查询还是 账号查询
-        if (first instanceof Long || (first instanceof String && NumberUtils.isDigits((String) first))) {
-            return findUsersByField(User::getId, (Collection<Object>) identifiers);
-        }
-        return findUsersByField(User::getUsername, (Collection<Object>) identifiers);
-    }
-
-    @Override
-    public List<UserDTO> findByEmail(Collection<String> emails) {
-
-        return findUsersByField(User::getEmail, emails);
-    }
-
-    @Override
-    public List<UserDTO> findByPhone(Collection<String> phones) {
-
-        return findUsersByField(User::getPhone, phones);
+        return userMapper.selectById(userId);
     }
 
     // 根据角色查询用户
@@ -228,11 +162,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Transactional
     public UserCreateVO createUser(UserCreateDTO userCreateDTO) {
         String initPassword = PasswordGeneratorUtils.generate(16);
-        userCreateDTO.setPassword(initPassword);
         User user = saveUser(userCreateDTO);
         UserCreateVO userCreateVO = new UserCreateVO();
         userCreateVO.setId(user.getId());
-        userCreateVO.setUsername(user.getUsername());
         userCreateVO.setInitialPassword(initPassword);
         return userCreateVO;
     }
@@ -299,7 +231,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             UserMapping.INSTANCE.updateUser(userUpdateDTO, user);
         }
         if (user.getAvatar() == null || user.getAvatar().isEmpty()) {
-            String defaultAvatar = generateDefaultAvatar(user.getUsername());
+            String defaultAvatar = generateDefaultAvatar(user.getFullName());
             user.setAvatar(defaultAvatar);
         }
         if (userUpdateDTO.getOrgId() != null) {
@@ -319,14 +251,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
 
-    private String generateDefaultAvatar(String username) {
+    private String generateDefaultAvatar(String fullName) {
         try {
-            Result<String> result = fileApi.generateAvatar(username);
+            Result<String> result = fileApi.generateAvatar(fullName);
             if (result.isSucceed()) {
                 return result.getData();
             }
         }catch (Exception e){
-            log.warn("[{}]头像生成失败", username);
+            log.warn("[{}]头像生成失败", fullName);
         }
         return null;
     }
@@ -349,13 +281,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (queryDTO.getKeyword() != null && !queryDTO.getKeyword().isEmpty()) {
             queryWrapper
                     .lambda()
-                    .like(User::getUsername, queryDTO.getKeyword())
-                    .or()
-                    .like(User::getFullName, queryDTO.getKeyword())
-                    .or()
-                    .like(User::getEmail, queryDTO.getKeyword())
-                    .or()
-                    .like(User::getPhone, queryDTO.getKeyword());
+                    .like(User::getFullName, queryDTO.getKeyword());
         }
         if (queryDTO.getEnabled() != null) {
             queryWrapper.eq("enabled", queryDTO.getEnabled());
@@ -462,28 +388,5 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return Collections.emptyList();
         }
         return UserMapping.INSTANCE.toUserVO(users);
-    }
-
-
-    /**
-     * 通用用户查询抽象
-     *
-     * @param field  数据库字段对应的 Lambda 表达式
-     * @param values 查询的值集合
-     * @return UserDTO 列表
-     */
-    private <T> List<UserDTO> findUsersByField(SFunction<User, T> field, Collection<T> values) {
-        if (CollectionUtils.isEmpty(values)) {
-            return Collections.emptyList();
-        }
-
-        List<User> users = this.lambdaQuery()
-                .eq(User::getEnabled, true)
-                .in(field, values)
-                .list();
-
-        return users.stream()
-                .map(UserMapping.INSTANCE::toUserDTO)
-                .toList();
     }
 }

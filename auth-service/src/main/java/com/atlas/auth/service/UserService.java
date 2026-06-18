@@ -1,7 +1,6 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.IdentifierSpec;
-import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
@@ -43,6 +42,8 @@ public class UserService implements UserDetailsService {
     private final UserGestureCredentialsService userGestureCredentialsService;
 
     private final UserMfaBackupCodeService userMfaBackupCodeService;
+
+    private final UserPasswordCredentialsService userPasswordCredentialsService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -186,7 +187,10 @@ public class UserService implements UserDetailsService {
         securityUser.setUsername(identifierTypeMap.get(IdentifierType.USERNAME));
         securityUser.setEmail(identifierTypeMap.get(IdentifierType.EMAIL));
         securityUser.setPhone(identifierTypeMap.get(IdentifierType.PHONE));
-        securityUser.setPassword(userAuthDTO.getPassword());
+
+        String password = userPasswordCredentialsService.getPasswordHashByUserId(userAuthDTO.getId());
+
+        securityUser.setPassword(password);
 
         // 补全 Spring Security 标准核心状态，防止框架拦截
         securityUser.setAccountNonExpired(true);

@@ -29,12 +29,6 @@ public class UserInternalController {
     private final UserService userService;
 
     @GetMapping("/auth")
-    public Result<UserAuthDTO> loadUserByUsername(@RequestParam("username") String username) {
-        UserAuthDTO userAuthDTO = userService.loadUserByUsername(username);
-        return ResultGenerator.ok(userAuthDTO);
-    }
-
-    @GetMapping("/auth/v2")
     public Result<UserAuthDTO> loadUserByUserId(@RequestParam("userId") Long userId) {
         UserAuthDTO userAuthDTO = userService.loadUserByUserId(userId);
         return ResultGenerator.ok(userAuthDTO);
@@ -48,7 +42,8 @@ public class UserInternalController {
 
     @GetMapping("/findByUserId")
     public Result<UserDTO> findByUserId(@RequestParam("userId") Long userId) {
-        UserDTO userDTO = userService.findByUserId(userId);
+        User user = userService.findByUserId(userId);
+        UserDTO userDTO = UserMapping.INSTANCE.toUserDTO(user);
         return ResultGenerator.ok(userDTO);
     }
 
@@ -56,28 +51,37 @@ public class UserInternalController {
     public Result<List<UserDTO>> all() {
         List<User> users = userService
                 .lambdaQuery()
-                .select(User::getId, User::getEmail, User::getPhone)
+                .select(User::getId)
                 .eq(User::getEnabled, true)
                 .list();
         return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(users));
     }
 
-    @PostMapping("/identifiers")
-    public Result<List<UserDTO>> findByIdentifiers(@RequestBody List<String> identifiers) {
-        List<UserDTO> userDTOList = userService.findByIdentifier(identifiers);
-        return ResultGenerator.ok(userDTOList);
+    @PostMapping("/ids")
+    public Result<List<UserDTO>> findByIds(@RequestBody List<Long> ids) {
+        List<User> users = userService
+                .lambdaQuery()
+                .in(User::getId, ids)
+                .list();
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(users));
     }
 
     @PostMapping("/emails")
     public Result<List<UserDTO>> findByEmails(@RequestBody List<String> emails) {
-        List<UserDTO> userDTOList = userService.findByEmail(emails);
-        return ResultGenerator.ok(userDTOList);
+        List<User> users = userService
+                .lambdaQuery()
+                .in(User::getEmail, emails)
+                .list();
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(users));
     }
 
     @PostMapping("/phones")
     public Result<List<UserDTO>> findByPhones(@RequestBody List<String> phones) {
-        List<UserDTO> userDTOList = userService.findByPhone(phones);
-        return ResultGenerator.ok(userDTOList);
+        List<User> users = userService
+                .lambdaQuery()
+                .in(User::getPhone, phones)
+                .list();
+        return ResultGenerator.ok(UserMapping.INSTANCE.toUserDTO(users));
     }
 
 }

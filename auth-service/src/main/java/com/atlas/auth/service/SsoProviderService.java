@@ -7,6 +7,8 @@ import com.atlas.auth.domain.entity.SsoProviderSettings;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * (SsoProvider)表服务接口
  *
@@ -18,6 +20,8 @@ public interface SsoProviderService extends IService<SsoProvider> {
     SsoProvider getProvider(String provider);
 
     <T extends SsoSettings> T getSettings(String provider, SsoProviderProtocol protocol);
+
+    List<SsoProvider> listByProtocol(SsoProviderProtocol protocol);
 
 }
 

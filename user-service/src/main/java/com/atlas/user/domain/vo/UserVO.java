@@ -34,6 +34,12 @@ public class UserVO {
 
     private String phone;
 
+    private String motto;
+
+    private String orgName;
+
+    private String posName;
+
     private String createTime;
 
     private String creatorName;

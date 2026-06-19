@@ -1,4 +1,4 @@
-package com.atlas.user.utils;
+package com.atlas.security.utils;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;

@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @Description
@@ -23,8 +22,6 @@ public class UserUpdateDTO {
     private Long orgId;
 
     private Long posId;
-
-    private String password;
 
     @NotBlank(message = "用户名不能为空",groups = UpdateAll.class)
     private String fullName;

@@ -6,9 +6,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
 /**
  * @Description
  * @Author ys
@@ -22,9 +19,6 @@ import java.util.Map;
 @TableName(value = "user", autoResultMap = true)
 public class User extends BaseEntity {
 
-    @TableField("username")
-    private String username;
-
     @TableField("full_name")
     private String fullName;
 
@@ -37,18 +31,6 @@ public class User extends BaseEntity {
     @TableField("avatar")
     private String avatar;
 
-    @TableField("email")
-    private String email;
-
-    @TableField("phone")
-    private String phone;
-
     @TableField(value = "settings", typeHandler = JacksonTypeHandler.class)
     private UserSetting settings;
-
-    @TableField("username_modify_count")
-    private Integer usernameModifyCount;
-
-    @TableField("username_last_modified")
-    private LocalDateTime usernameLastModified;
 }

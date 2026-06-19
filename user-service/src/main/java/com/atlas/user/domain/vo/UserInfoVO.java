@@ -39,6 +39,4 @@ public class UserInfoVO {
 
     private UserSetting settings;
 
-    private Boolean isUsernameModified;
-
 }

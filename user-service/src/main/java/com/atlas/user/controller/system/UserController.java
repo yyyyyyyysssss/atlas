@@ -46,6 +46,12 @@ public class UserController {
         return ResultGenerator.ok(bindRoles);
     }
 
+    @PatchMapping("/{id}/password")
+    public Result<?> resetPassword(@PathVariable Long id) {
+        String newPassword = userService.resetPassword(id);
+        return ResultGenerator.ok(newPassword);
+    }
+
     @DeleteMapping("/{id}")
     public Result<?> delete(@PathVariable("id") Long id) {
         Boolean b = userService.deleteUser(id);

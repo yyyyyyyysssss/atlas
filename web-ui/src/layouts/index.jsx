@@ -12,7 +12,6 @@ import TopMenuTab from './top-tab';
 import { setUserInfo } from '../redux/slices/userSlice';
 import { setAuthInfo } from '../redux/slices/authSlice';
 import { loadMenuItems } from '../redux/slices/layoutSlice';
-import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
 import { useAuth } from '../router/AuthProvider';
 import { SseProvider } from '../sse/SseProvider';
 import FullScreenButton from '../components/FullScreenButton';

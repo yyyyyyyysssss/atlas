@@ -8,9 +8,9 @@ export const fetchUserInfo = async () => {
 }
 
 
-export const fetchAuthInfo = async () => {
+export const fetchUserPermissions = async () => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/auth'))
+    return apiRequestWrapper(() => httpWrapper.get('/api/user/profile/permissions'))
 }
 
 export const fetchUserTeamMember = async () => {

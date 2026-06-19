@@ -8,7 +8,7 @@ import { reset as resetUser, setUserInfo } from '../redux/slices/userSlice';
 import { reset as resetAuth, setAuthInfo } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
 import Cookies from 'js-cookie'
-import { fetchAuthInfo, fetchUserInfo } from '../services/UserProfileService';
+import { fetchUserPermissions, fetchUserInfo } from '../services/UserProfileService';
 import { useDispatch } from 'react-redux';
 import { useDisconnect } from 'wagmi';
 
@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
         }
         const [userInfo, authInfo] = await Promise.all([
             fetchUserInfo(),
-            fetchAuthInfo()
+            fetchUserPermissions()
         ])
         dispatch(setUserInfo({ userInfo }))
         dispatch(setAuthInfo({ authInfo }))

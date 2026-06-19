@@ -7,6 +7,8 @@ import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.mapper.UserIdentifierMapper;
 import com.atlas.auth.service.UserIdentifierService;
 import com.atlas.auth.service.UsernameGeneratorService;
+import com.atlas.common.core.api.auth.dto.UserIdentifierCreateDTO;
+import com.atlas.common.core.api.auth.dto.UserIdentifierDisplayDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -16,9 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -44,21 +45,19 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
             IdentifierType type = spec.type();
             String value = spec.value();
 
-            if(type == IdentifierType.USERNAME){
-                if(hasIdentifierType(userId,type)){
-                    log.info("Identifier already exists, skipping: {} = {}", type, value);
+            if (type == IdentifierType.USERNAME) {
+                if (hasIdentifierType(userId, type)) {
                     continue;
                 }
-                if((value == null || value.isEmpty())){
-                    value = usernameGeneratorService.generateUniqueUsername(u -> this.existsByValueAndType(u,IdentifierType.USERNAME));
+                if ((value == null || value.isEmpty())) {
+                    value = usernameGeneratorService.generateUniqueUsername(u -> this.existsByValueAndType(u, IdentifierType.USERNAME));
                 }
             }
 
             String normalized = normalize(type, value);
 
-            if (existsByValueAndType(normalized,type)) {
-                log.info("Identifier already exists, skipping: {} = {}", type, value);
-                continue;
+            if (existsByValueAndType(normalized, type)) {
+                throw new BusinessException("该标识 " + normalized + " 已被他人占用");
             }
 
             UserIdentifier identifier = UserIdentifier.builder()
@@ -74,6 +73,17 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         }
         this.saveBatch(result);
         return result;
+    }
+
+    @Transactional
+    @Override
+    public void createIdentifier(UserIdentifierCreateDTO dto) {
+        List<IdentifierSpec> specs = new ArrayList<>();
+        specs.add(new IdentifierSpec(IdentifierType.USERNAME, dto.getUsername(), true));
+        if (dto.getEmail() != null) specs.add(new IdentifierSpec(IdentifierType.EMAIL, dto.getEmail(), true));
+        if (dto.getPhone() != null) specs.add(new IdentifierSpec(IdentifierType.PHONE, dto.getPhone(), true));
+
+        this.addIdentifier(dto.getUserId(), specs);
     }
 
     @Override
@@ -119,7 +129,9 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         return identifier != null ? identifier.getUserId() : null;
     }
 
-    /** 查询用户的所有标识 */
+    /**
+     * 查询用户的所有标识
+     */
     @Override
     public List<UserIdentifier> listByUserId(Long userId) {
         QueryWrapper<UserIdentifier> wrapper = new QueryWrapper<>();
@@ -129,11 +141,73 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
     }
 
     @Override
+    public List<UserIdentifierDisplayDTO> getDisplayList(Collection<Long> userIds) {
+        QueryWrapper<UserIdentifier> wrapper = new QueryWrapper<>();
+        wrapper.in("user_id", userIds);
+        wrapper.eq("status", IdentifierStatus.ACTIVE.name());
+        List<UserIdentifier> list = this.list(wrapper);
+        return list.stream()
+                .collect(Collectors.groupingBy(UserIdentifier::getUserId))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    Long userId = entry.getKey();
+                    List<UserIdentifier> userIdentifiers = entry.getValue();
+
+                    // 实例化 DTO
+                    UserIdentifierDisplayDTO dto = new UserIdentifierDisplayDTO();
+                    dto.setUserId(userId);
+
+                    // 填充字段
+                    for (UserIdentifier item : userIdentifiers) {
+                        switch (item.getIdentifierType()) {
+                            case USERNAME -> dto.setUsername(item.getNormalizedValue());
+                            case EMAIL -> dto.setEmail(item.getNormalizedValue());
+                            case PHONE -> dto.setPhone(item.getNormalizedValue());
+                        }
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserIdentifierDisplayDTO> findUserByValuesAndType(Collection<String> values, IdentifierType type) {
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> normalizedValues = values.stream()
+                .map(v -> normalize(type, v))
+                .toList();
+
+        List<UserIdentifier> matchedIdentifiers = this.lambdaQuery()
+                .in(UserIdentifier::getIdentifierValue, normalizedValues) // 或者用 normalizedValue
+                .eq(UserIdentifier::getIdentifierType, type)
+                .eq(UserIdentifier::getStatus, IdentifierStatus.ACTIVE)
+                .list();
+
+        if (matchedIdentifiers.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> userIds = matchedIdentifiers.stream()
+                .map(UserIdentifier::getUserId)
+                .collect(Collectors.toSet());
+        return getDisplayList(userIds);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean updateIdentifier(Long userId, IdentifierType type, String newValue, boolean verified) {
         String normalizeValue = normalize(type, newValue);
         UserIdentifier exist = this.findByUserIdAndType(userId, type);
         if (exist != null) {
+            if(exist.getNormalizedValue().equals(normalizeValue)){
+                return true;
+            }
+            if (existsByValueAndType(newValue, type)){
+                throw new BusinessException("该标识 " + normalizeValue + " 已被他人占用");
+            }
             // 3. 如果存在，使用主键乐观锁定或精确更新
             exist.setIdentifierValue(newValue);
             exist.setNormalizedValue(normalizeValue);
@@ -147,7 +221,9 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         }
     }
 
-    /** 更新状态 */
+    /**
+     * 更新状态
+     */
     @Override
     @Transactional
     public boolean updateStatus(Long identifierId, IdentifierStatus status) {
@@ -157,7 +233,9 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         return this.updateById(identifier);
     }
 
-    /** 更新验证状态 */
+    /**
+     * 更新验证状态
+     */
     @Override
     @Transactional
     public boolean updateVerified(Long identifierId, boolean verified) {
@@ -169,7 +247,9 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
     }
 
 
-    /** 检查是否存在 */
+    /**
+     * 检查是否存在
+     */
     @Override
     public boolean existsByValueAndType(String value, IdentifierType type) {
         String normalized = normalize(type, value);
@@ -188,7 +268,9 @@ public class UserIdentifierServiceImpl extends ServiceImpl<UserIdentifierMapper,
         return userIdentifierMapper.selectCount(wrapper) > 0;
     }
 
-    /** 标识标准化 */
+    /**
+     * 标识标准化
+     */
     private String normalize(IdentifierType type, String value) {
         if (type == null || value == null) return value;
         return switch (type) {

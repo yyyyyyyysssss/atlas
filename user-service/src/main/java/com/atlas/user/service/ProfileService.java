@@ -5,14 +5,15 @@ import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserInfoVO;
+import com.atlas.user.domain.vo.UserVO;
 
 import java.util.List;
 
 public interface ProfileService {
 
-    UserInfoVO userInfo(Long userId);
+    UserVO userInfo(Long userId);
 
-    AuthInfoVO authInfo(Long userId);
+    AuthInfoVO getPermissions(Long userId);
 
     void changeUserProfile(Long userId,UserProfileDTO userProfileDTO);
 

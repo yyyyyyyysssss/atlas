@@ -44,4 +44,6 @@ public interface UserService extends IService<User> {
 
     Boolean deleteUser(Long id);
 
+    String resetPassword(Long id);
+
 }

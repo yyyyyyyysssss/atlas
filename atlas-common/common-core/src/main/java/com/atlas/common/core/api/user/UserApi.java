@@ -26,8 +26,8 @@ public interface UserApi {
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();
 
-    @PostExchange("/ids")
-    Result<List<UserDTO>> findByIds(@RequestBody List<Long> ids);
+    @PostExchange("/userIds")
+    Result<List<UserDTO>> findByUserIds(@RequestBody List<Long> ids);
 
     @PostExchange("/emails")
     Result<List<UserDTO>> findByEmails(@RequestBody List<String> emails);

@@ -5,6 +5,8 @@ import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierStatus;
 import com.atlas.auth.enums.IdentifierType;
+import com.atlas.common.core.api.auth.dto.UserIdentifierCreateDTO;
+import com.atlas.common.core.api.auth.dto.UserIdentifierDisplayDTO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
@@ -25,6 +27,8 @@ public interface UserIdentifierService extends IService<UserIdentifier> {
      * 添加用户标识
      */
     List<UserIdentifier> addIdentifier(Long userId, Collection<IdentifierSpec> specs);
+
+    void createIdentifier(UserIdentifierCreateDTO dto);
 
     default List<UserIdentifier> addIdentifier(Long userId, IdentifierSpec spec) {
         if (spec == null) {
@@ -87,6 +91,10 @@ public interface UserIdentifierService extends IService<UserIdentifier> {
      * 查询用户的所有标识
      */
     List<UserIdentifier> listByUserId(Long userId);
+
+    List<UserIdentifierDisplayDTO> getDisplayList(Collection<Long> userIds);
+
+    List<UserIdentifierDisplayDTO> findUserByValuesAndType(Collection<String> values, IdentifierType type);
 
     boolean updateIdentifier(Long userId, IdentifierType type, String newValue, boolean verified);
 

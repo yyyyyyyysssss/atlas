@@ -73,6 +73,7 @@ security:
       - /captcha/*
       - /webauthn/authenticate/options
       - /web3/wallet/register/options
+      - /internal/**
   # 用户设备最大token数量 -1 表示不限制
   coexistToken: 1
   # jwt token配置

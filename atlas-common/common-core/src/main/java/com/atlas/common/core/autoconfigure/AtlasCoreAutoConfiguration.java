@@ -1,5 +1,6 @@
 package com.atlas.common.core.autoconfigure;
 
+import com.atlas.common.core.api.auth.AuthApi;
 import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.user.UserApi;
@@ -130,6 +131,13 @@ public class AtlasCoreAutoConfiguration {
         public FileApi fileApi(@Value("${atlas.file.server-url}") String url, RestClientFactory restClientFactory, HttpClientFactory httpClientFactory) {
 
             return createProxy(FileApi.class, url, restClientFactory, httpClientFactory);
+        }
+
+        @Bean
+        @ConditionalOnProperty(prefix = "atlas.auth", name = "server-url")
+        public AuthApi authApi(@Value("${atlas.auth.server-url}") String url, RestClientFactory restClientFactory, HttpClientFactory httpClientFactory) {
+
+            return createProxy(AuthApi.class, url, restClientFactory, httpClientFactory);
         }
 
         private <T> T createProxy(Class<T> clazz, String url, RestClientFactory factory, HttpClientFactory httpFactory) {

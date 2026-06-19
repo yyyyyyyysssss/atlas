@@ -73,7 +73,7 @@ export const fetchUserOptions = async () => {
 // 重置用户密码
 export const resetPassword = async (userId) => {
 
-    return apiRequestWrapper(() => httpWrapper.put(`/api/user/system/user/${userId}/password`))
+    return apiRequestWrapper(() => httpWrapper.patch(`/api/user/system/user/${userId}/password`))
 }
 
 // 创建角色

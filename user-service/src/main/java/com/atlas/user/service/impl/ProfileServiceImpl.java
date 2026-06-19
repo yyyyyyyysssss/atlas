@@ -37,67 +37,14 @@ public class ProfileServiceImpl implements ProfileService {
 
     private final OrganizationService organizationService;
 
-    private final PositionService positionService;
-
     @Override
-    public UserInfoVO userInfo(Long userId) {
-        User user = userService
-                .lambdaQuery()
-                .select(
-                        User::getUsername,
-                        User::getFullName,
-                        User::getEmail,
-                        User::getPhone,
-                        User::getAvatar,
-                        User::getMotto,
-                        User::getUsernameModifyCount,
-                        User::getSettings
-                )
-                .eq(User::getId, userId)
-                .one();
-        if (user == null) {
-            throw new BusinessException("用户不存在");
-        }
-        UserInfoVO userInfoVO = UserMapping.INSTANCE.toUserInfoVO(user);
-        userInfoVO.setIsUsernameModified(user.getUsernameModifyCount() > 1);
-        // 用户所属组织
-        UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
-        if (userOrgMain != null) {
-            Long orgId = userOrgMain.getOrgId();
-            Long posId = userOrgMain.getPosId();
-
-            Organization organization = organizationService
-                    .lambdaQuery()
-                    .select(Organization::getOrgName, Organization::getOrgPathName)
-                    .eq(Organization::getId, orgId)
-                    .one();
-            if (organization != null) {
-                userInfoVO.setOrgId(orgId);
-                String orgPathName = organization.getOrgPathName();
-                String cleanPath = orgPathName.trim().replaceAll("/$", "");
-                String result = Arrays.stream(cleanPath.split("/"))
-                        .filter(s -> !s.isEmpty())
-                        .skip(1) // 跳过第一层级（集团）
-                        .collect(Collectors.joining("-"));
-                userInfoVO.setOrgName(result);
-            }
-
-            Position position = positionService
-                    .lambdaQuery()
-                    .select(Position::getPosName)
-                    .eq(Position::getId, posId)
-                    .one();
-            if (position != null) {
-                userInfoVO.setPosId(posId);
-                userInfoVO.setPosName(position.getPosName());
-            }
-        }
-
-        return userInfoVO;
+    public UserVO userInfo(Long userId) {
+        User user = userService.findByUserId(userId);
+        return UserMapping.INSTANCE.toUserVO(user);
     }
 
     @Override
-    public AuthInfoVO authInfo(Long userId) {
+    public AuthInfoVO getPermissions(Long userId) {
         AuthInfoVO authInfoVO = new AuthInfoVO();
         // 用户角色
         List<RoleVO> roles = roleService.findByUserId(userId);

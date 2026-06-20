@@ -39,19 +39,21 @@ const ShortcutCard = () => {
       return []
     }
     // 匹配逻辑
-    return shortcutIds
-      .map(id => {
-        const menu = flattenMenuItems.find(item => String(item.id) === String(id))
-        if (!menu) {
-          return null
-        }
-        const route = findRouteByPath(menu.routePath)
-        return {
-          label: menu.name,
-          path: menu.routePath,
-          icon: route?.defaultIcon || <Zap size={16} />,
-        }
-      })
+    return shortcutIds.flatMap(id => {
+      const menu = flattenMenuItems.find(item => String(item.id) === String(id))
+
+      // 如果没找到，返回空数组 []，flatMap 会自动将其移除
+      if (!menu) {
+        return []
+      }
+
+      const route = findRouteByPath(menu.routePath)
+      return [{
+        label: menu.name,
+        path: menu.routePath,
+        icon: route?.defaultIcon || <Zap size={16} />,
+      }]
+    })
   }, [shortcutIds, flattenMenuItems])
 
   const transferDataSource = useMemo(() => {

@@ -76,8 +76,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final AuthApi authApi;
 
-    private final String defaultRoleCode = "role_member";
-
     @Override
     public UserAuthDTO loadUserByUserId(Long id) {
         User user = getById(id);
@@ -236,10 +234,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserCreateDTO userCreateDTO = new UserCreateDTO();
         userCreateDTO.setFullName(userSpec.fullName());
         userCreateDTO.setAvatar(userSpec.avatarUrl());
-        Role defaultRole = roleService.findByCode(defaultRoleCode);
-        if (defaultRole != null) {
-            userCreateDTO.setRoleIds(Collections.singletonList(defaultRole.getId()));
-        }
         // 落库主体表
         User newUser = this.saveUser(userCreateDTO);
         // 发布事件：通知监听器去下载 Google/GitHub 头像

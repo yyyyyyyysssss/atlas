@@ -44,21 +44,6 @@ const UserProfile = () => {
                 menu={{
                     items: [
                         {
-                            key: 'profile',
-                            label: (
-                                <Typography.Link onClick={() => navigate('/account/settings')}>
-                                    <Flex
-                                        gap={8}
-                                        align='center'
-                                    >
-                                        <UserPen size={16} />
-                                        <Typography.Text className='user-profile-menu-label'>{t('个人中心')}</Typography.Text>
-                                    </Flex>
-                                </Typography.Link>
-
-                            )
-                        },
-                        {
                             key: 'logout',
                             label: (
                                 <Typography.Link onClick={handleLogout}>

@@ -4,6 +4,7 @@ import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.Saml2ProviderSettings;
 import com.atlas.auth.domain.dto.Saml2UserInfo;
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.security.model.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl() {
+    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action) {
         // 动态替换注册 ID
         String finalSaml2AuthUrl = saml2AuthUrl.replace("{registrationId}", getProviderName());
         return new OAuth2ProviderAuthorizeUrlResponse(finalSaml2AuthUrl, false);

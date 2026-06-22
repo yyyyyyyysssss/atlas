@@ -6,6 +6,7 @@ import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.OAuth2UserInfo;
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
@@ -37,9 +38,9 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     }
 
     @Override
-    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl() {
+    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
-        String state = generateState();
+        String state = generateState(action);
         Map<String, String> extraParams = Map.of(
                 "state", state
         );
@@ -58,7 +59,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                 providerName, state, code, codeVerifier);
 
         // 校验state
-        validateState(state);
+        ThirdPartyStateContext stateContext = validateState(state);
 
         // 获取配置
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
@@ -100,7 +101,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
                 .emailVerified(primaryEmail.verified)
                 .extraInfo(extraInfo)
                 .build();
-        return doLogin(externalIdentityDTO);
+        return dispatchFederatedIdentity(externalIdentityDTO, stateContext);
     }
 
     /**

@@ -6,9 +6,9 @@ export const AUTHORIZE_CODE_PKCE_VERIFIER = "authorize_code_pkce_verifier"
 
 export const QR_SCAN_PKCE_VERIFIER = "qr_scan_pkce_verifier"
 
-export const fetchAuthorizeUrl = async (clientName) => {
+export const fetchAuthorizeUrl = async (clientName, action = 'login') => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/authorizeUrl/${clientName}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/authorizeUrl/${clientName}?action=${action}`))
 }
 
 

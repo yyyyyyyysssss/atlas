@@ -3,6 +3,7 @@ package com.atlas.auth.controller;
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
 import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
+import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
@@ -24,8 +25,9 @@ public class ThirdPartyLoginController {
 
 
     @GetMapping("/authorizeUrl/{clientName}")
-    public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName) {
-        ThirdPartyAuthorizeUrlVO authorizeVO = providerFactory.getProvider(clientName).getAuthorizeVO();
+    public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName,
+                                                         @RequestParam(name = "action", required = false, defaultValue = "login") String action) {
+        ThirdPartyAuthorizeUrlVO authorizeVO = providerFactory.getProvider(clientName).getAuthorizeVO(ThirdPartyAuthAction.fromString(action));
         return ResultGenerator.ok(authorizeVO);
     }
 

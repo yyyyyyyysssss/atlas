@@ -59,6 +59,15 @@ const OAuth2Callback = () => {
                     })
                     return
                 }
+
+                if (loginResponse.status === 'SUCCESS_BOUND') {
+                    // 通过 postMessage 向原本的主窗口（opener）发送一个自定义事件，通知它绑定成功
+                    if (window.opener) {
+                        window.opener.postMessage('BIND_SUCCESS', window.location.origin)
+                    }
+                    window.close()
+                    return
+                }
                 message.error('登录失败')
             } catch (error) {
                 navigate('/500', {
@@ -73,7 +82,7 @@ const OAuth2Callback = () => {
     }, [code, state, clientName, login_mode])
 
     return (
-        <Loading fullscreen tip="正在完成登录..." />
+        <Loading fullscreen tip="正在完成认证..." />
     )
 }
 

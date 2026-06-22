@@ -67,7 +67,9 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
                 log.warn("身份标识 {} 已被用户 {} 占用，当前尝试绑定到用户 {}", entity.getProviderUserId(), entity.getUserId(), userId);
                 throw new BusinessException("该社交账号已被其他用户绑定");
             }
-            // 已经绑定过了，直接返回，不要再 save
+            // 已经绑定过了则更新
+            entity.setExtraInfo(extraInfo);
+            this.updateById(entity);
             return;
         }
         UserProvider userIdentity = UserProvider

@@ -161,6 +161,18 @@ public class UserService implements UserDetailsService {
         return userId;
     }
 
+    @Transactional
+    public void bindThirdPartyProvider(String provider, Long currentUserId, ThirdPartyUserIdentity thirdPartyIdentity){
+        String sub = thirdPartyIdentity.getSub();
+        UserProviderDTO existingIdentity = userProviderService.getByProvider(provider, sub);
+        if(existingIdentity != null){
+            if(!existingIdentity.getUserId().equals(currentUserId)){
+                throw new BusinessException("该社交账号已被其他用户绑定，请先解绑或更换账号");
+            }
+        }
+        userProviderService.addUserProvider(currentUserId, provider,sub,thirdPartyIdentity.getExtraInfo());
+    }
+
     private Long invokeCreateUser(CreateUserSpec spec) {
         Result<Long> result = userApi.createUser(spec);
         if (!result.isSucceed()) {

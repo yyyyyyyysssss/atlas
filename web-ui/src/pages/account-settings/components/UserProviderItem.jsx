@@ -6,6 +6,9 @@ import {
     UserOutlined,
     InfoCircleOutlined
 } from '@ant-design/icons';
+import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../services/Oauth2Service';
+import { useRequest } from 'ahooks';
+import { generateChallenge, generateVerifier } from '../../../utils/pkce';
 
 const { Text } = Typography;
 
@@ -39,15 +42,54 @@ const UserProviderItem = ({
     const { modal, message } = App.useApp();
     const [loadingKey, setLoadingKey] = useState(null);
 
+    const { runAsync: getAuthorizeUrlAsync, loading: getAuthorizeUrlLoading } = useRequest(fetchAuthorizeUrl, {
+        manual: true
+    });
 
     const bind = async (item, meta) => {
         // 绑定流程
         try {
-            setLoadingKey(item.provider);
-            // 绑定流程
+            const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(item.provider, 'bind')
+            let finalUrl = authorizeUrl
+            if (isPKCERequired) {
+                const verifier = generateVerifier()
+                const challenge = await generateChallenge(verifier)
+                sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
+                finalUrl = finalUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
+            }
+            const width = 600
+            const height = 700
+            const left = (window.screen.width - width) / 2
+            const top = (window.screen.height - height) / 2
+            const authWindow = window.open(
+                finalUrl,
+                `bind_${item.provider}`,
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+            )
+            if (!authWindow) {
+                message.warning('弹窗被浏览器拦截，请允许弹出窗口后重试');
+                return;
+            }
+            const handleMessage = (event) => {
+                // 同源安全校验
+                if (event.origin !== window.location.origin) return
+
+                // 匹配子窗口通过 postMessage 发来的纯字符串状态
+                if (event.data === 'BIND_SUCCESS') {
+                    message.success(`${meta.name} 绑定成功！`);
+
+                    // 刷新当前页面的三方绑定状态列表
+                    refresh?.();
+
+                    // 任务完成，解绑当前监听器，避免内存泄漏
+                    window.removeEventListener('message', handleMessage)
+                }
+            }
+
+            window.addEventListener('message', handleMessage)
         } catch (error) {
+            console.error(error)
             message.error(`发起 ${meta.name} 绑定失败`);
-            setLoadingKey(null);
         }
     }
 

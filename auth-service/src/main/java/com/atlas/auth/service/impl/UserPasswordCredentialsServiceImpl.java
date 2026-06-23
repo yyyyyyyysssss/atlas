@@ -1,7 +1,10 @@
 package com.atlas.auth.service.impl;
 
 import com.atlas.auth.domain.entity.UserPasswordCredentials;
+import com.atlas.auth.domain.entity.UserProvider;
+import com.atlas.auth.enums.CredentialType;
 import com.atlas.auth.mapper.UserPasswordCredentialsMapper;
+import com.atlas.auth.service.AuthCredentialChecker;
 import com.atlas.auth.service.UserPasswordCredentialsService;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
@@ -133,5 +136,26 @@ public class UserPasswordCredentialsServiceImpl extends ServiceImpl<UserPassword
         );
     }
 
+    @Override
+    public CredentialType getCredentialType() {
+        return CredentialType.PASSWORD;
+    }
+
+    @Override
+    public boolean hasCredential(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+
+        return this.hasPassword(userId);
+    }
+
+    @Override
+    public boolean hasCredentialExcluding(Long userId, Object credentialId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        // 因为密码跟用户是一对一的强绑定关系，用户不可能在系统里拥有“两套”登录密码。
+        // 如果系统当前正在尝试移除/解绑这唯一的密码凭证（不管传入的 credentialId 是什么），
+        // 排除掉它之后，剩余的密码凭证数量必然为 0。
+        // 因此，这里直接死回 false，代表“一旦删掉当前密码，该用户将没有任何备用密码可用”。
+        return false;
+    }
 }
 

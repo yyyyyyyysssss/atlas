@@ -144,3 +144,14 @@ export const verifyWeb3Wallet = async (req) => {
 
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/web3/wallet/verify', req))
 }
+
+
+export const bindthirdPartyProvider = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/thirdParty/provider', req))
+}
+
+export const unbindthirdPartyProvider = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/thirdParty/provider', { data: req }))
+}

@@ -1,14 +1,18 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
-import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
+import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
+import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
+import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
+import com.atlas.auth.service.ThirdPartyStateService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.security.model.TokenResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,27 +27,30 @@ public class ThirdPartyLoginController {
 
     private final ThirdPartyLoginProviderFactory providerFactory;
 
+    private final ThirdPartyStateService thirdPartyStateService;
 
     @GetMapping("/authorizeUrl/{clientName}")
     public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName,
-                                                         @RequestParam(name = "action", required = false, defaultValue = "login") String action) {
-        ThirdPartyAuthorizeUrlVO authorizeVO = providerFactory.getProvider(clientName).getAuthorizeVO(ThirdPartyAuthAction.fromString(action));
+                                                         @RequestParam(value = "protocol", required = false) String protocol) {
+        SsoProviderProtocol ssoProviderProtocol = StringUtils.hasText(protocol) ? SsoProviderProtocol.fromString(protocol) : SsoProviderProtocol.OAUTH2;
+        ThirdPartyAuthorizeUrlVO authorizeVO = providerFactory.getProvider(clientName, ssoProviderProtocol).getAuthorizeVO(ThirdPartyAuthAction.LOGIN);
         return ResultGenerator.ok(authorizeVO);
     }
 
     @GetMapping("/qrScanUrl/{clientName}")
     public Result<ThirdPartyAuthorizeUrlVO> qrScanUrl(@PathVariable("clientName") String clientName) {
-        OAuth2ProviderAuthorizeUrlResponse response = providerFactory.getProvider(clientName).getQrScanUrl();
+        SsoProviderAuthorizeUrlResponse response = providerFactory.getProvider(clientName,SsoProviderProtocol.OAUTH2).getQrScanUrl();
         return ResultGenerator.ok(new ThirdPartyAuthorizeUrlVO(response.url(), response.pkceRequired()));
     }
 
     @GetMapping("/callback/{clientName}")
     public Result<TokenResponse> callback(@PathVariable("clientName") String clientName,
-                              @RequestParam("code") String code,
-                              @RequestParam(value = "state", required = false) String state,
-                              @RequestParam(value = "code_verifier", required = false) String codeVerifier) {
+                                          @RequestParam("code") String code,
+                                          @RequestParam("state") String state,
+                                          @RequestParam(value = "code_verifier", required = false) String codeVerifier) {
         OAuth2ProviderAuthenticationToken token = new OAuth2ProviderAuthenticationToken(code, state, codeVerifier);
-        TokenResponse tokenResponse = providerFactory.getProvider(clientName).authenticate(token);
+        ThirdPartyStateContext thirdPartyStateContext = thirdPartyStateService.peekContext(state);
+        TokenResponse tokenResponse = providerFactory.getProvider(clientName,thirdPartyStateContext.getProtocol()).authenticate(token);
         return ResultGenerator.ok(tokenResponse);
     }
 

@@ -1,6 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
+import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.entity.SsoProvider;
@@ -42,13 +42,13 @@ public class OAuth2ProviderEngine {
     private final SecurityProperties securityProperties;
 
     // 组装授权 URL
-    public OAuth2ProviderAuthorizeUrlResponse buildAuthorizeUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
+    public SsoProviderAuthorizeUrlResponse buildAuthorizeUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().authorizeCode().url());
         return appendBaseParams(builder, settings, params);
     }
 
     // 扫码登录复用oauth2的授权码模式
-    public OAuth2ProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
+    public SsoProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().qrScan().url());
         return appendBaseParams(builder, settings, params);
     }
@@ -169,7 +169,7 @@ public class OAuth2ProviderEngine {
         return (ssoProvider != null && ssoProvider.getUseProxy()) ? proxyRestClient : defaultRestClient;
     }
 
-    private OAuth2ProviderAuthorizeUrlResponse appendBaseParams(UriComponentsBuilder builder, OAuth2ProviderSettings settings, Map<String, String> params) {
+    private SsoProviderAuthorizeUrlResponse appendBaseParams(UriComponentsBuilder builder, OAuth2ProviderSettings settings, Map<String, String> params) {
         String redirectUrl = securityProperties.getUiUrl() + settings.redirectUrl();
         builder.queryParam("client_id", settings.clientId())
                 .queryParam("response_type", "code")
@@ -185,7 +185,7 @@ public class OAuth2ProviderEngine {
             params.forEach(builder::queryParam);
         }
         String uriString = builder.build().encode().toUriString();
-        return new OAuth2ProviderAuthorizeUrlResponse(uriString, settings.pkceRequired());
+        return new SsoProviderAuthorizeUrlResponse(uriString, settings.pkceRequired());
     }
 
 

@@ -27,6 +27,9 @@ public enum SecurityScene {
 
     BIND_WEB3_WALLET("bind_web3_wallet", "绑定Web3钱包"),
     UNBIND_WEB3_WALLET("unbind_web3_wallet", "解绑Web3钱包"),
+
+    BIND_THIRD_PARTY_PROVIDER("bind_third_party_provider", "绑定三方账号"),
+    UNBIND_THIRD_PARTY_PROVIDER("unbind_third_party_provider", "解绑三方账号"),
     ;
 
     private final String code;

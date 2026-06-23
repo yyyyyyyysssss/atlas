@@ -83,7 +83,7 @@ const SecurityTab = () => {
                     关联第三方账号，实现一键快捷登录，同时为账号提供多渠道的身份验证保护。
                 </Paragraph>
                 <UserProviderItem
-                    providers={providers}
+                    context={data}
                     refresh={refresh}
                 />
 

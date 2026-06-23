@@ -1,5 +1,6 @@
 package com.atlas.auth.config.security.saml2;
 
+import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.security.model.TokenResponse;
 import com.atlas.security.properties.SecurityProperties;
@@ -37,7 +38,7 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         Saml2AuthenticatedPrincipal principal = (Saml2AuthenticatedPrincipal) authentication.getPrincipal();
         String registrationId = principal.getRelyingPartyRegistrationId();
-        TokenResponse tokenResponse = providerFactory.getProvider(registrationId).authenticate(authentication);
+        TokenResponse tokenResponse = providerFactory.getProvider(registrationId, SsoProviderProtocol.SAML2).authenticate(authentication);
 
         String uiUrl = securityProperties.getUiUrl();
         String targetUrl = String.format("%s/saml2/callback/%s?accessToken=%s&refreshToken=%s",

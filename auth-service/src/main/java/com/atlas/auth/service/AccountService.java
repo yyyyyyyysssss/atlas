@@ -4,18 +4,15 @@ import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.*;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.*;
-import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.token.WebauthnAuthenticationRequest;
 import com.atlas.security.utils.TicketGenerator;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
-import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -45,11 +42,9 @@ public class AccountService {
 
     private final RedisHelper redisHelper;
 
-    private final UserWebauthnCredentialsMapper userWebauthnCredentialsMapper;
-
     private final WebauthnService webauthnService;
 
-    private final UserCredentialRepository userCredentialRepository;
+    private final UserWebauthnCredentialsService userWebauthnCredentialsService;
 
     private final TotpService totpService;
 
@@ -63,6 +58,9 @@ public class AccountService {
 
     private final Web3WalletService web3WalletService;
 
+    private final ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory;
+
+    private final List<AuthCredentialChecker> credentialCheckers;
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
@@ -85,10 +83,8 @@ public class AccountService {
 
         // 通行密钥
         List<UserPasskeyVO> passkeyVOs = Collections.emptyList();
-        List<UserWebauthnCredentials> userPasswordCredentials = userWebauthnCredentialsMapper.selectList(
-                new LambdaQueryWrapper<UserWebauthnCredentials>()
-                        .eq(UserWebauthnCredentials::getUserId, userId)
-        );
+        List<UserWebauthnCredentials> userPasswordCredentials = userWebauthnCredentialsService.listByUserId(userId);
+
         if (!CollectionUtils.isEmpty(userPasswordCredentials)) {
             passkeyVOs = userPasswordCredentials.stream()
                     .map(crypto -> UserPasskeyVO.builder()
@@ -272,7 +268,7 @@ public class AccountService {
             throw new BusinessException("设备凭证无效");
         }
         // 查找凭证
-        CredentialRecord credentialRecord = userCredentialRepository.findByCredentialId(credentialId);
+        CredentialRecord credentialRecord = userWebauthnCredentialsService.findByCredentialId(credentialId);
         if (credentialRecord == null) {
             throw new BusinessException("设备凭证不存在");
         }
@@ -292,7 +288,10 @@ public class AccountService {
         }
         // 风控验证码/Ticket 校验
         validTicket(userId, SecurityScene.UNBIND_WEBAUTHN, unbindWebauthnDTO.ticket());
-        userCredentialRepository.delete(credentialId);
+        // 防止孤儿账号
+        ensureIdentityNotOrphaned(userId, CredentialType.WEBAUTHN, unbindWebauthnDTO.credentialId());
+        // 解绑
+        userWebauthnCredentialsService.delete(credentialId);
         log.info("用户 {} 成功解绑 WebAuthn 凭证: {}", userId, unbindWebauthnDTO.credentialId());
     }
 
@@ -468,12 +467,61 @@ public class AccountService {
                     userId, credentialId, credential.getUserId());
             throw new BusinessException("操作非法，您无权解绑该钱包凭证");
         }
+        // 防止孤儿账号
+        ensureIdentityNotOrphaned(userId, CredentialType.WEB3, credentialId);
+        // 执行解绑
         boolean success = userWeb3CredentialsService.removeCredential(userId, credential.getAddress());
         if (!success) {
             throw new BusinessException("钱包解绑失败，数据写入异常");
         }
         log.info("【Web3 钱包解绑成功】用户 userId: {}, 成功解除钱包地址: {} [协议: {}, 标签: {}] 的绑定关系",
                 userId, credential.getAddress(), credential.getWalletType(), credential.getLabel());
+    }
+
+    public ThirdPartyProviderBindVO bindThirdPartyProvider(Long userId, ThirdPartyProviderBindDTO thirdPartyProviderBindDTO){
+        // 校验ticket
+        validTicket(userId,SecurityScene.BIND_THIRD_PARTY_PROVIDER,thirdPartyProviderBindDTO.ticket());
+        SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(thirdPartyProviderBindDTO.provider()).getAuthorizeUrl(ThirdPartyAuthAction.BIND);
+        return new ThirdPartyProviderBindVO(response.url(),response.pkceRequired());
+    }
+
+    public void unbindThirdPartyProvider(Long userId,ThirdPartyProviderUnbindDTO thirdPartyProviderUnbindDTO){
+        String ticket = thirdPartyProviderUnbindDTO.ticket();
+        // 安全风控凭证核验
+        validTicket(userId,SecurityScene.UNBIND_THIRD_PARTY_PROVIDER, ticket);
+        // 基础数据合法性及越权校验
+        Long providerId = thirdPartyProviderUnbindDTO.providerId();
+        UserProvider userProvider = userProviderService.getById(providerId);
+        if(userProvider == null || !userProvider.getUserId().equals(userId)){
+            throw new BusinessException("未找到该三方账号的绑定记录");
+        }
+        // 防止孤儿账号
+        ensureIdentityNotOrphaned(userId, CredentialType.THIRD_PARTY, providerId);
+        // 执行解绑
+        userProviderService.removeById(providerId);
+    }
+
+    /**
+     * 【核心风控门禁】所有第一身份凭证解绑前的生死存亡校验
+     * @param userId 用户ID
+     * @param credentialType 当前正在操作/准备解绑的凭证大类
+     * @param targetId 当前准备删掉的凭证主键（如密码表id、WebAuthn的credential_id、Web3的id、三方表的id）
+     */
+    private void ensureIdentityNotOrphaned(Long userId, CredentialType credentialType, Object targetId){
+        boolean canLoginAfterRemoval = credentialCheckers.stream()
+                .anyMatch(checker -> {
+                    // 如果轮询到了当前正在被解绑的这一类凭证，必须调用排除法计数
+                    if (checker.getCredentialType() == credentialType) {
+                        return checker.hasCredentialExcluding(userId, targetId);
+                    }
+                    // 其它类型的凭证，直接看用户手里还有没有（只要有任意一个其它类型的盾，就是安全的）
+                    return checker.hasCredential(userId);
+                });
+
+        if (!canLoginAfterRemoval) {
+            log.warn("【安全拦截】用户 {} 尝试解绑唯一的 {} 凭证(ID: {}), 已被系统拒绝", userId, credentialType, targetId);
+            throw new BusinessException("操作失败：为了您的账号安全，请至少保留一种登录方式（密码、Passkey、钱包或其他社交绑定）");
+        }
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {

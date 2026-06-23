@@ -15,7 +15,7 @@ import java.util.Map;
  * @author ys
  * @since 2026-05-08 17:33:59
  */
-public interface UserProviderService extends IService<UserProvider> {
+public interface UserProviderService extends IService<UserProvider>, AuthCredentialChecker {
 
     UserProviderDTO getByProvider(String identityType, String identifier);
 

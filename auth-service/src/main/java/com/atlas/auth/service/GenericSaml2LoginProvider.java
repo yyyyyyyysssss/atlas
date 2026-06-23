@@ -1,6 +1,6 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
+import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.Saml2ProviderSettings;
 import com.atlas.auth.domain.dto.Saml2UserInfo;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -11,13 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
 
+import java.util.Map;
+
 @Slf4j
 @RequiredArgsConstructor
 public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
 
     private final String providerName;
-
-    private final SsoProviderService ssoProviderService;
 
     private final String saml2AuthUrl;
 
@@ -27,10 +27,15 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action) {
+    public SsoProviderProtocol protocol() {
+        return SsoProviderProtocol.SAML2;
+    }
+
+    @Override
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
         // 动态替换注册 ID
         String finalSaml2AuthUrl = saml2AuthUrl.replace("{registrationId}", getProviderName());
-        return new OAuth2ProviderAuthorizeUrlResponse(finalSaml2AuthUrl, false);
+        return new SsoProviderAuthorizeUrlResponse(finalSaml2AuthUrl, false);
     }
 
     @Override

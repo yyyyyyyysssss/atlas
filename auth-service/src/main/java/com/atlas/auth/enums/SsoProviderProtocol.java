@@ -1,6 +1,7 @@
 package com.atlas.auth.enums;
 
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
+import com.atlas.auth.domain.dto.OidcProviderSettings;
 import com.atlas.auth.domain.dto.Saml2ProviderSettings;
 import com.atlas.auth.domain.dto.SsoSettings;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -13,6 +14,7 @@ public enum SsoProviderProtocol {
 
     OAUTH2(OAuth2ProviderSettings.class),
     SAML2(Saml2ProviderSettings.class),
+    OIDC(OidcProviderSettings.class)
 
     ;
 
@@ -33,7 +35,7 @@ public enum SsoProviderProtocol {
             return SsoProviderProtocol.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             log.warn("收到未知的协议类型: {}", value);
-            return null;
+            return SsoProviderProtocol.OAUTH2;
         }
     }
 }

@@ -3,6 +3,8 @@ package com.atlas.auth.domain.vo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * @Description
  * @Author ys
@@ -11,6 +13,8 @@ import lombok.Data;
 @Builder
 @Data
 public class UserProviderVO {
+
+    private Long id;
 
     /**
      * 身份提供商标识
@@ -22,7 +26,11 @@ public class UserProviderVO {
      */
     private Boolean isBound;
 
+    private String label;
+
     private String boundName;
+
+    private LocalDateTime createTime;
 
 
 

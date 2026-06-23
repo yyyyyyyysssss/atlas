@@ -14,7 +14,7 @@ import java.util.Optional;
  * @author ys
  * @since 2026-06-09 16:45:48
  */
-public interface UserWeb3CredentialsService extends IService<UserWeb3Credentials> {
+public interface UserWeb3CredentialsService extends IService<UserWeb3Credentials>, AuthCredentialChecker {
 
     Optional<UserWeb3Credentials> getByAddress(String address);
 

@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author ys
  * @since 2026-05-22 09:09:13
  */
-public interface UserPasswordCredentialsService extends IService<UserPasswordCredentials> {
+public interface UserPasswordCredentialsService extends IService<UserPasswordCredentials>, AuthCredentialChecker {
 
 
     /**

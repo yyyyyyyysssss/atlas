@@ -1,8 +1,10 @@
 package com.atlas.auth.service.impl;
 
 import com.atlas.auth.domain.entity.UserWeb3Credentials;
+import com.atlas.auth.enums.CredentialType;
 import com.atlas.auth.enums.Web3WalletType;
 import com.atlas.auth.mapper.UserWeb3CredentialsMapper;
+import com.atlas.auth.service.AuthCredentialChecker;
 import com.atlas.auth.service.UserWeb3CredentialsService;
 import com.atlas.common.core.idwork.IdGen;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -78,6 +80,40 @@ public class UserWeb3CredentialsServiceImpl extends ServiceImpl<UserWeb3Credenti
             log.warn("【Web3凭证操作】用户 userId: {} 成功解绑了钱包地址: {}", userId, address);
         }
         return success;
+    }
+
+    @Override
+    public CredentialType getCredentialType() {
+        return CredentialType.WEB3;
+    }
+
+    @Override
+    public boolean hasCredential(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Long count = this.lambdaQuery()
+                .eq(UserWeb3Credentials::getUserId, userId)
+                .count();
+
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean hasCredentialExcluding(Long userId, Object credentialId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Objects.requireNonNull(credentialId, "凭证id不能为空");
+        try {
+            Long targetId = Long.valueOf(String.valueOf(credentialId));
+
+            Long count = this.lambdaQuery()
+                    .eq(UserWeb3Credentials::getUserId, userId)
+                    .ne(UserWeb3Credentials::getId, targetId)
+                    .count();
+
+            return count != null && count > 0;
+        }catch (NumberFormatException e){
+            log.error("【Web3凭证检查】解析凭证ID失败, userId: {}, credentialId: {}", userId, credentialId, e);
+            return false;
+        }
     }
 }
 

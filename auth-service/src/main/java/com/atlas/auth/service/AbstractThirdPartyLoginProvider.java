@@ -1,25 +1,13 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
+import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.enums.ClientType;
-import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenResponse;
-import com.atlas.security.utils.TicketGenerator;
-import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.StringUtils;
-
-import java.time.Duration;
 
 /**
  * @Description
@@ -38,49 +26,20 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     protected SsoProviderService ssoProviderService;
 
     @Resource
-    protected OAuth2ProviderEngine oAuth2ProviderEngine;
-
-    @Resource
-    private RedisHelper redisHelper;
-
-    private final static String OAUTH2_STATE_PREFIX_KEY = "oauth2:state:";
+    protected ThirdPartyStateService thirdPartyStateService;
 
     protected final String generateState(ThirdPartyAuthAction action) {
-        Long currentUserId = null;
-        if(ThirdPartyAuthAction.BIND.equals(action)){
-            SecurityContext securityContext = SecurityContextHolder.getContext();
-            if(securityContext == null || !securityContext.getAuthentication().isAuthenticated()){
-                throw new BusinessException("账户未登录，无法发起第三方账号绑定");
-            }
-            SecurityUser securityUser = (SecurityUser) securityContext.getAuthentication().getPrincipal();
-            currentUserId = securityUser.getId();
-        }
-        String state = TicketGenerator.generate(32);
-        String key = OAUTH2_STATE_PREFIX_KEY + state;
-
-        ThirdPartyStateContext stateContext = new ThirdPartyStateContext(getProviderName(), action, currentUserId);
-        redisHelper.setValue(key, stateContext, Duration.ofMinutes(5));
-        return state;
+        return thirdPartyStateService.generateState(getProviderName(),action,protocol());
     }
 
     protected final ThirdPartyStateContext validateState(String state) {
-        String key = OAUTH2_STATE_PREFIX_KEY + state;
-        try {
-            ThirdPartyStateContext stateContext = redisHelper.getValue(key, new TypeReference<ThirdPartyStateContext>() {});
-            String providerName = stateContext.provider;
-            if(!StringUtils.hasText(providerName) || !providerName.equals(getProviderName())){
-                throw new BusinessException("非法登录请求，State 校验失败");
-            }
-            return stateContext;
-        }finally {
-            redisHelper.delete(key);
-        }
+        return thirdPartyStateService.validateState(state,getProviderName());
     }
 
     protected TokenResponse dispatchFederatedIdentity(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
 
-        return switch (stateContext.action) {
-            case BIND -> doBind(thirdPartyUserIdentity, stateContext.userId);
+        return switch (stateContext.getAction()) {
+            case BIND -> doBind(thirdPartyUserIdentity, stateContext.getUserId());
             default -> doLogin(thirdPartyUserIdentity);
         };
     }
@@ -99,17 +58,6 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         String provider = thirdPartyUserIdentity.getProvider();
         userService.bindThirdPartyProvider(provider,currentUserId, thirdPartyUserIdentity);
         return TokenResponse.successBind();
-    }
-
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ThirdPartyStateContext{
-        private String provider;
-        private ThirdPartyAuthAction action;
-        private Long userId;
     }
 
 }

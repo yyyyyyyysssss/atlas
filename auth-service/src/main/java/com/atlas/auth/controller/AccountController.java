@@ -193,4 +193,16 @@ public class AccountController {
         return ResultGenerator.ok();
     }
 
+    @PostMapping("/thirdParty/provider")
+    public Result<ThirdPartyProviderBindVO> bindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderBindDTO thirdPartyProviderBindDTO){
+        ThirdPartyProviderBindVO thirdPartyProviderBindVO = accountService.bindThirdPartyProvider(securityUser.getId(), thirdPartyProviderBindDTO);
+        return ResultGenerator.ok(thirdPartyProviderBindVO);
+    }
+
+    @DeleteMapping("/thirdParty/provider")
+    public Result<Void> unbindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderUnbindDTO thirdPartyProviderUnbindDTO){
+        accountService.unbindThirdPartyProvider(securityUser.getId(), thirdPartyProviderUnbindDTO);
+        return ResultGenerator.ok();
+    }
+
 }

@@ -1,11 +1,11 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.oauth2.CustomClientSettings;
-import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
+import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.vo.QrAuthStatusVO;
 import com.atlas.auth.domain.vo.QrAuthTicketVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
@@ -38,9 +38,7 @@ public class QrAuthService {
 
     private final RegisteredClientRepository registeredClientRepository;
 
-    private final SsoProviderService ssoProviderService;
-
-    private final OAuth2ProviderEngine oAuth2ProviderEngine;
+    private final ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory;
 
     private final RestClient defaultRestClient;
 
@@ -140,7 +138,6 @@ public class QrAuthService {
             throw new BusinessException("请勿重复确认");
         }
 
-        OAuth2ProviderSettings settings = ssoProviderService.getSettings(SELF_PROVIDER, SsoProviderProtocol.OAUTH2);
         Map<String, String> extraParams = new HashMap<>(Map.of(
                 "format", "json",
                 "login_mode", "qr"
@@ -149,8 +146,9 @@ public class QrAuthService {
             extraParams.put("code_challenge", context.get("code_challenge").toString());
             extraParams.put("code_challenge_method", context.get("code_challenge_method").toString());
         }
+        SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(SELF_PROVIDER, SsoProviderProtocol.OAUTH2)
+                .getAuthorizeUrl(ThirdPartyAuthAction.LOGIN, extraParams);
 
-        OAuth2ProviderAuthorizeUrlResponse response = oAuth2ProviderEngine.buildAuthorizeUrl(settings, extraParams);
         AuthorizationUrlResponse authorizationResponse = defaultRestClient
                 .get()
                 .uri(response.url())

@@ -1,26 +1,38 @@
-package com.atlas.auth.config.security.webauthn;
+package com.atlas.auth.service.impl;
 
 import com.atlas.auth.domain.entity.UserWebauthnCredentials;
+import com.atlas.auth.enums.CredentialType;
 import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
+import com.atlas.auth.service.UserWebauthnCredentialsService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.webauthn.api.*;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
+import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class UserWebauthnCredentialsRepository implements UserCredentialRepository {
+/**
+ * @Description
+ * @Author ys
+ * @Date 2026/6/23 10:02
+ */
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class UserWebauthnCredentialsServiceImpl extends ServiceImpl<UserWebauthnCredentialsMapper, UserWebauthnCredentials> implements UserCredentialRepository, UserWebauthnCredentialsService {
 
     private final UserWebauthnCredentialsMapper userWebauthnCredentialsMapper;
-
-    public UserWebauthnCredentialsRepository(UserWebauthnCredentialsMapper userWebauthnCredentialsMapper) {
-        this.userWebauthnCredentialsMapper = userWebauthnCredentialsMapper;
-    }
 
     @Override
     public void delete(Bytes credentialId) {
@@ -50,6 +62,47 @@ public class UserWebauthnCredentialsRepository implements UserCredentialReposito
         );
         return entities.stream().map(this::toDomain).collect(Collectors.toList());
     }
+
+    @Override
+    public List<UserWebauthnCredentials> listByUserId(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        // 查询该用户绑定的所有凭证列表
+        return this.lambdaQuery()
+                .eq(UserWebauthnCredentials::getUserId, userId)
+                .list();
+    }
+
+    @Override
+    public CredentialType getCredentialType() {
+        return CredentialType.WEBAUTHN;
+    }
+
+    @Override
+    public boolean hasCredential(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Long count = this.lambdaQuery()
+                .eq(UserWebauthnCredentials::getUserId, userId)
+                .count();
+
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean hasCredentialExcluding(Long userId, Object credentialId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Objects.requireNonNull(credentialId, "凭证id不能为空");
+
+        String targetCredentialId = String.valueOf(credentialId).trim();
+        if (targetCredentialId.isBlank()) {
+            return false;
+        }
+        Long count = this.lambdaQuery()
+                .eq(UserWebauthnCredentials::getUserId, userId)
+                .ne(UserWebauthnCredentials::getCredentialId, targetCredentialId)
+                .count();
+        return count != null && count > 0;
+    }
+
 
     private UserWebauthnCredentials toEntity(CredentialRecord record) {
         UserWebauthnCredentials entity = new UserWebauthnCredentials();

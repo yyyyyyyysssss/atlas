@@ -1,21 +1,20 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
-import com.atlas.auth.domain.dto.OAuth2ProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
-import com.atlas.auth.domain.dto.OAuth2ProviderToken;
-import com.atlas.auth.domain.dto.OAuth2UserInfo;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.model.TokenResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,23 +27,25 @@ import java.util.Map;
 @Slf4j
 public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
 
+    @Resource
+    protected OAuth2ProviderEngine oAuth2ProviderEngine;
+
     @Override
     public String getProviderName() {
         return "atlas";
     }
 
     @Override
-    public OAuth2ProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action) {
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
         String state = generateState(action);
-        Map<String, String> extraParams = Map.of(
-                "state", state
-        );
+        extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
+        extraParams.put("state", state);
         return oAuth2ProviderEngine.buildAuthorizeUrl(auth2ProviderSettings, extraParams);
     }
 
     @Override
-    public OAuth2ProviderAuthorizeUrlResponse getQrScanUrl() {
+    public SsoProviderAuthorizeUrlResponse getQrScanUrl() {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
         String state = generateState(ThirdPartyAuthAction.LOGIN);
         Map<String, String> extraParams = Map.of(

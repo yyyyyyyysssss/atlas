@@ -33,8 +33,8 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     // 登录方法状态: "1"-密码, "2"-验证码, "3"-魔链, "4"-Passkey
     const [loginMethod, setLoginMethod] = useState("1");
 
-    const authorizeCodeLogin = async (clientName) => {
-        const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(clientName);
+    const authorizeCodeLogin = async (clientName, protocol = 'OAUTH2') => {
+        const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(clientName, protocol);
         let finalUrl = authorizeUrl
         if (isPKCERequired) {
             const verifier = generateVerifier()
@@ -226,7 +226,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('atlas')}
+                        onClick={() => authorizeCodeLogin('atlas', 'OIDC')}
                     />
                 </Tooltip>
                 <Tooltip title='Google'>
@@ -234,7 +234,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                         style={{ fontSize: 22, color: '#EA4335', cursor: 'pointer', transition: 'all 0.2s ease' }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('google')}
+                        onClick={() => authorizeCodeLogin('google', 'OIDC')}
                         title="Google"
                     />
                 </Tooltip>
@@ -248,7 +248,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('auth0')}
+                        onClick={() => authorizeCodeLogin('auth0', 'SAML2')}
                     />
                 </Tooltip>
             </Flex>

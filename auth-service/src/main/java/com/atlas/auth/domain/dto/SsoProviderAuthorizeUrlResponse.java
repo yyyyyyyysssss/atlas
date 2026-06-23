@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-public record OAuth2ProviderAuthorizeUrlResponse(
+public record SsoProviderAuthorizeUrlResponse(
         String url,
 
         boolean pkceRequired

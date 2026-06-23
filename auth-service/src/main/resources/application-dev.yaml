@@ -24,8 +24,7 @@ logging:
     com.atlas.common.core.api: info
 
 security:
-  domain: localhost
-  issuerUrl: http://localhost:9090
+  issuerUrl: http://localhost:9090/api/auth
   uiUrl: http://localhost:3000
   webauthn:
     rpId: localhost

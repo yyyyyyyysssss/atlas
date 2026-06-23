@@ -3,9 +3,11 @@ package com.atlas.auth.service.impl;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserProvider;
 import com.atlas.auth.domain.vo.UserProviderVO;
+import com.atlas.auth.enums.CredentialType;
 import com.atlas.auth.enums.ProviderType;
 import com.atlas.auth.mapper.UserProviderMapper;
 import com.atlas.auth.mapping.UserProviderMapping;
+import com.atlas.auth.service.AuthCredentialChecker;
 import com.atlas.auth.service.UserProviderService;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
@@ -17,10 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -109,16 +109,22 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
                     String code = supported.getCode();
                     boolean isBound = providerMap.containsKey(code);
                     String boundName = null;
-
+                    Long id = null;
+                    LocalDateTime createTime = null;
                     if (isBound) {
                         UserProvider providerData = providerMap.get(code);
                         boundName = extractBoundName(supported, providerData);
+                        id = providerData.getId();
+                        createTime = providerData.getCreateTime();
                     }
 
                     return UserProviderVO.builder()
+                            .id(id)
                             .provider(code)
+                            .label(supported.getDescription())
                             .isBound(isBound)
                             .boundName(boundName)
+                            .createTime(createTime)
                             .build();
                 })
                 .toList();
@@ -153,6 +159,36 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
                 break;
         }
         return nameObj != null ? nameObj.toString() : defaultName;
+    }
+
+    @Override
+    public CredentialType getCredentialType() {
+        return CredentialType.THIRD_PARTY;
+    }
+
+    @Override
+    public boolean hasCredential(Long userId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Long count = this.userProviderMapper.selectCount(new LambdaQueryWrapper<UserProvider>()
+                .eq(UserProvider::getUserId, userId));
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean hasCredentialExcluding(Long userId, Object credentialId) {
+        Objects.requireNonNull(userId, "用户id不能为空");
+        Objects.requireNonNull(credentialId, "凭证id不能为空");
+        try {
+            Long targetProviderId = Long.valueOf(String.valueOf(credentialId));
+            Long count = this.userProviderMapper.selectCount(new LambdaQueryWrapper<UserProvider>()
+                    .eq(UserProvider::getUserId, userId)
+                    .ne(UserProvider::getId, targetProviderId));
+            return count != null && count > 0;
+        }catch (NumberFormatException e){
+            log.error("【三方凭证检查】解析凭证ID失败, userId: {}, credentialId: {}", userId, credentialId, e);
+            return false;
+        }
+
     }
 }
 

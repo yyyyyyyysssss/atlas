@@ -23,6 +23,7 @@ import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -92,6 +93,16 @@ public class OAuth2AuthorizationServerConfig {
                         authorizationServer
                                 .oidc((oidc) -> {
                                     oidc.userInfoEndpoint((userInfo) -> userInfo.userInfoMapper(userInfoMapper));
+                                    oidc.providerConfigurationEndpoint(
+                                            config -> config.providerConfigurationCustomizer(
+                                                    builder ->
+                                                            builder.scopes(scopes -> {
+                                                                scopes.add(OidcScopes.PROFILE);
+                                                                scopes.add(OidcScopes.EMAIL);
+                                                                scopes.add(OidcScopes.PHONE);
+                                                            })
+                                            )
+                                    );
                                 })
                                 .authorizationEndpoint(authorizationEndpoint -> {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
@@ -115,7 +126,7 @@ public class OAuth2AuthorizationServerConfig {
                 // 当未登录时访问认证端点时重定向至login页面
                 .exceptionHandling((exceptions) -> exceptions
                         .defaultAuthenticationEntryPointFor(
-                                new LoginTargetAuthenticationEntryPoint(securityProperties.getUiUrl() + "/login",securityProperties.getIssuerUrl() + "/api/auth"),
+                                new LoginTargetAuthenticationEntryPoint(securityProperties.getUiUrl() + "/login",securityProperties.getIssuerUrl()),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
@@ -163,7 +174,6 @@ public class OAuth2AuthorizationServerConfig {
 
         JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper authorizationRowMapper = new JdbcOAuth2AuthorizationService.OAuth2AuthorizationRowMapper(
                 registeredClientRepository);
-        authorizationRowMapper.setLobHandler(new DefaultLobHandler());
 
         //spring security 反序列化设置
         ObjectMapper objectMapper = securityObjectMapper.copy();

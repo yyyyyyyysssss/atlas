@@ -2,15 +2,18 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.common.core.exception.BusinessException;
 import com.atlas.security.properties.SecurityProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * @Description
@@ -19,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ThirdPartyLoginProviderFactory {
 
     private final Map<String, ThirdPartyLoginProvider> providers = new ConcurrentHashMap<>();
@@ -31,32 +35,55 @@ public class ThirdPartyLoginProviderFactory {
 
     private final AutowireCapableBeanFactory beanFactory;
 
+    private final OidcProviderEngine oidcProviderEngine;
+
     @PostConstruct
     public void init() {
         // 将手动编写并被 Spring 管理的 Bean 放入 Map
-        providerList.forEach(p -> providers.put(p.getProviderName().toLowerCase(), p));
+        providerList.forEach(p -> {
+            // 厂商名 + 下划线 + 协议名
+            String uniqueKey = p.getProviderName().toLowerCase() + "_" + p.protocol().name().toLowerCase();
+            providers.put(uniqueKey, p);
+        });
 
-        // 从数据库获取所有开启的 SAML2 提供商
-        List<SsoProvider> ssoProviders = ssoProviderService.listByProtocol(SsoProviderProtocol.SAML2);
-        // 动态补全缺失的通用实现
+        // 动态注册 SAML2 提供商
+        registerDynamicProviders(SsoProviderProtocol.SAML2, name -> new GenericSaml2LoginProvider(name, securityProperties.getSaml2AuthUrl()));
+
+        // 动态注册 OIDC 提供商
+        registerDynamicProviders(SsoProviderProtocol.OIDC, name -> new GenericOidcLoginProvider(name, oidcProviderEngine));
+    }
+
+    private void registerDynamicProviders(SsoProviderProtocol protocol, Function<String, ThirdPartyLoginProvider> providerCreator){
+        String protocolSuffix = protocol.name().toLowerCase();
+        // 从数据库获取该协议下所有开启的提供商配置
+        List<SsoProvider> ssoProviders = ssoProviderService.listByProtocol(protocol);
         for (SsoProvider ssoProvider : ssoProviders) {
             String providerName = ssoProvider.getProvider().toLowerCase();
-            // 检查已存在的实现类中是否包含该名称
-            boolean exists = providerList.stream().anyMatch(p -> p.getProviderName().equalsIgnoreCase(providerName));
-            if (!exists) {
-                GenericSaml2LoginProvider genericSaml2LoginProvider = new GenericSaml2LoginProvider(providerName, ssoProviderService, securityProperties.getSaml2AuthUrl());
-                // 让 Spring 完成该对象的依赖注入
-                beanFactory.autowireBean(genericSaml2LoginProvider);
+            String uniqueKey = providerName + "_" + protocolSuffix;
+            // 手写/自定义优先原则，不覆盖已存在的特殊实现
+            if (!providers.containsKey(uniqueKey)) {
+                // 通过回调外界传入的 Lambda 表达式，动态解耦具体类的实例化逻辑
+                ThirdPartyLoginProvider dynamicProvider = providerCreator.apply(providerName);
+                // 让 Spring 完成该动态对象的依赖注入
+                beanFactory.autowireBean(dynamicProvider);
 
-                providers.put(providerName, genericSaml2LoginProvider);
+                providers.put(uniqueKey, dynamicProvider);
+
+                log.info("三方登录通用注册器动态注入 [{}] 提供商实例 Bean: [{}]", protocol.name(), uniqueKey);
             }
         }
     }
 
     public ThirdPartyLoginProvider getProvider(String providerName) {
-        ThirdPartyLoginProvider provider = providers.get(providerName.toLowerCase());
+
+        return getProvider(providerName, SsoProviderProtocol.OAUTH2);
+    }
+
+    public ThirdPartyLoginProvider getProvider(String providerName, SsoProviderProtocol protocol) {
+        String uniqueKey = providerName.toLowerCase() + "_" + protocol.name().toLowerCase();
+        ThirdPartyLoginProvider provider = providers.get(uniqueKey);
         if (provider == null) {
-            throw new RuntimeException("Unsupported login provider: " + providerName);
+            throw new BusinessException("系统未启用或不支持该三方登录: [" + providerName + "] 协议: [" + protocol.name() + "]");
         }
         return provider;
     }

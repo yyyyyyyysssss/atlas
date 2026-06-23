@@ -36,7 +36,7 @@ spring:
           auth0:
             entity-id: "urn:atlas:sp"
             acs:
-              location: ${security.issuerUrl}/api/auth/saml2/sso/auth0
+              location: ${security.issuerUrl}/saml2/sso/auth0
               binding: post
             assertingparty:
               # 身份提供商唯一标识
@@ -52,9 +52,9 @@ spring:
 
 
 security:
-  issuerUrl: https://atlas.ys0921.sbs:4443
+  issuerUrl: https://atlas.ys0921.sbs:4443/api/auth
   uiUrl: https://atlas.ys0921.sbs:4443
-  saml2AuthUrl: ${security.issuerUrl}/api/auth/saml2/authenticate/{registrationId}
+  saml2AuthUrl: ${security.issuerUrl}/saml2/authenticate/{registrationId}
   authorize:
     permit:
       - /login/*

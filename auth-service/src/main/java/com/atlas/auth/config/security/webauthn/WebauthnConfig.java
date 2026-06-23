@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.webauthn;
 
-import com.atlas.auth.mapper.UserWebauthnCredentialsMapper;
+import com.atlas.auth.service.UserWebauthnCredentialsService;
 import com.atlas.security.properties.SecurityProperties;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
@@ -24,9 +24,12 @@ public class WebauthnConfig {
     @Resource
     private SecurityProperties securityProperties;
 
+    @Resource
+    private UserWebauthnCredentialsService userWebauthnCredentialsService;
+
     @Bean
-    public UserCredentialRepository userCredentialRepository(UserWebauthnCredentialsMapper userWebauthnCredentialsMapper) {
-        return new UserWebauthnCredentialsRepository(userWebauthnCredentialsMapper);
+    public UserCredentialRepository userCredentialRepository() {
+        return userWebauthnCredentialsService;
     }
 
     @Bean
@@ -41,15 +44,14 @@ public class WebauthnConfig {
     }
 
     @Bean
-    public Webauthn4JRelyingPartyOperations webauthn4JRelyingPartyOperations(PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository,
-                                                                             UserCredentialRepository userCredentialRepository) {
+    public Webauthn4JRelyingPartyOperations webauthn4JRelyingPartyOperations(PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository) {
         PublicKeyCredentialRpEntity rp = PublicKeyCredentialRpEntity.builder()
                 .id(securityProperties.getWebauthn().getRpId())
                 .name(securityProperties.getWebauthn().getRpName())
                 .build();
         return new Webauthn4JRelyingPartyOperations(
                 publicKeyCredentialUserEntityRepository,
-                userCredentialRepository, rp, securityProperties.getWebauthn().getOrigins()
+                userWebauthnCredentialsService, rp, securityProperties.getWebauthn().getOrigins()
         );
     }
 

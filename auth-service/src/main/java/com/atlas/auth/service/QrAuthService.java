@@ -6,19 +6,19 @@ import com.atlas.auth.domain.vo.QrAuthStatusVO;
 import com.atlas.auth.domain.vo.QrAuthTicketVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
-import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.properties.SecurityProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
@@ -38,9 +38,7 @@ public class QrAuthService {
 
     private final RegisteredClientRepository registeredClientRepository;
 
-    private final ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory;
-
-    private final RestClient defaultRestClient;
+    private final ObjectProvider<ThirdPartyLoginProviderFactory> thirdPartyLoginProviderFactoryProvider;
 
     /**
      * 二维码有效期（秒）
@@ -56,7 +54,7 @@ public class QrAuthService {
 
     private static final String SELF_PROVIDER = "atlas";
 
-    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope, String state, String codeChallenge,String codeChallengeMethod) {
+    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope, String codeChallenge,String codeChallengeMethod) {
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
         if(registeredClient == null){
             throw new BusinessException("客户端不存在");
@@ -79,10 +77,8 @@ public class QrAuthService {
         Map<String, Object> context = new HashMap<>();
         context.put("status", PENDING);
         context.put("clientId", clientId);
-        context.put("clientName", registeredClient.getClientName());
         context.put("redirectUri", redirectUri);
         context.put("scope", scope);
-        context.put("state", state);
         if (StringUtils.hasText(codeChallenge)) {
             context.put("code_challenge", codeChallenge);
             // 如果客户端没传 method，按照 OAuth2 规范默认使用 S256
@@ -122,7 +118,7 @@ public class QrAuthService {
         }
     }
 
-    public void confirm(String sceneId,String tokenId){
+    public void confirm(String sceneId, Long userId){
         String redisKey = QR_SCENE_KEY + sceneId;
         Map<String, Object> context = redisHelper.getHashAll(redisKey);
         if (context == null || context.isEmpty()) {
@@ -138,31 +134,37 @@ public class QrAuthService {
             throw new BusinessException("请勿重复确认");
         }
 
-        Map<String, String> extraParams = new HashMap<>(Map.of(
-                "format", "json",
-                "login_mode", "qr"
-        ));
+        String clientId = context.get("clientId").toString();
+        String redirectUri = context.get("redirectUri").toString();
+        String scope = context.get("scope").toString();
+
+        Map<String, String> extraParams = new HashMap<>();
+        extraParams.put("login_mode", "qr");
+        extraParams.put("client_id", clientId);
+        extraParams.put("redirect_uri", redirectUri);
+        extraParams.put("scope", scope);
+
         if (context.containsKey("code_challenge")) {
             extraParams.put("code_challenge", context.get("code_challenge").toString());
             extraParams.put("code_challenge_method", context.get("code_challenge_method").toString());
         }
-        SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(SELF_PROVIDER, SsoProviderProtocol.OAUTH2)
+        ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory = thirdPartyLoginProviderFactoryProvider.getIfAvailable();
+
+        SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(SELF_PROVIDER, SsoProviderProtocol.OIDC)
                 .getAuthorizeUrl(ThirdPartyAuthAction.LOGIN, extraParams);
 
-        AuthorizationUrlResponse authorizationResponse = defaultRestClient
-                .get()
-                .uri(response.url())
-                .header(CommonConstant.TOKEN_ID,tokenId)
-                .retrieve()
-                .body(AuthorizationUrlResponse.class);
+        String authorizeUrlWithSceneId = UriComponentsBuilder.fromUriString(response.url())
+                .queryParam("scene_id", sceneId)
+                .build()
+                .toUriString();
 
-        String code = authorizationResponse.code();
         // 将生成的 code 存回 Redis，供第三方系统的前端轮询获取 一分钟内未获取则直接失效
         Map<String, Object> updates = new HashMap<>();
-        updates.put("code", code);
         updates.put("status", CONFIRMED);
+        updates.put("userId", userId);
+        updates.put("authorizeUrl", authorizeUrlWithSceneId);
         redisHelper.addHash(redisKey, updates, Duration.ofMinutes(1));
-        log.info("qr confirm, sceneId: {} code: {}",sceneId, code);
+        log.info("qr confirm, sceneId: {}",sceneId);
     }
 
     public QrAuthStatusVO status(String sceneId) {
@@ -175,25 +177,32 @@ public class QrAuthService {
                     .build();
         }
         String status = (String) map.get("status");
-        String authCode = (String) map.get("code");
-        String clientName = (String) map.get("clientName");
-        String state = (String) map.get("state");
+        String authorizeUrl = (String) map.get("authorizeUrl");
         log.debug("检查二维码状态 sceneId: {}, 状态: {}", sceneId, status);
         return QrAuthStatusVO
                 .builder()
                 .status(status)
-                .code(authCode)
-                .state(state)
-                .clientName(clientName)
+                .authorizeUrl(authorizeUrl)
                 .build();
     }
 
+    /**
+     * 核验并消费扫码场景凭证（阅后即焚）
+     * * @param sceneId 场景ID
+     * @return 绑定并确认登录的用户ID
+     * @throws OAuth2AuthenticationException 当二维码未确认、过期或不存在时抛出
+     */
+    public Long verifyAndConsumeScene(String sceneId) {
+        String redisKey = QR_SCENE_KEY + sceneId;
+        Map<String, Object> context = redisHelper.getHashAll(redisKey);
+        if (CollectionUtils.isEmpty(context) || !CONFIRMED.equals(context.get("status"))) {
+            throw new OAuth2AuthenticationException("invalid_request: 二维码无效或未确认");
+        }
+        Long userId = Long.valueOf(context.get("userId").toString());
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record AuthorizationUrlResponse(
-            String code,
-            String state,
-            String message
-    ) {}
+        redisHelper.delete(redisKey);
+
+        return userId;
+    }
 
 }

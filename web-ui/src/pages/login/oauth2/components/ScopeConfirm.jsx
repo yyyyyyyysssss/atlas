@@ -61,7 +61,8 @@ const ScopeConfirm = ({ params, onConfirm, onCancel, loading }) => {
                 </Flex>
             }
             style={{ 
-                width: '500px', 
+                width: '100%', 
+                height: '100%',
                 borderRadius: "20px", 
                 boxShadow: token.boxShadowTertiary,
                 overflow: 'hidden'

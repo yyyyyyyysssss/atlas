@@ -12,6 +12,11 @@ import Loading from '../../../../components/loading'
 import ScopeConfirm from '../components/ScopeConfirm'
 import { useAuth } from '../../../../router/AuthProvider'
 
+
+const DESIGN_WIDTH = 800
+
+const DESIGN_HEIGHT = 344
+
 const Consent = () => {
     const { token } = theme.useToken()
 
@@ -23,6 +28,7 @@ const Consent = () => {
 
     const [step, setStep] = useState(1); // 1: 身份确认, 2: 授权确认
 
+    const [scale, setScale] = useState(1)
 
     const { loading, run: runConsent } = useRequest(
         async () => {
@@ -79,6 +85,24 @@ const Consent = () => {
         }
     )
 
+    useEffect(() => {
+        const updateScale = () => {
+            const w = window.innerWidth
+            const h = window.innerHeight
+
+            const scaleW = w / DESIGN_WIDTH
+            const scaleH = h / DESIGN_HEIGHT
+
+            const nextScale = Math.min(scaleW, scaleH, 1) // 不放大，只缩小
+            setScale(nextScale)
+        }
+
+        updateScale()
+        window.addEventListener('resize', updateScale)
+
+        return () => window.removeEventListener('resize', updateScale)
+    }, [])
+
     const handleConfirmIdentity = () => {
         setStep(2);
     }
@@ -89,142 +113,184 @@ const Consent = () => {
 
     return (
 
-        <Flex style={{ minHeight: '100vh', backgroundColor: token.colorBgContainer }}>
+        <Flex
+            style={{
+                width: '100vw',
+                height: '100vh',
+                overflow: 'hidden',
+                backgroundColor: token.colorBgContainer,
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}>
             <Flex gap='middle' justify='center' align='center' vertical style={{ width: '100%' }}>
                 <Loading spinning={loading}>
+                    {/* <div
+                        style={{
+                            width: DESIGN_WIDTH,
+                            height: DESIGN_HEIGHT,
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'center center',
+                            backgroundColor: 'red'
+                        }}
+                    > */}
                     {step === 1 ? (
-                        <Card
-                            title={
-                                <Flex gap={10} align='center'>
-                                    <Avatar src={logo} />
-                                    <Typography.Title level={4} style={{ margin: 0 }}>使用Atlas账号登录</Typography.Title>
-                                </Flex>
-                            }
-                            style={{ width: '800px', height: '344px', overflow: 'hidden', borderRadius: "20px", boxShadow: token.boxShadowTertiary }}
+                        <div
+                            style={{
+                                width: DESIGN_WIDTH,
+                                height: DESIGN_HEIGHT,
+                                transform: `scale(${scale})`,
+                                transformOrigin: 'center center',
+                                padding: '0px 20px 0px 20px'
+                            }}
                         >
-                            <Flex gap='middle' style={{ height: '100%', width: '100%' }}>
-                                {/* 左侧：应用身份区 */}
-                                <Flex gap={10} style={{ width: '50%', height: '100%', paddingLeft: '10px' }} vertical>
-                                    {params.logo_uri && <Avatar src={params.logo_uri} size={48} />}
-                                    <Typography.Text style={{ fontSize: 30 }}>请选择账号</Typography.Text>
-                                    {params.type === 'device' && params.user_code && (
-                                        <Alert
-                                            message={
-                                                <Flex vertical gap={4}>
-                                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                                                        请确认您设备上显示的码是否为：
-                                                    </Typography.Text>
-                                                    <Typography.Text strong style={{ fontSize: 18, letterSpacing: '2px', color: token.colorPrimary }} copyable>
-                                                        {params.user_code}
-                                                    </Typography.Text>
-                                                </Flex>
-                                            }
-                                            type="info"
-                                            showIcon
-                                            style={{
-                                                marginBottom: '10px',
-                                                width: 'fit-content',
-                                                borderRadius: '8px',
-                                                backgroundColor: token.colorFillAlter,
-                                                borderColor: token.colorBorderSecondary
-                                            }}
-                                        />
-                                    )}
-                                    <Typography.Paragraph
-                                        style={{
-                                            fontSize: 18,
-                                            lineHeight: '1.6',
-                                            margin: 0,
-                                            textAlign: 'justify' // 让文字两端对齐，看起来更专业
-                                        }}
-                                    >
-                                        继续前往
-                                        <Popover
-                                            trigger="click"
-                                            placement="bottomLeft"
-                                            styles={{
-                                                body: {
-                                                    borderRadius: 12,
-                                                    padding: '16px'
-                                                }
-                                            }}
-                                            content={
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    <Flex vertical>
-                                                        <Typography.Text style={{ fontSize: 12 }} type='secondary'>开发者邮件</Typography.Text>
-                                                        <Typography.Text copyable>{params.developer_email}</Typography.Text>
-                                                    </Flex>
-                                                    <Flex vertical>
-                                                        <Typography.Text style={{ fontSize: 12 }} type='secondary'>官方主页</Typography.Text>
-                                                        <Typography.Link href={params.app_domain} target="_blank">
-                                                            {params.app_domain}
-                                                        </Typography.Link>
-                                                    </Flex>
-                                                </div>
-                                            }
-                                        >
-                                            <Typography.Link style={{ fontSize: 18, marginLeft: 8, textDecoration: 'underline' }}>
-                                                {params.client_name}
-                                            </Typography.Link>
-                                        </Popover>
-                                        {/* <Typography.Link style={{ fontSize: 18 }}>{params.client_name}</Typography.Link> */}
-                                    </Typography.Paragraph>
-                                </Flex>
-
-                                {/* 右侧：用户信息及政策区 */}
-                                <Flex style={{ width: '50%', height: '100%', marginTop: '40px' }} vertical>
-                                    <Flex justify='center' vertical>
-                                        <Button
-                                            type="text"
-                                            onClick={handleConfirmIdentity}
-                                            style={{
-                                                height: 'auto',     // 允许按钮由内部 Avatar 撑开高度
-                                                width: '100%',
-                                                textAlign: 'left',
-                                                display: 'flex',
-                                                justifyContent: 'flex-start',
-                                            }}
-                                        >
-                                            <Flex align='center' gap={10} >
-                                                <Avatar src={avatar} />
-                                                <Flex vertical>
-                                                    <Typography.Title level={5} style={{ margin: 0 }}>{fullName}</Typography.Title>
-                                                    <Typography.Text type='secondary'>{username}</Typography.Text>
-                                                </Flex>
-                                            </Flex>
-                                        </Button>
-                                        <Divider />
+                            <Card
+                                title={
+                                    <Flex gap={10} align='center'>
+                                        <Avatar src={logo} />
+                                        <Typography.Title level={4} style={{ margin: 0 }}>使用Atlas账号登录</Typography.Title>
                                     </Flex>
-                                    <Typography.Paragraph
-                                        type="secondary"
-                                        style={{
-                                            fontSize: 14,
-                                            lineHeight: '1.6',
-                                            margin: 0,
-                                            textAlign: 'justify' // 让文字两端对齐，看起来更专业
-                                        }}
-                                    >
-                                        建议您在使用“<Typography.Text strong size="small">{params.client_name}</Typography.Text>”之前，先阅读此应用的
-                                        <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.privacy_uri} style={{ fontSize: 14 }}>
-                                            《隐私权政策》
-                                        </Button>
-                                        和
-                                        <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.terms_uri} style={{ fontSize: 14 }}>
-                                            《服务条款》
-                                        </Button>
-                                        。
-                                    </Typography.Paragraph>
+                                }
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: "20px",
+                                    boxShadow: token.boxShadowTertiary
+                                }}
+                            >
+                                <Flex gap='middle' style={{ height: '100%', width: '100%' }}>
+                                    {/* 左侧：应用身份区 */}
+                                    <Flex gap={10} style={{ width: '50%', height: '100%', paddingLeft: '10px' }} vertical>
+                                        {params.logo_uri && <Avatar src={params.logo_uri} size={48} />}
+                                        <Typography.Text style={{ fontSize: 30 }}>请选择账号</Typography.Text>
+                                        {params.type === 'device' && params.user_code && (
+                                            <Alert
+                                                message={
+                                                    <Flex vertical gap={4}>
+                                                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                                            请确认您设备上显示的码是否为：
+                                                        </Typography.Text>
+                                                        <Typography.Text strong style={{ fontSize: 18, letterSpacing: '2px', color: token.colorPrimary }} copyable>
+                                                            {params.user_code}
+                                                        </Typography.Text>
+                                                    </Flex>
+                                                }
+                                                type="info"
+                                                showIcon
+                                                style={{
+                                                    marginBottom: '10px',
+                                                    width: 'fit-content',
+                                                    borderRadius: '8px',
+                                                    backgroundColor: token.colorFillAlter,
+                                                    borderColor: token.colorBorderSecondary
+                                                }}
+                                            />
+                                        )}
+                                        <Typography.Paragraph
+                                            style={{
+                                                fontSize: 18,
+                                                lineHeight: '1.6',
+                                                margin: 0,
+                                                textAlign: 'justify' // 让文字两端对齐，看起来更专业
+                                            }}
+                                        >
+                                            继续前往
+                                            <Popover
+                                                trigger="click"
+                                                placement="bottomLeft"
+                                                styles={{
+                                                    body: {
+                                                        borderRadius: 12,
+                                                        padding: '16px'
+                                                    }
+                                                }}
+                                                content={
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <Flex vertical>
+                                                            <Typography.Text style={{ fontSize: 12 }} type='secondary'>开发者邮件</Typography.Text>
+                                                            <Typography.Text copyable>{params.developer_email}</Typography.Text>
+                                                        </Flex>
+                                                        <Flex vertical>
+                                                            <Typography.Text style={{ fontSize: 12 }} type='secondary'>官方主页</Typography.Text>
+                                                            <Typography.Link href={params.app_domain} target="_blank">
+                                                                {params.app_domain}
+                                                            </Typography.Link>
+                                                        </Flex>
+                                                    </div>
+                                                }
+                                            >
+                                                <Typography.Link style={{ fontSize: 18, marginLeft: 8, textDecoration: 'underline' }}>
+                                                    {params.client_name}
+                                                </Typography.Link>
+                                            </Popover>
+                                        </Typography.Paragraph>
+                                    </Flex>
+
+                                    {/* 右侧：用户信息及政策区 */}
+                                    <Flex style={{ width: '50%', height: '100%', marginTop: '40px' }} vertical>
+                                        <Flex justify='center' vertical>
+                                            <Button
+                                                type="text"
+                                                onClick={handleConfirmIdentity}
+                                                style={{
+                                                    height: 'auto',     // 允许按钮由内部 Avatar 撑开高度
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    display: 'flex',
+                                                    justifyContent: 'flex-start',
+                                                    padding: '10px',
+                                                    borderRadius: token.borderRadiusLG
+                                                }}
+                                            >
+                                                <Flex align='center' gap={10} >
+                                                    <Avatar src={avatar} />
+                                                    <Flex vertical>
+                                                        <Typography.Title level={5} style={{ margin: 0 }}>{fullName}</Typography.Title>
+                                                        <Typography.Text type='secondary'>{username}</Typography.Text>
+                                                    </Flex>
+                                                </Flex>
+                                            </Button>
+                                            <Divider />
+                                        </Flex>
+                                        <Typography.Paragraph
+                                            type="secondary"
+                                            style={{
+                                                fontSize: 14,
+                                                lineHeight: '1.6',
+                                                margin: 0,
+                                                textAlign: 'justify' // 让文字两端对齐，看起来更专业
+                                            }}
+                                        >
+                                            建议您在使用“<Typography.Text strong size="small">{params.client_name}</Typography.Text>”之前，先阅读此应用的
+                                            <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.privacy_uri} style={{ fontSize: 14 }}>
+                                                《隐私权政策》
+                                            </Button>
+                                            和
+                                            <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.terms_uri} style={{ fontSize: 14 }}>
+                                                《服务条款》
+                                            </Button>
+                                            。
+                                        </Typography.Paragraph>
+                                    </Flex>
                                 </Flex>
-                            </Flex>
-                        </Card>
+                            </Card>
+                        </div>
                     ) : (
-                        <ScopeConfirm
-                            params={params}
-                            onConfirm={runConsent}
-                            onCancel={() => setStep(1)}
-                            loading={loading}
-                        />
+                        <div
+                            style={{
+                                width: DESIGN_WIDTH - 300,
+                                transform: `scale(${scale})`,
+                                transformOrigin: 'center center',
+                            }}
+                        >
+                            <ScopeConfirm
+                                params={params}
+                                onConfirm={runConsent}
+                                onCancel={() => setStep(1)}
+                                loading={loading}
+                            />
+                        </div>
                     )}
+                    {/* </div> */}
                 </Loading>
             </Flex>
         </Flex>

@@ -33,12 +33,7 @@ const OAuth2Callback = () => {
 
         const handleAuth = async (code, state, clientName, loginMode) => {
             try {
-                let verifier
-                if (loginMode && loginMode === 'qr') {
-                    verifier = sessionStorage.getItem(QR_SCAN_PKCE_VERIFIER)
-                } else {
-                    verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
-                }
+                let verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
                 // 根据你后端的接口调整参数
                 const loginResponse = await runAsync(code, state, verifier, clientName)
                 if (loginResponse.status === 'SUCCESS') {

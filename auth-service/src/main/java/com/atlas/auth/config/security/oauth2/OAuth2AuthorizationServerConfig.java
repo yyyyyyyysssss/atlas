@@ -1,6 +1,8 @@
 package com.atlas.auth.config.security.oauth2;
 
 
+import com.atlas.auth.service.QrAuthService;
+import com.atlas.auth.service.UserService;
 import com.atlas.common.core.utils.RsaUtils;
 import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
@@ -19,7 +21,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -74,6 +75,12 @@ public class OAuth2AuthorizationServerConfig {
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
 
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private QrAuthService qrAuthService;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -108,6 +115,11 @@ public class OAuth2AuthorizationServerConfig {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
                                     // 自定义处理器
                                     authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler());
+
+                                    // 兼容扫码登录
+                                    authorizationEndpoint.authenticationProviders(p -> {
+                                        p.addFirst(oAuth2QrAuthorizationCodeRequestAuthenticationProvider());
+                                    });
                                 })
                                 .tokenEndpoint(tokenEndpoint -> {
                                     tokenEndpoint.accessTokenResponseHandler(new OAuth2TokenResponseAuthenticationSuccessHandler());
@@ -241,6 +253,12 @@ public class OAuth2AuthorizationServerConfig {
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
         return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    @Bean
+    public OAuth2QrAuthorizationCodeRequestAuthenticationProvider oAuth2QrAuthorizationCodeRequestAuthenticationProvider(){
+
+        return new OAuth2QrAuthorizationCodeRequestAuthenticationProvider(qrAuthService, userService);
     }
 
 }

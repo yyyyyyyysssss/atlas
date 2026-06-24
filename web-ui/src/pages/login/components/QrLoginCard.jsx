@@ -3,7 +3,7 @@ import { useRequest } from "ahooks"
 import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled } from '@ant-design/icons';
 import { QrCode, Monitor } from 'lucide-react';
-import { fetchQrScanUrl, QR_SCAN_PKCE_VERIFIER, qrStatus, qrTicket } from "../../../services/Oauth2Service"
+import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchQrScanUrl, QR_SCAN_PKCE_VERIFIER, qrStatus, qrTicket } from "../../../services/Oauth2Service"
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { generateChallenge, generateVerifier } from '../../../utils/pkce';
@@ -57,8 +57,8 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
                 if (currentStatus === 'CONFIRMED') {
                     stopPolling()
-                    const { code, state, clientName } = statusRes
-                    navigate(`/oauth2/callback/${clientName}?code=${code}&state=${state}&login_mode=qr`)
+                    const { authorizeUrl } = statusRes
+                    window.location.href = authorizeUrl
                 } else if (currentStatus === 'EXPIRED') {
                     stopPolling()
                 }
@@ -81,7 +81,7 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
         if (isPKCERequired && isPKCERequired === true) {
             // 生成新的 Verifier
             const verifier = generateVerifier()
-            sessionStorage.setItem(QR_SCAN_PKCE_VERIFIER, verifier)
+            sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
             // 生成 Challenge
             const challenge = await generateChallenge(verifier)
             qrTicketUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`

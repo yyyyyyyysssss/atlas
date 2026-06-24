@@ -10,9 +10,14 @@ import java.util.HexFormat;
 public class KeyManager {
 
     // 主密钥，从环境变量加载
-    private static final String MASTER_KEY = System.getenv("ATLAS_MASTER_KEY");
+    private static final String MASTER_KEY ;
 
     static {
+        String key = System.getenv("ATLAS_MASTER_KEY");
+        if (key == null || key.isEmpty()) {
+            key = System.getProperty("ATLAS_MASTER_KEY");
+        }
+        MASTER_KEY = key;
         if (MASTER_KEY == null || MASTER_KEY.isEmpty()) {
             throw new IllegalStateException("系统启动失败：环境变量 ATLAS_MASTER_KEY 未配置！");
         }

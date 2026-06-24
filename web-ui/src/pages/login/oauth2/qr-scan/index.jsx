@@ -34,7 +34,7 @@ const QrScan = () => {
         if (params.scene_id) {
             qrScanAsync(params.scene_id)
         }
-    },[params.scene_id])
+    }, [params.scene_id])
 
     const handleConfirm = async () => {
         if (params.scene_id) {
@@ -57,13 +57,12 @@ const QrScan = () => {
             justify="center"
             align="center"
         >
-            {isConfirmed ? (
-                <div style={{
-                    width: '500px',
-                    padding: '40px',
-                    borderRadius: "20px",
-                    background: token.colorBgContainer
-                }}>
+            <div style={{
+                width: '500px',
+                borderRadius: "20px",
+                background: token.colorBgContainer
+            }}>
+                {isConfirmed ? (
                     <Result
                         status="success"
                         title="授权成功！"
@@ -74,15 +73,16 @@ const QrScan = () => {
                             </Button>,
                         ]}
                     />
-                </div>
-            ) : (
-                <ScopeConfirm
-                    params={params}
-                    onConfirm={handleConfirm}
-                    onCancel={handleCancel}
-                    loading={qrConfirmLoading} 
-                />
-            )}
+
+                ) : (
+                    <ScopeConfirm
+                        params={params}
+                        onConfirm={handleConfirm}
+                        onCancel={handleCancel}
+                        loading={qrConfirmLoading}
+                    />
+                )}
+            </div>
         </Flex>
     )
 }

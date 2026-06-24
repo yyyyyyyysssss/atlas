@@ -48,6 +48,11 @@ public class OAuth2ProviderEngine {
     }
 
     // 扫码登录复用oauth2的授权码模式
+    public SsoProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings) {
+
+        return buildQrScanUrl(settings, Map.of());
+    }
+
     public SsoProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().qrScan().url());
         return appendBaseParams(builder, settings, params);
@@ -178,11 +183,11 @@ public class OAuth2ProviderEngine {
 
         // 注入静态额外参数
         if (settings.extraParams() != null && settings.extraParams().authorize() != null) {
-            settings.extraParams().authorize().forEach(builder::queryParam);
+            settings.extraParams().authorize().forEach(builder::replaceQueryParam);
         }
         // 注入动态额外参数
         if (params != null && !params.isEmpty()) {
-            params.forEach(builder::queryParam);
+            params.forEach(builder::replaceQueryParam);
         }
         String uriString = builder.build().encode().toUriString();
         return new SsoProviderAuthorizeUrlResponse(uriString, settings.pkceRequired());

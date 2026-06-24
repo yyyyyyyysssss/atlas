@@ -23,10 +23,9 @@ public class QrAuthController {
     public Result<QrAuthTicketVO> ticket(@RequestParam("client_id") String clientId,
                                          @RequestParam("redirect_uri") String redirectUri,
                                          @RequestParam("scope") String scope,
-                                         @RequestParam("state") String state,
                                          @RequestParam(value = "code_challenge", required = false) String codeChallenge,
                                          @RequestParam(value = "code_challenge_method",required = false) String codeChallengeMethod) {
-        QrAuthTicketVO ticket = qrAuthService.ticket(clientId, redirectUri, scope,state, codeChallenge,codeChallengeMethod);
+        QrAuthTicketVO ticket = qrAuthService.ticket(clientId, redirectUri, scope, codeChallenge,codeChallengeMethod);
         return ResultGenerator.ok(ticket);
     }
 
@@ -38,7 +37,7 @@ public class QrAuthController {
 
     @PostMapping("/confirm")
     public Result<QrAuthStatusVO> confirm(@AuthenticationPrincipal SecurityUser securityUser, @RequestParam("sceneId") String sceneId) {
-        qrAuthService.confirm(sceneId, securityUser.getTokenId());
+        qrAuthService.confirm(sceneId, securityUser.getId());
         return ResultGenerator.ok();
     }
 

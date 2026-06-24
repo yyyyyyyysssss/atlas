@@ -91,11 +91,11 @@ public class OidcProviderEngine {
 
         // 注入静态额外参数
         if (settings.extraParams() != null && settings.extraParams().authorize() != null) {
-            settings.extraParams().authorize().forEach(builder::queryParam);
+            settings.extraParams().authorize().forEach(builder::replaceQueryParam);
         }
         // 注入动态额外参数
         if (params != null && !params.isEmpty()) {
-            params.forEach(builder::queryParam);
+            params.forEach(builder::replaceQueryParam);
         }
         String uriString = builder.build().encode().toUriString();
         return new SsoProviderAuthorizeUrlResponse(uriString, true);
@@ -164,7 +164,7 @@ public class OidcProviderEngine {
     private NimbusJwtDecoder buildJwtDecoder(String provider, OidcMetadata metadata) {
         try {
             // 获取密钥json
-            String jwksJson = getClient(provider)
+            String jwkJson = getClient(provider)
                     .get()
                     .uri(metadata.jwksUri)
                     .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
@@ -176,15 +176,15 @@ public class OidcProviderEngine {
                     });
 
             // 解析公钥集并注入静态内存源
-            JWKSet jwkSet = JWKSet.parse(jwksJson);
+            JWKSet jwkSet = JWKSet.parse(jwkJson);
             JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(jwkSet);
 
             // 动态提取元数据支持的全部算法列表
-            List<String> algsSupported = metadata.idTokenSigningAlgValuesSupported;
+            List<String> algSupported = metadata.idTokenSigningAlgValuesSupported;
             Set<JWSAlgorithm> expectedJWSAlgs = new HashSet<>();
 
-            if (algsSupported != null && !algsSupported.isEmpty()) {
-                for (String alg : algsSupported) {
+            if (algSupported != null && !algSupported.isEmpty()) {
+                for (String alg : algSupported) {
                     if (!JWSAlgorithm.NONE.getName().equalsIgnoreCase(alg)) {
                         expectedJWSAlgs.add(JWSAlgorithm.parse(alg));
                     }

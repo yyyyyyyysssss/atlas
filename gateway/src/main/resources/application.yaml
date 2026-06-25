@@ -116,10 +116,7 @@ security:
         apikey: 26662f07703c41d2a4994b8b30b101a9
   # jwt token配置
   jwt:
-    secretKey: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-    # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
-    expiration: 24h
-    refreshExpiration: 30d
+    secretKey: ${ATLAS_AUTH_JWT_SECRET_KEY}
 
 
 logging:

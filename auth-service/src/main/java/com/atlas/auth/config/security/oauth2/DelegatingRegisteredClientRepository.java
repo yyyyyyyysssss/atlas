@@ -42,23 +42,26 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
             return null;
         }
         // 检查当前请求是否符合“受信任”或“免授权”的条件
-        if (isTrustworthyRequest()) {
-            return RegisteredClient.from(client)
-                    .clientSettings(ClientSettings.builder()
-                            .requireAuthorizationConsent(false) // 核心包装逻辑：动态覆盖设置
-                            .requireProofKey(true) // 开启 PKCE 校验
-                            .build())
-                    .build();
-        }
-        return client;
-    }
-
-    private boolean isTrustworthyRequest() {
         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attr == null) return false;
+        if(attr != null){
+            HttpServletRequest request = attr.getRequest();
+            String prompt = request.getParameter("prompt");
+            // 只有当明确携带 prompt=consent 时，才强制要求授权确认
+            if ("consent".equals(prompt)) {
+                return RegisteredClient.from(client)
+                        .clientSettings(ClientSettings.builder()
+                                .requireAuthorizationConsent(true)
+                                .requireProofKey(client.getClientSettings().isRequireProofKey()) // 开启 PKCE 校验
+                                .build())
+                        .build();
+            }
+        }
 
-        HttpServletRequest request = attr.getRequest();
-        // 扫码登录通常由我们内部 PC 端触发，带有特定参数或 Header
-        return "qr".equals(request.getParameter("login_mode"));
+        return RegisteredClient.from(client)
+                .clientSettings(ClientSettings.builder()
+                        .requireAuthorizationConsent(false) // 默认不弹窗
+                        .requireProofKey(client.getClientSettings().isRequireProofKey())
+                        .build())
+                .build();
     }
 }

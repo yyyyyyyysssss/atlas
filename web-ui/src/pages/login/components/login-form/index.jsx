@@ -1,5 +1,5 @@
 import { Form, Input, Button, Card, Flex, Typography, App, Avatar, Divider, Dropdown, ConfigProvider, QRCode, theme, Tooltip } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled, ArrowLeftOutlined, NodeIndexOutlined, BorderInnerOutlined, SlidersOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutlined, KeyOutlined, ScanOutlined, CheckCircleFilled, ArrowLeftOutlined, NodeIndexOutlined, BorderInnerOutlined, SlidersOutlined, AlipayCircleOutlined } from '@ant-design/icons';
 import { QrCode, Monitor, Fingerprint, Grid3X3, Grid3x3, Wallet } from 'lucide-react';
 import { useAuth } from '../../../../router/AuthProvider';
 import { useRequest } from 'ahooks';
@@ -18,6 +18,7 @@ import MagicLinkLogin from './MagicLinkLogin';
 import PasskeyLogin from './PasskeyLogin';
 import Web3WalletLogin from './Web3WalletLogin';
 import { AtlasLogo, Auth0Icon } from '../../../../components/icons';
+import ThirdPartyLogin from './ThirdPartyLogin';
 
 const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation();
@@ -26,24 +27,8 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     // 检查浏览器是否支持 WebAuthn (Passkey)
     const isWebAuthnSupported = window.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === 'function';
 
-    const { runAsync: getAuthorizeUrlAsync, loading: getAuthorizeUrlLoading } = useRequest(fetchAuthorizeUrl, {
-        manual: true
-    });
-
     // 登录方法状态: "1"-密码, "2"-验证码, "3"-魔链, "4"-Passkey
     const [loginMethod, setLoginMethod] = useState("1");
-
-    const authorizeCodeLogin = async (clientName, protocol = 'OAUTH2') => {
-        const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(clientName, protocol);
-        let finalUrl = authorizeUrl
-        if (isPKCERequired) {
-            const verifier = generateVerifier()
-            const challenge = await generateChallenge(verifier)
-            sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
-            finalUrl = finalUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
-        }
-        window.location.href = finalUrl;
-    };
 
     return (
         <Card
@@ -207,50 +192,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
 
             {/* 第三方登录渠道按钮组 */}
             <Flex justify="center" align="center" gap={28} style={{ marginTop: 16 }}>
-                <Tooltip title='GitHub'>
-                    <GithubOutlined
-                        style={{ fontSize: 22, color: '#111827', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('gitHub')}
-                    />
-                </Tooltip>
-                <Tooltip title='Atlas'>
-                    <AtlasLogo
-                        style={{
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            background: 'transparent',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('atlas', 'OIDC')}
-                    />
-                </Tooltip>
-                <Tooltip title='Google'>
-                    <GoogleOutlined
-                        style={{ fontSize: 22, color: '#EA4335', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('google', 'OIDC')}
-                        title="Google"
-                    />
-                </Tooltip>
-                <Tooltip title='Auth0'>
-                    <Auth0Icon
-                        style={{
-                            width: '22px',
-                            height: '22px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                        onClick={() => authorizeCodeLogin('auth0', 'SAML2')}
-                    />
-                </Tooltip>
+                <ThirdPartyLogin/>
             </Flex>
 
             {loginMethod === '1' && (

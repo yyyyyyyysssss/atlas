@@ -17,7 +17,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 3000,
+      host: '0.0.0.0',
       open: true,
+      allowedHosts: [
+        'atlas.ys0921.sbs'
+      ],
       proxy: {
         '/api': {
           target: apiUrl,

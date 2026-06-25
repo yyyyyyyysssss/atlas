@@ -139,7 +139,7 @@ public class QrAuthService {
         String scope = context.get("scope").toString();
 
         Map<String, String> extraParams = new HashMap<>();
-        extraParams.put("login_mode", "qr");
+        extraParams.put("prompt", "none");
         extraParams.put("client_id", clientId);
         extraParams.put("redirect_uri", redirectUri);
         extraParams.put("scope", scope);

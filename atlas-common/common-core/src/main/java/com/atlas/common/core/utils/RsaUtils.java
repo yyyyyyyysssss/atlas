@@ -109,6 +109,10 @@ public class RsaUtils {
         return encrypt(context, publicKey, PaddingMode.OAEP_SHA1, DEFAULT_KEY_SIZE);
     }
 
+    public static String encrypt(String context, String publicKey) throws Exception {
+        return encrypt(context, publicKey, PaddingMode.OAEP_SHA1, DEFAULT_KEY_SIZE);
+    }
+
     public static String encrypt(String context, String publicKey, PaddingMode paddingMode) throws Exception {
         return encrypt(context, publicKey, paddingMode, DEFAULT_KEY_SIZE);
     }
@@ -130,6 +134,10 @@ public class RsaUtils {
     //解密
     public static String decrypt(String context) throws Exception {
         PrivateKey privateKey = loadLocalPrivateKey();
+        return decrypt(context, privateKey, PaddingMode.OAEP_SHA1, DEFAULT_KEY_SIZE);
+    }
+
+    public static String decrypt(String context, String privateKey) throws Exception {
         return decrypt(context, privateKey, PaddingMode.OAEP_SHA1, DEFAULT_KEY_SIZE);
     }
 
@@ -226,14 +234,13 @@ public class RsaUtils {
             return CACHE_MAP.get(cacheKey);
         }
         try {
-            byte[] bytes = readResourceToBytes("rsa/public_key.pem");
-            String publicKeyStr = new String(bytes,StandardCharsets.UTF_8)
-                    .replace("-----BEGIN PUBLIC KEY-----", "")
-                    .replaceAll(System.lineSeparator(), "")
-                    .replace("-----END PUBLIC KEY-----", "");
+            String publicKeyStr = System.getenv("ATLAS_PUBLIC_KEY");
+            if (publicKeyStr == null || publicKeyStr.isEmpty()){
+                throw new IllegalArgumentException("系统公钥未配置");
+            }
             CACHE_MAP.put(cacheKey, publicKeyStr);
             return publicKeyStr;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("loadLocalPublicKeyStr Error : ", e);
             throw new RuntimeException("load publicKey error :" + e.getMessage());
         }
@@ -245,14 +252,13 @@ public class RsaUtils {
             return CACHE_MAP.get(cacheKey);
         }
         try {
-            byte[] bytes = readResourceToBytes("rsa/private_key.pem");
-            String privateKeyStr = new String(bytes,StandardCharsets.UTF_8)
-                    .replace("-----BEGIN PRIVATE KEY-----", "")
-                    .replaceAll(System.lineSeparator(), "")
-                    .replace("-----END PRIVATE KEY-----", "");
+            String privateKeyStr = System.getenv("ATLAS_PRIVATE_KEY");
+            if (privateKeyStr == null || privateKeyStr.isEmpty()){
+                throw new IllegalArgumentException("系统私钥未配置");
+            }
             CACHE_MAP.put(cacheKey, privateKeyStr);
             return privateKeyStr;
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("loadLocalPrivateKeyStr Error : ", e);
             throw new RuntimeException("load privateKey error :" + e.getMessage());
         }

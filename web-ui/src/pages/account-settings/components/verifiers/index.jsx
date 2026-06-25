@@ -204,7 +204,15 @@ const VerifyDropdown = ({
     const currentMethod = availableMethods.find(m => m.key === verifyMethod);
 
     if (availableMethods.length === 0) {
-        return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无可用身份验证方式" />;
+        return <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+                <div style={{ color: token.colorTextDescription }}>
+                    <p style={{ fontSize: 12, margin: 0 }}>为了您的账号安全，请先前往安全中心绑定邮箱或设置密码。</p>
+                </div>
+            }
+        >
+        </Empty>
     }
 
     return (

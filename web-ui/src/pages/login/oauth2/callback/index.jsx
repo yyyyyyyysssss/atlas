@@ -9,7 +9,7 @@ import { useRedirect } from '../../../../hooks/useRedirect';
 import useFullParams from '../../../../hooks/useFullParams';
 
 const OAuth2Callback = () => {
-    const { code, state, error, error_description, error_uri, clientName, login_mode } = useFullParams()
+    const { code: rawCode, auth_code, state, error, error_description, error_uri, clientName } = useFullParams()
     const navigate = useNavigate()
     const { signin } = useAuth()
 
@@ -18,6 +18,8 @@ const OAuth2Callback = () => {
     const redirect = useRedirect()
 
     const { runAsync } = useRequest(oauth2Callback, { manual: true })
+
+    const code = rawCode || auth_code
 
     useEffect(() => {
         if (!code) {
@@ -30,7 +32,6 @@ const OAuth2Callback = () => {
             })
             return
         }
-
         const handleAuth = async (code, state, clientName, loginMode) => {
             try {
                 let verifier = sessionStorage.getItem(AUTHORIZE_CODE_PKCE_VERIFIER)
@@ -73,8 +74,8 @@ const OAuth2Callback = () => {
                 })
             }
         }
-        handleAuth(code, state, clientName, login_mode)
-    }, [code, state, clientName, login_mode])
+        handleAuth(code, state, clientName)
+    }, [code, state, clientName])
 
     return (
         <Loading fullscreen tip="正在完成认证..." />

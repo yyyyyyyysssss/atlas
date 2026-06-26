@@ -48,11 +48,6 @@ public class OAuth2ProviderEngine {
     }
 
     // 扫码登录复用oauth2的授权码模式
-    public SsoProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings) {
-
-        return buildQrScanUrl(settings, Map.of());
-    }
-
     public SsoProviderAuthorizeUrlResponse buildQrScanUrl(OAuth2ProviderSettings settings, Map<String, String> params) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(settings.endpoints().qrScan().url());
         return appendBaseParams(builder, settings, params);
@@ -190,7 +185,7 @@ public class OAuth2ProviderEngine {
             params.forEach(builder::replaceQueryParam);
         }
         String uriString = builder.build().encode().toUriString();
-        return new SsoProviderAuthorizeUrlResponse(uriString, settings.pkceRequired());
+        return SsoProviderAuthorizeUrlResponse.of(uriString, settings.pkceRequired());
     }
 
 

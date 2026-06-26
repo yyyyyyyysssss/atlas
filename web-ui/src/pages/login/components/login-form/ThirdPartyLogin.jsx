@@ -6,11 +6,14 @@ import { AtlasLogo, Auth0Icon } from '../../../../components/icons';
 import { useRequest } from 'ahooks';
 import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../../services/Oauth2Service';
 import { generateChallenge, generateVerifier } from '../../../../utils/pkce';
+import useFullParams from '../../../../hooks/useFullParams';
 
 const ThirdPartyLogin = () => {
     const constraintsRef = useRef(null);
     const containerRef = useRef(null);
     const [dragConstraints, setDragConstraints] = useState({ left: 0, right: 0 });
+
+    const { targetUrl } = useFullParams()
 
     const { runAsync: getAuthorizeUrlAsync, loading: getAuthorizeUrlLoading } = useRequest(fetchAuthorizeUrl, {
         manual: true
@@ -38,12 +41,14 @@ const ThirdPartyLogin = () => {
     }, []);
 
     const authorizeCodeLogin = async (clientName, protocol = 'OAUTH2') => {
-        const { authorizeUrl, isPKCERequired } = await getAuthorizeUrlAsync(clientName, protocol);
+        const finalTargetUrl = targetUrl || ""
+        const { authorizeUrl, isPKCERequired, state } = await getAuthorizeUrlAsync(clientName, protocol, encodeURIComponent(finalTargetUrl));
         let finalUrl = authorizeUrl
         if (isPKCERequired) {
             const verifier = generateVerifier()
             const challenge = await generateChallenge(verifier)
-            sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
+            const verifierKey = AUTHORIZE_CODE_PKCE_VERIFIER + ":" + state
+            sessionStorage.setItem(verifierKey, verifier)
             finalUrl = finalUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
         }
         window.location.href = finalUrl;

@@ -7,12 +7,12 @@ import { ottLogin } from '../../services/LoginService';
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import httpWrapper from '../../services/AxiosWrapper';
-import { useRedirect } from '../../hooks/useRedirect';
 import { AnimatePresence, motion } from 'framer-motion';
 import useFullParams from '../../hooks/useFullParams';
 import Loading from '../../components/loading';
 import LoginForm from './components/login-form';
 import QrLoginCard from './components/QrLoginCard';
+import useLoginHandler from '../../hooks/useLoginHandler';
 
 const Login = () => {
 
@@ -26,10 +26,9 @@ const Login = () => {
 
     const navigate = useNavigate()
 
-    const { ottToken, targetUrl } = useFullParams()
+    const { ottToken } = useFullParams()
 
-    const redirect = useRedirect()
-
+    const { processLoginSuccess } = useLoginHandler()
 
     const { runAsync: ottLoginAsync, loading: ottLoginLoading } = useRequest(ottLogin, {
         manual: true
@@ -52,40 +51,13 @@ const Login = () => {
                 token: token,
                 clientType: 'WEB'
             })
-            loginSuccessHandler(loginResponse)
+            processLoginSuccess(loginResponse)
         } catch (error) {
             ottLoginRef.current = false
             message.error('快捷登录链接已失效或无效，请重新登录')
             // 登录失败后清理 URL 中的 token，防止刷新再次触发
             navigate('/login', { replace: true })
         }
-    }
-
-    const loginSuccessHandler = async (loginResponse) => {
-        if (loginResponse.status === 'SUCCESS') {
-            const { token } = loginResponse
-            await signin(token)
-            redirect('/', token.access.value)
-            return
-        }
-
-        if (loginResponse.status === 'MFA_REQUIRED') {
-            const { mfaTicket, mfaType, activeMfaStrategies } = loginResponse
-            let mfaPath = '/login/mfa'
-            if (targetUrl) {
-                mfaPath += `?targetUrl=${encodeURIComponent(targetUrl)}`;
-            }
-            navigate(mfaPath, {
-                state: {
-                    ticket: mfaTicket,
-                    mfaType: mfaType,
-                    activeMfaStrategies: activeMfaStrategies
-                }
-            })
-            return
-        }
-
-        message.error('登录失败')
     }
 
     const getRotationY = () => {
@@ -181,7 +153,7 @@ const Login = () => {
                         <LoginForm
                             loginPanel={loginPanel}
                             setLoginPanel={setLoginPanel}
-                            loginSuccessHandler={loginSuccessHandler}
+                            loginSuccessHandler={processLoginSuccess}
                         />
                     </div>
 
@@ -205,7 +177,7 @@ const Login = () => {
                         <QrLoginCard
                             loginPanel={loginPanel}
                             setLoginPanel={setLoginPanel}
-                            loginSuccessHandler={loginSuccessHandler}
+                            loginSuccessHandler={processLoginSuccess}
                         />
                     </div>
                 </motion.div>

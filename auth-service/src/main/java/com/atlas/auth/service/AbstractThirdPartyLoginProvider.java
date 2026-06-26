@@ -1,8 +1,10 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
+import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.security.enums.ClientType;
@@ -28,36 +30,55 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     @Resource
     protected ThirdPartyStateService thirdPartyStateService;
 
-    protected final String generateState(ThirdPartyAuthAction action) {
-        return thirdPartyStateService.generateState(getProviderName(),action,protocol());
+    protected final String generateState(ThirdPartyAuthRequestContext requestContext) {
+        String state = requestContext.state();
+        if(state != null && !state.isEmpty()){
+            ThirdPartyStateContext thirdPartyStateContext = thirdPartyStateService.peekContext(state);
+            if (thirdPartyStateContext == null){
+                throw new BusinessException("授权状态已失效，请重试");
+            }
+            return state;
+        }
+        return thirdPartyStateService.generateState(getProviderName(),requestContext,protocol());
     }
 
     protected final ThirdPartyStateContext validateState(String state) {
         return thirdPartyStateService.validateState(state,getProviderName());
     }
 
-    protected TokenResponse dispatchFederatedIdentity(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
-
+    protected ThirdPartyCallbackVO dispatchFederatedIdentity(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
+        // 没上下文一律视为正常的、无状态登录流
+        if (stateContext == null) {
+            return doLogin(thirdPartyUserIdentity);
+        }
         return switch (stateContext.getAction()) {
-            case BIND -> doBind(thirdPartyUserIdentity, stateContext.getUserId());
-            default -> doLogin(thirdPartyUserIdentity);
+            case BIND -> doBind(thirdPartyUserIdentity, stateContext);
+            default -> doLogin(thirdPartyUserIdentity, stateContext);
         };
     }
 
-    protected TokenResponse doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity){
+    protected ThirdPartyCallbackVO doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity){
+
+        return doLogin(thirdPartyUserIdentity, null);
+    }
+
+    protected ThirdPartyCallbackVO doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
         String provider = thirdPartyUserIdentity.getProvider();
         Long userId = userService.ensureUserByProvider(provider, thirdPartyUserIdentity);
         ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO(ClientType.WEB, userId);
-        return loginService.loginThirdParty(thirdPartyLoginDTO);
+        TokenResponse tokenResponse = loginService.loginThirdParty(thirdPartyLoginDTO);
+        String targetUrl = (stateContext != null) ? stateContext.getTargetUrl() : null;
+        return ThirdPartyCallbackVO.loginSuccess(tokenResponse, targetUrl);
     }
 
-    protected TokenResponse doBind(ThirdPartyUserIdentity thirdPartyUserIdentity, Long currentUserId){
+    protected ThirdPartyCallbackVO doBind(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
+        Long currentUserId = stateContext.getUserId();
         if (currentUserId == null) {
             throw new BusinessException("账号关联失败：未获取到当前账户登录凭证");
         }
         String provider = thirdPartyUserIdentity.getProvider();
         userService.bindThirdPartyProvider(provider,currentUserId, thirdPartyUserIdentity);
-        return TokenResponse.successBind();
+        return ThirdPartyCallbackVO.bindSuccess(stateContext.getTargetUrl());
     }
 
 }

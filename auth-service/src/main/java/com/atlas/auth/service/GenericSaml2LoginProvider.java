@@ -3,6 +3,8 @@ package com.atlas.auth.service;
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.Saml2ProviderSettings;
 import com.atlas.auth.domain.dto.Saml2UserInfo;
+import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
+import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.security.model.TokenResponse;
@@ -32,14 +34,14 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         // 动态替换注册 ID
         String finalSaml2AuthUrl = saml2AuthUrl.replace("{registrationId}", getProviderName());
-        return new SsoProviderAuthorizeUrlResponse(finalSaml2AuthUrl, false);
+        return SsoProviderAuthorizeUrlResponse.of(finalSaml2AuthUrl, false);
     }
 
     @Override
-    public TokenResponse authenticate(Authentication authentication) {
+    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
         String providerName = getProviderName();
         Saml2ProviderSettings saml2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.SAML2);
         // 配置的映射对象

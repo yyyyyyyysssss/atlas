@@ -27,11 +27,4 @@ public record TokenResponse(
         return new TokenResponse(AuthStatus.MFA_REQUIRED, null, mfaTicket, mfaType, activeMfaStrategies);
     }
 
-    /**
-     * 快捷构建：第三方账号绑定成功响应
-     */
-    public static TokenResponse successBind() {
-        return new TokenResponse(AuthStatus.SUCCESS_BOUND, null, null, null, null);
-    }
-
 }

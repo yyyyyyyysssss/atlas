@@ -3,7 +3,6 @@ import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined, GoogleOutline
 import { QrCode, Monitor, Fingerprint, Grid3X3, Grid3x3, Wallet } from 'lucide-react';
 import { useAuth } from '../../../../router/AuthProvider';
 import { useRequest } from 'ahooks';
-import { AUTHORIZE_CODE_PKCE_VERIFIER, fetchAuthorizeUrl } from '../../../../services/Oauth2Service';
 import { useNavigate } from 'react-router-dom';
 import { useRedirect } from '../../../../hooks/useRedirect';
 import { useTranslation } from 'react-i18next';

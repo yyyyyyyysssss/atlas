@@ -98,7 +98,7 @@ public class OidcProviderEngine {
             params.forEach(builder::replaceQueryParam);
         }
         String uriString = builder.build().encode().toUriString();
-        return new SsoProviderAuthorizeUrlResponse(uriString, true);
+        return SsoProviderAuthorizeUrlResponse.of(uriString, true);
     }
 
 

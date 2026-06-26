@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { generateChallenge, generateVerifier } from '../../../utils/pkce';
 import { useNavigate } from 'react-router-dom';
+import useFullParams from '../../../hooks/useFullParams';
 
 
 const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
@@ -15,6 +16,8 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation()
 
     const navigate = useNavigate()
+
+    const { targetUrl } = useFullParams()
 
     const { runAsync: getQrScanUrlAsync, loading: getQrScanUrlLoading } = useRequest(fetchQrScanUrl, {
         manual: true
@@ -74,16 +77,20 @@ const QrLoginCard = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
         stopPolling()
 
         if (!qrScanUrlRef.current) {
-            qrScanUrlRef.current = await getQrScanUrlAsync('atlas')
+            const finalTargetUrl = targetUrl || ""
+            qrScanUrlRef.current = await getQrScanUrlAsync('atlas', encodeURIComponent(finalTargetUrl))
         }
-        const { authorizeUrl, isPKCERequired } = qrScanUrlRef.current
+        const { authorizeUrl, state, isPKCERequired } = qrScanUrlRef.current
         let qrTicketUrl = authorizeUrl
         if (isPKCERequired && isPKCERequired === true) {
             // 生成新的 Verifier
             const verifier = generateVerifier()
-            sessionStorage.setItem(AUTHORIZE_CODE_PKCE_VERIFIER, verifier)
+            const verifierKey = AUTHORIZE_CODE_PKCE_VERIFIER + ":" + state
+            sessionStorage.setItem(verifierKey, verifier)
             // 生成 Challenge
             const challenge = await generateChallenge(verifier)
+
+            
             qrTicketUrl = authorizeUrl + `&code_challenge=${challenge}&code_challenge_method=S256`
         }
         qrTicketAsync(qrTicketUrl)

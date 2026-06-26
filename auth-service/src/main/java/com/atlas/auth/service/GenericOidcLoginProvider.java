@@ -1,10 +1,8 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
-import com.atlas.auth.domain.dto.OidcProviderSettings;
-import com.atlas.auth.domain.dto.OidcUserInfoResult;
-import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.dto.ThirdPartyStateContext;
+import com.atlas.auth.domain.dto.*;
+import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.security.model.TokenResponse;
@@ -39,16 +37,16 @@ public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OidcProviderSettings settings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OIDC);
-        String state = generateState(action);
+        String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
         return oidcProviderEngine.buildAuthorizeUrl(getProviderName(), settings, extraParams);
     }
 
     @Override
-    public TokenResponse authenticate(Authentication authentication) {
+    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
         OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
 
         // 校验并销毁 state 状态

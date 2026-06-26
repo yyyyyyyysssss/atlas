@@ -1,5 +1,6 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
@@ -31,9 +32,10 @@ public class ThirdPartyStateService {
 
     private final static String OAUTH2_STATE_PREFIX_KEY = "oauth2:state:";
 
-    public String generateState(String providerName, ThirdPartyAuthAction action, SsoProviderProtocol protocol){
+    public String generateState(String providerName, ThirdPartyAuthRequestContext requestContext, SsoProviderProtocol protocol){
         Long currentUserId = null;
-        if(ThirdPartyAuthAction.BIND.equals(action)){
+        ThirdPartyAuthAction action = requestContext.action();
+        if(ThirdPartyAuthAction.BIND.equals(requestContext.action())){
             SecurityContext securityContext = SecurityContextHolder.getContext();
             if(securityContext == null || !securityContext.getAuthentication().isAuthenticated()){
                 throw new BusinessException("账户未登录，无法发起第三方账号绑定");
@@ -44,7 +46,7 @@ public class ThirdPartyStateService {
         String state = TicketGenerator.generate(32);
         String key = OAUTH2_STATE_PREFIX_KEY + state;
 
-        ThirdPartyStateContext stateContext = new ThirdPartyStateContext(providerName, action, currentUserId, protocol);
+        ThirdPartyStateContext stateContext = new ThirdPartyStateContext(providerName, action, currentUserId, protocol, requestContext.targetUrl());
         redisHelper.setValue(key, stateContext, Duration.ofMinutes(5));
         return state;
     }

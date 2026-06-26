@@ -8,10 +8,8 @@ import com.alipay.v3.model.AlipaySystemOauthTokenResponseModel;
 import com.alipay.v3.model.AlipayUserInfoShareResponseModel;
 import com.alipay.v3.util.model.AlipayConfig;
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
-import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
-import com.atlas.auth.domain.dto.OAuth2UserInfo;
-import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.dto.ThirdPartyStateContext;
+import com.atlas.auth.domain.dto.*;
+import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
@@ -55,9 +53,9 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
             .build();
 
     @Override
-    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
-        String state = generateState(action);
+        String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
         extraParams.put("app_id", auth2ProviderSettings.clientId());
@@ -65,12 +63,12 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public TokenResponse authenticate(Authentication authentication) {
+    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
         OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
         return processCallback(authenticationToken.code(),authenticationToken.state());
     }
 
-    public TokenResponse processCallback(String code,String state) {
+    public ThirdPartyCallbackVO processCallback(String code,String state) {
         String providerName = getProviderName();
         log.info("Processing Alipay OAuth2 callback provider: {}, state: {}, code: {}",
                 providerName, state, code);

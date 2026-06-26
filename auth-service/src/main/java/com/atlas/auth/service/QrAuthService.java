@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.oauth2.CustomClientSettings;
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
+import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.vo.QrAuthStatusVO;
 import com.atlas.auth.domain.vo.QrAuthTicketVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -9,6 +10,7 @@ import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.properties.SecurityProperties;
+import com.atlas.security.utils.TicketGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -25,7 +27,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +55,7 @@ public class QrAuthService {
 
     private static final String SELF_PROVIDER = "atlas";
 
-    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope, String codeChallenge,String codeChallengeMethod) {
+    public QrAuthTicketVO ticket(String clientId, String redirectUri, String scope, String state, String codeChallenge,String codeChallengeMethod) {
         RegisteredClient registeredClient = registeredClientRepository.findByClientId(clientId);
         if(registeredClient == null){
             throw new BusinessException("客户端不存在");
@@ -71,7 +72,7 @@ public class QrAuthService {
             }
         }
 
-        String sceneId = UUID.randomUUID().toString().replaceAll("-", "");
+        String sceneId = TicketGenerator.generate(32);
 
         String redisKey = QR_SCENE_KEY + sceneId;
         Map<String, Object> context = new HashMap<>();
@@ -79,6 +80,7 @@ public class QrAuthService {
         context.put("clientId", clientId);
         context.put("redirectUri", redirectUri);
         context.put("scope", scope);
+        context.put("state", state);
         if (StringUtils.hasText(codeChallenge)) {
             context.put("code_challenge", codeChallenge);
             // 如果客户端没传 method，按照 OAuth2 规范默认使用 S256
@@ -137,6 +139,7 @@ public class QrAuthService {
         String clientId = context.get("clientId").toString();
         String redirectUri = context.get("redirectUri").toString();
         String scope = context.get("scope").toString();
+        String state = context.get("state").toString();
 
         Map<String, String> extraParams = new HashMap<>();
         extraParams.put("prompt", "none");
@@ -151,7 +154,7 @@ public class QrAuthService {
         ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory = thirdPartyLoginProviderFactoryProvider.getIfAvailable();
 
         SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(SELF_PROVIDER, SsoProviderProtocol.OIDC)
-                .getAuthorizeUrl(ThirdPartyAuthAction.LOGIN, extraParams);
+                .getAuthorizeUrl(ThirdPartyAuthRequestContext.of(ThirdPartyAuthAction.LOGIN,state, null), extraParams);
 
         String authorizeUrlWithSceneId = UriComponentsBuilder.fromUriString(response.url())
                 .queryParam("scene_id", sceneId)

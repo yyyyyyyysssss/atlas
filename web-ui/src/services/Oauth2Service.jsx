@@ -6,9 +6,9 @@ export const AUTHORIZE_CODE_PKCE_VERIFIER = "authorize_code_pkce_verifier"
 
 export const QR_SCAN_PKCE_VERIFIER = "qr_scan_pkce_verifier"
 
-export const fetchAuthorizeUrl = async (clientName, protocol) => {
+export const fetchAuthorizeUrl = async (clientName, protocol, targetUrl) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/authorizeUrl/${clientName}?protocol=${protocol}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/authorizeUrl/${clientName}?protocol=${protocol}&targetUrl=${targetUrl}`))
 }
 
 
@@ -37,9 +37,9 @@ export const oauth2Callback = async (code, state, verifier, clientName) => {
 }
 
 
-export const fetchQrScanUrl = async (clientName) => {
+export const fetchQrScanUrl = async (clientName, targetUrl) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/qrScanUrl/${clientName}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/thirdParty/qrScanUrl/${clientName}?targetUrl=${targetUrl}`))
 }
 
 export const qrTicket = async (qrScanUrl) => {

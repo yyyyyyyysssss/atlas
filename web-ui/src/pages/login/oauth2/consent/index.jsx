@@ -65,7 +65,6 @@ const Consent = () => {
         {
             manual: true, // 设置为手动触发
             onSuccess: async (res) => {
-                console.log('res', res)
                 if (res.type === 'opaqueredirect' || res.status === 302 || res.redirected) {
                     window.location.href = res.url;
                 } else if (res.status === 200) {

@@ -2,10 +2,9 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
 import com.atlas.auth.domain.dto.*;
+import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.utils.JsonUtils;
-import com.atlas.security.model.TokenResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
@@ -36,27 +35,29 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthAction action, Map<String, String> extraParams) {
+    public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
-        String state = generateState(action);
+        String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
         return oAuth2ProviderEngine.buildAuthorizeUrl(auth2ProviderSettings, extraParams);
     }
 
     @Override
-    public SsoProviderAuthorizeUrlResponse getQrScanUrl() {
+    public SsoProviderAuthorizeUrlResponse getQrScanUrl(ThirdPartyAuthRequestContext requestContext) {
+        String state = generateState(requestContext);
+        Map<String, String> extraParams = Map.of("state", state);
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
-        return oAuth2ProviderEngine.buildQrScanUrl(auth2ProviderSettings);
+        return oAuth2ProviderEngine.buildQrScanUrl(auth2ProviderSettings,extraParams);
     }
 
     @Override
-    public TokenResponse authenticate(Authentication authentication) {
+    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
         OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
         return processCallback(authenticationToken.code(),authenticationToken.state(),authenticationToken.codeVerifier());
     }
 
-    public TokenResponse processCallback(String code,String state,String codeVerifier) {
+    public ThirdPartyCallbackVO processCallback(String code,String state,String codeVerifier) {
         String providerName = getProviderName();
         log.info("Processing Atlas OAuth2 callback. provider: {}, state: {}, code: {}, codeVerifier: {}",
                 providerName, state, code, codeVerifier);

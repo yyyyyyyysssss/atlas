@@ -26,4 +26,6 @@ public class ThirdPartyStateContext {
 
     private SsoProviderProtocol protocol;
 
+    private String targetUrl;
+
 }

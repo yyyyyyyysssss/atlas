@@ -53,6 +53,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
         String state = generateState(requestContext);
         Map<String, String> extraParams = Map.of("state", state);
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        auth2ProviderSettings.applyBaseUrl(securityProperties.getIssuerUrl());
         return oAuth2ProviderEngine.buildQrScanUrl(auth2ProviderSettings,extraParams);
     }
 

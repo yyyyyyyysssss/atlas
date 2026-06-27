@@ -15,6 +15,8 @@ public record OidcProviderSettings(
         ExtraParams extraParams
 ) implements SsoSettings, Decryptable<OidcProviderSettings>, BaseUrlAppliable<OidcProviderSettings>{
 
+    private static final String BASE_URL_PLACEHOLDER = "{{baseUrl}}";
+
     public OidcProviderSettings {
         if (scope == null || scope.isBlank()) {
             scope = String.join(" ",
@@ -41,7 +43,9 @@ public record OidcProviderSettings(
 
     @Override
     public OidcProviderSettings applyBaseUrl(String baseUrl) {
-        if (this.issuerUrl == null) return this;
+        if (this.issuerUrl == null || this.issuerUrl.isBlank() || !this.issuerUrl.contains(BASE_URL_PLACEHOLDER)) {
+            return this;
+        }
         return new OidcProviderSettings(
                 this.clientName,
                 this.clientId,

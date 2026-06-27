@@ -482,7 +482,7 @@ public class AccountService {
         // 校验ticket
         validTicket(userId,SecurityScene.BIND_THIRD_PARTY_PROVIDER,thirdPartyProviderBindDTO.ticket());
         SsoProviderAuthorizeUrlResponse response = thirdPartyLoginProviderFactory.getProvider(thirdPartyProviderBindDTO.provider()).getAuthorizeUrl(ThirdPartyAuthRequestContext.bind());
-        return new ThirdPartyProviderBindVO(response.url(),response.pkceRequired());
+        return new ThirdPartyProviderBindVO(response.url(),response.state(), response.pkceRequired());
     }
 
     public void unbindThirdPartyProvider(Long userId,ThirdPartyProviderUnbindDTO thirdPartyProviderUnbindDTO){

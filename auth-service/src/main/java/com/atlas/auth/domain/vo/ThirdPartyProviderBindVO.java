@@ -4,6 +4,8 @@ public record ThirdPartyProviderBindVO(
 
         String authorizeUrl,
 
+        String state,
+
         boolean isPKCERequired
 
 ) {

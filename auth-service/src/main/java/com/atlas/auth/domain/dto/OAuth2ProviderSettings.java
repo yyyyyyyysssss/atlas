@@ -16,7 +16,7 @@ public record OAuth2ProviderSettings(
         Endpoints endpoints,
         boolean pkceRequired,
         ExtraParams extraParams
-) implements SsoSettings, Decryptable<OAuth2ProviderSettings> {
+) implements SsoSettings, Decryptable<OAuth2ProviderSettings>, BaseUrlAppliable<OAuth2ProviderSettings> {
 
     private static final Pattern ENV_PATTERN = Pattern.compile("^\\$\\{(.+?)}$");
 

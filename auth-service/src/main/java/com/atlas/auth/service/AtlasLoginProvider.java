@@ -5,6 +5,7 @@ import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.common.core.utils.JsonUtils;
+import com.atlas.security.properties.SecurityProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
@@ -29,6 +30,9 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     @Resource
     protected OAuth2ProviderEngine oAuth2ProviderEngine;
 
+    @Resource
+    private SecurityProperties securityProperties;
+
     @Override
     public String getProviderName() {
         return "atlas";
@@ -37,6 +41,7 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        auth2ProviderSettings.applyBaseUrl(securityProperties.getIssuerUrl());
         String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);

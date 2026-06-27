@@ -13,7 +13,7 @@ public record OidcProviderSettings(
         String scope,
         String issuerUrl,
         ExtraParams extraParams
-) implements SsoSettings, Decryptable<OidcProviderSettings>{
+) implements SsoSettings, Decryptable<OidcProviderSettings>, BaseUrlAppliable<OidcProviderSettings>{
 
     public OidcProviderSettings {
         if (scope == null || scope.isBlank()) {
@@ -35,6 +35,20 @@ public record OidcProviderSettings(
                 this.redirectUrl,
                 this.scope,
                 this.issuerUrl,
+                this.extraParams
+        );
+    }
+
+    @Override
+    public OidcProviderSettings applyBaseUrl(String baseUrl) {
+        if (this.issuerUrl == null) return this;
+        return new OidcProviderSettings(
+                this.clientName,
+                this.clientId,
+                this.clientSecret,
+                this.redirectUrl,
+                this.scope,
+                baseUrl,
                 this.extraParams
         );
     }

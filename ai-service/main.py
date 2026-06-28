@@ -1,31 +1,42 @@
 import os
 
 import uvicorn
-from fastapi import FastAPI
 from dotenv import load_dotenv, find_dotenv
-from sqlalchemy.sql.operators import truediv
+from fastapi import FastAPI
+from starlette import status
 
-from api.announcement import router as ai_announcement_router
+# 加载环境
+load_dotenv(find_dotenv())
+
+app_port = int(os.getenv("APP_PORT", 8000))
+app_host = os.getenv("APP_HOST", "127.0.0.1")
 
 app = FastAPI(
     title='ai-service',
-    description='本服务由 LangChain 驱动，对接通义千问大模型',
+    description='AI Service',
     version='1.0.0'
 )
 
-app.include_router(ai_announcement_router)
 
 @app.get("/")
 def read_root():
-    return {"Hello": "Atlas AI User"}
+    return {"Hello": "Atlas AI Service"}
+
+
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["System"])
+def health_check():
+    # 正常情况
+    return {
+        "status": "UP",
+        "version": "1.0.0",
+    }
+
 
 if __name__ == '__main__':
-    # 加载环境
-    load_dotenv(find_dotenv())
     # 启动
     uvicorn.run(
         'main:app',
-        host= 'localhost',
-        port = 9030,
-        reload = True
+        host=app_host,
+        port=app_port,
+        reload=True
     )

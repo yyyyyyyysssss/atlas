@@ -279,11 +279,9 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
                 queryWrapper.and(wrapper -> {
                     wrapper.lambda().
                             eq(Authority::getType, AuthorityType.BASE.name())
-                            .or(orWrapper -> {
-                                orWrapper.eq(Authority::getType, AuthorityType.MENU.name());
-                                if (!CollectionUtils.isEmpty(authorityIds)) {
-                                    orWrapper.in(Authority::getId, authorityIds);
-                                }
+                            .or(!CollectionUtils.isEmpty(authorityIds), orWrapper -> {
+                                orWrapper.eq(Authority::getType, AuthorityType.MENU.name())
+                                        .in(Authority::getId, authorityIds);
                             });
                 });
             }

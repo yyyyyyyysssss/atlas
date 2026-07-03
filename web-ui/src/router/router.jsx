@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -37,6 +37,9 @@ const Oauth2QrScan = lazy(() => import('../pages/login/oauth2/qr-scan'))
 const Oauth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
 
 const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
+
+
+const DeveloperSettings = lazy(() => import('../pages/developer-settings'))
 
 export const routes = [
     {
@@ -226,6 +229,12 @@ export const routes = [
                         requiredPermissions: ['notification:message']
                     },
                 ]
+            },
+            {
+                path: 'developer/settings',
+                breadcrumbName: '开发者设置',
+                defaultIcon: <Code size={18} />,
+                element: <DeveloperSettings />,
             },
             {
                 path: 'status', // 统一前缀：/status

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import './index.css'
 import { bindAuthorityByRoleId, bindRoleUser, createRole, deleteRoleById, fetchAuthorityTree, fetchRoleDetails, fetchRoleList, fetchSearchUser, fetchUserIdByRoleId, updateRole, updateRoleEnabled } from '../../../services/SystemService'
-import { App, Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, Table, Typography } from 'antd'
+import { App, Badge, Button, Drawer, Flex, Form, Input, Modal, Popconfirm, Radio, Select, Skeleton, Space, Switch, Table, theme, Tooltip, Typography } from 'antd'
 import AuthorityTreeSelect from '../../../components/AuthorityTreeSelect'
 import AuthorityTree from '../../../components/AuthorityTree'
 import Highlight from '../../../components/Highlight'
@@ -26,6 +26,8 @@ const RoleManage = () => {
     const { t } = useTranslation()
 
     const navigate = useNavigate()
+
+    const { token } = theme.useToken();
 
     const { modal, message } = App.useApp()
 
@@ -238,6 +240,28 @@ const RoleManage = () => {
             width: '140px',
             showSorterTooltip: { target: 'full-header' },
             sorter: (a, b) => a.name.localeCompare(b.name),
+            render: (text, record) => {
+                if (record.builtin === true) {
+                    return (
+                        <Badge
+                            count={t('内置')}
+                            style={{
+                                backgroundColor: token.colorPrimary,
+                                color: token.colorTextLightSolid,
+                                fontSize: '10px',
+                                height: '16px',
+                                lineHeight: '16px',
+                                padding: '0 4px',
+                                borderRadius: token.borderRadius,
+                                transform: 'translate(30px, -5px)', // 微调右上角偏移量
+                            }}
+                        >
+                            <span>{text}</span>
+                        </Badge>
+                    );
+                }
+                return <span>{text}</span>;
+            }
         },
         {
             key: 'code',
@@ -360,27 +384,40 @@ const RoleManage = () => {
                             </Space>
                         </HasPermission>
                         <HasPermission hasPermissions='system:role:delete'>
-                            <Typography.Link
-                                onClick={() => {
-                                    modal.confirm({
-                                        title: t('确定删除'),
-                                        okText: t('确定'),
-                                        cancelText: t('取消'),
-                                        maskClosable: false,
-                                        confirmLoading: deleteRoleByIdLoading,
-                                        content: (
-                                            <>
-                                                是否删除 <Highlight>{record.name}</Highlight> 角色？删除后将无法恢复！
-                                            </>
-                                        ),
-                                        onOk: async () => {
-                                            await handleDelete(record.id)
-                                        },
-                                    })
-                                }}
-                            >
-                                {t('删除')}
-                            </Typography.Link>
+                            {record.builtin === true ? (
+                                // 内置角色：展示置灰按钮并带有悬浮提示
+                                <Tooltip title={t('系统内置基础角色，无法删除')} placement="top">
+                                    {/* 用 span 包裹以确保禁用状态下依然能正常触发鼠标悬浮事件 */}
+                                    <span style={{ cursor: 'not-allowed' }}>
+                                        <Typography.Link disabled style={{ pointerEvents: 'none' }}>
+                                            {t('删除')}
+                                        </Typography.Link>
+                                    </span>
+                                </Tooltip>
+                            ) : (
+                                // 普通角色：正常触发删除确认弹窗
+                                <Typography.Link
+                                    onClick={() => {
+                                        modal.confirm({
+                                            title: t('确定删除'),
+                                            okText: t('确定'),
+                                            cancelText: t('取消'),
+                                            maskClosable: false,
+                                            confirmLoading: deleteRoleByIdLoading,
+                                            content: (
+                                                <>
+                                                    是否删除 <Highlight>{record.name}</Highlight> 角色？删除后将无法恢复！
+                                                </>
+                                            ),
+                                            onOk: async () => {
+                                                await handleDelete(record.id)
+                                            },
+                                        })
+                                    }}
+                                >
+                                    {t('删除')}
+                                </Typography.Link>
+                            )}
                         </HasPermission>
                     </Space>
                 )

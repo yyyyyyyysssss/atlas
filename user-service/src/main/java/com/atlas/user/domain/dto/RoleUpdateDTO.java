@@ -31,4 +31,6 @@ public class RoleUpdateDTO {
 
     private List<Long> customDataScope;
 
+    private Boolean builtin;
+
 }

@@ -76,6 +76,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final AuthApi authApi;
 
+    private final static String DEFAULT_ROLE_CODE = "role_user";
+
     @Override
     public UserAuthDTO loadUserByUserId(Long id) {
         User user = getById(id);
@@ -266,6 +268,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         if (userCreateDTO.getRoleIds() != null && !userCreateDTO.getRoleIds().isEmpty()) {
             bindRoles(user.getId(), userCreateDTO.getRoleIds());
+        } else {
+            // 未设置则绑定一个默认角色
+            Role role = roleService.findByCode(DEFAULT_ROLE_CODE);
+            if(role != null){
+                bindRoles(user.getId(), Collections.singletonList(role.getId()));
+            }
         }
         return user;
     }

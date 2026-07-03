@@ -30,6 +30,8 @@ public class RoleVO {
 
     private DataScope dataScope;
 
+    private Boolean builtin;
+
     private String createTime;
 
     private String creatorName;

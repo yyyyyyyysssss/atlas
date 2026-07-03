@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './index.css'
 import useFullParams from '../../../../hooks/useFullParams';
-import { App, Button, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
+import { App, Button, Checkbox, Col, Flex, Form, Input, Radio, Row, Space } from 'antd';
 import { useRequest } from 'ahooks';
 import { createRole, fetchAuthorityTree, fetchOrgOptions, fetchRoleDetails, fetchSearchUser, updateRole } from '../../../../services/SystemService';
 import Loading from '../../../../components/loading';
@@ -12,6 +12,7 @@ import useBack from '../../../../hooks/useBack';
 import { useTranslation } from 'react-i18next'
 import OptionSelect from '../../../../components/OptionSelect';
 import { RoleDataScope } from '../../../../enums/system';
+import { useIsSuperAdmin } from '../../../../components/HasPermission';
 
 
 
@@ -27,6 +28,8 @@ const RoleDetails = () => {
     const [form] = Form.useForm()
 
     const { goBack } = useBack()
+
+    const isSuperAdmin = useIsSuperAdmin()
 
     const { runAsync: getRoleDetailsAsync, loading: getRoleDetailsLoading } = useRequest(fetchRoleDetails, {
         manual: true
@@ -143,6 +146,19 @@ const RoleDetails = () => {
                             </Form.Item>
                         </Col>
                     </Row>
+                    {isSuperAdmin && (
+                        <Row gutter={16}>
+                            <Col span={24}>
+                                <Form.Item
+                                    label="系统内置"
+                                    name="builtin"
+                                    valuePropName="checked"
+                                >
+                                    <Checkbox/>
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    )}
                     <Row gutter={16}>
                         <Col span={24}>
                             <Form.Item

@@ -44,6 +44,9 @@ public class Role extends BaseEntity {
     @TableField("data_scope")
     private DataScope dataScope;
 
+    @TableField("builtin")
+    private Boolean builtin;
+
     /**
      * 是否为超级管理员角色
      * @return true 如果是超级管理员角色

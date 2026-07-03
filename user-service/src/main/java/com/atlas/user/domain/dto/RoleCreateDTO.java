@@ -32,4 +32,6 @@ public class RoleCreateDTO {
 
     private List<Long> customDataScope;
 
+    private Boolean builtin = false;
+
 }

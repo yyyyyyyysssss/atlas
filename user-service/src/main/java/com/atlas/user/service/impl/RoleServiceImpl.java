@@ -90,6 +90,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         if (role.isSuperAdmin()) {
             throw new BusinessException("超级管理员角色无法修改");
         }
+        if (role.getBuiltin() && roleUpdateDTO.getEnabled() != null && !roleUpdateDTO.getEnabled()) {
+            throw new BusinessException("系统内置角色无法停用");
+        }
         if (isFullUpdate) {
             RoleMapping.INSTANCE.overwriteRole(roleUpdateDTO, role);
         } else {
@@ -183,8 +186,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     @Transactional
     public Boolean deleteRole(Long roleId) {
         Role role = checkAndResult(roleId);
-        if (role.isSuperAdmin()) {
-            throw new BusinessException("超级管理员角色无法删除");
+        if (role.getBuiltin()) {
+            throw new BusinessException("内置角色无法删除");
         }
         int i = roleMapper.deleteById(roleId);
         if (i <= 0) {

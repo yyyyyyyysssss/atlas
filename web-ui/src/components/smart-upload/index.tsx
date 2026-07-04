@@ -64,28 +64,42 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
 
     const limitTask = useMemo(() => pLimit(2), [])
 
-    const files = useMemo(() => {
-        if (!value || (Array.isArray(value) && value.length === 0)) {
-            return []
-        }
-        const valueArray = Array.isArray(value) ? value : [value]
-        return valueArray?.map((url: string, index: number) => {
-            const fileName = url?.split('/').pop()?.split('?')[0]
-            return {
-                uid: `-${index}`,
-                name: fileName || `file-${index}`,
-                status: 'done' as UploadFileStatus,
-                url: url,
-            };
-        });
-    }, [value])
-
     useEffect(() => {
         setFileList((prev): any => {
-            const newFiles = prev.filter((file: any) => file.status !== 'done')
-            return [...files, ...newFiles]
+            // 1. 将外部传入的 value 标准化为数组
+            if (!value || (Array.isArray(value) && value.length === 0)) {
+                // 如果外部清空了，但当前还有正在上传的文件，应保留上传中的文件
+                return prev.filter((file) => file.status === 'uploading');
+            }
+            const valueArray = Array.isArray(value) ? value : [value];
+
+            // 2. 遍历外部最新的 url 列表，构建已完成的文件列表
+            const doneFiles = valueArray.map((url, index) => {
+                // 关键：在当前组件状态(prev)中寻找是否已经存在这个 url 的文件
+                const existingFile = prev.find((f) => f.url === url || f.response === url);
+
+                if (existingFile) {
+                    // 如果找到了，直接复用原对象（保留了原汁原味的 uid，如 rc-upload-xxx）
+                    return existingFile;
+                }
+
+                // 如果没找到（比如初始化回显时），再创建新的结构
+                const fileName = url?.split('/').pop()?.split('?')[0];
+                return {
+                    uid: `-${index}`, // 仅对回显数据使用临时 uid
+                    name: fileName || `file-${index}`,
+                    status: 'done' as UploadFileStatus,
+                    url: url,
+                };
+            });
+
+            // 3. 找出当前处于“上传中”或非“成功”状态的文件，避免被覆盖
+            const uploadingFiles = prev.filter((file) => file.status === 'uploading');
+
+            // 4. 合并已完成和上传中的文件
+            return [...doneFiles, ...uploadingFiles];
         })
-    }, [files])
+    }, [value])
 
     const handleBeforeUpload = async (file: any, fileList: any) => {
         // 在文件上传前更新状态为 "uploading"

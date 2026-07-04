@@ -4,14 +4,14 @@ import httpWrapper from "./AxiosWrapper"
 // MD5校验
 export const checkMD5 = (md5) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/file/check/${md5}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/file/upload/check/${md5}`))
 }
 
 
 // 前置获取uploadId
 export const fetchUploadId = (fileInfo) => {
 
-    return apiRequestWrapper(() => httpWrapper.post('/api/file/uploadId', fileInfo))
+    return apiRequestWrapper(() => httpWrapper.post('/api/file/upload/init', fileInfo))
 }
 
 // 分片文件上传
@@ -39,7 +39,7 @@ export const uploadChunkFile = (uploadFormData, onProgress) => {
 // 根据uploadId获取访问的url
 export const fetchAccessUrl = (uploadId) => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/file/accessUrl', {
+    return apiRequestWrapper(() => httpWrapper.get('/api/file/upload/accessUrl', {
         params: {
             uploadId: uploadId
         }

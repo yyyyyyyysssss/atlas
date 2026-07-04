@@ -2,17 +2,22 @@ import { useState } from 'react';
 import './index.css'
 import { Flex, Tabs, theme, Typography } from "antd"
 import { Blocks, CodeXml, Link } from 'lucide-react';
-import OAuth2ApplicationTab from './components/OAuth2ApplicationTab';
+import { Outlet, useNavigate } from 'react-router-dom';
 
 
 const DeveloperSettings = () => {
 
     const { token } = theme.useToken();
 
+    const navigate = useNavigate();
+
     const [activeTab, setActiveTab] = useState('oauth2')
 
     return (
-        <Flex justify="center" style={{ width: '100%', minHeight: '100%' }}>
+        <Flex
+            justify="center"
+            style={{ width: '100%', minHeight: '100%' }}
+        >
             <div style={{
                 width: '100%',
                 backgroundColor: token.colorBgContainer,
@@ -20,9 +25,8 @@ const DeveloperSettings = () => {
             }}>
                 <Tabs
                     tabPosition="left"
-                    activeKey={activeTab}
-                    onChange={setActiveTab}
                     style={{ height: '100%' }}
+                    onChange={(key) => navigate(`/developer/settings/${key}`)}
                     tabBarStyle={{
                         width: 240,
                         padding: '24px 0',
@@ -37,9 +41,7 @@ const DeveloperSettings = () => {
                                     <span style={{ fontSize: 15 }}>OAuth2 应用</span>
                                 </Flex>
                             ),
-                            children: <div style={{ padding: '32px 48px' }}>
-                                <OAuth2ApplicationTab />
-                            </div>,
+                            children: <Outlet />,
                         }
                     ]}
                 />

@@ -49,7 +49,6 @@ security:
       - /oauth2/qr/status
       - /thirdParty/**
       - /activated
-      - /open/**
       - /actuator/**
       - /error
       - /favicon.ico

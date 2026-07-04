@@ -1,5 +1,6 @@
 package com.atlas.file.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,7 @@ public class FileChunkDTO {
     private Integer chunkIndex;
 
     //文件
+    @JsonIgnore
     private MultipartFile file;
 
 }

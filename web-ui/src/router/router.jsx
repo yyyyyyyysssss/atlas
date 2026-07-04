@@ -40,6 +40,8 @@ const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 
 
 const DeveloperSettings = lazy(() => import('../pages/developer-settings'))
+const OAuth2Application = lazy(() => import('../pages/developer-settings/oauth2-application'))
+const OAuth2ApplicationEdit = lazy(() => import('../pages/developer-settings/oauth2-application/oauth2-application-edit'))
 
 export const routes = [
     {
@@ -235,6 +237,28 @@ export const routes = [
                 breadcrumbName: '开发者设置',
                 defaultIcon: <Code size={18} />,
                 element: <DeveloperSettings />,
+                children: [
+                    {
+                        path: '',
+                        breadcrumbName: 'OAuth2 应用',
+                        element: <OAuth2Application />,
+                    },
+                    {
+                        path: 'oauth2',
+                        breadcrumbName: 'OAuth2 应用',
+                        element: <OAuth2Application />,
+                    },
+                    {
+                        path: 'oauth2/application/create',
+                        breadcrumbName: '创建',
+                        element: <OAuth2ApplicationEdit />,
+                    },
+                    {
+                        path: 'oauth2/application/:id',
+                        breadcrumbName: '编辑',
+                        element: <OAuth2ApplicationEdit />,
+                    },
+                ]
             },
             {
                 path: 'status', // 统一前缀：/status

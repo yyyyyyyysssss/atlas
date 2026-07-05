@@ -20,6 +20,21 @@ public record OAuth2ApplicationVO(
         LocalDateTime createTime
 ) {
 
+    public static OAuth2ApplicationVO of(OAuth2Application application){
+        return new OAuth2ApplicationVO(
+                application.getId(),
+                application.getClientId(),
+                application.getApplicationName(),
+                application.getLogoUrl(),
+                application.getHomePageUrl(),
+                null,
+                null,
+                null,
+                application.getDescription(),
+                application.getCreateTime()
+        );
+    }
+
     public static OAuth2ApplicationVO of(OAuth2Application application, RegisteredClient registeredClient){
 
         return new OAuth2ApplicationVO(

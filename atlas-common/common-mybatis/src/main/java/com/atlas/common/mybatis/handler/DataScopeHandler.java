@@ -11,6 +11,8 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cglib.proxy.Proxy;
+
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,6 +124,39 @@ public class DataScopeHandler implements MultiDataPermissionHandler {
 
     // 获取 Mapper 方法或类上的注解
     private DataPermission getDataScopeAnnotation(String mappedStatementId) {
+        // 如果开启了 ThreadLocal，直接动态代理“伪造”一个注解对象返回
+        if(DataPermissionContext.isEnabled()){
+            DataPermissionContext.DataPermissionDescriptor descriptor = DataPermissionContext.getDescriptor();
+            // 兜底
+            DataPermission mapperAnnotation = getMapperAnnotationFromCache(mappedStatementId);
+            // 决定最终的属性值（动态优先，静态兜底）
+            String finalAlias = StringUtils.isNotBlank(descriptor.getAlias()) ? descriptor.getAlias() : (mapperAnnotation != null ? mapperAnnotation.alias() : "");
+            String finalTableName = StringUtils.isNotBlank(descriptor.getTableName()) ? descriptor.getTableName() : (mapperAnnotation != null ? mapperAnnotation.tableName() : "");
+            // 只有当描述符里的字段是初始默认值时，才尝试用 Mapper 注解上的自定义字段去覆盖它
+            String finalOrgField = "org_id".equals(descriptor.getOrgField()) && mapperAnnotation != null ? mapperAnnotation.orgField() : descriptor.getOrgField();
+            String finalUserField = "creator_id".equals(descriptor.getUserField()) && mapperAnnotation != null ? mapperAnnotation.userField() : descriptor.getUserField();
+            // 使用 JDK 动态代理生成 DataPermission 接口的实例
+            return (DataPermission) Proxy.newProxyInstance(
+                    DataPermission.class.getClassLoader(),
+                    new Class[]{DataPermission.class},
+                    (proxy, method, args) -> {
+                        // 根据调用的注解方法名，返回对应的融合值
+                        switch (method.getName()) {
+                            case "alias": return finalAlias;
+                            case "tableName": return finalTableName;
+                            case "orgField": return finalOrgField;
+                            case "userField": return finalUserField;
+                            case "annotationType": return DataPermission.class;
+                            default: return method.getDefaultValue(); // 其他可能存在的属性返回默认值
+                        }
+                    }
+            );
+        }
+        return getMapperAnnotationFromCache(mappedStatementId);
+    }
+
+    private DataPermission getMapperAnnotationFromCache(String mappedStatementId){
+
         return dataPermissionCache.computeIfAbsent(mappedStatementId, key -> {
             try {
                 int lastDotIndex = key.lastIndexOf(".");

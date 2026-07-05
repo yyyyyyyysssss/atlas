@@ -237,26 +237,35 @@ export const routes = [
                 breadcrumbName: '开发者设置',
                 defaultIcon: <Code size={18} />,
                 element: <DeveloperSettings />,
+                protected: true,
                 children: [
                     {
                         path: '',
                         breadcrumbName: 'OAuth2 应用',
                         element: <OAuth2Application />,
+                        protected: true,
+                        requiredPermissions: ['developer:settings:oauth2']
                     },
                     {
                         path: 'oauth2',
                         breadcrumbName: 'OAuth2 应用',
                         element: <OAuth2Application />,
+                        protected: true,
+                        requiredPermissions: ['developer:settings:oauth2']
                     },
                     {
                         path: 'oauth2/application/create',
                         breadcrumbName: '创建',
                         element: <OAuth2ApplicationEdit />,
+                        protected: true,
+                        requiredPermissions: ['developer:settings:oauth2']
                     },
                     {
                         path: 'oauth2/application/:id',
                         breadcrumbName: '编辑',
                         element: <OAuth2ApplicationEdit />,
+                        protected: true,
+                        requiredPermissions: ['developer:settings:oauth2']
                     },
                 ]
             },

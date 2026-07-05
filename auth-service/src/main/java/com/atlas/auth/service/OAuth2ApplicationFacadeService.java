@@ -1,13 +1,18 @@
 package com.atlas.auth.service;
 
 
+import com.atlas.auth.domain.dto.OAuth2ApplicationQueryDTO;
 import com.atlas.auth.domain.dto.OAuth2ApplicationSaveDTO;
 import com.atlas.auth.domain.entity.OAuth2Application;
 import com.atlas.auth.domain.vo.OAuth2ApplicationCreateVO;
 import com.atlas.auth.domain.vo.OAuth2ApplicationVO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.common.mybatis.handler.DataPermissionContext;
 import com.atlas.security.utils.TicketGenerator;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,15 +26,17 @@ import org.springframework.security.oauth2.server.authorization.settings.OAuth2T
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OAuth2ApplicationFacade {
+public class OAuth2ApplicationFacadeService {
 
     private final OAuth2ApplicationService applicationService;
 
@@ -47,6 +54,23 @@ public class OAuth2ApplicationFacade {
         } else {
             updateApplication(saveDTO);
             return null;
+        }
+    }
+
+
+    public PageInfo<OAuth2ApplicationVO> getPage(OAuth2ApplicationQueryDTO queryDTO){
+        try (DataPermissionContext ctx = DataPermissionContext.open()){
+            Integer pageNum = queryDTO.getPageNum();
+            Integer pageSize = queryDTO.getPageSize();
+            PageHelper.startPage(pageNum, pageSize);
+            QueryWrapper<OAuth2Application> queryWrapper = new QueryWrapper<>();
+            queryWrapper.orderByAsc("create_time");
+            List<OAuth2Application> applications = applicationService.list(queryWrapper);
+            if(CollectionUtils.isEmpty(applications)){
+                return PageInfo.emptyPageInfo();
+            }
+            PageInfo<OAuth2Application> entityPageInfo = new PageInfo<>(applications);
+            return entityPageInfo.convert(OAuth2ApplicationVO::of);
         }
     }
 

@@ -9,3 +9,15 @@ export const saveApplication = async (body) => {
 
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/developer/oauth2/application/save', body))
 }
+
+// 获取应用详情
+export const getApplicationDetail = async (id) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/developer/oauth2/application/${id}`))
+}
+
+// 获取应用列表
+export const getApplicationPage = async (page, size) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/developer/oauth2/application/page?pageSize=${page}&pageSize=${size}`))
+}

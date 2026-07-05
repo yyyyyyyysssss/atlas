@@ -45,7 +45,7 @@ const OAuth2ApplicationItem = ({ oauth2App, onEdit }) => {
                 <Avatar
                     size={52}
                     shape="square"
-                    src={oauth2App.logo}
+                    src={oauth2App.logoUrl}
                     icon={<AppstoreOutlined />}
                     style={{
                         borderRadius: token.borderRadiusSM,
@@ -54,7 +54,7 @@ const OAuth2ApplicationItem = ({ oauth2App, onEdit }) => {
                 <Flex style={{ width: '100%' }} vertical gap={4}>
                     <Flex justify="space-between" align="center">
                         <Text strong style={{ fontSize: '18px' }}>
-                            {oauth2App.name}
+                            {oauth2App.applicationName}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12, marginRight: 20 }}>
                             Client ID:{' '}

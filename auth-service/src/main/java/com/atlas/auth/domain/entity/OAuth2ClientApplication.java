@@ -8,14 +8,16 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Tolerate;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
-@TableName(value = "oauth2_application", autoResultMap = true)
+@TableName(value = "oauth2_client_application", autoResultMap = true)
 @Builder
-public class OAuth2Application extends BaseEntity {
+public class OAuth2ClientApplication extends BaseEntity {
 
     @Tolerate
-    public OAuth2Application() {
+    public OAuth2ClientApplication() {
     }
 
     @TableField("registered_client_id")
@@ -35,5 +37,8 @@ public class OAuth2Application extends BaseEntity {
 
     @TableField("description")
     private String description;
+
+    @TableField("last_used_time")
+    private LocalDateTime lastUsedTime;
 
 }

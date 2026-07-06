@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
-public record OAuth2ApplicationSaveDTO(
+public record OAuth2ClientApplicationSaveDTO(
 
         Long id,
 

@@ -1,6 +1,8 @@
 package com.atlas.auth.domain.vo;
 
-public record OAuth2ApplicationCreateVO(
+public record OAuth2ClientApplicationCreateVO(
+
+        Long id,
 
         String clientId,
 

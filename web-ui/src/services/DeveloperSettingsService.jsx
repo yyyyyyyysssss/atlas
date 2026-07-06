@@ -19,5 +19,11 @@ export const getApplicationDetail = async (id) => {
 // 获取应用列表
 export const getApplicationPage = async (page, size) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/developer/oauth2/application/page?pageSize=${page}&pageSize=${size}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/developer/oauth2/application/page?pageNum=${page}&pageSize=${size}`))
+}
+
+// 获取应用列表
+export const deleteApplication = async (id) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/developer/oauth2/application/${id}`))
 }

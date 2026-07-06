@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class OAuth2ApplicationQueryDTO extends PageQueryDTO {
+public class OAuth2ClientApplicationQueryDTO extends PageQueryDTO {
 
 
 }

@@ -22,7 +22,7 @@ const Loading: React.FC<LoadingProps> = ({
     tip,
     ...restProps
 }) => {
-    
+
     // 获取 Ant Design 的主题 Token
     const { token } = theme.useToken();
 
@@ -33,20 +33,20 @@ const Loading: React.FC<LoadingProps> = ({
     const customIndicator = (
         <div className="atlas-loading-indicator">
             <svg viewBox="0 0 50 50" className="atlas-spinner-svg">
-                <circle 
-                    cx="25" 
-                    cy="25" 
-                    r="20" 
-                    fill="none" 
+                <circle
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
                     strokeWidth="5"
                     style={{ stroke: token.colorFillSecondary }}
                 />
-                <circle 
-                    className="atlas-spinner-path" 
-                    cx="25" 
-                    cy="25" 
-                    r="20" 
-                    fill="none" 
+                <circle
+                    className="atlas-spinner-path"
+                    cx="25"
+                    cy="25"
+                    r="20"
+                    fill="none"
                     strokeWidth="5"
                     style={{ stroke: token.colorPrimary }}
                 />
@@ -71,30 +71,33 @@ const Loading: React.FC<LoadingProps> = ({
 
     // 全屏或者独立占位模式 (不包裹子元素)
     return (
-        <AnimatePresence>
-            {spinning && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={isFull ? 'atlas-loading-fullscreen' : 'atlas-loading-wrapper'}
-                >
-                    {/* 直接使用 Flex 横向布局，脱离 Spin 容器的限制，防止文字被挤压成竖列 */}
-                    <Flex align="center" gap={12} className="atlas-loading-content">
-                        {customIndicator}
-                        {tip && (
-                            <Typography.Text 
-                                className="atlas-loading-tip" 
-                                style={{ color: token.colorTextSecondary }}
-                            >
-                                {tip}
-                            </Typography.Text>
-                        )}
-                    </Flex>
-                </motion.div>
-            )}
-        </AnimatePresence>
+        <>
+            {children}
+            <AnimatePresence>
+                {spinning && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={isFull ? 'atlas-loading-fullscreen' : 'atlas-loading-wrapper'}
+                    >
+                        {/* 直接使用 Flex 横向布局，脱离 Spin 容器的限制，防止文字被挤压成竖列 */}
+                        <Flex align="center" gap={12} className="atlas-loading-content">
+                            {customIndicator}
+                            {tip && (
+                                <Typography.Text
+                                    className="atlas-loading-tip"
+                                    style={{ color: token.colorTextSecondary }}
+                                >
+                                    {tip}
+                                </Typography.Text>
+                            )}
+                        </Flex>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     )
 }
 

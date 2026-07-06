@@ -1,11 +1,13 @@
 package com.atlas.auth.service;
 
 
-import com.atlas.auth.domain.dto.OAuth2ApplicationQueryDTO;
-import com.atlas.auth.domain.dto.OAuth2ApplicationSaveDTO;
-import com.atlas.auth.domain.entity.OAuth2Application;
-import com.atlas.auth.domain.vo.OAuth2ApplicationCreateVO;
-import com.atlas.auth.domain.vo.OAuth2ApplicationVO;
+import com.atlas.auth.domain.dto.OAuth2ClientApplicationQueryDTO;
+import com.atlas.auth.domain.dto.OAuth2ClientApplicationSaveDTO;
+import com.atlas.auth.domain.entity.OAuth2ClientApplication;
+import com.atlas.auth.domain.entity.OAuth2ClientSecret;
+import com.atlas.auth.domain.vo.OAuth2ClientApplicationCreateVO;
+import com.atlas.auth.domain.vo.OAuth2ClientApplicationVO;
+import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,11 +39,15 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OAuth2ApplicationFacadeService {
+public class OAuth2ClientApplicationFacadeService {
 
-    private final OAuth2ApplicationService applicationService;
+    private final OAuth2ClientApplicationService oAuth2ClientApplicationService;
 
     private final RegisteredClientRepository registeredClientRepository;
+
+    private final OAuth2RegisteredClientMapper oAuth2RegisteredClientMapper;
+
+    private final OAuth2ClientSecretService oAuth2ClientSecretService;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -48,7 +55,7 @@ public class OAuth2ApplicationFacadeService {
      * 保存应用（兼容创建和修改）
      */
     @Transactional(rollbackFor = Exception.class)
-    public OAuth2ApplicationCreateVO save(OAuth2ApplicationSaveDTO saveDTO) {
+    public OAuth2ClientApplicationCreateVO save(OAuth2ClientApplicationSaveDTO saveDTO) {
         if (saveDTO.id() == null){
             return createApplication(saveDTO);
         } else {
@@ -57,37 +64,59 @@ public class OAuth2ApplicationFacadeService {
         }
     }
 
-
-    public PageInfo<OAuth2ApplicationVO> getPage(OAuth2ApplicationQueryDTO queryDTO){
+    public PageInfo<OAuth2ClientApplicationVO> getPage(OAuth2ClientApplicationQueryDTO queryDTO){
         try (DataPermissionContext ctx = DataPermissionContext.open()){
             Integer pageNum = queryDTO.getPageNum();
             Integer pageSize = queryDTO.getPageSize();
             PageHelper.startPage(pageNum, pageSize);
-            QueryWrapper<OAuth2Application> queryWrapper = new QueryWrapper<>();
+            QueryWrapper<OAuth2ClientApplication> queryWrapper = new QueryWrapper<>();
             queryWrapper.orderByAsc("create_time");
-            List<OAuth2Application> applications = applicationService.list(queryWrapper);
+            List<OAuth2ClientApplication> applications = oAuth2ClientApplicationService.list(queryWrapper);
             if(CollectionUtils.isEmpty(applications)){
                 return PageInfo.emptyPageInfo();
             }
-            PageInfo<OAuth2Application> entityPageInfo = new PageInfo<>(applications);
-            return entityPageInfo.convert(OAuth2ApplicationVO::of);
+            PageInfo<OAuth2ClientApplication> entityPageInfo = new PageInfo<>(applications);
+            return entityPageInfo.convert(OAuth2ClientApplicationVO::of);
         }
     }
 
-    public OAuth2ApplicationVO getApplicationDetail(Long applicationId){
+    public OAuth2ClientApplicationVO getApplicationDetail(Long applicationId){
         Objects.requireNonNull(applicationId, "applicationId must not be null");
-        OAuth2Application app = applicationService.getById(applicationId);
+        OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
         if (app == null) {
-            throw new BusinessException("对应应用不存在");
+            throw new BusinessException("应用不存在");
         }
         RegisteredClient registeredClient = registeredClientRepository.findById(app.getRegisteredClientId());
         if (registeredClient == null) {
-            throw new BusinessException("应用关联的框架底层客户端数据丢失，请检查数据一致性");
+            throw new BusinessException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
         }
-        return OAuth2ApplicationVO.of(app, registeredClient);
+        List<OAuth2ClientSecret> oAuth2ClientSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(registeredClient.getId());
+        return OAuth2ClientApplicationVO.of(app, registeredClient, oAuth2ClientSecrets);
     }
 
-    private OAuth2ApplicationCreateVO createApplication(OAuth2ApplicationSaveDTO saveDTO){
+    @Transactional
+    public void deleteByApplicationId(Long id){
+        log.info("正在删除 OAuth2 应用，ID: {}", id);
+        OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(id);
+        if (app == null) {
+            log.warn("删除 OAuth2 应用失败，应用不存在，ID: {}", id);
+            throw new BusinessException("应用不存在或已被删除");
+        }
+        // 删除客户端应用信息
+        boolean delFlag = oAuth2ClientApplicationService.removeById(id);
+        if(!delFlag){
+            log.error("删除 OAuth2 应用主表记录失败，ID: {}", id);
+            throw new BusinessException("删除应用失败，请稍后重试");
+        }
+        // 删除客户端密钥信息
+        oAuth2ClientSecretService.removeByRegisteredClientId(app.getRegisteredClientId());
+        // 删除oauth2客户端信息
+        oAuth2RegisteredClientMapper.deleteById(app.getRegisteredClientId());
+
+        log.info("OAuth2 应用删除成功，ID: {}", id);
+    }
+
+    private OAuth2ClientApplicationCreateVO createApplication(OAuth2ClientApplicationSaveDTO saveDTO){
         log.info("正在创建 OAuth2 应用，名称: {}", saveDTO.applicationName());
         // oauth2_registered_client 物理主键
         String registeredClientId = UUID.randomUUID().toString().replace("-", "");
@@ -95,10 +124,11 @@ public class OAuth2ApplicationFacadeService {
         String clientId = TicketGenerator.generate(20);
         // 暴露给用户的 clientSecret
         String rawSecret = TicketGenerator.generate(32);
-
+        // 加密后的密钥
+        String clientSecret = passwordEncoder.encode(rawSecret);
         RegisteredClient.Builder clientBuilder = RegisteredClient.withId(registeredClientId)
                 .clientId(clientId)
-                .clientSecret(passwordEncoder.encode(rawSecret))
+                .clientSecret(clientSecret)
                 .clientName(saveDTO.applicationName())
                 // 核心标准模式：授权码模式 + 刷新令牌模式
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -147,8 +177,20 @@ public class OAuth2ApplicationFacadeService {
 
         registeredClientRepository.save(clientBuilder.build());
 
+        // 保存密钥
+        String hint = rawSecret.length() > 4 ? rawSecret.substring(rawSecret.length() - 4) : rawSecret;
+        OAuth2ClientSecret clientSecretEntity = new OAuth2ClientSecret();
+        clientSecretEntity.setId(IdGen.genId());
+        clientSecretEntity.setRegisteredClientId(registeredClientId);
+        clientSecretEntity.setClientSecret(clientSecret);
+        clientSecretEntity.setClientSecretHint(hint);
+        // client_secret_expires_at 默认为空，代表永不过期
+        clientSecretEntity.setClientSecretExpiresAt(null);
+        clientSecretEntity.setCreateTime(LocalDateTime.now());
+        oAuth2ClientSecretService.save(clientSecretEntity);
+
         // 保存 (oauth2_application)
-        OAuth2Application oAuth2Application = new OAuth2Application();
+        OAuth2ClientApplication oAuth2Application = new OAuth2ClientApplication();
         oAuth2Application.setId(IdGen.genId());
         oAuth2Application.setRegisteredClientId(registeredClientId);
         oAuth2Application.setClientId(clientId);
@@ -156,16 +198,16 @@ public class OAuth2ApplicationFacadeService {
         oAuth2Application.setLogoUrl(saveDTO.logoUrl());
         oAuth2Application.setHomePageUrl(saveDTO.homePageUrl());
         oAuth2Application.setDescription(saveDTO.description());
-        applicationService.save(oAuth2Application);
+        oAuth2ClientApplicationService.save(oAuth2Application);
         log.info("OAuth2 应用创建成功, id: {}, clientId: {}", oAuth2Application.getId(), clientId);
-        return new OAuth2ApplicationCreateVO(clientId, rawSecret);
+        return new OAuth2ClientApplicationCreateVO(oAuth2Application.getId(),clientId, rawSecret);
     }
 
 
-    private void updateApplication(OAuth2ApplicationSaveDTO saveDTO){
+    private void updateApplication(OAuth2ClientApplicationSaveDTO saveDTO){
         Long applicationId = saveDTO.id();
         log.info("正在修改 OAuth2 应用，ID: {}", applicationId);
-        OAuth2Application oauth2Application = applicationService.getById(applicationId);
+        OAuth2ClientApplication oauth2Application = oAuth2ClientApplicationService.getById(applicationId);
         if (oauth2Application == null) {
             throw new BusinessException("当前编辑的应用不存在");
         }
@@ -196,7 +238,7 @@ public class OAuth2ApplicationFacadeService {
         oauth2Application.setHomePageUrl(saveDTO.homePageUrl());
         oauth2Application.setDescription(saveDTO.description());
 
-        applicationService.updateById(oauth2Application);
+        oAuth2ClientApplicationService.updateById(oauth2Application);
         log.info("OAuth2 应用配置更新成功, id: {}, applicationName: {}", oauth2Application.getId(), oauth2Application.getApplicationName());
     }
 }

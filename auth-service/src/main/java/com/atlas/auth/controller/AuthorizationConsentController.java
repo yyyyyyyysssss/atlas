@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -54,8 +55,12 @@ public class AuthorizationConsentController {
                 .queryParam("client_name", registeredClient.getClientName())
                 .queryParam("scope", scope)
                 .queryParam("state", state)
-                .queryParam("type", type)
-                .queryParam("user_code", userCode);
+                .queryParam("type", type);
+        // 设备码授权独有的
+        if(StringUtils.hasText(userCode)){
+            builder.queryParam("user_code", userCode);
+        }
+        // 客户端应用信息
         if(auth2ClientApplication != null){
             builder
                     .queryParam("logo_uri", auth2ClientApplication.getLogoUrl())

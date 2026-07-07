@@ -39,6 +39,18 @@ public class OAuth2ClientApplicationController {
         return ResultGenerator.ok(pageInfo);
     }
 
+    @PostMapping("/{id}/secret")
+    public Result<OAuth2ClientApplicationCreateVO> addClientSecret(@PathVariable("id") Long id) {
+        OAuth2ClientApplicationCreateVO createVO = oAuth2ApplicationFacadeService.addClientSecret(id);
+        return ResultGenerator.ok(createVO);
+    }
+
+    @DeleteMapping("/secret/{clientSecretId}")
+    public Result<Void> deleteClientSecret(@PathVariable("clientSecretId") Long clientSecretId){
+        oAuth2ApplicationFacadeService.deleteClientSecret(clientSecretId);
+        return ResultGenerator.ok();
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable("id") Long id){
         oAuth2ApplicationFacadeService.deleteByApplicationId(id);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover, theme } from "antd"
+import { Flex, Card, Button, message, Typography, Avatar, Alert, Divider, Popover, theme, Descriptions } from "antd"
 import logo from '/favicon.ico'
 import './index.css'
 import useFullParams from '../../../../hooks/useFullParams'
@@ -123,15 +123,6 @@ const Consent = () => {
             }}>
             <Flex gap='middle' justify='center' align='center' vertical style={{ width: '100%' }}>
                 <Loading spinning={loading}>
-                    {/* <div
-                        style={{
-                            width: DESIGN_WIDTH,
-                            height: DESIGN_HEIGHT,
-                            transform: `scale(${scale})`,
-                            transformOrigin: 'center center',
-                            backgroundColor: 'red'
-                        }}
-                    > */}
                     {step === 1 ? (
                         <div
                             style={{
@@ -199,22 +190,47 @@ const Consent = () => {
                                                 styles={{
                                                     body: {
                                                         borderRadius: 12,
-                                                        padding: '16px'
+                                                        padding: '16px',
+                                                        maxWidth: 320,
                                                     }
                                                 }}
                                                 content={
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        <Flex vertical>
-                                                            <Typography.Text style={{ fontSize: 12 }} type='secondary'>开发者邮件</Typography.Text>
-                                                            <Typography.Text copyable>{params.developer_email}</Typography.Text>
-                                                        </Flex>
-                                                        <Flex vertical>
-                                                            <Typography.Text style={{ fontSize: 12 }} type='secondary'>官方主页</Typography.Text>
-                                                            <Typography.Link href={params.app_domain} target="_blank">
-                                                                {params.app_domain}
-                                                            </Typography.Link>
-                                                        </Flex>
-                                                    </div>
+                                                    <Descriptions
+                                                        column={1}
+                                                        size="small"
+                                                        styles={{
+                                                            label: {
+                                                                width: 100,
+                                                            },
+                                                        }}
+                                                        
+                                                    >
+                                                        <Descriptions.Item label="开发者">
+                                                            {params.developer_name || '-'}
+                                                        </Descriptions.Item>
+
+                                                        <Descriptions.Item label="开发者邮件">
+                                                            <Typography.Text copyable={params.developer_email}>
+                                                                {params.developer_email || '-'}
+                                                            </Typography.Text>
+                                                        </Descriptions.Item>
+
+                                                        <Descriptions.Item label="官方主页">
+                                                            {
+                                                                params.home_page_url ? (
+                                                                    <Typography.Link
+                                                                        href={params.home_page_url}
+                                                                        target="_blank"
+                                                                        ellipsis
+                                                                    >
+                                                                        {params.home_page_url}
+                                                                    </Typography.Link>
+                                                                ) : (
+                                                                    '-'
+                                                                )
+                                                            }
+                                                        </Descriptions.Item>
+                                                    </Descriptions>
                                                 }
                                             >
                                                 <Typography.Link style={{ fontSize: 18, marginLeft: 8, textDecoration: 'underline' }}>
@@ -241,7 +257,7 @@ const Consent = () => {
                                                 }}
                                             >
                                                 <Flex align='center' gap={10} >
-                                                    <Avatar src={avatar} />
+                                                    <Avatar src={avatar} size={48} />
                                                     <Flex vertical>
                                                         <Typography.Title level={5} style={{ margin: 0 }}>{fullName}</Typography.Title>
                                                         <Typography.Text type='secondary'>{username}</Typography.Text>
@@ -250,25 +266,36 @@ const Consent = () => {
                                             </Button>
                                             <Divider />
                                         </Flex>
-                                        <Typography.Paragraph
-                                            type="secondary"
-                                            style={{
-                                                fontSize: 14,
-                                                lineHeight: '1.6',
-                                                margin: 0,
-                                                textAlign: 'justify' // 让文字两端对齐，看起来更专业
-                                            }}
-                                        >
-                                            建议您在使用“<Typography.Text strong size="small">{params.client_name}</Typography.Text>”之前，先阅读此应用的
-                                            <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.privacy_uri} style={{ fontSize: 14 }}>
-                                                《隐私权政策》
-                                            </Button>
-                                            和
-                                            <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.terms_uri} style={{ fontSize: 14 }}>
-                                                《服务条款》
-                                            </Button>
-                                            。
-                                        </Typography.Paragraph>
+                                        {
+                                            (!params.privacy_uri && !params.terms_uri) ? (
+                                                <Typography.Paragraph
+                                                    type="secondary"
+                                                    style={{ fontSize: 14, margin: 0, lineHeight: '1.6' }}
+                                                >
+                                                    请选择您要登录的账号。选择后将默认允许“<Typography.Text strong>{params.client_name}</Typography.Text>”获取该账号的公开基础信息（如昵称、头像等）用于身份识别，详细业务权限将在下一步由您确认。
+                                                </Typography.Paragraph>
+                                            ) : (
+                                                <Typography.Paragraph
+                                                    type="secondary"
+                                                    style={{
+                                                        fontSize: 14,
+                                                        lineHeight: '1.6',
+                                                        margin: 0,
+                                                        textAlign: 'justify' // 让文字两端对齐，看起来更专业
+                                                    }}
+                                                >
+                                                    建议您在使用“<Typography.Text strong size="small">{params.client_name}</Typography.Text>”之前，先阅读此应用的
+                                                    <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.privacy_uri} style={{ fontSize: 14 }}>
+                                                        《隐私权政策》
+                                                    </Button>
+                                                    和
+                                                    <Button type="link" target="_blank" rel="noopener noreferrer" size="small" href={params.terms_uri} style={{ fontSize: 14 }}>
+                                                        《服务条款》
+                                                    </Button>
+                                                    。
+                                                </Typography.Paragraph>
+                                            )
+                                        }
                                     </Flex>
                                 </Flex>
                             </Card>

@@ -15,6 +15,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -81,6 +82,9 @@ public class OAuth2AuthorizationServerConfig {
     @Resource
     private QrAuthService qrAuthService;
 
+    @Resource
+    private ApplicationEventPublisher eventPublisher;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -114,7 +118,7 @@ public class OAuth2AuthorizationServerConfig {
                                 .authorizationEndpoint(authorizationEndpoint -> {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
                                     // 自定义处理器
-                                    authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler());
+                                    authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler(eventPublisher));
 
                                     // 兼容扫码登录
                                     authorizationEndpoint.authenticationProviders(p -> {

@@ -5,7 +5,6 @@ import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
-import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.TokenResponse;
@@ -46,10 +45,14 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         return thirdPartyStateService.validateState(state,getProviderName());
     }
 
+    protected ThirdPartyCallbackVO dispatchFederatedIdentity(ThirdPartyUserIdentity thirdPartyUserIdentity){
+
+        return dispatchFederatedIdentity(thirdPartyUserIdentity, null);
+    }
     protected ThirdPartyCallbackVO dispatchFederatedIdentity(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
         // 没上下文一律视为正常的、无状态登录流
         if (stateContext == null) {
-            return doLogin(thirdPartyUserIdentity);
+            return doLogin(thirdPartyUserIdentity, null);
         }
         return switch (stateContext.getAction()) {
             case BIND -> doBind(thirdPartyUserIdentity, stateContext);
@@ -57,12 +60,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         };
     }
 
-    protected ThirdPartyCallbackVO doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity){
-
-        return doLogin(thirdPartyUserIdentity, null);
-    }
-
-    protected ThirdPartyCallbackVO doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
+    private ThirdPartyCallbackVO doLogin(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
         String provider = thirdPartyUserIdentity.getProvider();
         Long userId = userService.ensureUserByProvider(provider, thirdPartyUserIdentity);
         ThirdPartyLoginDTO thirdPartyLoginDTO = new ThirdPartyLoginDTO(ClientType.WEB, userId);
@@ -71,7 +69,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         return ThirdPartyCallbackVO.loginSuccess(tokenResponse, targetUrl);
     }
 
-    protected ThirdPartyCallbackVO doBind(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
+    private ThirdPartyCallbackVO doBind(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
         Long currentUserId = stateContext.getUserId();
         if (currentUserId == null) {
             throw new BusinessException("账号关联失败：未获取到当前账户登录凭证");

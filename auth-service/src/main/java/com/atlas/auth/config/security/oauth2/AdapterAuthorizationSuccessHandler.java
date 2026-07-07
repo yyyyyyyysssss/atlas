@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -28,38 +29,48 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
 
     private final RedirectStrategy redirectStrategy;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     public AdapterAuthorizationSuccessHandler(){
         this.redirectStrategy = new DefaultRedirectStrategy();
+        this.eventPublisher = null;
+    }
 
+    public AdapterAuthorizationSuccessHandler(ApplicationEventPublisher eventPublisher) {
+        this.redirectStrategy = new DefaultRedirectStrategy();
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication = (OAuth2AuthorizationCodeRequestAuthenticationToken)authentication;
+        // 发布授权成功事件
+        if(eventPublisher != null){
+            String clientId = authorizationCodeRequestAuthentication.getClientId();
+            String username = authorizationCodeRequestAuthentication.getName();
+            eventPublisher.publishEvent(new OAuth2ClientAuthorizedEvent(this, clientId, username));
+        }
         if(isJsonRequest(request)){
-            sendAuthorizationJsonResponse(request,response,authentication);
+            sendAuthorizationJsonResponse(request,response,authorizationCodeRequestAuthentication);
         } else {
-            sendAuthorizationRedirectResponse(request,response,authentication);
+            sendAuthorizationRedirectResponse(request,response,authorizationCodeRequestAuthentication);
         }
     }
 
-    private void sendAuthorizationJsonResponse(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
-        OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication = (OAuth2AuthorizationCodeRequestAuthenticationToken)authentication;
+    private void sendAuthorizationJsonResponse(HttpServletRequest request, HttpServletResponse response, OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication) throws IOException {
         String code = authorizationCodeRequestAuthentication.getAuthorizationCode().getTokenValue();
         String state = authorizationCodeRequestAuthentication.getState();
         AuthorizationResponse authResponse = new AuthorizationResponse(code, state, "success");
-
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(JsonUtils.toJson(authResponse));
     }
 
-    private void sendAuthorizationRedirectResponse(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
-        OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication = (OAuth2AuthorizationCodeRequestAuthenticationToken)authentication;
+    private void sendAuthorizationRedirectResponse(HttpServletRequest request, HttpServletResponse response, OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication) throws IOException {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(authorizationCodeRequestAuthentication.getRedirectUri()).queryParam("code", new Object[]{authorizationCodeRequestAuthentication.getAuthorizationCode().getTokenValue()});
         if (StringUtils.hasText(authorizationCodeRequestAuthentication.getState())) {
             uriBuilder.queryParam("state", new Object[]{UriUtils.encode(authorizationCodeRequestAuthentication.getState(), StandardCharsets.UTF_8)});
         }
-
         String redirectUri = uriBuilder.build(true).toUriString();
         this.redirectStrategy.sendRedirect(request, response, redirectUri);
     }

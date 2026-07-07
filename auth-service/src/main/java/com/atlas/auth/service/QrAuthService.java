@@ -161,7 +161,6 @@ public class QrAuthService {
                 .build()
                 .toUriString();
 
-        // 将生成的 code 存回 Redis，供第三方系统的前端轮询获取 一分钟内未获取则直接失效
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", CONFIRMED);
         updates.put("userId", userId);

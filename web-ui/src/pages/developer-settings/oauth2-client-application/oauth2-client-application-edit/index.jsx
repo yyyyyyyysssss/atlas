@@ -1,11 +1,11 @@
 
 import './index.css'
 import useFullParams from '../../../../hooks/useFullParams'
-import { Alert, App, Badge, Button, Card, Checkbox, Descriptions, Flex, Form, Input, List, Modal, Popconfirm, Space, Switch, Tag, theme, Tooltip, Typography } from 'antd'
+import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider, Flex, Form, Input, List, Modal, Popconfirm, Space, Switch, Tag, theme, Tooltip, Typography } from 'antd'
 import SmartUpload from '../../../../components/smart-upload'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getApplicationDetail, saveApplication } from '../../../../services/DeveloperSettingsService';
+import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../services/DeveloperSettingsService';
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import Loading from '../../../../components/loading';
@@ -26,7 +26,7 @@ const OAuth2ClientApplicationEdit = () => {
 
     const { message, modal } = App.useApp()
 
-    const { data: applicationDetail, loading: detailApplicationLoading } = useRequest(
+    const { data: applicationDetail, loading: detailApplicationLoading, refresh: refreshApplicationDetail } = useRequest(
         () => getApplicationDetail(id),
         {
             ready: !!id,
@@ -42,6 +42,14 @@ const OAuth2ClientApplicationEdit = () => {
     )
 
     const { runAsync: saveApplicationAsync, loading: saveApplicationLoading } = useRequest(saveApplication, {
+        manual: true
+    })
+
+    const { runAsync: addClientSecretAsync, loading: addClientSecretLoading } = useRequest(addClientSecret, {
+        manual: true
+    })
+
+    const { runAsync: deleteClientSecretAsync, loading: deleteClientSecretLoading } = useRequest(deleteClientSecret, {
         manual: true
     })
 
@@ -61,8 +69,32 @@ const OAuth2ClientApplicationEdit = () => {
         navigate(-1)
     }
 
-    const handleDeleteSecret = (clientSecretId) => {
+    const handleAddSecret = async (applicationDetail) => {
+        const res = await addClientSecretAsync(applicationDetail.id)
+        const { id, clientId, clientSecret } = res
+        setCredentialData({
+            id: id,
+            clientId: clientId,
+            clientSecret: clientSecret,
+            applicationName: applicationDetail.applicationName
+        });
+        setModalVisible(true)
+    }
 
+    const handleDeleteSecret = async (clientSecretId) => {
+        modal.confirm({
+            title: '确定要删除该密钥吗？',
+            content: '删除后，该密钥将立即失效，使用此密钥的系统将无法接入。请确保另一个有效密钥已配置到您的系统，此操作不可逆！',
+            okText: '确定删除',
+            okType: 'danger', // 红色高亮警告按钮
+            loading: deleteClientSecretLoading,
+            cancelText: '取消',
+            onOk: async () => {
+                await deleteClientSecretAsync(clientSecretId)
+                message.success('密钥删除成功')
+                refreshApplicationDetail()
+            }
+        });
     }
 
     const onFinish = async (values) => {
@@ -82,8 +114,12 @@ const OAuth2ClientApplicationEdit = () => {
 
     const handleModalClose = () => {
         setModalVisible(false);
-        if (mode === 'create' && credentialData.id) {
-            navigate(`/developer/settings/oauth2/application/${credentialData.id}`, { replace: true });
+        if (mode === 'create') {
+            if (credentialData.id) {
+                navigate(`/developer/settings/oauth2/application/${credentialData.id}`, { replace: true });
+            }
+        } else {
+            refreshApplicationDetail()
         }
     }
 
@@ -246,8 +282,51 @@ const OAuth2ClientApplicationEdit = () => {
                         >
                             <Switch checkedChildren="开启" unCheckedChildren="关闭" />
                         </Form.Item>
+
+                        <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>法务与合规 (选填)</Divider>
                         <Form.Item
-                            label="应用描述"
+                            label="隐私政策 URL："
+                            name="privacyPolicyUrl"
+                            rules={[{ type: 'url', message: '请输入合法的 URL 地址' }]}
+                            extra="用户登录授权页时展示的隐私权政策链接"
+                        >
+                            <Input placeholder="https://example.com/privacy" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="服务条款 URL："
+                            name="termsServiceUrl"
+                            rules={[{ type: 'url', message: '请输入合法的 URL 地址' }]}
+                            extra="用户登录授权页时展示的服务条款链接"
+                        >
+                            <Input placeholder="https://example.com/terms" />
+                        </Form.Item>
+
+                        <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>开发者信息 (选填)</Divider>
+
+                        <Form.Item
+                            label="开发者名称："
+                            name="developerName"
+                            rules={[{ max: 64, message: '开发者名称最多 64 个字符' }]}
+                            extra="展示在用户登录授权页，告知用户该应用由谁提供服务"
+                        >
+                            <Input placeholder="请输入个人开发者姓名或公司全称" maxLength={64} />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="开发者联系邮箱："
+                            name="developerEmail"
+                            rules={[
+                                { type: 'email', message: '请输入合法的邮箱地址' },
+                                { max: 128, message: '邮箱长度不能超过 128 个字符' }
+                            ]}
+                            extra="用于合规审计及用户隐私问题申诉联系"
+                        >
+                            <Input placeholder="developer@example.com" maxLength={128} />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="应用描述："
                             name="description"
                             rules={[{ max: 200, message: '应用描述最多 200 个字符' }]}
                         >
@@ -258,25 +337,34 @@ const OAuth2ClientApplicationEdit = () => {
                                 showCount
                             />
                         </Form.Item>
-
-                        <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
-                            <Flex gap={12}>
-                                <Button
-                                    type="primary"
-                                    htmlType="submit"
-                                    loading={false}
-                                >
-                                    保存
-                                </Button>
-                                <Button
-                                    type="default"
-                                    onClick={handleCancel}
-                                    disabled={false}
-                                >
-                                    取消
-                                </Button>
-                            </Flex>
-                        </Form.Item>
+                        <div
+                            style={{
+                                position: 'sticky',
+                                bottom: 0,
+                                background: token.colorBgContainer,
+                                padding: '16px 0',
+                                zIndex: 10,
+                            }}
+                        >
+                            <Form.Item style={{  marginBottom: 0 }}>
+                                <Flex gap={12}>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
+                                        loading={false}
+                                    >
+                                        保存
+                                    </Button>
+                                    <Button
+                                        type="default"
+                                        onClick={handleCancel}
+                                        disabled={false}
+                                    >
+                                        取消
+                                    </Button>
+                                </Flex>
+                            </Form.Item>
+                        </div>
                     </Form>
                 </Flex>
 
@@ -321,7 +409,7 @@ const OAuth2ClientApplicationEdit = () => {
 
                                     <Descriptions.Item label="最后使用日期">
                                         <Space>
-                                            <Text type="secondary">
+                                            <Text>
                                                 {applicationDetail?.lastUsedTime || '-'}
                                             </Text>
                                         </Space>
@@ -332,6 +420,21 @@ const OAuth2ClientApplicationEdit = () => {
                             <Card
                                 title="客户端密钥"
                                 variant='borderless'
+                                extra={
+                                    <Tooltip
+                                        title={applicationDetail?.clientSecrets?.length >= 2 ? "每个应用最多只能同时存在 2 个有效密钥" : ""}
+                                    >
+                                        <Button
+                                            type="primary"
+                                            icon={<PlusOutlined />}
+                                            loading={addClientSecretLoading}
+                                            disabled={applicationDetail?.clientSecrets?.length >= 2}
+                                            onClick={() => handleAddSecret(applicationDetail)}
+                                        >
+                                            生成新密钥
+                                        </Button>
+                                    </Tooltip>
+                                }
                             >
                                 <Space direction="vertical" size={12}>
                                     <Alert
@@ -358,22 +461,13 @@ const OAuth2ClientApplicationEdit = () => {
                                                     }}
                                                     actions={[
                                                         <Tooltip title={isOnlyOne ? '至少需要保留一个密钥，无法删除' : ''}>
-                                                            <span>
-                                                                <Popconfirm
-                                                                    title="删除该密钥？"
-                                                                    description="删除后使用该密钥的系统将立即失效"
-                                                                    onConfirm={() => handleDeleteSecret(secret.id)}
-                                                                    okButtonProps={{ danger: true }}
-                                                                    disabled={isOnlyOne}
-                                                                >
-                                                                    <Button
-                                                                        type="text"
-                                                                        danger
-                                                                        icon={<DeleteOutlined />}
-                                                                        disabled={isOnlyOne}
-                                                                    />
-                                                                </Popconfirm>
-                                                            </span>
+                                                            <Button
+                                                                type="text"
+                                                                danger
+                                                                onClick={() => handleDeleteSecret(secret.id)}
+                                                                icon={<DeleteOutlined />}
+                                                                disabled={isOnlyOne}
+                                                            />
                                                         </Tooltip>
                                                     ]}
                                                 >
@@ -396,7 +490,7 @@ const OAuth2ClientApplicationEdit = () => {
                                                         <Descriptions.Item label="创建日期">
                                                             <Space>
                                                                 <Text>
-                                                                    {applicationDetail?.createTime}
+                                                                    {secret?.createTime}
                                                                 </Text>
                                                             </Space>
                                                         </Descriptions.Item>
@@ -404,7 +498,7 @@ const OAuth2ClientApplicationEdit = () => {
                                                         <Descriptions.Item label="过期时间">
                                                             <Space>
                                                                 <Text>
-                                                                    {applicationDetail?.clientSecretExpiresAt || '-'}
+                                                                    {secret?.clientSecretExpiresAt || '-'}
                                                                 </Text>
                                                             </Space>
                                                         </Descriptions.Item>

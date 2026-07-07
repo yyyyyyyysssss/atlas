@@ -45,6 +45,7 @@ public class OAuth2ClientSecretServiceImpl extends ServiceImpl<OAuth2ClientSecre
                 .eq(OAuth2ClientSecret::getRegisteredClientId, registeredClientId)
                 .and(wrapper -> wrapper
                         .isNull(OAuth2ClientSecret::getClientSecretExpiresAt)
+                        .or()
                         .gt(OAuth2ClientSecret::getClientSecretExpiresAt, LocalDateTime.now())
                 )
         );

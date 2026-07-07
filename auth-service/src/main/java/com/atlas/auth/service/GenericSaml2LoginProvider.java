@@ -50,6 +50,6 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
         Saml2UserInfo saml2User = Saml2UserInfo.fromPrincipal(principal, mappings);
         saml2User.setProvider(providerName);
 
-        return doLogin(saml2User);
+        return dispatchFederatedIdentity(saml2User);
     }
 }

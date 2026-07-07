@@ -116,6 +116,62 @@ public class OAuth2ClientApplicationFacadeService {
         log.info("OAuth2 应用删除成功，ID: {}", id);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public OAuth2ClientApplicationCreateVO addClientSecret(Long applicationId) {
+        Objects.requireNonNull(applicationId, "applicationId must not be null");
+        log.info("正在为 OAuth2 应用生成新密钥，ID: {}", applicationId);
+        OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
+        if (app == null) {
+            throw new BusinessException("应用不存在");
+        }
+        String registeredClientId = app.getRegisteredClientId();
+        long countValidSecrets = oAuth2ClientSecretService.countValidSecrets(registeredClientId);
+        if(countValidSecrets >= 2 ){
+            throw new BusinessException("每个应用最多只能同时存在 2 个有效密钥，请先删除旧密钥后再生成新密钥");
+        }
+        RegisteredClient registeredClient = registeredClientRepository.findById(registeredClientId);
+        if (registeredClient == null) {
+            throw new BusinessException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
+        }
+        String rawSecret = TicketGenerator.generate(32);
+        // 保存密钥
+        saveClientSecret(registeredClientId, rawSecret);
+        return new OAuth2ClientApplicationCreateVO(app.getId(),registeredClient.getClientId(), rawSecret);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteClientSecret(Long clientSecretId){
+        Objects.requireNonNull(clientSecretId, "clientSecretId must not be null");
+        log.info("正在删除 OAuth2 应用密钥，ID: {}", clientSecretId);
+        OAuth2ClientSecret targetSecret = oAuth2ClientSecretService.getById(clientSecretId);
+        if (targetSecret == null) {
+            throw new BusinessException("该密钥不存在或已被删除");
+        }
+        String registeredClientId = targetSecret.getRegisteredClientId();
+        List<OAuth2ClientSecret> validSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(registeredClientId);
+        if(CollectionUtils.isEmpty(validSecrets) || validSecrets.size() == 1){
+            throw new BusinessException("每个应用必须保留至少 1 个有效密钥，无法继续删除");
+        }
+        boolean isDeleted = oAuth2ClientSecretService.removeById(clientSecretId);
+        if (!isDeleted) {
+            throw new BusinessException("删除密钥失败，请稍后重试");
+        }
+        // 找出剩下的那一个密钥，并同步刷新到 Spring Security Oauth2 核心表中
+        OAuth2ClientSecret remainingSecret = validSecrets.stream()
+                .filter(s -> !s.getId().equals(clientSecretId))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("未找到剩余的有效密钥，数据可能不一致"));
+        RegisteredClient registeredClient = registeredClientRepository.findById(registeredClientId);
+        if (registeredClient != null) {
+            RegisteredClient updatedClient = RegisteredClient.from(registeredClient)
+                    .clientSecret(remainingSecret.getClientSecret()) // 将剩下这一个的加密串同步过去
+                    .build();
+            registeredClientRepository.save(updatedClient);
+        }
+
+        log.info("OAuth2 应用密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
+    }
+
     private OAuth2ClientApplicationCreateVO createApplication(OAuth2ClientApplicationSaveDTO saveDTO){
         log.info("正在创建 OAuth2 应用，名称: {}", saveDTO.applicationName());
         // oauth2_registered_client 物理主键
@@ -178,16 +234,7 @@ public class OAuth2ClientApplicationFacadeService {
         registeredClientRepository.save(clientBuilder.build());
 
         // 保存密钥
-        String hint = rawSecret.length() > 4 ? rawSecret.substring(rawSecret.length() - 4) : rawSecret;
-        OAuth2ClientSecret clientSecretEntity = new OAuth2ClientSecret();
-        clientSecretEntity.setId(IdGen.genId());
-        clientSecretEntity.setRegisteredClientId(registeredClientId);
-        clientSecretEntity.setClientSecret(clientSecret);
-        clientSecretEntity.setClientSecretHint(hint);
-        // client_secret_expires_at 默认为空，代表永不过期
-        clientSecretEntity.setClientSecretExpiresAt(null);
-        clientSecretEntity.setCreateTime(LocalDateTime.now());
-        oAuth2ClientSecretService.save(clientSecretEntity);
+        saveClientSecret(registeredClientId, rawSecret);
 
         // 保存 (oauth2_application)
         OAuth2ClientApplication oAuth2Application = new OAuth2ClientApplication();
@@ -197,6 +244,10 @@ public class OAuth2ClientApplicationFacadeService {
         oAuth2Application.setApplicationName(saveDTO.applicationName());
         oAuth2Application.setLogoUrl(saveDTO.logoUrl());
         oAuth2Application.setHomePageUrl(saveDTO.homePageUrl());
+        oAuth2Application.setPrivacyPolicyUrl(saveDTO.privacyPolicyUrl());
+        oAuth2Application.setTermsServiceUrl(saveDTO.termsServiceUrl());
+        oAuth2Application.setDeveloperName(saveDTO.developerName());
+        oAuth2Application.setDeveloperEmail(saveDTO.developerEmail());
         oAuth2Application.setDescription(saveDTO.description());
         oAuth2ClientApplicationService.save(oAuth2Application);
         log.info("OAuth2 应用创建成功, id: {}, clientId: {}", oAuth2Application.getId(), clientId);
@@ -236,9 +287,27 @@ public class OAuth2ClientApplicationFacadeService {
         oauth2Application.setApplicationName(saveDTO.applicationName());
         oauth2Application.setLogoUrl(saveDTO.logoUrl());
         oauth2Application.setHomePageUrl(saveDTO.homePageUrl());
+        oauth2Application.setPrivacyPolicyUrl(saveDTO.privacyPolicyUrl());
+        oauth2Application.setTermsServiceUrl(saveDTO.termsServiceUrl());
+        oauth2Application.setDeveloperName(saveDTO.developerName());
+        oauth2Application.setDeveloperEmail(saveDTO.developerEmail());
         oauth2Application.setDescription(saveDTO.description());
 
         oAuth2ClientApplicationService.updateById(oauth2Application);
         log.info("OAuth2 应用配置更新成功, id: {}, applicationName: {}", oauth2Application.getId(), oauth2Application.getApplicationName());
+    }
+
+    private void saveClientSecret(String registeredClientId, String rawSecret){
+        // 保存密钥
+        String hint = rawSecret.length() > 4 ? rawSecret.substring(rawSecret.length() - 4) : rawSecret;
+        OAuth2ClientSecret clientSecretEntity = new OAuth2ClientSecret();
+        clientSecretEntity.setId(IdGen.genId());
+        clientSecretEntity.setRegisteredClientId(registeredClientId);
+        clientSecretEntity.setClientSecret(passwordEncoder.encode(rawSecret));
+        clientSecretEntity.setClientSecretHint(hint);
+        // client_secret_expires_at 默认为空，代表永不过期
+        clientSecretEntity.setClientSecretExpiresAt(null);
+        clientSecretEntity.setCreateTime(LocalDateTime.now());
+        oAuth2ClientSecretService.save(clientSecretEntity);
     }
 }

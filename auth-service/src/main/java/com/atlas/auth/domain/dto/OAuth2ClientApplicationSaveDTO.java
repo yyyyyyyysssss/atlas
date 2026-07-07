@@ -25,6 +25,14 @@ public record OAuth2ClientApplicationSaveDTO(
 
         Boolean allowDeviceFlow,
 
+        String privacyPolicyUrl,
+
+        String termsServiceUrl,
+
+        String developerName,
+
+        String developerEmail,
+
         String description
 ) {
 }

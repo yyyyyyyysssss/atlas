@@ -35,6 +35,18 @@ public class OAuth2ClientApplication extends BaseEntity {
     @TableField("home_page_url")
     private String homePageUrl;
 
+    @TableField("privacy_policy_url")
+    private String privacyPolicyUrl;
+
+    @TableField("terms_service_url")
+    private String termsServiceUrl;
+
+    @TableField("developer_name")
+    private String developerName;
+
+    @TableField("developer_email")
+    private String developerEmail;
+
     @TableField("description")
     private String description;
 

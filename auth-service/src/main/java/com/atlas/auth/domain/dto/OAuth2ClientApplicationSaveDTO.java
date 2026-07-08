@@ -25,6 +25,8 @@ public record OAuth2ClientApplicationSaveDTO(
 
         Boolean allowDeviceFlow,
 
+        String jwksUri,
+
         String privacyPolicyUrl,
 
         String termsServiceUrl,

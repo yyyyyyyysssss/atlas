@@ -1,6 +1,8 @@
 package com.atlas.auth.config.security.oauth2;
 
 
+import com.atlas.auth.config.security.oauth2.provider.OAuth2QrAuthorizationCodeRequestAuthenticationProvider;
+import com.atlas.auth.service.OAuth2ClientSecretService;
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.auth.service.UserService;
 import com.atlas.common.core.utils.RsaUtils;
@@ -177,8 +179,8 @@ public class OAuth2AuthorizationServerConfig {
 
     // 注册客户端应用, 对应 oauth2_registered_client 表
     @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        return new DelegatingRegisteredClientRepository(new JdbcRegisteredClientRepository(jdbcTemplate));
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, OAuth2ClientSecretService oauth2ClientSecretService) {
+        return new DelegatingRegisteredClientRepository(new JdbcRegisteredClientRepository(jdbcTemplate),oauth2ClientSecretService);
     }
 
     // 令牌的发放记录, 对应 oauth2_authorization 表

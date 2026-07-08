@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security.oauth2;
+package com.atlas.auth.config.security.oauth2.provider;
 
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.auth.service.UserService;

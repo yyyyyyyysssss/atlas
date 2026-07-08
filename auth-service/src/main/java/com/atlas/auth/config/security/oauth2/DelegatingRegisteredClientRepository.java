@@ -1,11 +1,18 @@
 package com.atlas.auth.config.security.oauth2;
 
+import com.atlas.auth.domain.entity.OAuth2ClientSecret;
+import com.atlas.auth.service.OAuth2ClientSecretService;
+import com.atlas.security.encoder.MultiSecretPayload;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -16,8 +23,11 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
 
     private final RegisteredClientRepository delegate;
 
-    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate){
+    private final OAuth2ClientSecretService oauth2ClientSecretService;
+
+    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate, OAuth2ClientSecretService oauth2ClientSecretService){
         this.delegate = delegate;
+        this.oauth2ClientSecretService = oauth2ClientSecretService;
     }
 
     @Override
@@ -37,31 +47,41 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
         return wrapIfNecessary(registeredClient);
     }
 
+    @SuppressWarnings("ConstantConditions")
     private RegisteredClient wrapIfNecessary(RegisteredClient client) {
         if (client == null) {
             return null;
         }
+        String combinedSecret;
+        // 查出当前客户端有效的密钥
+        List<OAuth2ClientSecret> activeSecrets = oauth2ClientSecretService.listValidSecretsByRegisteredClientId(client.getId());
+        if(activeSecrets != null && !activeSecrets.isEmpty()){
+            // 多密钥
+            List<String> secrets = activeSecrets.stream().map(OAuth2ClientSecret::getClientSecret).toList();
+            combinedSecret = MultiSecretPayload.encode(secrets.toArray(new String[0]));
+        } else {
+            // 历史兼容
+            combinedSecret = client.getClientSecret();
+        }
         // 检查当前请求是否符合“受信任”或“免授权”的条件
         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        // 默认不弹窗
+        boolean requireConsent = false;
         if(attr != null){
             HttpServletRequest request = attr.getRequest();
             String prompt = request.getParameter("prompt");
             // 只有当明确携带 prompt=consent 时，才强制要求授权确认
             if ("consent".equals(prompt)) {
-                return RegisteredClient.from(client)
-                        .clientSettings(ClientSettings.builder()
-                                .requireAuthorizationConsent(true)
-                                .requireProofKey(client.getClientSettings().isRequireProofKey()) // 开启 PKCE 校验
-                                .build())
-                        .build();
+                requireConsent = true;
             }
         }
 
+        ClientSettings updatedSettings = ClientSettings.withSettings(client.getClientSettings().getSettings())
+                .requireAuthorizationConsent(requireConsent)
+                .build();
         return RegisteredClient.from(client)
-                .clientSettings(ClientSettings.builder()
-                        .requireAuthorizationConsent(false) // 默认不弹窗
-                        .requireProofKey(client.getClientSettings().isRequireProofKey())
-                        .build())
+                .clientSecret(combinedSecret)
+                .clientSettings(updatedSettings)
                 .build();
     }
 }

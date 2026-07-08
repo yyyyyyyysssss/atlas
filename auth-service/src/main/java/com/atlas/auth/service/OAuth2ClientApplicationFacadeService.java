@@ -102,16 +102,19 @@ public class OAuth2ClientApplicationFacadeService {
             log.warn("删除 OAuth2 应用失败，应用不存在，ID: {}", id);
             throw new BusinessException("应用不存在或已被删除");
         }
-        // 删除客户端应用信息
+        // 删除oauth2客户端密钥信息
+        oAuth2ClientSecretService.removeByRegisteredClientId(app.getRegisteredClientId());
+        // 删除oauth2客户端对应的所有token
+        oAuth2RegisteredClientMapper.deleteAllClientToken(app.getRegisteredClientId());
+        // 删除oauth2标准客户端信息
+        oAuth2RegisteredClientMapper.deleteById(app.getRegisteredClientId());
+
+        // 删除客户端应用主表信息
         boolean delFlag = oAuth2ClientApplicationService.removeById(id);
         if(!delFlag){
             log.error("删除 OAuth2 应用主表记录失败，ID: {}", id);
             throw new BusinessException("删除应用失败，请稍后重试");
         }
-        // 删除客户端密钥信息
-        oAuth2ClientSecretService.removeByRegisteredClientId(app.getRegisteredClientId());
-        // 删除oauth2客户端信息
-        oAuth2RegisteredClientMapper.deleteById(app.getRegisteredClientId());
 
         log.info("OAuth2 应用删除成功，ID: {}", id);
     }

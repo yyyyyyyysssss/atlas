@@ -4,6 +4,7 @@ import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
+import com.atlas.security.encoder.MultiSecretDelegatingPasswordEncoder;
 import com.atlas.security.exception.SecurityExceptionAdvice;
 import com.atlas.security.jackson.AuthorityUrlMixin;
 import com.atlas.security.jackson.OneTimeTokenAuthenticationTokenMixin;
@@ -71,7 +72,7 @@ public class AtlasSecurityAutoConfiguration {
     @ConditionalOnMissingBean // 允许特定的服务覆盖加密方案
     public PasswordEncoder passwordEncoder() {
 
-        return new BCryptPasswordEncoder();
+        return new MultiSecretDelegatingPasswordEncoder(new BCryptPasswordEncoder());
     }
 
     @Bean

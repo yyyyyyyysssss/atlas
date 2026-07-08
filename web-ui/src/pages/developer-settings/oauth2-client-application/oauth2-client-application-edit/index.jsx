@@ -84,7 +84,7 @@ const OAuth2ClientApplicationEdit = () => {
     const handleDeleteSecret = async (clientSecretId) => {
         modal.confirm({
             title: '确定要删除该密钥吗？',
-            content: '删除后，该密钥将立即失效，使用此密钥的系统将无法接入。请确保另一个有效密钥已配置到您的系统，此操作不可逆！',
+            content: '删除后，系统将不再接受使用此密钥发起的新认证请求。已签发的 Token 在其有效期内仍可正常使用。',
             okText: '确定删除',
             okType: 'danger', // 红色高亮警告按钮
             loading: deleteClientSecretLoading,

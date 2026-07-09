@@ -3,16 +3,38 @@ package com.atlas.security.utils;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class TicketGenerator {
+public class SecureUidGenerator {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private static final int DEFAULT_BYTE_LENGTH = 32;
 
-    private TicketGenerator() {}
+    private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
+    private SecureUidGenerator() {}
 
     public static String generate() {
         return generate(DEFAULT_BYTE_LENGTH);
+    }
+
+    // 生成高强度、全局唯一的纯净十六进制字符串 (无特殊符号)
+    public static String generateUniqueHex(int length) {
+        if (length <= 0) {
+            throw new IllegalArgumentException("Length must be positive");
+        }
+        char[] result = new char[length];
+        byte[] randomBytes = new byte[length];
+        SECURE_RANDOM.nextBytes(randomBytes);
+
+        for (int i = 0; i < length; i++) {
+            int index = randomBytes[i] & 0x0F;
+            result[i] = HEX_DIGITS[index];
+        }
+        return new String(result);
+    }
+
+    public static void main(String[] args) {
+        System.out.println(SecureUidGenerator.generateUniqueHex(8));
     }
 
     /**
@@ -22,7 +44,7 @@ public class TicketGenerator {
      */
     public static String generate(int byteLength) {
         if (byteLength <= 0) {
-            throw new IllegalArgumentException("Byte length must be positive");
+            throw new IllegalArgumentException("Length must be positive");
         }
 
         // 1. 分配指定大小的字节数组

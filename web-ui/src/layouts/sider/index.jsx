@@ -25,14 +25,16 @@ const getMenuItems = (items, t) => {
 
 const siderSelector = createSelector(
     state => state.user.userInfo?.settings?.appearance?.theme || 'dark',
-    state => state.layout.menuItems,
+    state => state.layout.menuMode,
+    state => state.layout.menus,
     state => state.layout.flattenMenuItems,
     state => state.layout.menuCollapsed,
     state => state.layout.activeKey,
     state => state.layout.openKeys,
-    (themeValue, menuItems, flattenMenuItems, collapsed, activeKey, openKeys) => ({
+    (themeValue,menuMode, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
         themeValue,
-        menuItems,
+        menuMode,
+        menuItems: menus[menuMode] || [],
         flattenMenuItems,
         collapsed,
         activeKey,
@@ -44,7 +46,7 @@ const Sider = () => {
 
     const { t } = useTranslation()
 
-    const { themeValue, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
+    const { themeValue, menuMode, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
 
     const dispatch = useDispatch()
 
@@ -72,11 +74,6 @@ const Sider = () => {
         navigate(menuItem.routePath)
     }
 
-    const goHome = useCallback(() => {
-        navigate('/')
-        dispatch(setActiveKey({ path: '/' }))
-    }, [navigate, dispatch])
-
     const items = useMemo(() => {
         return getMenuItems(menuItems, t)
     }, [menuItems, t])
@@ -84,7 +81,6 @@ const Sider = () => {
 
     return (
         <>
-            <Logo collapsed={collapsed} goHome={goHome} />
             <Menu
                 style={{
                     maxHeight: 'calc(100vh - 64px)',

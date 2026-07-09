@@ -5,11 +5,10 @@ import com.atlas.auth.domain.vo.Web3WalletRegisterOptionsVO;
 import com.atlas.auth.enums.Web3WalletType;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.security.utils.TicketGenerator;
+import com.atlas.security.utils.SecureUidGenerator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
@@ -45,8 +44,8 @@ public class Web3WalletService {
         // 对地址进行“纯小写标准化”
         String standardizedAddress = address.toLowerCase();
 
-        String challenge = TicketGenerator.generate(32);
-        String web3Id = TicketGenerator.generate(16);
+        String challenge = SecureUidGenerator.generate(32);
+        String web3Id = SecureUidGenerator.generate(16);
 
         Web3WalletType walletType = web3WalletRegisterOptionsDTO.walletType();
         if (walletType == null) {

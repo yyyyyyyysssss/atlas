@@ -78,7 +78,6 @@ const HeaderCard = () => {
         <Flex gap={48}>
           <Statistic title="待处理" value={todayTaskCount} suffix="项" />
           <Statistic title="未读消息" value={notificationUnreadCount} valueStyle={{ color: token.colorPrimary }} />
-          <Statistic title="贡献度" value={95} prefix={<Trophy size={16} />} />
         </Flex>
       </Flex>
     </Card>

@@ -1,11 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 export const initialState = {
+    menuMode: 'global',
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
     tabItems: [],
-    menuItems: [],
+    menus: {
+        global: [],
+        project: []
+    },
     flattenMenuItems: [],
 }
 
@@ -29,6 +33,25 @@ const findBestMatchMenu = (targetPath, menus) => {
         }
     }
     return bestMatchMenu;
+}
+
+const flattenMenus = (menuItems) => {
+    const result = []
+    function recurse(nodes, parentId = null, parentPath = []) {
+        for (const node of nodes) {
+            const { children, ...rest } = node;
+
+            const currentPath = [...parentPath, parentId].filter(Boolean); // 去除 null
+            result.push({ ...rest, parentId, parentPath: currentPath });
+
+            if (children && children.length > 0) {
+                recurse(children, node.id, currentPath);
+            }
+        }
+    }
+    //对树形结构进行扁平化
+    recurse(menuItems)
+    return result
 }
 
 export const layoutSlice = createSlice({
@@ -152,24 +175,20 @@ export const layoutSlice = createSlice({
         },
         loadMenuItems: (state, action) => {
             const { payload } = action
-            const { menuItems } = payload
-            state.menuItems = menuItems
-            const flattenMenuItems = []
-            function recurse(nodes, parentId = null, parentPath = []) {
-                for (const node of nodes) {
-                    const { children, ...rest } = node;
-
-                    const currentPath = [...parentPath, parentId].filter(Boolean); // 去除 null
-                    flattenMenuItems.push({ ...rest, parentId, parentPath: currentPath });
-
-                    if (children && children.length > 0) {
-                        recurse(children, node.id, currentPath);
-                    }
-                }
+            const { menuMode, menuItems } = payload
+            state.menus[menuMode] = menuItems
+            if(state.menuMode === menuMode){
+                state.flattenMenuItems = flattenMenus(menuItems)
             }
-            //对树形结构进行扁平化
-            recurse(menuItems)
-            state.flattenMenuItems = flattenMenuItems
+        },
+        setMenuMode: (state, action) => {
+            state.menuMode = menuMode
+            const { menuMode } = payload
+            state.menuMode = menuMode
+            const menuItems =state.menus[menuMode] || []
+            state.flattenMenuItems = flattenMenus(menuItems)
+            state.activeKey = ''
+            state.openKeys = []
         }
     }
 })

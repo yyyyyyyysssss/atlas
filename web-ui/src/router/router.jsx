@@ -11,6 +11,7 @@ import Success from "../pages/Success";
 
 const AppLayout = lazy(() => import('../layouts'))
 const Workbench = lazy(() => import('../pages/workbench'))
+const ProjectWorkbench = lazy(() => import('../pages/project-workbench'))
 const Overview = lazy(() => import('../pages/dashboard/overview'))
 const Login = lazy(() => import('../pages/login'))
 const LoginMfa = lazy(() => import('../pages/login/mfa'))
@@ -108,7 +109,7 @@ export const routes = [
                 path: 'workbench',
                 breadcrumbName: '工作台',
                 defaultIcon: <AppWindow size={18} />,
-                element: <Workbench />,
+                element: <ProjectWorkbench />,
             },
             {
                 path: 'account/settings',

@@ -64,7 +64,10 @@ export const AuthProvider = ({ children }) => {
         ])
         dispatch(setUserInfo({ userInfo }))
         dispatch(setAuthInfo({ authInfo }))
-        dispatch(loadMenuItems({ menuItems: authInfo.menus }))
+        dispatch(loadMenuItems({ 
+            menuMode:'global',
+            menuItems: authInfo.menus 
+        }))
         setIsLoginIn(true)
     }
 

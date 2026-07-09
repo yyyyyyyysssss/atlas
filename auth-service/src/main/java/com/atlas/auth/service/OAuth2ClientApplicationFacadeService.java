@@ -11,7 +11,7 @@ import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
-import com.atlas.security.utils.TicketGenerator;
+import com.atlas.security.utils.SecureUidGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -136,7 +136,7 @@ public class OAuth2ClientApplicationFacadeService {
         if (registeredClient == null) {
             throw new BusinessException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
         }
-        String rawSecret = TicketGenerator.generate(32);
+        String rawSecret = SecureUidGenerator.generate(32);
         // 保存密钥
         saveClientSecret(registeredClientId, rawSecret);
         return new OAuth2ClientApplicationCreateVO(app.getId(),registeredClient.getClientId(), rawSecret);
@@ -180,9 +180,9 @@ public class OAuth2ClientApplicationFacadeService {
         // oauth2_registered_client 物理主键
         String registeredClientId = UUID.randomUUID().toString().replace("-", "");
         // 暴露给用户的 clientId
-        String clientId = TicketGenerator.generate(20);
+        String clientId = SecureUidGenerator.generate(20);
         // 暴露给用户的 clientSecret
-        String rawSecret = TicketGenerator.generate(32);
+        String rawSecret = SecureUidGenerator.generate(32);
         // 加密后的密钥
         String clientSecret = passwordEncoder.encode(rawSecret);
         RegisteredClient.Builder clientBuilder = RegisteredClient.withId(registeredClientId)

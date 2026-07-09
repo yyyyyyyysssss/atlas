@@ -1,5 +1,5 @@
-import { Affix, App, ConfigProvider, Flex, Layout, theme, Watermark } from 'antd';
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Affix, App, Avatar, ConfigProvider, Flex, Layout, theme, Typography, Watermark } from 'antd';
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
@@ -11,7 +11,7 @@ import Sider from './sider';
 import TopMenuTab from './top-tab';
 import { setUserInfo } from '../redux/slices/userSlice';
 import { setAuthInfo } from '../redux/slices/authSlice';
-import { loadMenuItems } from '../redux/slices/layoutSlice';
+import { setActiveKey } from '../redux/slices/layoutSlice';
 import { useAuth } from '../router/AuthProvider';
 import { SseProvider } from '../sse/SseProvider';
 import FullScreenButton from '../components/FullScreenButton';
@@ -76,6 +76,11 @@ const AppLayout = () => {
         return document.body
     }, [])
 
+    const goHome = useCallback(() => {
+        navigate('/')
+        dispatch(setActiveKey({ path: '/' }))
+    }, [navigate, dispatch])
+
     return (
         <ConfigProvider
             getPopupContainer={getPopupContainer}
@@ -98,6 +103,7 @@ const AppLayout = () => {
                             collapsed={collapsed}
                             trigger={null}
                         >
+                            <Logo collapsed={collapsed} goHome={goHome} />
                             <Sider />
                         </LayoutSider>
                         <Layout>
@@ -205,3 +211,20 @@ const AppLayout = () => {
 }
 
 export default AppLayout
+
+
+const Logo = memo(({ collapsed, goHome }) => (
+    <Flex
+        onClick={goHome}
+        gap={10}
+        justify='center'
+        align='center'
+        style={{
+            height: '64px',
+            cursor: 'pointer',
+        }}
+    >
+        <Avatar src={'/logo128.png'} size={40} />
+        {!collapsed && <Typography.Text style={{ fontSize: '20px' }}>Atlas</Typography.Text>}
+    </Flex>
+))

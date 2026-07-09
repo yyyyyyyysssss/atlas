@@ -10,7 +10,7 @@ import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.properties.SecurityProperties;
-import com.atlas.security.utils.TicketGenerator;
+import com.atlas.security.utils.SecureUidGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -72,7 +72,7 @@ public class QrAuthService {
             }
         }
 
-        String sceneId = TicketGenerator.generate(32);
+        String sceneId = SecureUidGenerator.generate(32);
 
         String redisKey = QR_SCENE_KEY + sceneId;
         Map<String, Object> context = new HashMap<>();

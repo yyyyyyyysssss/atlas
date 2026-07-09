@@ -6,14 +6,13 @@ import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.security.enums.AuthAssuranceLevel;
 import com.atlas.security.enums.ClientType;
-import com.atlas.security.model.MfaType;
 import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenInfo;
 import com.atlas.security.model.TokenResponse;
 import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.service.TokenService;
 import com.atlas.security.token.*;
-import com.atlas.security.utils.TicketGenerator;
+import com.atlas.security.utils.SecureUidGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -119,7 +118,7 @@ public class LoginService {
         }
         // 如果当前登录方式的等级低于用户期望的等级，才触发 MFA 拦截
         if(currentLevel.getRank() < requiredLevel.getRank()){
-            String ticket = TicketGenerator.generate();
+            String ticket = SecureUidGenerator.generate();
             mfaTicketRepository.save(ticket,new MfaTicketContext(securityUser.getId(),clientType), Duration.ofMinutes(5));
             return TokenResponse.mfaRequired(ticket, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
         }

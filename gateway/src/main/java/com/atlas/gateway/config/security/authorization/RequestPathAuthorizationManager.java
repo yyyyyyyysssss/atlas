@@ -1,7 +1,7 @@
 package com.atlas.gateway.config.security.authorization;
 
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.security.model.RequestUrlAuthority;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +14,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @Description 基于请求路径的权限管理器
@@ -50,19 +53,26 @@ public class RequestPathAuthorizationManager implements AuthorizationManager<Req
         if (authorities == null || authorities.isEmpty()){
             return DENY;
         }
-        List<RequestUrlAuthority> requestUrlAuthorities = authorities.stream().map(m -> (RequestUrlAuthority) m).filter(f -> f.getUrls() != null && !CollectionUtils.isEmpty(f.getUrls())).toList();
+        List<RequestUrlAuthority> requestUrlAuthorities = authorities.stream().map(m -> (RequestUrlAuthority) m).filter(f -> f.getAuthorityResources() != null && !CollectionUtils.isEmpty(f.getAuthorityResources())).toList();
         for (RequestUrlAuthority urlAuthority : requestUrlAuthorities){
-            List<AuthorityUrl> urls = urlAuthority.getUrls();
+            List<AuthorityResource> urls = urlAuthority.getAuthorityResources();
             if (urls == null || urls.isEmpty()){
                 continue;
             }
             boolean matched = false;
-            for (AuthorityUrl authorityUrl : urls){
-                if(authorityUrl.getMethod() != null && !authorityUrl.getMethod().isBlank() && !authorityUrl.getMethod().equals("*")){
-                    //如果有指定请求方法，则使用指定的请求方法
-                    matched = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.valueOf(authorityUrl.getMethod()),authorityUrl.getUrl()).matches(request);
-                }else {
+            for (AuthorityResource authorityUrl : urls){
+                List<String> methods = authorityUrl.getMethod();
+                String url = authorityUrl.getUrl();
+                if(CollectionUtils.isEmpty(methods) || methods.contains("*")){
                     matched = PathPatternRequestMatcher.withDefaults().matcher(authorityUrl.getUrl()).matches(request);
+                } else {
+                    List<RequestMatcher> matchers = methods.stream()
+                            .map(methodStr -> {
+                                HttpMethod httpMethod = HttpMethod.valueOf(methodStr.trim().toUpperCase());
+                                return PathPatternRequestMatcher.withDefaults().matcher(httpMethod, url);
+                            })
+                            .collect(Collectors.toList());
+                    matched = new OrRequestMatcher(matchers).matches(request);
                 }
                 if (matched){
                     break;

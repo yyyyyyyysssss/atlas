@@ -1,6 +1,6 @@
 package com.atlas.user.domain.entity;
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.common.mybatis.mapper.TreeRelation;
 import com.atlas.user.enums.AuthorityType;
@@ -51,9 +51,6 @@ public class Authority extends BaseEntity implements TreeRelation {
 
     @TableField(value = "route_path", updateStrategy = FieldStrategy.ALWAYS)
     private String routePath;
-
-    @TableField(value = "urls", typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private List<AuthorityUrl> urls;
 
     @TableField("icon")
     private String icon;

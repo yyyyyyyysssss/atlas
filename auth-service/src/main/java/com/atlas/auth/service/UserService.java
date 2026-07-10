@@ -217,7 +217,7 @@ public class UserService implements UserDetailsService {
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();
         for (RoleAuthDTO roleAuthDTO : authorities) {
-            authorityList.add(new RequestUrlAuthority(roleAuthDTO.getCode(), roleAuthDTO.getAuthorityUrls()));
+            authorityList.add(new RequestUrlAuthority(roleAuthDTO.getCode(), roleAuthDTO.getAuthorityResources()));
         }
         securityUser.setAuthorities(authorityList);
         return securityUser;

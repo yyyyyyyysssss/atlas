@@ -8,6 +8,7 @@ import com.atlas.user.domain.vo.AuthorityVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 
+import java.util.Collection;
 import java.util.List;
 
 public interface AuthorityService extends IService<Authority> {
@@ -16,7 +17,7 @@ public interface AuthorityService extends IService<Authority> {
 
     Boolean updateAuthority(AuthorityUpdateDTO authorityUpdateDTO, Boolean isFullUpdate);
 
-    AuthorityVO details(String id);
+    AuthorityVO details(Long id);
 
     List<AuthorityVO> findByMenuId(Long menuId);
 
@@ -35,4 +36,6 @@ public interface AuthorityService extends IService<Authority> {
     Long saveAuthorityUrl(Long id, AuthorityUrlDTO authorityUrlDTO);
 
     void deleteAuthorityUrl(Long id, Long authorityUrlId);
+
+    List<AuthorityVO> findById(Collection<Long> ids);
 }

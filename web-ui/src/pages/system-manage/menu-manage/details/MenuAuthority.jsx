@@ -1,4 +1,4 @@
-import { App, Button, Col, Drawer, Flex, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Table, Tag, Typography } from "antd"
+import { App, Button, Col, Drawer, Flex, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Table, Tag, Typography } from "antd"
 import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from "react-i18next"
 import { AuthorityType, OperationMode, RequestMethod } from "../../../../enums/common"
@@ -8,6 +8,10 @@ import { useEffect, useState } from "react"
 import EditableTable from "../../../../components/smart-table/EditableTable"
 import AuthorityUrl from "./AuthorityUrl"
 
+const requestMethodOptions = Object.entries(RequestMethod).map(([key, value]) => ({
+    label: key,
+    value: value,
+}))
 
 const MenuAuthority = ({ style, menuId, parentCode }) => {
 
@@ -177,7 +181,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             render: (_, { type }) => {
                 let color
                 let text
-                
+
                 if (type === AuthorityType.ACTION) {
                     color = '#1890ff'
                     text = '操作'
@@ -229,14 +233,17 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             title: '请求方法',
             dataIndex: 'method',
             align: 'center',
-            width: '32%',
+            width: '40%',
             editable: true,
-            inputType: 'select',
-            options: Object.entries(RequestMethod).map(([key, value]) => ({
-                label: key,
-                value: value,
-            })),
+            inputType: 'custom',
+            options: requestMethodOptions,
             required: true,
+            editRender: ({ value, onChange }) => {
+                const safeValue = Array.isArray(value)
+                    ? value
+                    : (value ? [value] : []);
+                return <Select style={{ width: '100%' }} options={requestMethodOptions} value={safeValue} onChange={onChange} mode="multiple" allowClear />
+            },
         },
         {
             key: 'url',
@@ -270,7 +277,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             </Flex>
             <Modal
                 title={authorityModalOpen.title}
-                width={500}
+                width={700}
                 centered
                 open={authorityModalOpen.open}
                 confirmLoading={addAuthorityLoading || updateAuthorityLoading}

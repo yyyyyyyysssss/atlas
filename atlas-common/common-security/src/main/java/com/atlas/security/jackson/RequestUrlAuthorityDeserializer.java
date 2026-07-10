@@ -1,7 +1,7 @@
 package com.atlas.security.jackson;
 
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.utils.JsonNodeUtils;
 import com.fasterxml.jackson.core.JacksonException;
@@ -27,9 +27,9 @@ public class RequestUrlAuthorityDeserializer extends JsonDeserializer<RequestUrl
         JsonNode root = mapper.readTree(jsonParser);
         RequestUrlAuthority requestAuthority = new RequestUrlAuthority();
         String code = JsonNodeUtils.findStringValue(root, "code");
-        List<AuthorityUrl> urls = JsonNodeUtils.findValue(root, "urls", new TypeReference<List<AuthorityUrl>>() {}, mapper);
+        List<AuthorityResource> authorityResources = JsonNodeUtils.findValue(root, "authorityResources", new TypeReference<List<AuthorityResource>>() {}, mapper);
         requestAuthority.setCode(code);
-        requestAuthority.setUrls(urls);
+        requestAuthority.setAuthorityResources(authorityResources);
         return requestAuthority;
     }
 }

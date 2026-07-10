@@ -6,6 +6,7 @@ import com.atlas.common.core.api.auth.dto.UserIdentifierDisplayDTO;
 import com.atlas.common.core.api.auth.dto.UserIdentifierUpdateDTO;
 import com.atlas.common.core.api.auth.dto.UserPasswordResetDTO;
 import com.atlas.common.core.api.file.FileApi;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
@@ -13,11 +14,9 @@ import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.mybatis.enums.DataScope;
-import com.atlas.user.domain.dto.UserCreateDTO;
-import com.atlas.user.domain.dto.UserOrgDTO;
-import com.atlas.user.domain.dto.UserQueryDTO;
-import com.atlas.user.domain.dto.UserUpdateDTO;
+import com.atlas.user.domain.dto.*;
 import com.atlas.user.domain.entity.*;
+import com.atlas.user.domain.vo.AuthorityVO;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.domain.vo.UserCreateVO;
 import com.atlas.user.domain.vo.UserVO;
@@ -112,13 +111,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userAuthDTO.setAuthorities(Collections.emptyList());
             return userAuthDTO;
         }
-        List<Authority> authorities = authorityService.listByIds(authorityIds);
+        List<AuthorityVO> authorities = authorityService.findById(authorityIds);
         if (CollectionUtils.isEmpty(authorities)) {
             return userAuthDTO;
         }
         List<RoleAuthDTO> list = new ArrayList<>();
-        for (Authority authority : authorities) {
-            list.add(new RoleAuthDTO(authority.getCode(), authority.getUrls()));
+        for (AuthorityVO authority : authorities) {
+            List<AuthorityUrlDTO> urls = authority.getUrls();
+            RoleAuthDTO roleAuthDTO = new RoleAuthDTO();
+            roleAuthDTO.setCode(authority.getCode());
+            if(!CollectionUtils.isEmpty(urls)){
+                List<AuthorityResource> authorityResources = urls.stream().map(m -> new AuthorityResource(m.getMethod(), m.getUrl())).toList();
+                roleAuthDTO.setAuthorityResources(authorityResources);
+            }
+            list.add(roleAuthDTO);
         }
         userAuthDTO.setAuthorities(list);
         return userAuthDTO;

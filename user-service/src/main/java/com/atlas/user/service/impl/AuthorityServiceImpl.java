@@ -1,5 +1,6 @@
 package com.atlas.user.service.impl;
 
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.common.core.idwork.IdGen;
@@ -29,10 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +55,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
     private AuthorityUrlService authorityUrlService;
 
     @Override
+    @Transactional
     public Long createAuthority(AuthorityCreateDTO authorityAddDTO) {
         Authority authority = AuthorityMapping.INSTANCE.toAuthority(authorityAddDTO);
         authority.setId(IdGen.genId());
@@ -72,10 +71,14 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
             authority.setSort(maxSortOfChildren + 1);
         }
         int insert = authorityMapper.insert(authority);
+        if(!CollectionUtils.isEmpty(authorityAddDTO.getUrls())){
+            addAuthorityUrl(authority.getId(), authorityAddDTO.getUrls());
+        }
         return insert > 0 ? authority.getId() : null;
     }
 
     @Override
+    @Transactional
     public Boolean updateAuthority(AuthorityUpdateDTO authorityUpdateDTO, Boolean isFullUpdate) {
         Authority authority = authorityMapper.selectById(authorityUpdateDTO.getId());
         if (authority == null || !authority.getType().equals(AuthorityType.ACTION)) {
@@ -83,8 +86,12 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         }
         if (isFullUpdate){
             AuthorityMapping.INSTANCE.overwriteAuthority(authorityUpdateDTO,authority);
+            addAuthorityUrl(authority.getId(), authorityUpdateDTO.getUrls());
         } else {
             AuthorityMapping.INSTANCE.updateAuthority(authorityUpdateDTO,authority);
+            if(!CollectionUtils.isEmpty(authorityUpdateDTO.getUrls())){
+                addAuthorityUrl(authority.getId(), authorityUpdateDTO.getUrls());
+            }
         }
         if(authorityUpdateDTO.getParentId() != null && !authorityUpdateDTO.getParentId().isEmpty() && !authorityUpdateDTO.getParentId().equals(authority.getParentId().toString())){
             Authority selectAuthority = authorityMapper.selectById(authorityUpdateDTO.getParentId());
@@ -94,9 +101,12 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
     }
 
     @Override
-    public AuthorityVO details(String id) {
+    public AuthorityVO details(Long id) {
         Authority authority = authorityMapper.selectById(id);
-        return AuthorityMapping.INSTANCE.toAuthorityVO(authority);
+        AuthorityVO authorityVO = AuthorityMapping.INSTANCE.toAuthorityVO(authority);
+        List<AuthorityUrlDTO> urlDTOList = authorityUrlService.findAuthorityUrl(id);
+        authorityVO.setUrls(urlDTOList);
+        return authorityVO;
     }
 
     @Override
@@ -218,6 +228,24 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         return authorityUrl.getId();
     }
 
+    public void addAuthorityUrl(Long id, List<AuthorityUrlDTO> authorityUrlDTOList) {
+        // 清空
+        authorityUrlService.lambdaUpdate()
+                .eq(AuthorityUrl::getAuthorityId, id)
+                .remove();
+        if(CollectionUtils.isEmpty(authorityUrlDTOList)){
+            return;
+        }
+        List<AuthorityUrl> authorityUrls = new ArrayList<>();
+        for (AuthorityUrlDTO authorityUrlDTO : authorityUrlDTOList){
+            AuthorityUrl authorityUrl = AuthorityUrlMapping.INSTANCE.toAuthorityUrl(authorityUrlDTO);
+            authorityUrl.setId(IdGen.genId());
+            authorityUrl.setAuthorityId(id);
+            authorityUrls.add(authorityUrl);
+        }
+        authorityUrlService.saveBatch(authorityUrls);
+    }
+
     @Override
     public void deleteAuthorityUrl(Long id, Long authorityUrlId) {
         boolean removed = authorityUrlService.lambdaUpdate()
@@ -237,11 +265,30 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         if (CollectionUtils.isEmpty(authorityIds)){
             return Collections.emptyList();
         }
-        List<Authority> authorities = authorityMapper.selectByIds(authorityIds);
+        return findById(authorityIds);
+    }
+
+    @Override
+    public List<AuthorityVO> findById(Collection<Long> ids) {
+        List<Authority> authorities = authorityMapper.selectByIds(ids);
         if (CollectionUtils.isEmpty(authorities)) {
             return Collections.emptyList();
         }
-        List<AuthorityUrlDTO> urlDTOList = authorityUrlService.findAuthorityUrl(authorityIds);
-        return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
+        List<AuthorityUrlDTO> urlDTOList = authorityUrlService.findAuthorityUrl(ids);
+        if(CollectionUtils.isEmpty(urlDTOList)){
+            return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
+        }
+        List<AuthorityVO> result = new ArrayList<>();
+        Map<Long, List<AuthorityUrlDTO>> urlMap = urlDTOList.stream().collect(Collectors.groupingBy(AuthorityUrlDTO::getAuthorityId));
+        for (Authority authority : authorities){
+            AuthorityVO authorityVO = AuthorityMapping.INSTANCE.toAuthorityVO(authority);
+            result.add(authorityVO);
+            List<AuthorityUrlDTO> authorityUrlDTOS = urlMap.get(authority.getId());
+            if(CollectionUtils.isEmpty(authorityUrlDTOS)){
+                continue;
+            }
+            authorityVO.setUrls(authorityUrlDTOS);
+        }
+        return result;
     }
 }

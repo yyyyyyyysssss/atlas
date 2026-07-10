@@ -1,12 +1,12 @@
 package com.atlas.security.autoconfigure;
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.encoder.MultiSecretDelegatingPasswordEncoder;
 import com.atlas.security.exception.SecurityExceptionAdvice;
-import com.atlas.security.jackson.AuthorityUrlMixin;
+import com.atlas.security.jackson.AuthorityResourceMixin;
 import com.atlas.security.jackson.OneTimeTokenAuthenticationTokenMixin;
 import com.atlas.security.jackson.RequestUrlAuthorityMixin;
 import com.atlas.security.jackson.SecurityUserMixin;
@@ -130,7 +130,7 @@ public class AtlasSecurityAutoConfiguration {
         // 注册自定义的权限模型 Mixin
         objectMapper.addMixIn(SecurityUser.class, SecurityUserMixin.class);
         objectMapper.addMixIn(RequestUrlAuthority.class, RequestUrlAuthorityMixin.class);
-        objectMapper.addMixIn(AuthorityUrl.class, AuthorityUrlMixin.class);
+        objectMapper.addMixIn(AuthorityResource.class, AuthorityResourceMixin.class);
         objectMapper.addMixIn(ThirdPartyAuthenticationToken.class, ThirdPartyAuthenticationToken.ThirdPartyAuthenticationTokenMixin.class);
         objectMapper.addMixIn(RefreshAuthenticationToken.class, RefreshAuthenticationToken.RefreshAuthenticationTokenMixin.class);
         objectMapper.addMixIn(OneTimeTokenAuthenticationToken.class, OneTimeTokenAuthenticationTokenMixin.class);

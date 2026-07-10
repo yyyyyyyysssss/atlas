@@ -1,8 +1,6 @@
 package com.atlas.user.domain.dto;
 
 
-
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -31,7 +29,7 @@ public class AuthorityUpdateDTO {
     private String name;
 
     @Valid
-    private List<AuthorityUrl> urls;
+    private List<AuthorityUrlDTO> urls;
 
     private Integer sort;
 

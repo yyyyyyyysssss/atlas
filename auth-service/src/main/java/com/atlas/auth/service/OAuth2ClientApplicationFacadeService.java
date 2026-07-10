@@ -269,8 +269,13 @@ public class OAuth2ClientApplicationFacadeService {
         if (registeredClient == null) {
             throw new BusinessException("应用["+oauth2Application.getApplicationName()+"]关联的OAuth2客户端数据丢失，请检查数据一致性");
         }
+        List<OAuth2ClientSecret> oAuth2ClientSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(oauth2Application.getRegisteredClientId());
+        if(CollectionUtils.isEmpty(oAuth2ClientSecrets)){
+            throw new BusinessException("当前客户端应用密钥为空");
+        }
         RegisteredClient updatedClient = RegisteredClient.from(registeredClient)
                 .clientName(saveDTO.applicationName())
+                .clientSecret(oAuth2ClientSecrets.getFirst().getClientSecret())
                 // 清理旧的回调和范围，重新注入新配置
                 .redirectUris(uris -> { uris.clear(); if (saveDTO.redirectUri() != null) uris.addAll(saveDTO.redirectUri()); })
                 .scopes(scopes -> { scopes.clear(); if (saveDTO.scopes() != null) scopes.addAll(saveDTO.scopes()); })

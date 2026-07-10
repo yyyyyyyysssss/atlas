@@ -67,7 +67,7 @@ public class AuthorityController {
     }
 
     @GetMapping("/{id}")
-    public Result<?> details(@PathVariable("id") String id) {
+    public Result<?> details(@PathVariable("id") Long id) {
         AuthorityVO details = authorityService.details(id);
         return ResultGenerator.ok(details);
     }

@@ -1,7 +1,7 @@
 package com.atlas.user.domain.vo;
 
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.user.domain.dto.AuthorityUrlDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,7 +32,7 @@ public class AuthorityVO {
 
     private String routePath;
 
-    private List<AuthorityUrl> urls;
+    private List<AuthorityUrlDTO> urls;
 
     private String icon;
 

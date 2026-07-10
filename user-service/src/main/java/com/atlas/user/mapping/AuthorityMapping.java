@@ -29,9 +29,6 @@ public interface AuthorityMapping {
 
     //部分更新
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mappings({
-            @Mapping(target = "urls", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
-    })
     void updateAuthority(AuthorityUpdateDTO authorityUpdateDTO, @MappingTarget Authority authority);
 
     //全量更新

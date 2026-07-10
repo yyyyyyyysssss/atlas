@@ -1,7 +1,7 @@
 package com.atlas.security.model;
 
 
-import com.atlas.common.core.api.user.dto.AuthorityUrl;
+import com.atlas.common.core.api.user.dto.AuthorityResource;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.List;
@@ -20,16 +20,16 @@ public class RequestUrlAuthority implements GrantedAuthority {
         this(code,null);
     }
 
-    public RequestUrlAuthority(String code, List<AuthorityUrl> urls) {
+    public RequestUrlAuthority(String code, List<AuthorityResource> authorityResources) {
         this.code = code;
-        this.urls = urls;
+        this.authorityResources = authorityResources;
     }
 
     //权限编码
     private String code;
 
     //该权限可访问的urls 多个以,号隔开
-    private List<AuthorityUrl> urls;
+    private List<AuthorityResource> authorityResources;
 
     public String getCode() {
         return code;
@@ -39,12 +39,12 @@ public class RequestUrlAuthority implements GrantedAuthority {
         this.code = code;
     }
 
-    public List<AuthorityUrl> getUrls() {
-        return urls;
+    public List<AuthorityResource> getAuthorityResources() {
+        return authorityResources;
     }
 
-    public void setUrls(List<AuthorityUrl> urls) {
-        this.urls = urls;
+    public void setAuthorityResources(List<AuthorityResource> authorityResources) {
+        this.authorityResources = authorityResources;
     }
 
     @Override

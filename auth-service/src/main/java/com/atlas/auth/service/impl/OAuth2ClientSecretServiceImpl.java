@@ -36,6 +36,7 @@ public class OAuth2ClientSecretServiceImpl extends ServiceImpl<OAuth2ClientSecre
                         .or()
                         .gt(OAuth2ClientSecret::getClientSecretExpiresAt, LocalDateTime.now())
                 )
+                .orderByAsc(OAuth2ClientSecret::getCreateTime)
         );
     }
 

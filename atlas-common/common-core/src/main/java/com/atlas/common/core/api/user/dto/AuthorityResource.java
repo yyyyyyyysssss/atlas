@@ -7,13 +7,19 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * @Description
+ * @Author ys
+ * @Date 2026/2/14 10:01
+ */
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RoleAuthDTO {
+public class AuthorityResource {
 
-    private String code;
+    private List<String> method;
 
-    private List<AuthorityResource> authorityResources;
+    private String url;
+
 }

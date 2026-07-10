@@ -242,7 +242,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
                                     <Flex gap={8} justify='center' align='center'>
                                         <HasPermission hasPermissions={editPermission}>
                                             {!!loadingMap[rowIndex] ? (
-                                                <Loading />
+                                                <Loading inline={true}/>
                                             ) : (
                                                 <Typography.Link style={{ whiteSpace: 'nowrap' }} onClick={() => handleSave(name, rowIndex)}>
                                                     {t('保存')}

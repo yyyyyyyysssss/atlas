@@ -7,6 +7,7 @@ interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
     fullscreen?: boolean,  // 对应之前引用的 fullscreen
     full?: boolean,        // 兼容原有的 full
     spinning?: boolean,
+    inline?: boolean,
     children?: React.ReactNode,
     size?: 'small' | 'default' | 'large',
     tip?: React.ReactNode, // 接收 tip 文本
@@ -17,6 +18,7 @@ const Loading: React.FC<LoadingProps> = ({
     fullscreen = false,
     full = false,
     spinning = true,
+    inline = false,
     children,
     size = 'default',
     tip,
@@ -53,6 +55,14 @@ const Loading: React.FC<LoadingProps> = ({
             </svg>
         </div>
     );
+
+    if (inline) {
+        return (
+            <div style={{ display: 'inline-flex', alignItems: 'center', width: 25, height: 25 }}>
+                {customIndicator}
+            </div>
+        );
+    }
 
     // 如果只是作为局部包裹组件 (有 children)，默认使用 Ant Design 原生的 Spin 体验最好
     if (children && !isFull) {

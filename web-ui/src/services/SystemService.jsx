@@ -221,6 +221,24 @@ export const fetchAuthorityTree = async () => {
     return apiRequestWrapper(() => httpWrapper.get('/api/user/option/authority'))
 }
 
+// 获取权限url
+export const getAuthorityUrl = async (authorityId) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/authority/${authorityId}/url`))
+}
+
+// 保存权限url
+export const saveAuthorityUrl = async (authorityId, req) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/user/system/authority/${authorityId}/url`,req))
+}
+
+// 删除权限url
+export const deleteAuthorityUrl = async (authorityId, authorityUrlId) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/user/system/authority/${authorityId}/url/${authorityUrlId}`))
+}
+
 
 // 获取字典列表
 export const fetchDictList = async (queryParam) => {

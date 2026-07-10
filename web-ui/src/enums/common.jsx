@@ -2,7 +2,7 @@
 
 export const AuthorityType = Object.freeze({
     MENU: 'MENU',
-    BUTTON: 'BUTTON',
+    ACTION: 'ACTION',
     API: 'API'
 })
 

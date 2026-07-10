@@ -2,6 +2,7 @@ package com.atlas.user.service;
 
 import com.atlas.user.domain.dto.AuthorityCreateDTO;
 import com.atlas.user.domain.dto.AuthorityUpdateDTO;
+import com.atlas.user.domain.dto.AuthorityUrlDTO;
 import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.vo.AuthorityVO;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -28,4 +29,10 @@ public interface AuthorityService extends IService<Authority> {
     List<AuthorityVO> findByUserId(Long userId);
 
     void clearCache(Long userId);
+
+    List<AuthorityUrlDTO> getAuthorityUrl(Long id);
+
+    Long saveAuthorityUrl(Long id, AuthorityUrlDTO authorityUrlDTO);
+
+    void deleteAuthorityUrl(Long id, Long authorityUrlId);
 }

@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum AuthorityType {
 
     MENU,
-    BUTTON,
+    ACTION,
     API,
     ROOT,
     BASE

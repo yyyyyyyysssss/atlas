@@ -5,15 +5,16 @@ import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.domain.dto.AuthorityCreateDTO;
 import com.atlas.user.domain.dto.AuthorityUpdateDTO;
+import com.atlas.user.domain.dto.AuthorityUrlDTO;
 import com.atlas.user.domain.vo.AuthorityVO;
 import com.atlas.user.service.AuthorityService;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @Description
@@ -44,6 +45,25 @@ public class AuthorityController {
     public Result<?> modifyAuthority(@RequestBody @Validated AuthorityUpdateDTO authorityUpdateDTO) {
         Boolean f = authorityService.updateAuthority(authorityUpdateDTO,false);
         return ResultGenerator.ok(f);
+    }
+
+    @GetMapping("/{id}/url")
+    public Result<List<AuthorityUrlDTO>> getAuthorityUrl(@PathVariable("id") Long id) {
+        List<AuthorityUrlDTO> urlDTOList = authorityService.getAuthorityUrl(id);
+        return ResultGenerator.ok(urlDTOList);
+    }
+
+    @PostMapping("/{id}/url")
+    public Result<?> saveAuthorityUrl(@PathVariable("id") Long id, @RequestBody @Validated AuthorityUrlDTO authorityUrlDTO) {
+        Objects.requireNonNull(authorityUrlDTO.getAuthorityId(),"权限id不能为空");
+        authorityService.saveAuthorityUrl(id, authorityUrlDTO);
+        return ResultGenerator.ok();
+    }
+
+    @DeleteMapping("/{id}/url/{authorityUrlId}")
+    public Result<?> deleteAuthorityUrl(@PathVariable("id") Long id, @PathVariable("authorityUrlId") Long authorityUrlId) {
+        authorityService.deleteAuthorityUrl(id, authorityUrlId);
+        return ResultGenerator.ok();
     }
 
     @GetMapping("/{id}")

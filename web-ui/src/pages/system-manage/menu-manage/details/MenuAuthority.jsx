@@ -48,7 +48,6 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
     const [authorityApiDrawerOpen, setAuthorityApiDrawerOpen] = useState({
         open: false,
         authorityId: null,
-        authorityUrls: null,
         title: ''
     })
 
@@ -131,8 +130,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
         setAuthorityApiDrawerOpen({
             open: true,
             title: authorityData.name,
-            authorityId: authorityId,
-            authorityUrls: newAuthorityUrls
+            authorityId: authorityId
         })
     }
 
@@ -154,7 +152,6 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
         setAuthorityApiDrawerOpen({
             open: false,
             authorityId: null,
-            authorityUrls: null,
             title: null
         })
     }
@@ -180,9 +177,10 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             render: (_, { type }) => {
                 let color
                 let text
-                if (type === AuthorityType.BUTTON) {
+                
+                if (type === AuthorityType.ACTION) {
                     color = '#1890ff'
-                    text = '按钮'
+                    text = '操作'
                 } else if (type === AuthorityType.API) {
                     color = '#722ed1'
                     text = 'API'
@@ -376,7 +374,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                 destroyOnHidden
             >
                 <AuthorityUrl
-                    authorityUrls={authorityApiDrawerOpen.authorityUrls}
+                    authorityId={authorityApiDrawerOpen.authorityId}
                     onChange={handleAuthorityUrlChange}
                     loading={updateAuthorityUrlsByIdLoading}
                 />

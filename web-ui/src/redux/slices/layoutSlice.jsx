@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 export const initialState = {
-    menuMode: 'global',
+    menuScope: 'global',
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
@@ -175,17 +175,16 @@ export const layoutSlice = createSlice({
         },
         loadMenuItems: (state, action) => {
             const { payload } = action
-            const { menuMode, menuItems } = payload
-            state.menus[menuMode] = menuItems
-            if(state.menuMode === menuMode){
+            const { menuScope, menuItems } = payload
+            state.menus[menuScope] = menuItems
+            if(state.menuScope === menuScope){
                 state.flattenMenuItems = flattenMenus(menuItems)
             }
         },
-        setMenuMode: (state, action) => {
-            state.menuMode = menuMode
-            const { menuMode } = payload
-            state.menuMode = menuMode
-            const menuItems =state.menus[menuMode] || []
+        setMenuScope: (state, action) => {
+            const { menuScope } = payload
+            state.menuScope = menuScope
+            const menuItems =state.menus[menuScope] || []
             state.flattenMenuItems = flattenMenus(menuItems)
             state.activeKey = ''
             state.openKeys = []

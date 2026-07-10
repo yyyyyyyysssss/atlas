@@ -5,13 +5,17 @@ import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.user.domain.dto.AuthorityCreateDTO;
 import com.atlas.user.domain.dto.AuthorityUpdateDTO;
+import com.atlas.user.domain.dto.AuthorityUrlDTO;
 import com.atlas.user.domain.entity.Authority;
+import com.atlas.user.domain.entity.AuthorityUrl;
 import com.atlas.user.domain.vo.AuthorityVO;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
+import com.atlas.user.mapping.AuthorityUrlMapping;
 import com.atlas.user.service.AuthorityService;
+import com.atlas.user.service.AuthorityUrlService;
 import com.atlas.user.service.RoleAuthorityService;
 import com.atlas.user.service.RoleService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -29,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -48,11 +53,14 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
     @Resource
     private RoleAuthorityService roleAuthorityService;
 
+    @Resource
+    private AuthorityUrlService authorityUrlService;
+
     @Override
     public Long createAuthority(AuthorityCreateDTO authorityAddDTO) {
         Authority authority = AuthorityMapping.INSTANCE.toAuthority(authorityAddDTO);
         authority.setId(IdGen.genId());
-        authority.setType(AuthorityType.BUTTON);
+        authority.setType(AuthorityType.ACTION);
         Authority selectAuthority = authorityMapper.selectById(authority.getParentId());
         authority.setRootId(selectAuthority.getRootId());
         if (authority.getSort() == null){
@@ -70,7 +78,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
     @Override
     public Boolean updateAuthority(AuthorityUpdateDTO authorityUpdateDTO, Boolean isFullUpdate) {
         Authority authority = authorityMapper.selectById(authorityUpdateDTO.getId());
-        if (authority == null || !authority.getType().equals(AuthorityType.BUTTON)) {
+        if (authority == null || !authority.getType().equals(AuthorityType.ACTION)) {
             throw new BusinessException("该操作权限不存在");
         }
         if (isFullUpdate){
@@ -99,7 +107,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         QueryWrapper<Authority> authorityQueryWrapper = new QueryWrapper<>();
         authorityQueryWrapper
                 .lambda()
-                .eq(Authority::getType,AuthorityType.BUTTON)
+                .eq(Authority::getType,AuthorityType.ACTION)
                 .eq(Authority::getParentId,menuId);
         List<Authority> authorities = authorityMapper.selectList(authorityQueryWrapper);
         if (CollectionUtils.isEmpty(authorities)){
@@ -114,7 +122,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         queryWrapper
                 .lambda()
                 .select(Authority::getId, Authority::getParentId, Authority::getName)
-                .in(Authority::getType, AuthorityType.MENU, AuthorityType.BUTTON)
+                .in(Authority::getType, AuthorityType.MENU, AuthorityType.ACTION)
                 .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities = authorityMapper.selectList(queryWrapper);
         if (authorities == null || authorities.isEmpty()){
@@ -134,7 +142,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
     @Transactional
     public Boolean deleteAuthority(Long id) {
         Authority authority = authorityMapper.selectById(id);
-        if (authority == null || !authority.getType().equals(AuthorityType.BUTTON)){
+        if (authority == null || !authority.getType().equals(AuthorityType.ACTION)){
             throw new BusinessException("该权限不存在");
         }
         int i = authorityMapper.deleteById(id);
@@ -178,6 +186,48 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
 
     }
 
+    @Override
+    public List<AuthorityUrlDTO> getAuthorityUrl(Long id) {
+
+        return authorityUrlService.findAuthorityUrl(id);
+    }
+
+    @Override
+    public Long saveAuthorityUrl(Long id, AuthorityUrlDTO authorityUrlDTO) {
+        if (authorityUrlDTO.getAuthorityId() != null && !authorityUrlDTO.getAuthorityId().equals(id)) {
+            throw new BusinessException("参数错误：权限ID不匹配");
+        }
+        AuthorityUrl authorityUrl;
+        if(authorityUrlDTO.getId() == null){
+            authorityUrl = AuthorityUrlMapping.INSTANCE.toAuthorityUrl(authorityUrlDTO);
+            authorityUrl.setId(IdGen.genId());
+            authorityUrl.setAuthorityId(id);
+            authorityUrlService.save(authorityUrl);
+        } else {
+            authorityUrl = authorityUrlService.getById(authorityUrlDTO.getId());
+            if(authorityUrl == null){
+                throw new BusinessException("该权限url不存在");
+            }
+            if(!authorityUrl.getAuthorityId().equals(id)){
+                throw new BusinessException("该权限url不属于当前权限");
+            }
+            authorityUrl.setUrl(authorityUrlDTO.getUrl());
+            authorityUrl.setMethod(authorityUrlDTO.getMethod());
+            authorityUrlService.updateById(authorityUrl);
+        }
+        return authorityUrl.getId();
+    }
+
+    @Override
+    public void deleteAuthorityUrl(Long id, Long authorityUrlId) {
+        boolean removed = authorityUrlService.lambdaUpdate()
+                .eq(AuthorityUrl::getAuthorityId, id)
+                .eq(AuthorityUrl::getId, authorityUrlId)
+                .remove();
+        if (!removed) {
+            throw new BusinessException("删除失败，数据不存在或无权操作");
+        }
+    }
 
     private List<AuthorityVO> findByRoleId(Collection<Long> roleIds) {
         if (CollectionUtils.isEmpty(roleIds)) {
@@ -191,6 +241,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         if (CollectionUtils.isEmpty(authorities)) {
             return Collections.emptyList();
         }
+        List<AuthorityUrlDTO> urlDTOList = authorityUrlService.findAuthorityUrl(authorityIds);
         return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
     }
 }

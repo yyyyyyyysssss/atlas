@@ -25,16 +25,16 @@ const getMenuItems = (items, t) => {
 
 const siderSelector = createSelector(
     state => state.user.userInfo?.settings?.appearance?.theme || 'dark',
-    state => state.layout.menuMode,
+    state => state.layout.menuScope,
     state => state.layout.menus,
     state => state.layout.flattenMenuItems,
     state => state.layout.menuCollapsed,
     state => state.layout.activeKey,
     state => state.layout.openKeys,
-    (themeValue,menuMode, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
+    (themeValue,menuScope, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
         themeValue,
-        menuMode,
-        menuItems: menus[menuMode] || [],
+        menuScope,
+        menuItems: menus[menuScope] || [],
         flattenMenuItems,
         collapsed,
         activeKey,
@@ -46,7 +46,7 @@ const Sider = () => {
 
     const { t } = useTranslation()
 
-    const { themeValue, menuMode, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
+    const { themeValue, menuScope, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
 
     const dispatch = useDispatch()
 

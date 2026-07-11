@@ -200,6 +200,12 @@ export const updateAuthority = async (req) => {
     return apiRequestWrapper(() => httpWrapper.put('/api/user/system/authority', req))
 }
 
+// 获取权限
+export const getAuthority = async (id) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/authority/${id}`))
+}
+
 // 删除权限
 export const deleteAuthorityById = async (id) => {
 

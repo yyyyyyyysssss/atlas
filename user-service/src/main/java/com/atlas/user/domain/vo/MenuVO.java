@@ -2,6 +2,7 @@ package com.atlas.user.domain.vo;
 
 
 import com.atlas.common.core.api.user.dto.AuthorityResource;
+import com.atlas.user.enums.AuthorityAccessControl;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,7 +33,7 @@ public class MenuVO {
 
     private String routePath;
 
-    private List<AuthorityResource> urls;
+    private AuthorityAccessControl accessControl;
 
     private String icon;
 

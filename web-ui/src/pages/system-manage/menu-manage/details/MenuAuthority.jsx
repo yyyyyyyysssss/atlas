@@ -3,7 +3,7 @@ import HasPermission from "../../../../components/HasPermission"
 import { useTranslation } from "react-i18next"
 import { AuthorityType, OperationMode, RequestMethod } from "../../../../enums/common"
 import { useRequest } from "ahooks"
-import { addAuthority, deleteAuthorityById, fetchAuthorityByMenuId, updateAuthority, updateAuthorityUrlsById } from "../../../../services/SystemService"
+import { addAuthority, deleteAuthorityById, fetchAuthorityByMenuId, getAuthority, updateAuthority, updateAuthorityUrlsById } from "../../../../services/SystemService"
 import { useEffect, useState } from "react"
 import EditableTable from "../../../../components/smart-table/EditableTable"
 import AuthorityUrl from "./AuthorityUrl"
@@ -38,6 +38,10 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
     })
 
     const { runAsync: updateAuthorityUrlsByIdAsync, loading: updateAuthorityUrlsByIdLoading } = useRequest(updateAuthorityUrlsById, {
+        manual: true
+    })
+
+    const { runAsync: getAuthorityAsync, loading: getAuthorityLoading } = useRequest(getAuthority, {
         manual: true
     })
 
@@ -99,13 +103,14 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
         })
     }
 
-    const handleEditAuthority = (authorityData) => {
-        form.setFieldsValue({ ...authorityData })
+    const handleEditAuthority = async (authorityId) => {
         setAuthorityModalOpen({
             open: true,
             operationMode: OperationMode.EDIT.value,
             title: '修改权限'
         })
+        const authority = await getAuthorityAsync(authorityId)
+        form.setFieldsValue({ ...authority })
     }
 
     const handleDeleteAuthority = async (authorityId) => {
@@ -212,7 +217,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                             <Typography.Link onClick={() => showDrawer(record.id)}>{t('API权限')}</Typography.Link>
                         </HasPermission>
                         <HasPermission hasPermissions='system:menu:write'>
-                            <Typography.Link onClick={() => handleEditAuthority(record)}>{t('编辑')}</Typography.Link>
+                            <Typography.Link onClick={() => handleEditAuthority(record.id)}>{t('编辑')}</Typography.Link>
                         </HasPermission>
                         <HasPermission hasPermissions='system:menu:delete'>
                             <Popconfirm okText={t('确定')} cancelText={t('取消')} title={t('确定删除')} okButtonProps={{ loading: deleteAuthorityByIdLoading }} onConfirm={async () => await handleDeleteAuthority(record.id)} style={{ marginInlineEnd: 8 }}>
@@ -277,7 +282,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             </Flex>
             <Modal
                 title={authorityModalOpen.title}
-                width={700}
+                width={600}
                 centered
                 open={authorityModalOpen.open}
                 confirmLoading={addAuthorityLoading || updateAuthorityLoading}
@@ -289,6 +294,7 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                 okText={t('保存')}
                 cancelText={t('取消')}
                 afterClose={() => form.resetFields()}
+                loading={getAuthorityLoading}
             >
                 <Flex
                     style={{ marginTop: '20px', height: 500 }}
@@ -297,8 +303,8 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
                 >
                     <Form
                         form={form}
-                        labelCol={{ span: 6 }}
-                        wrapperCol={{ span: 18 }}
+                        labelCol={{ span: 4 }}
+                        wrapperCol={{ span: 20 }}
                         layout="horizontal"
                     >
                         <Form.Item name="id" noStyle />
@@ -382,7 +388,6 @@ const MenuAuthority = ({ style, menuId, parentCode }) => {
             >
                 <AuthorityUrl
                     authorityId={authorityApiDrawerOpen.authorityId}
-                    onChange={handleAuthorityUrlChange}
                     loading={updateAuthorityUrlsByIdLoading}
                 />
             </Drawer>

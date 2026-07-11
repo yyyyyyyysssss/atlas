@@ -1,5 +1,6 @@
 package com.atlas.user.domain.dto;
 
+import com.atlas.user.enums.AuthorityAccessControl;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,6 +30,8 @@ public class MenuUpdateDTO {
 
     @NotBlank(message = "菜单路由不能为空")
     private String routePath;
+
+    private AuthorityAccessControl accessControl;
 
     private String icon;
 

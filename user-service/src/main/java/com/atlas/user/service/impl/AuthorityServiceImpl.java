@@ -1,9 +1,8 @@
 package com.atlas.user.service.impl;
 
-import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.AuthorityCreateDTO;
 import com.atlas.user.domain.dto.AuthorityUpdateDTO;
 import com.atlas.user.domain.dto.AuthorityUrlDTO;
@@ -11,6 +10,7 @@ import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.entity.AuthorityUrl;
 import com.atlas.user.domain.vo.AuthorityVO;
 import com.atlas.user.domain.vo.RoleVO;
+import com.atlas.user.enums.AuthorityAccessControl;
 import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
@@ -19,8 +19,9 @@ import com.atlas.user.service.AuthorityService;
 import com.atlas.user.service.AuthorityUrlService;
 import com.atlas.user.service.RoleAuthorityService;
 import com.atlas.user.service.RoleService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -133,6 +134,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
                 .lambda()
                 .select(Authority::getId, Authority::getParentId, Authority::getName)
                 .in(Authority::getType, AuthorityType.MENU, AuthorityType.ACTION)
+                .eq(Authority::getAccessControl,AuthorityAccessControl.PROTECTED.name())
                 .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities = authorityMapper.selectList(queryWrapper);
         if (authorities == null || authorities.isEmpty()){
@@ -164,15 +166,6 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         return true;
     }
 
-    // 根据角色ID查询权限
-    @Override
-    public List<AuthorityVO> findByRoleId(Long roleId) {
-        if(roleId == null){
-            return Collections.emptyList();
-        }
-        return this.findByRoleId(Collections.singletonList(roleId));
-    }
-
     // 根据用户ID查询权限
     @Override
     @Cacheable(value = "user:authority", key = "#p0")
@@ -181,11 +174,27 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
             return Collections.emptyList();
         }
         List<RoleVO> roles = roleService.findByUserId(userId);
-        if(CollectionUtils.isEmpty(roles)){
-            return Collections.emptyList();
+        LambdaQueryWrapper<Authority> wrapper = Wrappers.lambdaQuery();
+        if (CollectionUtils.isEmpty(roles)) {
+            wrapper.eq(
+                    Authority::getAccessControl,
+                    AuthorityAccessControl.PUBLIC.name()
+            );
+        } else {
+            List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
+            List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
+            wrapper.and(w -> {
+                // PUBLIC权限
+                w.eq(Authority::getAccessControl, AuthorityAccessControl.PUBLIC.name());
+                // 角色授权权限
+                if (!CollectionUtils.isEmpty(authorityIds)) {
+                    w.or().in(Authority::getId, authorityIds);
+                }
+            });
+
         }
-        List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
-        return this.findByRoleId(roleIds);
+        List<Authority> authorities = authorityMapper.selectList(wrapper);
+        return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
     }
 
     @Caching(evict = {
@@ -255,17 +264,6 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         if (!removed) {
             throw new BusinessException("删除失败，数据不存在或无权操作");
         }
-    }
-
-    private List<AuthorityVO> findByRoleId(Collection<Long> roleIds) {
-        if (CollectionUtils.isEmpty(roleIds)) {
-            return Collections.emptyList();
-        }
-        List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
-        if (CollectionUtils.isEmpty(authorityIds)){
-            return Collections.emptyList();
-        }
-        return findById(authorityIds);
     }
 
     @Override

@@ -54,10 +54,9 @@ public class ProfileServiceImpl implements ProfileService {
         } else {
             authInfoVO.setRoles(Collections.emptySet());
         }
-        List<Long> roleIds = Optional.ofNullable(roles).orElse(new ArrayList<>()).stream().map(RoleVO::getId).toList();
 
         // 用户菜单
-        List<MenuVO> menus = menuService.findByUserId(userId, roleIds);
+        List<MenuVO> menus = menuService.findByUserId(userId);
         if (!CollectionUtils.isEmpty(menus)) {
             List<MenuVO> menuTree = TreeUtils.buildTree(
                     menus,

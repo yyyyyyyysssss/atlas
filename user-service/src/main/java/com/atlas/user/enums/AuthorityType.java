@@ -8,6 +8,5 @@ public enum AuthorityType {
     MENU,
     ACTION,
     API,
-    ROOT,
-    BASE
+    ROOT
 }

@@ -25,8 +25,6 @@ public interface AuthorityService extends IService<Authority> {
 
     Boolean deleteAuthority(Long id);
 
-    List<AuthorityVO> findByRoleId(Long roleId);
-
     List<AuthorityVO> findByUserId(Long userId);
 
     void clearCache(Long userId);

@@ -2,8 +2,8 @@ package com.atlas.user.service.impl;
 
 import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.MenuCreateDTO;
 import com.atlas.user.domain.dto.MenuDragDTO;
 import com.atlas.user.domain.dto.MenuQueryDTO;
@@ -12,12 +12,14 @@ import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.entity.Role;
 import com.atlas.user.domain.vo.MenuVO;
 import com.atlas.user.domain.vo.RoleVO;
+import com.atlas.user.enums.AuthorityAccessControl;
 import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
 import com.atlas.user.service.MenuService;
 import com.atlas.user.service.RoleAuthorityService;
 import com.atlas.user.service.RoleService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.github.pagehelper.PageHelper;
@@ -244,52 +246,48 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             return Collections.emptyList();
         }
         List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
-        return findByUserId(userId, roleIds);
-    }
-
-    @Override
-    @Cacheable(value = "user:menu", key = "#p0")
-    public List<MenuVO> findByUserId(Long userId, Collection<Long> roleIds) {
         return findByRoleId(roleIds);
     }
 
     private List<MenuVO> findByRoleId(Collection<Long> roleIds) {
+        QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
+        LambdaQueryWrapper<Authority> lambdaWrapper = queryWrapper.lambda()
+                .eq(Authority::getType, AuthorityType.MENU.name())
+                .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities;
+        // 无角色返回公共菜单
         if (CollectionUtils.isEmpty(roleIds)) {
-            QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
-            queryWrapper
-                    .lambda()
-                    .eq(Authority::getType, AuthorityType.BASE.name())
-                    .orderByAsc(Authority::getSort, Authority::getId);
-            authorities = authorityMapper.selectList(queryWrapper);
-        } else {
-            List<Role> roles = roleService.listByIds(roleIds);
-            boolean isSuperAdmin = roles.stream().anyMatch(Role::isSuperAdmin);
-            QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
-            queryWrapper
-                    .lambda()
-                    .orderByAsc(Authority::getSort, Authority::getId);
-            // 不是超级管理员则根据角色进行查询
-            if (isSuperAdmin) {
-                queryWrapper
-                        .lambda()
-                        .in(Authority::getType, AuthorityType.MENU.name(), AuthorityType.BASE.name());
-            } else {
-                List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
-                queryWrapper.and(wrapper -> {
-                    wrapper.lambda().
-                            eq(Authority::getType, AuthorityType.BASE.name())
-                            .or(!CollectionUtils.isEmpty(authorityIds), orWrapper -> {
-                                orWrapper.eq(Authority::getType, AuthorityType.MENU.name())
-                                        .in(Authority::getId, authorityIds);
-                            });
-                });
+            lambdaWrapper.eq(
+                    Authority::getAccessControl,
+                    AuthorityAccessControl.PUBLIC.name()
+            );
+            authorities = authorityMapper.selectList(lambdaWrapper);
+            return AuthorityMapping.INSTANCE.toMenuVo(authorities);
+        }
+
+        List<Role> roles = roleService.listByIds(roleIds);
+        // 超级管理员直接返回所有菜单
+        boolean isSuperAdmin = roles.stream().anyMatch(Role::isSuperAdmin);
+        if (isSuperAdmin) {
+            authorities = authorityMapper.selectList(lambdaWrapper);
+            return AuthorityMapping.INSTANCE.toMenuVo(authorities);
+        }
+
+        // 普通角色
+        List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
+        lambdaWrapper.and(wrapper -> {
+            // 公共菜单
+            wrapper.eq(
+                    Authority::getAccessControl,
+                    AuthorityAccessControl.PUBLIC.name()
+            );
+            // 授权菜单
+            if (!CollectionUtils.isEmpty(authorityIds)) {
+                wrapper.or()
+                        .in(Authority::getId, authorityIds);
             }
-            authorities = authorityMapper.selectList(queryWrapper);
-        }
-        if (CollectionUtils.isEmpty(authorities)) {
-            return Collections.emptyList();
-        }
+        });
+        authorities = authorityMapper.selectList(lambdaWrapper);
         return AuthorityMapping.INSTANCE.toMenuVo(authorities);
     }
 

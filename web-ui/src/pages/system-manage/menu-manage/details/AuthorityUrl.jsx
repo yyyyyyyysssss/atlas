@@ -11,7 +11,7 @@ const requestMethodOptions = Object.entries(RequestMethod).map(([key, value]) =>
     value: value,
 }))
 
-const AuthorityUrl = ({ authorityId, onChange, loading }) => {
+const AuthorityUrl = ({ authorityId, loading }) => {
 
     const [form] = Form.useForm()
 

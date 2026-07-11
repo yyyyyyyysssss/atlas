@@ -1,4 +1,4 @@
-import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, App } from 'antd'
+import { Space, Flex, Form, Input, Button, Popconfirm, Row, Col, InputNumber, App, Radio } from 'antd'
 import { UploadOutlined } from '@ant-design/icons';
 import { OperationMode } from '../../../../enums/common';
 import { useEffect, useState } from 'react';
@@ -50,7 +50,8 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
                 form.resetFields()
                 form.setFieldsValue({
                     parentCode: parentCode,
-                    parentId: parentId
+                    parentId: parentId,
+                    accessControl: 'PROTECTED'
                 })
                 break
             case OperationMode.EDIT.value:
@@ -157,6 +158,25 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
                     </Row>
                     <Row gutter={16}>
                         <Col span={24}>
+                            <Form.Item
+                                label="访问控制"
+                                name="accessControl"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: `访问控制不能为空`,
+                                    },
+                                ]}
+                            >
+                                <Radio.Group>
+                                    <Radio value="PROTECTED">受保护</Radio>
+                                    <Radio value="PUBLIC">公开</Radio>
+                                </Radio.Group>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={24}>
                             <Form.Item label="图标" name="icon">
                                 <SmartUpload
                                     accept=".svg,.png,.jpg,.jpeg"
@@ -171,7 +191,6 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
                         <Col span={24}>
                             <Form.Item label="排序" name="sort">
                                 <InputNumber
-                                    min={1}
                                     step={1}
                                     style={{ width: '100%' }}
                                 />

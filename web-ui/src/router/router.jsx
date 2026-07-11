@@ -110,6 +110,8 @@ export const routes = [
                 breadcrumbName: '工作台',
                 defaultIcon: <AppWindow size={18} />,
                 element: <ProjectWorkbench />,
+                protected: true,
+                requiredPermissions: ['workbench']
             },
             {
                 path: 'account/settings',

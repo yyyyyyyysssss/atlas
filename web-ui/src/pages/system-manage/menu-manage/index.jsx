@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './index.css'
-import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input, App } from 'antd'
+import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input, App, Button, Select } from 'antd'
+import { PlusOutlined } from '@ant-design/icons';
 import { deleteMenu, fetchMenuTree, menuDrag } from '../../../services/SystemService'
 import { Plus, Trash2 } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
@@ -171,7 +172,7 @@ const MenuManage = () => {
             .then(d => {
                 if (d === true) {
                     message.success(t('拖动成功'))
-                    refreshMenuTree({selectMenuId: selectedKeys?.[0]})
+                    refreshMenuTree({ selectMenuId: selectedKeys?.[0] })
                 }
             })
     }
@@ -184,12 +185,19 @@ const MenuManage = () => {
                 parentCode: menuItem.code,
                 operationMode: OperationMode.ADD.value
             })
-        } else {
+        } else if (type === 'brother') {
             const parentMenuItem = flattenTreeRef.current.find(f => f.id === menuItem.parentId)
             setSelectedMenu({
                 id: null,
                 parentId: menuItem.parentId,
                 parentCode: parentMenuItem?.code,
+                operationMode: OperationMode.ADD.value
+            })
+        } else {
+            setSelectedMenu({
+                id: null,
+                parentId: 0,
+                parentCode: null,
                 operationMode: OperationMode.ADD.value
             })
         }
@@ -360,7 +368,28 @@ const MenuManage = () => {
                     <Flex
                         vertical
                     >
-                        <Input.Search style={{ marginBottom: 8 }} placeholder="搜索" onChange={handleSearchChange} allowClear/>
+                        <Flex
+                            gap={10}
+                            vertical
+                        >
+                            <Select 
+                                value={'GLOBAL'}
+                                options={[
+                                    { value: 'GLOBAL', label: '全局域' },
+                                    { value: 'PROJECT', label: '项目域' },
+                                ]}
+                            />
+                            <Flex gap={8} justify='center' align="center" style={{ marginBottom: 8 }}>
+
+                                <Input.Search placeholder="搜索" onChange={handleSearchChange} allowClear />
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => handleAddMenu('root', null)}
+                                />
+                            </Flex>
+                        </Flex>
+
                         <Loading spinning={getMenuTreeLoading || menuDragLoading}>
                             <Tree
                                 className="draggable-tree"

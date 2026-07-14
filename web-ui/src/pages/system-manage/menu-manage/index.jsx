@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './index.css'
-import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input, App, Button, Select } from 'antd'
-import { PlusOutlined } from '@ant-design/icons';
+import { Dropdown, Flex, Tree, Modal, Tooltip, Splitter, Typography, Input, App, Button, Select, Segmented } from 'antd'
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { deleteMenu, fetchMenuTree, menuDrag } from '../../../services/SystemService'
 import { Plus, Trash2 } from 'lucide-react';
 import { OperationMode } from '../../../enums/common';
@@ -26,6 +26,19 @@ const getParentKey = (id, tree) => {
     }
     return parentKey
 }
+
+const domains = [
+    {
+        value: 'GLOBAL',
+        label: '平台菜单',
+        description: '平台级菜单权限'
+    },
+    {
+        value: 'PROJECT',
+        label: '项目菜单',
+        description: '项目相关菜单权限'
+    }
+];
 
 const MenuItem = ({ item, selected, onAddMenu, onDeleteMenu }) => {
 
@@ -106,6 +119,8 @@ const MenuManage = () => {
 
     const [autoExpandParent, setAutoExpandParent] = useState(true)
 
+    const [domain, setDomain] = useState('GLOBAL')
+
     const { runAsync: getMenuTreeAsync, loading: getMenuTreeLoading } = useRequest(fetchMenuTree, {
         manual: true
     })
@@ -141,15 +156,15 @@ const MenuManage = () => {
         flattenTreeRef.current = flattenTree(menuData)
     }, [menuData])
 
-    const refreshMenuTree = async (options) => {
-        const data = await getMenuTreeAsync()
+    const refreshMenuTree = async (options, menuDomain) => {
+        const data = await getMenuTreeAsync(menuDomain || domain)
         setMenuData(data)
         // 默认展开第一层级
         if (expandedKeys.length == 0) {
             setExpandedKeys(data.map((node) => node.id))
         }
-        if (options?.selectMenuId) {
-            handleSelectMenu(options.selectMenuId)
+        if (options && 'selectMenuId' in options) {
+            handleSelectMenu(options.selectMenuId);
         }
     }
 
@@ -183,6 +198,7 @@ const MenuManage = () => {
                 id: null,
                 parentId: menuItem.id,
                 parentCode: menuItem.code,
+                domain: domain,
                 operationMode: OperationMode.ADD.value
             })
         } else if (type === 'brother') {
@@ -191,6 +207,7 @@ const MenuManage = () => {
                 id: null,
                 parentId: menuItem.parentId,
                 parentCode: parentMenuItem?.code,
+                domain: domain,
                 operationMode: OperationMode.ADD.value
             })
         } else {
@@ -198,6 +215,7 @@ const MenuManage = () => {
                 id: null,
                 parentId: 0,
                 parentCode: null,
+                domain: null,
                 operationMode: OperationMode.ADD.value
             })
         }
@@ -361,6 +379,11 @@ const MenuManage = () => {
         })
     }
 
+    const handleSetDomain = (value) => {
+        setDomain(value)
+        refreshMenuTree({ selectMenuId: null }, value)
+    }
+
     return (
         <Flex flex={1} gap={10} className='h-full'>
             <Splitter>
@@ -372,21 +395,30 @@ const MenuManage = () => {
                             gap={10}
                             vertical
                         >
-                            <Select 
-                                value={'GLOBAL'}
+                            <Segmented
+                                block
+                                value={domain}
                                 options={[
-                                    { value: 'GLOBAL', label: '全局域' },
-                                    { value: 'PROJECT', label: '项目域' },
+                                    {
+                                        label: '全局菜单',
+                                        value: 'GLOBAL'
+                                    },
+                                    {
+                                        label: '项目菜单',
+                                        value: 'PROJECT'
+                                    }
                                 ]}
+                                onChange={handleSetDomain}
                             />
-                            <Flex gap={8} justify='center' align="center" style={{ marginBottom: 8 }}>
 
+                            <Flex gap={8} justify='center' align="center" style={{ marginBottom: 8 }}>
                                 <Input.Search placeholder="搜索" onChange={handleSearchChange} allowClear />
                                 <Button
                                     type="primary"
                                     icon={<PlusOutlined />}
                                     onClick={() => handleAddMenu('root', null)}
                                 />
+
                             </Flex>
                         </Flex>
 
@@ -411,10 +443,9 @@ const MenuManage = () => {
                 </Splitter.Panel>
                 <Splitter.Panel style={{ padding: '20px' }}>
                     <MenuDetails
+                        {...selectedMenu}
                         menuId={selectedMenu?.id}
-                        parentId={selectedMenu?.parentId}
-                        parentCode={selectedMenu?.parentCode}
-                        operationMode={selectedMenu?.operationMode}
+                        domain={domain}
                         changeOperationMode={changeOperationMode}
                         onSuccess={(menuId) => {
                             refreshMenuTree({

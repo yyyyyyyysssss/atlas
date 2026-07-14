@@ -1,6 +1,7 @@
 package com.atlas.user.domain.dto;
 
 import com.atlas.user.enums.AuthorityAccessControl;
+import com.atlas.user.enums.AuthorityDomain;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +29,8 @@ public class MenuCreateDTO {
     private String routePath;
 
     private AuthorityAccessControl accessControl;
+
+    private AuthorityDomain domain = AuthorityDomain.GLOBAL;
 
     private String icon;
 

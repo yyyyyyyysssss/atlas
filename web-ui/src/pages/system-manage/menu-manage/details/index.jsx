@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import SmartUpload from '../../../../components/smart-upload';
 import MenuAuthority from './MenuAuthority';
 
-const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperationMode, onSuccess }) => {
+const MenuDetails = ({ menuId, parentId, parentCode, domain, operationMode, changeOperationMode, onSuccess }) => {
 
     const { t } = useTranslation()
 
@@ -59,7 +59,7 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
         }
     }, [operationMode, menuId, form, parentCode])
 
-    if (!operationMode) {
+    if (!operationMode || (operationMode !== OperationMode.ADD.value && !menuId)) {
         return null
     }
 
@@ -71,6 +71,7 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
         const formValues = await form.validateFields()
         const menuInfo = {
             ...formValues,
+            domain: domain,
             code: operationMode === OperationMode.ADD.value && parentCode ? `${parentCode}:${formValues.code}` : formValues.code,
         }
         let menuId
@@ -169,8 +170,8 @@ const MenuDetails = ({ menuId, parentId, parentCode, operationMode, changeOperat
                                 ]}
                             >
                                 <Radio.Group>
-                                    <Radio value="PROTECTED">受保护</Radio>
-                                    <Radio value="PUBLIC">公开</Radio>
+                                    <Radio value="PROTECTED">需要授权</Radio>
+                                    <Radio value="AUTHENTICATED">仅限登录</Radio>
                                 </Radio.Group>
                             </Form.Item>
                         </Col>

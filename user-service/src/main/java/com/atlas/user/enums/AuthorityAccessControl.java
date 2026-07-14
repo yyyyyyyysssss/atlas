@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum AuthorityAccessControl {
 
-    PUBLIC,
+    AUTHENTICATED,
 
     PROTECTED
 

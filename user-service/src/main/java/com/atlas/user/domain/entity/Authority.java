@@ -4,6 +4,7 @@ import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.common.mybatis.mapper.TreeRelation;
 import com.atlas.user.enums.AuthorityAccessControl;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.enums.AuthorityType;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
@@ -49,6 +50,9 @@ public class Authority extends BaseEntity implements TreeRelation {
     @TableField("type")
     @EnumValue
     private AuthorityType type;
+
+    @TableField("domain")
+    private AuthorityDomain domain;
 
     @TableField(value = "route_path", updateStrategy = FieldStrategy.ALWAYS)
     private String routePath;

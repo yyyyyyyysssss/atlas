@@ -11,6 +11,7 @@ import com.atlas.user.domain.entity.AuthorityUrl;
 import com.atlas.user.domain.vo.AuthorityVO;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.enums.AuthorityAccessControl;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
@@ -129,12 +130,19 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
 
     @Override
     public List<AuthorityVO> tree() {
+
+        return tree(AuthorityDomain.GLOBAL);
+    }
+
+    @Override
+    public List<AuthorityVO> tree(AuthorityDomain domain) {
         QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
         queryWrapper
                 .lambda()
                 .select(Authority::getId, Authority::getParentId, Authority::getName)
                 .in(Authority::getType, AuthorityType.MENU, AuthorityType.ACTION)
                 .eq(Authority::getAccessControl,AuthorityAccessControl.PROTECTED.name())
+                .eq(Authority::getDomain,domain.getCode())
                 .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities = authorityMapper.selectList(queryWrapper);
         if (authorities == null || authorities.isEmpty()){
@@ -178,14 +186,14 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         if (CollectionUtils.isEmpty(roles)) {
             wrapper.eq(
                     Authority::getAccessControl,
-                    AuthorityAccessControl.PUBLIC.name()
+                    AuthorityAccessControl.AUTHENTICATED.name()
             );
         } else {
             List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
             List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
             wrapper.and(w -> {
                 // PUBLIC权限
-                w.eq(Authority::getAccessControl, AuthorityAccessControl.PUBLIC.name());
+                w.eq(Authority::getAccessControl, AuthorityAccessControl.AUTHENTICATED.name());
                 // 角色授权权限
                 if (!CollectionUtils.isEmpty(authorityIds)) {
                     w.or().in(Authority::getId, authorityIds);

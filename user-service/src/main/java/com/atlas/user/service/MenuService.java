@@ -6,6 +6,7 @@ import com.atlas.user.domain.dto.MenuQueryDTO;
 import com.atlas.user.domain.dto.MenuUpdateDTO;
 import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.vo.MenuVO;
+import com.atlas.user.enums.AuthorityDomain;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
@@ -25,7 +26,7 @@ public interface MenuService extends IService<Authority> {
 
     List<MenuVO> tree();
 
-    PageInfo<MenuVO> query(MenuQueryDTO menuQueryDTO);
+    List<MenuVO> tree(AuthorityDomain domain);
 
     MenuVO details(Long id);
 

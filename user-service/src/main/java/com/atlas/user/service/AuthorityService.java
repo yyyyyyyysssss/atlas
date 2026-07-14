@@ -5,6 +5,7 @@ import com.atlas.user.domain.dto.AuthorityUpdateDTO;
 import com.atlas.user.domain.dto.AuthorityUrlDTO;
 import com.atlas.user.domain.entity.Authority;
 import com.atlas.user.domain.vo.AuthorityVO;
+import com.atlas.user.enums.AuthorityDomain;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 
@@ -22,6 +23,8 @@ public interface AuthorityService extends IService<Authority> {
     List<AuthorityVO> findByMenuId(Long menuId);
 
     List<AuthorityVO> tree();
+
+    List<AuthorityVO> tree(AuthorityDomain domain);
 
     Boolean deleteAuthority(Long id);
 

@@ -1,6 +1,7 @@
 package com.atlas.user.domain.dto;
 
 import com.atlas.user.enums.AuthorityAccessControl;
+import com.atlas.user.enums.AuthorityDomain;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,8 @@ public class MenuUpdateDTO {
     private String routePath;
 
     private AuthorityAccessControl accessControl;
+
+    private AuthorityDomain domain;
 
     private String icon;
 

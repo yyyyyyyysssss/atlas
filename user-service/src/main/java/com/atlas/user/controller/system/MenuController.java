@@ -7,10 +7,12 @@ import com.atlas.user.domain.dto.MenuDragDTO;
 import com.atlas.user.domain.dto.MenuQueryDTO;
 import com.atlas.user.domain.dto.MenuUpdateDTO;
 import com.atlas.user.domain.vo.MenuVO;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.service.MenuService;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,15 +50,10 @@ public class MenuController {
     }
 
     @GetMapping("/tree")
-    public Result<?> tree() {
-        List<MenuVO> tree = menuService.tree();
+    public Result<?> tree(@RequestParam(value = "domain", required = false) String domain) {
+        AuthorityDomain authorityDomain = StringUtils.hasText(domain) ? AuthorityDomain.fromString(domain) : AuthorityDomain.GLOBAL;
+        List<MenuVO> tree = menuService.tree(authorityDomain);
         return ResultGenerator.ok(tree);
-    }
-
-    @PostMapping("/query")
-    public Result<?> query(@RequestBody MenuQueryDTO menuQueryDTO) {
-        PageInfo<MenuVO> menuVOList = menuService.query(menuQueryDTO);
-        return ResultGenerator.ok(menuVOList);
     }
 
     @GetMapping("/{id}")

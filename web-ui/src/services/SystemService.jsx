@@ -143,9 +143,9 @@ export const bindAuthorityByRoleId = async (roleId, authorityIds) => {
 }
 
 // 菜单树
-export const fetchMenuTree = async () => {
+export const fetchMenuTree = async (domain) => {
 
-    return apiRequestWrapper(() => httpWrapper.get('/api/user/system/menu/tree'))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/user/system/menu/tree?domain=${domain}`))
 }
 
 // 菜单详情

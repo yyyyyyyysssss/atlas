@@ -13,6 +13,7 @@ import com.atlas.user.domain.entity.Role;
 import com.atlas.user.domain.vo.MenuVO;
 import com.atlas.user.domain.vo.RoleVO;
 import com.atlas.user.enums.AuthorityAccessControl;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.enums.AuthorityType;
 import com.atlas.user.mapper.AuthorityMapper;
 import com.atlas.user.mapping.AuthorityMapping;
@@ -156,13 +157,19 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         return resetAuthorityList;
     }
 
-
     @Override
     public List<MenuVO> tree() {
+
+        return tree(AuthorityDomain.GLOBAL);
+    }
+
+    @Override
+    public List<MenuVO> tree(AuthorityDomain domain) {
         QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
         queryWrapper
                 .lambda()
                 .eq(Authority::getType, AuthorityType.MENU.name())
+                .eq(Authority::getDomain, domain.getCode())
                 .orderByAsc(Authority::getSort)
                 .orderByAsc(Authority::getId);
         List<Authority> authorities = authorityMapper.selectList(queryWrapper);
@@ -177,46 +184,6 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
                 MenuVO::setChildren,
                 CommonConstant.TREE_ROOT_PARENT_ID
         );
-    }
-
-    @Override
-    public PageInfo<MenuVO> query(MenuQueryDTO menuQueryDTO) {
-        if (menuQueryDTO.isPaging()) {
-            PageHelper.startPage(menuQueryDTO.getPageNum(), menuQueryDTO.getPageSize());
-        }
-        QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
-        queryWrapper
-                .lambda()
-                .eq(Authority::getType, AuthorityType.MENU.name())
-                .eq(Authority::getParentId, CommonConstant.TREE_ROOT_PARENT_ID)
-                .eq(StringUtils.isNotEmpty(menuQueryDTO.getCode()), Authority::getCode, menuQueryDTO.getCode())
-                .eq(StringUtils.isNotEmpty(menuQueryDTO.getRoutePath()), Authority::getRoutePath, menuQueryDTO.getRoutePath())
-                .like(StringUtils.isNotEmpty(menuQueryDTO.getName()), Authority::getName, menuQueryDTO.getName())
-                .orderByDesc(Authority::getId);
-        List<Authority> authorities = authorityMapper.selectList(queryWrapper);
-        if (CollectionUtils.isEmpty(authorities)) {
-            return PageInfo.of(new ArrayList<>());
-        }
-        PageInfo<Authority> authorityPageInfo = PageInfo.of(authorities);
-        List<Long> ids = authorities.stream().map(Authority::getId).toList();
-        List<Authority> children = authorityMapper.selectChildrenByIds(ids);
-        if (!CollectionUtils.isEmpty(children)) {
-            authorities = Stream.concat(authorities.stream(), children.stream().filter(f -> f.getType().equals(AuthorityType.MENU))).distinct().toList();
-        }
-        // 构建树形结构
-        List<MenuVO> menuVOList = TreeUtils.buildTree(
-                AuthorityMapping.INSTANCE.toMenuVo(authorities),
-                MenuVO::getId,
-                MenuVO::getParentId,
-                MenuVO::setChildren,
-                CommonConstant.TREE_ROOT_PARENT_ID
-        );
-        PageInfo<MenuVO> menuVOPageInfo = new PageInfo<>();
-        menuVOPageInfo.setList(menuVOList);
-        menuVOPageInfo.setPageNum(menuQueryDTO.getPageNum());
-        menuVOPageInfo.setPageSize(menuQueryDTO.getPageSize());
-        menuVOPageInfo.setTotal(authorityPageInfo.getTotal());
-        return menuVOPageInfo;
     }
 
     @Override
@@ -253,13 +220,14 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
         QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
         LambdaQueryWrapper<Authority> lambdaWrapper = queryWrapper.lambda()
                 .eq(Authority::getType, AuthorityType.MENU.name())
+                .eq(Authority::getDomain, AuthorityDomain.GLOBAL.getCode())
                 .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities;
-        // 无角色返回公共菜单
+        // 无角色返回
         if (CollectionUtils.isEmpty(roleIds)) {
             lambdaWrapper.eq(
                     Authority::getAccessControl,
-                    AuthorityAccessControl.PUBLIC.name()
+                    AuthorityAccessControl.AUTHENTICATED.name()
             );
             authorities = authorityMapper.selectList(lambdaWrapper);
             return AuthorityMapping.INSTANCE.toMenuVo(authorities);
@@ -279,7 +247,7 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             // 公共菜单
             wrapper.eq(
                     Authority::getAccessControl,
-                    AuthorityAccessControl.PUBLIC.name()
+                    AuthorityAccessControl.AUTHENTICATED.name()
             );
             // 授权菜单
             if (!CollectionUtils.isEmpty(authorityIds)) {

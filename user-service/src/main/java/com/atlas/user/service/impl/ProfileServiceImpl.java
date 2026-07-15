@@ -5,6 +5,7 @@ import com.atlas.common.core.utils.TreeUtils;
 import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.*;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.mapping.UserMapping;
 import com.atlas.user.service.*;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    public AuthInfoVO getPermissions(Long userId) {
+    public AuthInfoVO getPermissions(Long userId, AuthorityDomain domain) {
         AuthInfoVO authInfoVO = new AuthInfoVO();
         // 用户角色
         List<RoleVO> roles = roleService.findByUserId(userId);

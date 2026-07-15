@@ -8,6 +8,7 @@ import com.atlas.user.domain.dto.UserProfileDTO;
 import com.atlas.user.domain.vo.AuthInfoVO;
 import com.atlas.user.domain.vo.OrgMemberVO;
 import com.atlas.user.domain.vo.UserVO;
+import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.service.ProfileService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ public class ProfileController {
     @GetMapping("/permissions")
     public Result<AuthInfoVO> getPermissions() {
         Long userId = UserContext.getRequiredUserId();
-        AuthInfoVO authInfo = profileService.getPermissions(userId);
+        AuthInfoVO authInfo = profileService.getPermissions(userId, AuthorityDomain.GLOBAL);
         return ResultGenerator.ok(authInfo);
     }
 

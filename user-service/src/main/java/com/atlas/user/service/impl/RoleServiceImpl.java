@@ -298,8 +298,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    public Set<Integer> getDataScope(List<Long> roleIds) {
-        if (CollectionUtils.isEmpty(roleIds)) {
+    public Set<Integer> findDataScopeByUserId(Long userId) {
+        Objects.requireNonNull(userId,"用户id不能为空");
+        Collection<Long> roleIds = userRoleService.findRoleIdByUserId(userId);
+        if(CollectionUtils.isEmpty(roleIds)){
             return Collections.singleton(DataScope.SELF.getCode());
         }
         Set<Integer> scopeSet = this.lambdaQuery()

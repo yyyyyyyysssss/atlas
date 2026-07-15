@@ -89,30 +89,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         authorityService.clearCache(user.getId());
 
         UserAuthDTO userAuthDTO = UserMapping.INSTANCE.toUserAuthDTO(user);
-
         // 用户所属组织
         UserOrg userOrgMain = userOrgService.findUserOrgMain(user.getId());
         if (userOrgMain != null) {
             userAuthDTO.setOrgId(userOrgMain.getOrgId());
         }
-
-        List<Long> roleIds = userRoleService.findRoleIdByUserId(user.getId());
-        if (CollectionUtils.isEmpty(roleIds)) {
-            userAuthDTO.setAuthorities(Collections.emptyList());
-            userAuthDTO.setDataScopes(Collections.singleton(DataScope.SELF.getCode()));
-            return userAuthDTO;
-        }
         // 角色关联的数据权限
-        Set<Integer> dataScopes = roleService.getDataScope(roleIds);
+        Set<Integer> dataScopes = roleService.findDataScopeByUserId(user.getId());
         userAuthDTO.setDataScopes(dataScopes);
-        // 角色关联的权限
-        List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
-        if (CollectionUtils.isEmpty(authorityIds)) {
-            userAuthDTO.setAuthorities(Collections.emptyList());
-            return userAuthDTO;
-        }
-        List<AuthorityVO> authorities = authorityService.findById(authorityIds);
+        // 查询用户拥有的权限
+        List<AuthorityVO> authorities = authorityService.findByUserId(user.getId());
         if (CollectionUtils.isEmpty(authorities)) {
+            userAuthDTO.setAuthorities(Collections.emptyList());
             return userAuthDTO;
         }
         List<RoleAuthDTO> list = new ArrayList<>();

@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath } from "react-router"
-import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -43,6 +43,10 @@ const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 const DeveloperSettings = lazy(() => import('../pages/developer-settings'))
 const OAuth2ClientApplication = lazy(() => import('../pages/developer-settings/oauth2-client-application'))
 const OAuth2ClientApplicationEdit = lazy(() => import('../pages/developer-settings/oauth2-client-application/oauth2-client-application-edit'))
+
+
+const ProjectOverview = lazy(() => import('../pages/project/overview'))
+const ProjectApplication = lazy(() => import('../pages/project/application'))
 
 export const routes = [
     {
@@ -270,6 +274,29 @@ export const routes = [
                         protected: true,
                         requiredPermissions: ['developer:settings:oauth2']
                     },
+                ]
+            },
+            {
+                path: 'project',
+                breadcrumbName: '项目',
+                defaultIcon: <Octagon size={18} />,
+                children: [
+                    {
+                        path: 'overview',
+                        element: <ProjectOverview />,
+                        breadcrumbName: '概览',
+                        defaultIcon: <LayoutDashboard size={18} />,
+                        protected: true,
+                        requiredPermissions: ['project:overview']
+                    },
+                    {
+                        path: 'application',
+                        element: <ProjectApplication />,
+                        breadcrumbName: '应用',
+                        defaultIcon: <Egg size={18} />,
+                        protected: true,
+                        requiredPermissions: ['project:application']
+                    }
                 ]
             },
             {

@@ -45,7 +45,7 @@ public interface RoleService extends IService<Role> {
 
     List<RoleVO> listRoleOptions();
 
-    Set<Integer> getDataScope(List<Long> roleIds);
+    Set<Integer> findDataScopeByUserId(Long userId);
 
     Role findByCode(String code);
 

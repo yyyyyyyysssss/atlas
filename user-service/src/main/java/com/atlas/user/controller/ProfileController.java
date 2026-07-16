@@ -12,6 +12,7 @@ import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.service.ProfileService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,9 +39,10 @@ public class ProfileController {
     }
 
     @GetMapping("/permissions")
-    public Result<AuthInfoVO> getPermissions() {
+    public Result<AuthInfoVO> getPermissions(@RequestParam(name = "domain", required = false) String domain) {
         Long userId = UserContext.getRequiredUserId();
-        AuthInfoVO authInfo = profileService.getPermissions(userId, AuthorityDomain.GLOBAL);
+        AuthorityDomain authorityDomain = StringUtils.hasText(domain) ? AuthorityDomain.fromString(domain) : AuthorityDomain.GLOBAL;
+        AuthInfoVO authInfo = profileService.getPermissions(userId, authorityDomain);
         return ResultGenerator.ok(authInfo);
     }
 

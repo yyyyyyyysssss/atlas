@@ -57,7 +57,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         // 用户菜单
-        List<MenuVO> menus = menuService.findByUserId(userId);
+        List<MenuVO> menus = menuService.findByUserId(userId,domain);
         if (!CollectionUtils.isEmpty(menus)) {
             List<MenuVO> menuTree = TreeUtils.buildTree(
                     menus,
@@ -72,7 +72,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         // 用户权限
-        List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId);
+        List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId,domain);
         if (!CollectionUtils.isEmpty(authorityVOList)) {
             Set<String> permissionCodes = authorityVOList.stream().map(AuthorityVO::getCode).collect(Collectors.toSet());
             authInfoVO.setPermissions(permissionCodes);

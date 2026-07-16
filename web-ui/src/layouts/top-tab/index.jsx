@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import './index.css'
 import { Dropdown, Tabs, theme } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { findRouteByPath } from '../../router/router';
+import { findRouteByPath,findBreadcrumbRoutes } from '../../router/router';
 import { useDispatch, useSelector } from 'react-redux';
 import { addTabIem, removeTabItem, setTabIem, removeAllTabItem, removeLeftTabItem, removeOtherTabItem, removeRightTabItem } from '../../redux/slices/layoutSlice';
 import {
@@ -67,13 +67,12 @@ const TopMenuTab = ({ style }) => {
 
     const add = (location, route) => {
         const path = location.pathname
-        const closable = route.path !== 'home'
         const tabItem = {
             path: path,
             label: route.breadcrumbName,
             search: location.search,
             state: location.state,
-            closable: closable
+            closable: true
         }
         dispatch(addTabIem({ tabItem: tabItem }))
     }

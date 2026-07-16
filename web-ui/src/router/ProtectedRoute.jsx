@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 export const ProtectedRoute = ({ children, requiredPermissions, fallback, requireAll = false }) => {
 
-  const { isLoginIn, signin, signout, checkAuth } = useAuth()
+  const { isLoginIn, checkAuth } = useAuth()
   const location = useLocation()
 
   const isAllowed = useHasPermission(requiredPermissions, requireAll)
@@ -17,7 +17,9 @@ export const ProtectedRoute = ({ children, requiredPermissions, fallback, requir
   }, [])
 
   // 等待登录状态
-  if (isLoginIn === null) return <Loading fullscreen />
+  if (isLoginIn === null) {
+    return <Loading fullscreen />
+  }
 
   // 未登录，跳转到登录页，并携带当前页面的 state 作为 targetUrl
   if (!isLoginIn) {

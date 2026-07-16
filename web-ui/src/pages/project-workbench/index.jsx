@@ -3,15 +3,23 @@ import { Card, Row, Col, Button, Flex, Typography, Modal, Form, Input, theme, Sp
 import { Plus, Folder, Zap, Octagon } from 'lucide-react';
 import './index.css';
 import HeaderCard from '../workbench/HeaderCard';
+import { useAuth } from '../../router/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
 
 const { Content } = Layout;
 
 const ProjectWorkbench = () => {
-    const { token } = theme.useToken();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [form] = Form.useForm();
+    const { token } = theme.useToken()
+
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+    const [form] = Form.useForm()
+
+    const { loadDomain } = useAuth()
+
+    const navigate = useNavigate()
 
     // 模拟初始项目数据
     const [projects, setProjects] = useState([
@@ -19,10 +27,10 @@ const ProjectWorkbench = () => {
     ]);
 
     // 跳转到项目专属页面
-    const handleJumpToProject = (project) => {
-        console.log(`正在跳转至项目: ${project.name} (ID: ${project.id})`);
-        // 如果使用了 react-router，这里可以改为: navigate(`/project/${project.id}`)
-        window.location.href = `/project/${project.id}`;
+    const handleJumpToProject = async (project) => {
+        const { code } = project
+        await loadDomain('project', code)
+        navigate(`/project/${code}`)
     };
 
     // 打开新增弹窗

@@ -1,7 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit'
+import { generatePath } from 'react-router-dom'
+import { findRouteByPath } from '../../router/router'
 
 export const initialState = {
-    menuScope: 'global',
+    domain: 'global',
+    domainId: null,
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
@@ -20,11 +23,14 @@ const findMenuByKey = (targetKey, menus) => {
     return null
 }
 
-const findBestMatchMenu = (targetPath, menus) => {
+const findBestMatchMenu = (targetPath, menus, domainId) => {
     const tp = targetPath.split('?')[0].split('#')[0]
     let bestMatchMenu = null;
     for (const menuItem of menus) {
-        const routePath = menuItem.routePath
+        let routePath = menuItem.routePath
+        if (domainId) {
+            routePath = generatePath(routePath, { domainId: domainId })
+        }
         if (tp === routePath || (tp.startsWith(routePath) && tp.charAt(routePath.length) === '/')) {
             // 如果更长就替换
             if (!bestMatchMenu || routePath.length > bestMatchMenu.routePath.length) {
@@ -71,7 +77,7 @@ export const layoutSlice = createSlice({
             if (key) {
                 menuItem = findMenuByKey(key, state.flattenMenuItems)
             } else {
-                menuItem = findBestMatchMenu(path, state.flattenMenuItems)
+                menuItem = findBestMatchMenu(path, state.flattenMenuItems, state.domainId)
             }
             if (menuItem) {
                 state.activeKey = menuItem.id
@@ -98,7 +104,7 @@ export const layoutSlice = createSlice({
                 return
             }
             const path = tabItem.path
-            const menuItem = findBestMatchMenu(path, state.flattenMenuItems)
+            const menuItem = findBestMatchMenu(path, state.flattenMenuItems, state.domainId)
             // 先检查是否存在
             const checkTabItem = state.tabItems.find(f => f.path === path)
             if (checkTabItem) {
@@ -175,23 +181,28 @@ export const layoutSlice = createSlice({
         },
         loadMenuItems: (state, action) => {
             const { payload } = action
-            const { menuScope, menuItems } = payload
-            state.menus[menuScope] = menuItems
-            if(state.menuScope === menuScope){
+            const { domain, menuItems } = payload
+            state.menus[domain] = menuItems
+            if (state.domain === domain) {
                 state.flattenMenuItems = flattenMenus(menuItems)
             }
         },
-        setMenuScope: (state, action) => {
-            const { menuScope } = payload
-            state.menuScope = menuScope
-            const menuItems =state.menus[menuScope] || []
-            state.flattenMenuItems = flattenMenus(menuItems)
-            state.activeKey = ''
-            state.openKeys = []
+        setDomain: (state, action) => {
+            const { payload } = action
+            const { domain, domainId } = payload
+            if (domain !== state.domain) {
+                state.domain = domain
+                state.domainId = domainId
+                const menuItems = state.menus[domain] || []
+                state.flattenMenuItems = flattenMenus(menuItems)
+                state.activeKey = ''
+                state.openKeys = []
+                state.tabItems = []
+            }
         }
     }
 })
 
-export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems } = layoutSlice.actions
+export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems, setDomain } = layoutSlice.actions
 
 export default layoutSlice.reducer

@@ -5,14 +5,16 @@ import { useEffect } from "react";
 
 
 export const LoginRoute = ({ children }) => {
-  const { isLoginIn, accessToken, signin, signout, checkAuth } = useAuth()
+  const { isLoginIn, accessToken, checkAuth } = useAuth()
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
     checkAuth()
   }, [])
 
-  if (isLoginIn === null) return <Loading fullscreen />
+  if (isLoginIn === null){
+    return <Loading fullscreen />
+  }
 
   if (isLoginIn) {
     const targetUrl = searchParams.get('targetUrl')

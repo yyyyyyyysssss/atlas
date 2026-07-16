@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, useTransition, memo } from 'react';
 import './index.css'
 import { Avatar, Flex, Menu, Typography } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { generatePath, useLocation, useNavigate } from 'react-router-dom';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { setActiveKey, setOpenKeys } from '../../redux/slices/layoutSlice';
-import { findRouteByPath } from '../../router/router';
+import { findRouteByPath, lookupRouteByPath } from '../../router/router';
 import { Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createSelector } from '@reduxjs/toolkit';
@@ -12,7 +12,7 @@ import { createSelector } from '@reduxjs/toolkit';
 
 const getMenuItems = (items, t) => {
     return items.map(item => {
-        const route = findRouteByPath(item.routePath);
+        const route = lookupRouteByPath(item.routePath);
         return {
             key: item.id,
             label: t(item.name),
@@ -25,16 +25,18 @@ const getMenuItems = (items, t) => {
 
 const siderSelector = createSelector(
     state => state.user.userInfo?.settings?.appearance?.theme || 'dark',
-    state => state.layout.menuScope,
+    state => state.layout.domain,
+    state => state.layout.domainId,
     state => state.layout.menus,
     state => state.layout.flattenMenuItems,
     state => state.layout.menuCollapsed,
     state => state.layout.activeKey,
     state => state.layout.openKeys,
-    (themeValue,menuScope, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
+    (themeValue, domain, domainId, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
         themeValue,
-        menuScope,
-        menuItems: menus[menuScope] || [],
+        domain,
+        domainId,
+        menuItems: menus[domain] || [],
         flattenMenuItems,
         collapsed,
         activeKey,
@@ -46,15 +48,14 @@ const Sider = () => {
 
     const { t } = useTranslation()
 
-    const { themeValue, menuScope, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
+    const { themeValue, domain, domainId, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
 
     const dispatch = useDispatch()
 
     const navigate = useNavigate()
 
     const location = useLocation()
-
-
+    
     useEffect(() => {
         if (location.pathname && location.pathname !== '/' && flattenMenuItems && flattenMenuItems.length > 0) {
             dispatch(setActiveKey({ path: location.pathname }))
@@ -71,7 +72,8 @@ const Sider = () => {
         if (!menuItem) {
             return
         }
-        navigate(menuItem.routePath)
+        const path = generatePath(menuItem.routePath, { domainId: domainId})
+        navigate(path)
     }
 
     const items = useMemo(() => {

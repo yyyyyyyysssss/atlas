@@ -269,16 +269,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
         if (CollectionUtils.isEmpty(roleIds)) {
             return Collections.emptyList();
         }
-        return findRoleByIds(roleIds);
-    }
-
-    private List<RoleVO> findRoleByIds(Collection<Long> roleIds) {
-        if (CollectionUtils.isEmpty(roleIds)) {
-            return Collections.emptyList();
-        }
         QueryWrapper<Role> roleQueryWrapper = new QueryWrapper<>();
         roleQueryWrapper
                 .lambda()
+                .select(Role::getId,Role::getCode,Role::getCode,Role::getType)
                 .in(Role::getId, roleIds)
                 .eq(Role::getEnabled, true);
         List<Role> roles = roleMapper.selectList(roleQueryWrapper);

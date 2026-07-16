@@ -5,9 +5,11 @@ import { Typography } from "antd"
 
 
 const ProjectApplication = () => {
- 
-    const { projectId } = useFullParams()
-    
+
+    const { domainId } = useFullParams()
+
+    const projectId = domainId
+
     return (
         <Typography.Title>ProjectApplication: {projectId}</Typography.Title>
     )

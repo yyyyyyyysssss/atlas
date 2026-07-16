@@ -28,6 +28,7 @@ import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,8 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
     private final RoleAuthorityService roleAuthorityService;
 
     private final AuthorityMapper authorityMapper;
+
+    private final ObjectProvider<MenuService> selfProvider;
 
     @Override
     @CacheEvict(value = "user:menu", allEntries = true)
@@ -206,21 +209,32 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
     }
 
     @Override
-    @Cacheable(value = "user:menu", key = "#p0")
-    public List<MenuVO> findByUserId(Long userId) {
-        List<RoleVO> roles = roleService.findByUserId(userId);
-        if (CollectionUtils.isEmpty(roles)) {
-            return Collections.emptyList();
-        }
-        List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
-        return findByRoleId(roleIds);
+    public List<MenuVO> findByUserId(Long userId, AuthorityDomain domain) {
+        List<MenuVO> menus = selfProvider.getObject().findByUserId(userId);
+        return menus.stream()
+                .filter(item -> item.getDomain().equals(domain))
+                .collect(Collectors.toList());
     }
 
-    private List<MenuVO> findByRoleId(Collection<Long> roleIds) {
+    @Override
+    @Cacheable(value = "user:menu", key = "#p0")
+    public List<MenuVO> findByUserId(Long userId) {
+        // 获取用户拥有的角色
+        List<RoleVO> roles = roleService.findByUserId(userId);
+        List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
         QueryWrapper<Authority> queryWrapper = new QueryWrapper<>();
-        LambdaQueryWrapper<Authority> lambdaWrapper = queryWrapper.lambda()
+        LambdaQueryWrapper<Authority> lambdaWrapper = queryWrapper
+                .lambda()
+                .select(
+                        Authority::getId,
+                        Authority::getParentId,
+                        Authority::getCode,
+                        Authority::getName,
+                        Authority::getRoutePath,
+                        Authority::getDomain,
+                        Authority::getIcon
+                )
                 .eq(Authority::getType, AuthorityType.MENU.name())
-                .eq(Authority::getDomain, AuthorityDomain.GLOBAL.getCode())
                 .orderByAsc(Authority::getSort, Authority::getId);
         List<Authority> authorities;
         // 无角色返回
@@ -232,10 +246,8 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
             authorities = authorityMapper.selectList(lambdaWrapper);
             return AuthorityMapping.INSTANCE.toMenuVo(authorities);
         }
-
-        List<Role> roles = roleService.listByIds(roleIds);
         // 超级管理员直接返回所有菜单
-        boolean isSuperAdmin = roles.stream().anyMatch(Role::isSuperAdmin);
+        boolean isSuperAdmin = roles.stream().anyMatch(RoleVO::isSuperAdmin);
         if (isSuperAdmin) {
             authorities = authorityMapper.selectList(lambdaWrapper);
             return AuthorityMapping.INSTANCE.toMenuVo(authorities);

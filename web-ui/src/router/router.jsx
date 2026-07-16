@@ -1,6 +1,6 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
-import { matchPath } from "react-router"
+import { matchPath, matchRoutes } from "react-router"
 import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -42,7 +42,8 @@ const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 
 const DeveloperSettings = lazy(() => import('../pages/developer-settings'))
 const OAuth2ClientApplication = lazy(() => import('../pages/developer-settings/oauth2-client-application'))
-const OAuth2ClientApplicationEdit = lazy(() => import('../pages/developer-settings/oauth2-client-application/oauth2-client-application-edit'))
+const OAuth2ClientApplicationList = lazy(() => import('../pages/developer-settings/oauth2-client-application/list'))
+const OAuth2ClientApplicationEdit = lazy(() => import('../pages/developer-settings/oauth2-client-application/edit'))
 
 
 const ProjectOverview = lazy(() => import('../pages/project/overview'))
@@ -153,32 +154,47 @@ export const routes = [
                     },
                     {
                         path: 'user',
-                        element: <UserManage />,
+                        element: <Outlet />,
                         breadcrumbName: '用户管理',
                         defaultIcon: <UserCog size={18} />,
                         protected: true,
-                        requiredPermissions: ['system:user']
-                    },
-                    {
-                        path: 'user/details',
-                        element: <UserDetails />,
-                        breadcrumbName: '用户',
-                        hideOperationMode: false
+                        requiredPermissions: ['system:user'],
+                        children: [
+                            {
+                                index: true,
+                                breadcrumbName: '用户管理',
+                                element: <UserManage />
+                            },
+                            {
+                                path: 'details',
+                                element: <UserDetails />,
+                                breadcrumbName: '用户',
+                                hideOperationMode: false
+                            },
+                        ]
                     },
                     {
                         path: 'role',
-                        element: <RoleManage />,
-                        breadcrumbName: '角色管理',
+                        element: <Outlet />,
+                         breadcrumbName: '角色管理',
                         defaultIcon: <ShieldUser size={18} />,
                         protected: true,
-                        requiredPermissions: ['system:role']
+                        requiredPermissions: ['system:role'],
+                        children: [
+                            {
+                                index: true,
+                                breadcrumbName: '角色管理',
+                                element: <RoleManage />
+                            },
+                            {
+                                path: 'details',
+                                element: <RoleDetails />,
+                                breadcrumbName: '角色',
+                                hideOperationMode: false
+                            },
+                        ]
                     },
-                    {
-                        path: 'role/details',
-                        element: <RoleDetails />,
-                        breadcrumbName: '角色',
-                        hideOperationMode: false
-                    },
+
                     {
                         path: 'position',
                         element: <PositionManage />,
@@ -247,40 +263,45 @@ export const routes = [
                 protected: true,
                 children: [
                     {
-                        path: '',
-                        breadcrumbName: 'OAuth2 应用',
-                        element: <OAuth2ClientApplication />,
-                        protected: true,
-                        requiredPermissions: ['developer:settings:oauth2']
+                        index: true,
+                        breadcrumbName: '开发者设置',
+                        element: <Navigate to="oauth2" />
                     },
                     {
                         path: 'oauth2',
                         breadcrumbName: 'OAuth2 应用',
                         element: <OAuth2ClientApplication />,
                         protected: true,
-                        requiredPermissions: ['developer:settings:oauth2']
-                    },
-                    {
-                        path: 'oauth2/application/create',
-                        breadcrumbName: '创建',
-                        element: <OAuth2ClientApplicationEdit />,
-                        protected: true,
-                        requiredPermissions: ['developer:settings:oauth2']
-                    },
-                    {
-                        path: 'oauth2/application/:id',
-                        breadcrumbName: '编辑',
-                        element: <OAuth2ClientApplicationEdit />,
-                        protected: true,
-                        requiredPermissions: ['developer:settings:oauth2']
-                    },
+                        requiredPermissions: ['developer:settings:oauth2'],
+                        children: [
+                            {
+                                index: true,
+                                breadcrumbName: 'OAuth2 应用',
+                                element: <OAuth2ClientApplicationList />
+                            },
+                            {
+                                path: 'application/create',
+                                element: <OAuth2ClientApplicationEdit />,
+                                breadcrumbName: '创建',
+                            },
+                            {
+                                path: 'application/:id',
+                                element: <OAuth2ClientApplicationEdit />,
+                                breadcrumbName: '编辑',
+                            }
+                        ]
+                    }
                 ]
             },
             {
-                path: 'project',
+                path: 'project/:domainId',
                 breadcrumbName: '项目',
                 defaultIcon: <Octagon size={18} />,
                 children: [
+                    {
+                        path: '',
+                        element: <Navigate to="overview" />
+                    },
                     {
                         path: 'overview',
                         element: <ProjectOverview />,
@@ -320,6 +341,82 @@ export const routes = [
     }
 ]
 
+const routeCache = new Map()
+
+export const findRouteByPath = (targetPath) => {
+
+    if (routeCache.has(targetPath)) {
+        return routeCache.get(targetPath)
+    }
+
+    const matches = matchRoutes(
+        routes,
+        targetPath
+    )
+
+
+    if (!matches || matches.length === 0) {
+        routeCache.set(targetPath, null)
+        return null
+    }
+
+
+    // 最后一个匹配的就是当前页面route
+    const match = matches[matches.length - 1]
+
+
+    const result = {
+        ...match.route,
+
+        // 完整匹配路径
+        fullPath: match.pathname,
+
+        // 动态参数
+        params: match.params
+    }
+
+
+    routeCache.set(
+        targetPath,
+        result
+    )
+
+
+    return result
+}
+
+export const findBreadcrumbRoutes = (pathname) => {
+
+    const matches = matchRoutes(routes, pathname)
+
+    if (!matches) {
+        return []
+    }
+
+    return matches
+        .filter(({ route }) => !route.index)
+        .map(({ route, pathname }) => ({
+            ...route,
+            fullPath: pathname
+        }))
+}
+
+
+const routeMap = new Map()
+
+export const lookupRouteByPath = (targetPath) => {
+    if (routeMap.has(targetPath)) {
+        return routeMap.get(targetPath)
+    }
+    let result = null
+    for (const route of routes) {
+        result = findRoute(route, '', targetPath)
+        if (result) break
+    }
+    routeMap.set(targetPath, result)
+    return result
+}
+
 const findRoute = (route, fullPath, targetPath) => {
     if (route.path === '*') {
         return null;
@@ -343,43 +440,6 @@ const findRoute = (route, fullPath, targetPath) => {
         }
     }
     return null
-}
-
-const routeCache = new Map()
-
-export const findRouteByPath = (targetPath) => {
-    if (routeCache.has(targetPath)) {
-        return routeCache.get(targetPath)
-    }
-    let result = null
-    for (const route of routes) {
-        result = findRoute(route, '', targetPath)
-        if (result) break
-    }
-    routeCache.set(targetPath, result)
-    return result
-}
-
-const findRouteHierarchy = (paths, routes) => {
-    if (paths.length === 0) {
-        return null
-    }
-    const currentPath = paths[0]
-    for (const route of routes) {
-        if (route.path === currentPath) {
-            if (paths.length === 1) {
-                return route
-            }
-            if (route.children) {
-                return findRouteHierarchy(paths.slice(1), route.children)
-            }
-        }
-    }
-    return null
-}
-
-export const findRouteByHierarchy = (paths) => {
-    return findRouteHierarchy(paths, routes)
 }
 
 const wrapProtectedRoute = (route) => {

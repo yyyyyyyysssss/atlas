@@ -6,7 +6,9 @@ import { Typography } from "antd"
 
 const ProjectOverview = () => {
 
-    const { projectId } = useFullParams()
+    const { domainId  } = useFullParams()
+
+    const projectId = domainId
 
     return (
         <Typography.Title>ProjectOverview: {projectId}</Typography.Title>

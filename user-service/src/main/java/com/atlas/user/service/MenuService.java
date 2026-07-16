@@ -30,5 +30,7 @@ public interface MenuService extends IService<Authority> {
 
     MenuVO details(Long id);
 
+    List<MenuVO> findByUserId(Long userId, AuthorityDomain domain);
+
     List<MenuVO> findByUserId(Long userId);
 }

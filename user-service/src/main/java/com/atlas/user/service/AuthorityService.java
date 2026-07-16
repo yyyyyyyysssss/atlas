@@ -28,8 +28,6 @@ public interface AuthorityService extends IService<Authority> {
 
     Boolean deleteAuthority(Long id);
 
-    List<AuthorityVO> findByUserId(Long userId);
-
     void clearCache(Long userId);
 
     List<AuthorityUrlDTO> getAuthorityUrl(Long id);
@@ -38,5 +36,7 @@ public interface AuthorityService extends IService<Authority> {
 
     void deleteAuthorityUrl(Long id, Long authorityUrlId);
 
-    List<AuthorityVO> findById(Collection<Long> ids);
+    List<AuthorityVO> findByUserId(Long userId);
+
+    List<AuthorityVO> findByUserId(Long userId, AuthorityDomain domain);
 }

@@ -3,13 +3,13 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { checkTokenValid, clearToken, saveToken } from '../services/LoginService';
 import { setGlobalSignout } from './auth';
 import reduxStore from '../redux/store';
-import { loadMenuItems, reset as resetLayout } from '../redux/slices/layoutSlice';
+import { loadMenuItems, reset as resetLayout, setDomain } from '../redux/slices/layoutSlice';
 import { reset as resetUser, setUserInfo } from '../redux/slices/userSlice';
 import { reset as resetAuth, setAuthInfo } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
 import Cookies from 'js-cookie'
 import { fetchUserPermissions, fetchUserInfo } from '../services/UserProfileService';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useDisconnect } from 'wagmi';
 
 const AuthContext = createContext({
@@ -17,7 +17,8 @@ const AuthContext = createContext({
     setIsLoginIn: () => { },
     signin: async (tokenInfo) => { },
     signout: async () => { },
-    checkAuth: async () => { }
+    checkAuth: async () => { },
+    loadDomain: async (domain, domainId) => { }
 })
 
 export const AuthProvider = ({ children }) => {
@@ -26,9 +27,11 @@ export const AuthProvider = ({ children }) => {
 
     const [accessToken, setAccessToken] = useState(null)
 
+    const domain = useSelector(state => state.layout.domain) || 'global'
+
     const dispatch = useDispatch()
 
-    const { disconnect } = useDisconnect();
+    const { disconnect } = useDisconnect()
 
     useEffect(() => {
         setGlobalSignout(signout)
@@ -52,22 +55,18 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signin = async (tokenInfo) => {
+        let token
         if (tokenInfo) {
             saveToken(tokenInfo)
-            setAccessToken(tokenInfo.access.value)
+            token = tokenInfo.access.value
         } else {
-            setAccessToken(Cookies.get("accessToken"))
+            token = Cookies.get("accessToken")
         }
-        const [userInfo, authInfo] = await Promise.all([
-            fetchUserInfo(),
-            fetchUserPermissions()
-        ])
+        setAccessToken(token)
+        const userInfo = await fetchUserInfo()
         dispatch(setUserInfo({ userInfo }))
-        dispatch(setAuthInfo({ authInfo }))
-        dispatch(loadMenuItems({ 
-            menuScope:'global',
-            menuItems: authInfo.menus 
-        }))
+        // 默认进入global
+        await loadDomain(domain)
         setIsLoginIn(true)
     }
 
@@ -89,8 +88,19 @@ export const AuthProvider = ({ children }) => {
         setIsLoginIn(false)
     }
 
+    const loadDomain = async (domain, domainId) => {
+        const authInfo = await fetchUserPermissions(domain)
+        dispatch(setAuthInfo({ authInfo }))
+        dispatch(loadMenuItems({
+            domain: domain,
+            menuItems: authInfo.menus
+        }))
+        dispatch(setDomain({ domain: domain, domainId: domainId }))
+        return authInfo
+    }
+
     return (
-        <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth }}>
+        <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth, loadDomain }}>
             {children}
         </AuthContext.Provider>
     )

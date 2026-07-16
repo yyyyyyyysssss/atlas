@@ -24,7 +24,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -42,19 +44,18 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthorityServiceImpl extends AbstractAuthorityService implements AuthorityService {
 
-    @Resource
-    private AuthorityMapper authorityMapper;
+    private final AuthorityMapper authorityMapper;
 
-    @Resource
-    private RoleService roleService;
+    private final RoleService roleService;
 
-    @Resource
-    private RoleAuthorityService roleAuthorityService;
+    private final RoleAuthorityService roleAuthorityService;
 
-    @Resource
-    private AuthorityUrlService authorityUrlService;
+    private final AuthorityUrlService authorityUrlService;
+
+    private final ObjectProvider<AuthorityService> selfProvider;
 
     @Override
     @Transactional
@@ -174,37 +175,6 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         return true;
     }
 
-    // 根据用户ID查询权限
-    @Override
-    @Cacheable(value = "user:authority", key = "#p0")
-    public List<AuthorityVO> findByUserId(Long userId) {
-        if(userId == null){
-            return Collections.emptyList();
-        }
-        List<RoleVO> roles = roleService.findByUserId(userId);
-        LambdaQueryWrapper<Authority> wrapper = Wrappers.lambdaQuery();
-        if (CollectionUtils.isEmpty(roles)) {
-            wrapper.eq(
-                    Authority::getAccessControl,
-                    AuthorityAccessControl.AUTHENTICATED.name()
-            );
-        } else {
-            List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
-            List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
-            wrapper.and(w -> {
-                // PUBLIC权限
-                w.eq(Authority::getAccessControl, AuthorityAccessControl.AUTHENTICATED.name());
-                // 角色授权权限
-                if (!CollectionUtils.isEmpty(authorityIds)) {
-                    w.or().in(Authority::getId, authorityIds);
-                }
-            });
-
-        }
-        List<Authority> authorities = authorityMapper.selectList(wrapper);
-        return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
-    }
-
     @Caching(evict = {
             @CacheEvict(value = "user:menu", key = "#p0"),
             @CacheEvict(value = "user:authority", key = "#p0")
@@ -274,12 +244,55 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         }
     }
 
+
     @Override
-    public List<AuthorityVO> findById(Collection<Long> ids) {
-        List<Authority> authorities = authorityMapper.selectByIds(ids);
-        if (CollectionUtils.isEmpty(authorities)) {
+    public List<AuthorityVO> findByUserId(Long userId, AuthorityDomain domain) {
+        List<AuthorityVO> authorityVOS = selfProvider.getObject().findByUserId(userId);
+        return authorityVOS.stream()
+                .filter(item -> item.getDomain().equals(domain))
+                .collect(Collectors.toList());
+    }
+
+    // 根据用户ID查询权限
+    @Override
+    @Cacheable(value = "user:authority", key = "#p0")
+    public List<AuthorityVO> findByUserId(Long userId) {
+        if(userId == null){
             return Collections.emptyList();
         }
+        List<RoleVO> roles = roleService.findByUserId(userId);
+        LambdaQueryWrapper<Authority> wrapper = Wrappers.lambdaQuery();
+        wrapper.select(
+                Authority::getId,
+                Authority::getParentId,
+                Authority::getCode,
+                Authority::getName,
+                Authority::getType,
+                Authority::getDomain
+        );
+        if (CollectionUtils.isEmpty(roles)) {
+            wrapper.eq(
+                    Authority::getAccessControl,
+                    AuthorityAccessControl.AUTHENTICATED.name()
+            );
+        } else {
+            List<Long> roleIds = roles.stream().map(RoleVO::getId).toList();
+            List<Long> authorityIds = roleAuthorityService.findAuthorityIdByRoleId(roleIds);
+            wrapper.and(w -> {
+                // PUBLIC权限
+                w.eq(Authority::getAccessControl, AuthorityAccessControl.AUTHENTICATED.name());
+                // 角色授权权限
+                if (!CollectionUtils.isEmpty(authorityIds)) {
+                    w.or().in(Authority::getId, authorityIds);
+                }
+            });
+
+        }
+        List<Authority> authorities = authorityMapper.selectList(wrapper);
+        if(CollectionUtils.isEmpty(authorities)){
+            return Collections.emptyList();
+        }
+        Set<Long> ids = authorities.stream().map(Authority::getId).collect(Collectors.toSet());
         List<AuthorityUrlDTO> urlDTOList = authorityUrlService.findAuthorityUrl(ids);
         if(CollectionUtils.isEmpty(urlDTOList)){
             return AuthorityMapping.INSTANCE.toAuthorityVO(authorities);
@@ -297,4 +310,5 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         }
         return result;
     }
+
 }

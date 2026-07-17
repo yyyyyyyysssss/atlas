@@ -3,11 +3,12 @@ import { AutoComplete, Button, Flex, Input } from "antd"
 import {
     SearchOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { generatePath, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import './index.css'
 import { findRouteByPath } from '../../../router/router';
 import IconBox from '../../../components/icon-box';
+import { useDomain } from '../../../router/DomainProvider';
 
 const SearchMenu = () => {
 
@@ -20,6 +21,8 @@ const SearchMenu = () => {
     const [options, setOptions] = useState([])
 
     const [isSearching, setIsSearching] = useState(false)
+
+    const { domainId } = useDomain()
 
     const inputRef = useRef(null)
 
@@ -43,10 +46,16 @@ const SearchMenu = () => {
                 const route = findRouteByPath(item.routePath);
                 return route && route.element
             })
-            .map(item => ({
-                value: item.routePath,
-                label: item.name,
-            }))
+            .map(item => {
+                let routePath = item.routePath
+                if (domainId) {
+                    routePath = generatePath(routePath, { domainId: domainId })
+                }
+                return {
+                    value: routePath,
+                    label: item.name,
+                }
+            })
 
         setOptions(filteredOptions)
     }
@@ -87,7 +96,7 @@ const SearchMenu = () => {
                 />
             </AutoComplete>
             <IconBox className={`search-button ${isSearching ? 'hidden' : ''}`} onClick={handleClick}>
-                <SearchOutlined style={{fontSize: '20px'}} />
+                <SearchOutlined style={{ fontSize: '20px' }} />
             </IconBox>
         </div>
     )

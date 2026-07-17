@@ -2,16 +2,20 @@ import React from "react";
 import { Typography, Button, theme } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate } from "react-router-dom";
+import { useDomain } from "../../../../router/DomainProvider";
 
 const { Title, Text } = Typography;
 const { useToken } = theme;
 
 const OAuth2ClientApplication = () => {
-    const { token } = useToken();
-    const navigate = useNavigate();
+    const { token } = useToken()
+
+    const navigate = useNavigate()
+
+    const { domainId } = useDomain()
 
     const createNewApplication = () => {
-        navigate('/developer/settings/oauth2/application/create');
+        navigate(`/project/${domainId}/application/oauth2/create`)
     };
 
     return (

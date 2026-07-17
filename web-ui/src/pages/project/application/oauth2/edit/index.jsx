@@ -1,14 +1,14 @@
 
 import './index.css'
-import useFullParams from '../../../../hooks/useFullParams'
 import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider, Flex, Form, Input, List, Modal, Popconfirm, Space, Switch, Tag, theme, Tooltip, Typography } from 'antd'
-import SmartUpload from '../../../../components/smart-upload'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../services/DeveloperSettingsService';
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
-import Loading from '../../../../components/loading';
+import useFullParams from '../../../../../hooks/useFullParams';
+import SmartUpload from '../../../../../components/smart-upload';
+import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../../services/DeveloperSettingsService';
+import Loading from '../../../../../components/loading';
 
 const MAX_CALLBACK_URLS = 5
 

@@ -31,19 +31,18 @@ const NotificationMessage = lazy(() => import('../pages/notification-center/mess
 
 const AccountSettings = lazy(() => import('../pages/account-settings'))
 
-const Oauth2Consent = lazy(() => import('../pages/login/oauth2/consent'))
-const Oauth2Activate = lazy(() => import('../pages/login/oauth2/activate'))
-const Oauth2Activated = lazy(() => import('../pages/login/oauth2/activated'))
-const Oauth2QrScan = lazy(() => import('../pages/login/oauth2/qr-scan'))
-const Oauth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
+const OAuth2Consent = lazy(() => import('../pages/login/oauth2/consent'))
+const OAuth2Activate = lazy(() => import('../pages/login/oauth2/activate'))
+const OAuth2Activated = lazy(() => import('../pages/login/oauth2/activated'))
+const OAuth2QrScan = lazy(() => import('../pages/login/oauth2/qr-scan'))
+const OAuth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
 
 const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 
 
-const DeveloperSettings = lazy(() => import('../pages/developer-settings'))
-const OAuth2ClientApplication = lazy(() => import('../pages/developer-settings/oauth2-client-application'))
-const OAuth2ClientApplicationList = lazy(() => import('../pages/developer-settings/oauth2-client-application/list'))
-const OAuth2ClientApplicationEdit = lazy(() => import('../pages/developer-settings/oauth2-client-application/edit'))
+const OAuth2ClientApplication = lazy(() => import('../pages/project/application/oauth2'))
+const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/oauth2/list'))
+const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/oauth2/edit'))
 
 
 const ProjectOverview = lazy(() => import('../pages/project/overview'))
@@ -74,26 +73,26 @@ export const routes = [
         children: [
             {
                 path: 'consent',
-                element: <Oauth2Consent />,
+                element: <OAuth2Consent />,
             },
             {
                 path: 'activate',
-                element: <Oauth2Activate />,
+                element: <OAuth2Activate />,
             },
             {
                 path: 'qr/scan',
-                element: <Oauth2QrScan />,
+                element: <OAuth2QrScan />,
             }
         ]
     },
     {
         path: 'oauth2/activated',
-        element: <Oauth2Activated />,
+        element: <OAuth2Activated />,
         protected: false,
     },
     {
         path: 'oauth2/callback/:clientName',
-        element: <Oauth2Callback />,
+        element: <OAuth2Callback />,
         protected: false,
     },
     {
@@ -257,44 +256,6 @@ export const routes = [
                 ]
             },
             {
-                path: 'developer/settings',
-                breadcrumbName: '开发者设置',
-                defaultIcon: <Code size={18} />,
-                element: <DeveloperSettings />,
-                protected: true,
-                children: [
-                    {
-                        index: true,
-                        breadcrumbName: '开发者设置',
-                        element: <Navigate to="oauth2" />
-                    },
-                    {
-                        path: 'oauth2',
-                        breadcrumbName: 'OAuth2 应用',
-                        element: <OAuth2ClientApplication />,
-                        protected: true,
-                        requiredPermissions: ['developer:settings:oauth2'],
-                        children: [
-                            {
-                                index: true,
-                                breadcrumbName: 'OAuth2 应用',
-                                element: <OAuth2ClientApplicationList />
-                            },
-                            {
-                                path: 'application/create',
-                                element: <OAuth2ClientApplicationEdit />,
-                                breadcrumbName: '创建',
-                            },
-                            {
-                                path: 'application/:id',
-                                element: <OAuth2ClientApplicationEdit />,
-                                breadcrumbName: '编辑',
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
                 path: 'project/:domainId',
                 breadcrumbName: '项目',
                 defaultIcon: <Octagon size={18} />,
@@ -320,7 +281,37 @@ export const routes = [
                         breadcrumbName: '应用',
                         defaultIcon: <Egg size={18} />,
                         protected: true,
-                        requiredPermissions: ['project:application']
+                        requiredPermissions: ['project:application'],
+                        children: [
+                            {
+                                index: true,
+                                breadcrumbName: '应用',
+                                element: <Navigate to="oauth2" />
+                            },
+                            {
+                                path: 'oauth2',
+                                breadcrumbName: 'OAuth2 应用',
+                                element: <OAuth2ClientApplication />,
+                                protected: true,
+                                children: [
+                                    {
+                                        index: true,
+                                        breadcrumbName: 'OAuth2 应用',
+                                        element: <OAuth2ClientApplicationList />
+                                    },
+                                    {
+                                        path: 'create',
+                                        element: <OAuth2ClientApplicationEdit />,
+                                        breadcrumbName: '创建',
+                                    },
+                                    {
+                                        path: ':id',
+                                        element: <OAuth2ClientApplicationEdit />,
+                                        breadcrumbName: '编辑',
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },

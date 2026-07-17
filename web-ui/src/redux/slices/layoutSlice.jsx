@@ -3,8 +3,9 @@ import { generatePath } from 'react-router-dom'
 import { findRouteByPath } from '../../router/router'
 
 export const initialState = {
-    domain: 'global',
+    domain: null,
     domainId: null,
+    domainLoading: false,
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
@@ -190,7 +191,7 @@ export const layoutSlice = createSlice({
         setDomain: (state, action) => {
             const { payload } = action
             const { domain, domainId } = payload
-            if (domain !== state.domain) {
+            if (domain !== state.domain || domainId !== state.domainId) {
                 state.domain = domain
                 state.domainId = domainId
                 const menuItems = state.menus[domain] || []
@@ -199,10 +200,13 @@ export const layoutSlice = createSlice({
                 state.openKeys = []
                 state.tabItems = []
             }
-        }
+        },
+        setDomainLoading: (state, action) => {
+            state.domainLoading = action.payload
+        },
     }
 })
 
-export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems, setDomain } = layoutSlice.actions
+export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems, setDomain, setDomainLoading } = layoutSlice.actions
 
 export default layoutSlice.reducer

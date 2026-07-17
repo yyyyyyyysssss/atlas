@@ -22,8 +22,6 @@ const saveState = (state) => {
     const serializedState = JSON.stringify({
         layoutState: {
             tabItems: state.layout.tabItems,
-            domain: state.layout.domain,
-            domainId: state.layout.domainId
         },
         userState: {
             // 只持久化主题相关的设置，不持久化用户信息（如 username, avatar 等），确保换号登录时不串数据

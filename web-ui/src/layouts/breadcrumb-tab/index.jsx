@@ -13,8 +13,6 @@ const TopBreadcrumbTab = () => {
 
     const { t } = useTranslation()
 
-    const { operationMode } = useFullParams()
-
     const breadcrumbItems = useMemo(() => {
         const pathname = location.pathname
         const routes = findBreadcrumbRoutes(pathname)
@@ -25,16 +23,12 @@ const TopBreadcrumbTab = () => {
 
             let breadcrumbName = t(route.breadcrumbName)
 
-            if (route.hideOperationMode === false && isLast && OperationMode[operationMode]) {
-                breadcrumbName = OperationMode[operationMode].description + breadcrumbName
-            }
-
             return {
-                key: route.path,
-                title: route?.element ? <Link to={route.fullPath} state={location.state}>{breadcrumbName}</Link> : t(route?.breadcrumbName),
+                key: route.fullPath,
+                title: isLast ? t(route?.breadcrumbName) : route?.element ? <Link to={route.fullPath} state={location.state}>{breadcrumbName}</Link> : t(route?.breadcrumbName),
             }
         })
-    }, [location, t, operationMode])
+    }, [location, t])
 
     return <Breadcrumb items={breadcrumbItems} />
 }

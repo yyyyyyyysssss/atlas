@@ -13,7 +13,7 @@ export const LoginRoute = ({ children }) => {
   }, [])
 
   if (isLoginIn === null){
-    return <Loading fullscreen />
+    return <Loading tip="正在加载..." full />
   }
 
   if (isLoginIn) {

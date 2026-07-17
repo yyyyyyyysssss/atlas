@@ -15,6 +15,7 @@ import tinycolor from 'tinycolor2';
 import dayjs from 'dayjs'
 import NoDataEmpty from './components/NoDataEmpty.js';
 import { DEFAULT_PRIMARY_COLOR } from './layouts/header/theme-color/index.jsx';
+import { DomainProvider } from './router/DomainProvider.jsx';
 
 dayjs.locale('zh-cn')
 
@@ -243,10 +244,12 @@ const App = () => {
     >
       <AntdApp>
         <AuthProvider>
-          {contextHolder}
-          <RouterProvider
-            router={router}
-          />
+          <DomainProvider>
+            {contextHolder}
+            <RouterProvider
+              router={router}
+            />
+          </DomainProvider>
         </AuthProvider>
       </AntdApp>
     </ConfigProvider>

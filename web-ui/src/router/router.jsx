@@ -105,6 +105,9 @@ export const routes = [
         path: '',
         element: <AppLayout />,
         protected: true,
+        meta: {
+            domain: 'global'
+        },
         children: [
             {
                 path: '',
@@ -168,15 +171,14 @@ export const routes = [
                             {
                                 path: 'details',
                                 element: <UserDetails />,
-                                breadcrumbName: '用户',
-                                hideOperationMode: false
+                                breadcrumbName: '编辑',
                             },
                         ]
                     },
                     {
                         path: 'role',
                         element: <Outlet />,
-                         breadcrumbName: '角色管理',
+                        breadcrumbName: '角色管理',
                         defaultIcon: <ShieldUser size={18} />,
                         protected: true,
                         requiredPermissions: ['system:role'],
@@ -189,8 +191,7 @@ export const routes = [
                             {
                                 path: 'details',
                                 element: <RoleDetails />,
-                                breadcrumbName: '角色',
-                                hideOperationMode: false
+                                breadcrumbName: '编辑',
                             },
                         ]
                     },
@@ -297,6 +298,9 @@ export const routes = [
                 path: 'project/:domainId',
                 breadcrumbName: '项目',
                 defaultIcon: <Octagon size={18} />,
+                meta: {
+                    domain: 'project'
+                },
                 children: [
                     {
                         path: '',
@@ -341,53 +345,28 @@ export const routes = [
     }
 ]
 
-const routeCache = new Map()
-
 export const findRouteByPath = (targetPath) => {
-
-    if (routeCache.has(targetPath)) {
-        return routeCache.get(targetPath)
-    }
-
-    const matches = matchRoutes(
-        routes,
-        targetPath
-    )
-
+    const matches = getMatches(targetPath)
 
     if (!matches || matches.length === 0) {
-        routeCache.set(targetPath, null)
         return null
     }
-
-
     // 最后一个匹配的就是当前页面route
     const match = matches[matches.length - 1]
 
-
     const result = {
         ...match.route,
-
         // 完整匹配路径
         fullPath: match.pathname,
-
         // 动态参数
         params: match.params
     }
-
-
-    routeCache.set(
-        targetPath,
-        result
-    )
-
-
     return result
 }
 
 export const findBreadcrumbRoutes = (pathname) => {
 
-    const matches = matchRoutes(routes, pathname)
+    const matches = getMatches(pathname)
 
     if (!matches) {
         return []
@@ -401,12 +380,70 @@ export const findBreadcrumbRoutes = (pathname) => {
         }))
 }
 
+export const findRouteDomain = (pathname) => {
+    const matches = getMatches(pathname)
+    if (!matches) {
+        return null
+    }
+    const route = [...matches]
+        .reverse()
+        .find(item => item.route.meta?.domain)
+
+    if (!route) {
+        return {
+            domain: 'global',
+            domainId: null
+        }
+    }
+
+    return {
+        domain: route.route.meta.domain,
+        domainId: route.params.domainId ?? null
+    }
+}
+
+const matchesCache = new Map()
+
+const getMatches = (pathname) => {
+    if (matchesCache.has(pathname)) {
+        return matchesCache.get(pathname)
+    }
+
+    const matches = matchRoutes(routes, pathname)
+    matchesCache.set(pathname, matches || null)
+    return matches
+}
+
 
 const routeMap = new Map()
 
 export const lookupRouteByPath = (targetPath) => {
     if (routeMap.has(targetPath)) {
         return routeMap.get(targetPath)
+    }
+    const findRoute = (route, fullPath, targetPath) => {
+        if (route.path === '*') {
+            return null;
+        }
+        if (route.path !== '') {
+            fullPath = fullPath + (route.path.startsWith('/') ? route.path : '/' + route.path)
+        }
+        const result = matchPath({ path: fullPath }, targetPath)
+        if (result) {
+            return {
+                ...route,
+                fullPath: fullPath
+            }
+        }
+        if (route.children && targetPath.includes(route.path)) {
+            for (const childrenRoute of route.children) {
+                const result = findRoute(childrenRoute, fullPath, targetPath)
+                if (result) {
+                    return result
+                }
+            }
+        }
+        return null
     }
     let result = null
     for (const route of routes) {
@@ -415,31 +452,6 @@ export const lookupRouteByPath = (targetPath) => {
     }
     routeMap.set(targetPath, result)
     return result
-}
-
-const findRoute = (route, fullPath, targetPath) => {
-    if (route.path === '*') {
-        return null;
-    }
-    if (route.path !== '') {
-        fullPath = fullPath + (route.path.startsWith('/') ? route.path : '/' + route.path)
-    }
-    const result = matchPath({ path: fullPath }, targetPath)
-    if (result) {
-        return {
-            ...route,
-            fullPath: fullPath
-        }
-    }
-    if (route.children && targetPath.includes(route.path)) {
-        for (const childrenRoute of route.children) {
-            const result = findRoute(childrenRoute, fullPath, targetPath)
-            if (result) {
-                return result
-            }
-        }
-    }
-    return null
 }
 
 const wrapProtectedRoute = (route) => {

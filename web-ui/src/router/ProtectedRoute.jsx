@@ -18,7 +18,7 @@ export const ProtectedRoute = ({ children, requiredPermissions, fallback, requir
 
   // 等待登录状态
   if (isLoginIn === null) {
-    return <Loading fullscreen />
+    return <Loading tip="正在加载..." full />
   }
 
   // 未登录，跳转到登录页，并携带当前页面的 state 作为 targetUrl
@@ -31,8 +31,6 @@ export const ProtectedRoute = ({ children, requiredPermissions, fallback, requir
     return <Navigate to={loginPath} replace />;
 
   }
-
-
 
   // 权限不足
   if (!isAllowed) return fallback || <Forbidden />

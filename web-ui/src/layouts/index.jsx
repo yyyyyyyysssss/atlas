@@ -16,6 +16,8 @@ import { useAuth } from '../router/AuthProvider';
 import { SseProvider } from '../sse/SseProvider';
 import FullScreenButton from '../components/FullScreenButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import DomainLoader from '../router/DomainLoader';
+import { useDomain } from '../router/DomainProvider';
 
 
 const { Header: LayoutHeader, Content: LayoutContent, Sider: LayoutSider } = Layout;
@@ -35,6 +37,8 @@ const AppLayout = () => {
     const redirectTo = useSelector(state => state.layout.redirectTo)
 
     const { accessToken } = useAuth()
+
+    const { domainLoading } = useDomain()
 
     const SSE_URL = useMemo(() => {
         if (!accessToken) {
@@ -82,131 +86,135 @@ const AppLayout = () => {
     }, [navigate, dispatch])
 
     return (
-        <ConfigProvider
-            getPopupContainer={getPopupContainer}
-        >
-            <App
-                notification={{
-                    threshold: 3,
-                    placement: 'topRight',
-                    duration: 5,
-                    top: 109,
-                }}
+        <>
+            <DomainLoader />
+            <ConfigProvider
+                getPopupContainer={getPopupContainer}
             >
-                <SseProvider url={SSE_URL}>
-                    <Layout style={{ minHeight: '100vh' }}>
-                        {/* 侧边菜单 */}
-                        <LayoutSider
-                            width='240px'
-                            theme={themeValue}
-                            collapsible
-                            collapsed={collapsed}
-                            trigger={null}
-                        >
-                            <Logo collapsed={collapsed} goHome={goHome} />
-                            <Sider />
-                        </LayoutSider>
-                        <Layout>
-                            {/* 头部 */}
-                            <LayoutHeader className='layout-header'
-                                style={{
-                                    boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
-                                }}
+
+                <App
+                    notification={{
+                        threshold: 3,
+                        placement: 'topRight',
+                        duration: 5,
+                        top: 109,
+                    }}
+                >
+                    <SseProvider url={SSE_URL}>
+                        <Layout style={{ minHeight: '100vh' }}>
+                            {/* 侧边菜单 */}
+                            <LayoutSider
+                                width='240px'
+                                theme={themeValue}
+                                collapsible
+                                collapsed={collapsed}
+                                trigger={null}
                             >
-                                <Header />
-                            </LayoutHeader>
-                            {/* 主题内容 */}
-                            <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
-                                {/* 顶部页签 */}
-                                <TopMenuTab style={{ height: '45px', width: '100%' }} />
-                                <div
-                                    ref={mainDivRef}
-                                    className='main-div'
+                                <Logo collapsed={collapsed} goHome={goHome} />
+                                <Sider />
+                            </LayoutSider>
+                            <Layout>
+                                {/* 头部 */}
+                                <LayoutHeader className='layout-header'
                                     style={{
-                                        background: colorBgContainer,
-                                        borderRadius: isFS ? 0 : borderRadius,
+                                        boxShadow: themeValue === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.45)' : '0 2px 4px rgba(0, 0, 0, 0.06)'
                                     }}
                                 >
-                                    <Watermark
-                                        content="Atlas"
-                                        gap={[120, 120]}
-                                        font={{ color: watermarkColor }}
+                                    <Header />
+                                </LayoutHeader>
+                                {/* 主题内容 */}
+                                <LayoutContent style={{ margin: '0 16px', height: 'auto', overflow: 'initial', scrollbarGutter: 'stable' }}>
+                                    {/* 顶部页签 */}
+                                    <TopMenuTab style={{ height: '45px', width: '100%' }} />
+                                    <div
+                                        ref={mainDivRef}
+                                        className='main-div'
                                         style={{
-                                            width: '100%',
-                                            height: '100%',
+                                            background: colorBgContainer,
+                                            borderRadius: isFS ? 0 : borderRadius,
                                         }}
                                     >
-                                        <div
+                                        <Watermark
+                                            content="Atlas"
+                                            gap={[120, 120]}
+                                            font={{ color: watermarkColor }}
                                             style={{
-                                                position: 'relative',
-                                                height: isFS ? '100vh' : 'calc(100vh - 109px)',
                                                 width: '100%',
-                                                overflow: 'auto',
-                                                padding: 20,
+                                                height: '100%',
                                             }}
                                         >
-
-                                            <Affix
-                                                target={() => mainDivRef.current}
-                                                offsetTop={0}
-                                                style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    height: isFS ? '100vh' : 'calc(100vh - 109px)',
+                                                    width: '100%',
+                                                    overflow: 'auto',
+                                                    padding: 20,
+                                                }}
                                             >
-                                                <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
-                                            </Affix>
-                                            <AnimatePresence mode="popLayout" initial={false}>
-                                                <motion.div
-                                                    key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
 
-                                                    initial={{ opacity: 0, scale: 0.99, x: 15 }}
-                                                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                                                    exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
-                                                    transition={{
-                                                        duration: 0.25,
-                                                        ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
-                                                    }}
-                                                    style={{
-                                                        height: '100%',
-                                                        width: '100%',
-                                                        display: 'flex', // 关键：让 motion.div 成为 flex 容器
-                                                        flexDirection: 'column'
-                                                    }}
+                                                <Affix
+                                                    target={() => mainDivRef.current}
+                                                    offsetTop={0}
+                                                    style={{ position: 'absolute', top: 0, right: 0, zIndex: 10 }}
                                                 >
-                                                    <ErrorBoundary
-                                                        fallback={<ServerError />}
-                                                        resetKeys={[location.pathname]}
-                                                    >
-                                                        <Suspense
-                                                            fallback={
-                                                                <Loading full={true} />
-                                                            }
-                                                        >
-                                                            <div
-                                                                style={{
-                                                                    width: '100%',
-                                                                    flex: 1,
-                                                                    display: 'flex',
-                                                                    flexDirection: 'column',
-                                                                    justifyContent: isFS ? 'center' : 'flex-start',
-                                                                    margin: isFS ? 'auto 0' : 'unset',
-                                                                }}
-                                                                ref={nodeRef}
-                                                            >
-                                                                {outlet}
-                                                            </div>
-                                                        </Suspense>
-                                                    </ErrorBoundary>
-                                                </motion.div>
-                                            </AnimatePresence>
+                                                    <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
+                                                </Affix>
+                                                <AnimatePresence mode="popLayout" initial={false}>
+                                                    <motion.div
+                                                        key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
 
-                                        </div>
-                                    </Watermark>
-                                </div>
-                            </LayoutContent>
-                        </Layout>
-                    </Layout >
-                </SseProvider>
-            </App>
-        </ConfigProvider>
+                                                        initial={{ opacity: 0, scale: 0.99, x: 15 }}
+                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                        exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
+                                                        transition={{
+                                                            duration: 0.25,
+                                                            ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
+                                                        }}
+                                                        style={{
+                                                            height: '100%',
+                                                            width: '100%',
+                                                            display: 'flex', // 关键：让 motion.div 成为 flex 容器
+                                                            flexDirection: 'column'
+                                                        }}
+                                                    >
+                                                        <ErrorBoundary
+                                                            fallback={<ServerError />}
+                                                            resetKeys={[location.pathname]}
+                                                        >
+                                                            <Suspense
+                                                                fallback={
+                                                                    <Loading full={true} />
+                                                                }
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        flex: 1,
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        justifyContent: isFS ? 'center' : 'flex-start',
+                                                                        margin: isFS ? 'auto 0' : 'unset',
+                                                                    }}
+                                                                    ref={nodeRef}
+                                                                >
+                                                                    {domainLoading ? <Loading tip="正在加载..." full={true}/> : outlet}
+                                                                </div>
+                                                            </Suspense>
+                                                        </ErrorBoundary>
+                                                    </motion.div>
+                                                </AnimatePresence>
+
+                                            </div>
+                                        </Watermark>
+                                    </div>
+                                </LayoutContent>
+                            </Layout>
+                        </Layout >
+                    </SseProvider>
+                </App>
+            </ConfigProvider>
+        </>
     )
 }
 

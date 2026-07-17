@@ -8,6 +8,7 @@ import { findRouteByPath, lookupRouteByPath } from '../../router/router';
 import { Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createSelector } from '@reduxjs/toolkit';
+import { useDomain } from '../../router/DomainProvider';
 
 
 const getMenuItems = (items, t) => {
@@ -25,18 +26,14 @@ const getMenuItems = (items, t) => {
 
 const siderSelector = createSelector(
     state => state.user.userInfo?.settings?.appearance?.theme || 'dark',
-    state => state.layout.domain,
-    state => state.layout.domainId,
     state => state.layout.menus,
     state => state.layout.flattenMenuItems,
     state => state.layout.menuCollapsed,
     state => state.layout.activeKey,
     state => state.layout.openKeys,
-    (themeValue, domain, domainId, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
+    (themeValue, menus, flattenMenuItems, collapsed, activeKey, openKeys) => ({
         themeValue,
-        domain,
-        domainId,
-        menuItems: menus[domain] || [],
+        menus,
         flattenMenuItems,
         collapsed,
         activeKey,
@@ -48,14 +45,18 @@ const Sider = () => {
 
     const { t } = useTranslation()
 
-    const { themeValue, domain, domainId, menuItems, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
+    const { themeValue, menus, flattenMenuItems, collapsed, activeKey, openKeys } = useSelector(siderSelector, shallowEqual)
+
+    const { domain, domainId } = useDomain()
+
+    const menuItems = menus?.[domain] || []
 
     const dispatch = useDispatch()
 
     const navigate = useNavigate()
 
     const location = useLocation()
-    
+
     useEffect(() => {
         if (location.pathname && location.pathname !== '/' && flattenMenuItems && flattenMenuItems.length > 0) {
             dispatch(setActiveKey({ path: location.pathname }))
@@ -72,7 +73,7 @@ const Sider = () => {
         if (!menuItem) {
             return
         }
-        const path = generatePath(menuItem.routePath, { domainId: domainId})
+        const path = generatePath(menuItem.routePath, { domainId: domainId })
         navigate(path)
     }
 

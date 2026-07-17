@@ -29,7 +29,6 @@ const ProjectWorkbench = () => {
     // 跳转到项目专属页面
     const handleJumpToProject = async (project) => {
         const { code } = project
-        await loadDomain('project', code)
         navigate(`/project/${code}`)
     };
 

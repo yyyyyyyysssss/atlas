@@ -1,9 +1,9 @@
 import { Flex } from 'antd';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, startTransition, useContext, useEffect, useState } from 'react';
 import { checkTokenValid, clearToken, saveToken } from '../services/LoginService';
 import { setGlobalSignout } from './auth';
 import reduxStore from '../redux/store';
-import { loadMenuItems, reset as resetLayout, setDomain } from '../redux/slices/layoutSlice';
+import { loadMenuItems, reset as resetLayout } from '../redux/slices/layoutSlice';
 import { reset as resetUser, setUserInfo } from '../redux/slices/userSlice';
 import { reset as resetAuth, setAuthInfo } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
@@ -18,7 +18,6 @@ const AuthContext = createContext({
     signin: async (tokenInfo) => { },
     signout: async () => { },
     checkAuth: async () => { },
-    loadDomain: async (domain, domainId) => { }
 })
 
 export const AuthProvider = ({ children }) => {
@@ -26,8 +25,6 @@ export const AuthProvider = ({ children }) => {
     const [isLoginIn, setIsLoginIn] = useState(null)
 
     const [accessToken, setAccessToken] = useState(null)
-
-    const domain = useSelector(state => state.layout.domain) || 'global'
 
     const dispatch = useDispatch()
 
@@ -65,8 +62,6 @@ export const AuthProvider = ({ children }) => {
         setAccessToken(token)
         const userInfo = await fetchUserInfo()
         dispatch(setUserInfo({ userInfo }))
-        // 默认进入global
-        await loadDomain(domain)
         setIsLoginIn(true)
     }
 
@@ -88,19 +83,8 @@ export const AuthProvider = ({ children }) => {
         setIsLoginIn(false)
     }
 
-    const loadDomain = async (domain, domainId) => {
-        const authInfo = await fetchUserPermissions(domain)
-        dispatch(setAuthInfo({ authInfo }))
-        dispatch(loadMenuItems({
-            domain: domain,
-            menuItems: authInfo.menus
-        }))
-        dispatch(setDomain({ domain: domain, domainId: domainId }))
-        return authInfo
-    }
-
     return (
-        <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth, loadDomain }}>
+        <AuthContext.Provider value={{ isLoginIn, accessToken, signin, signout, checkAuth }}>
             {children}
         </AuthContext.Provider>
     )

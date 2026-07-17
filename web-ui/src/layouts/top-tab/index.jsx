@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './index.css'
 import { Dropdown, Tabs, theme } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { generatePath, useLocation, useNavigate } from 'react-router-dom';
 import { findRouteByPath, findBreadcrumbRoutes } from '../../router/router';
 import { useDispatch, useSelector } from 'react-redux';
 import { addTabIem, removeTabItem, setTabIem, removeAllTabItem, removeLeftTabItem, removeOtherTabItem, removeRightTabItem } from '../../redux/slices/layoutSlice';
@@ -43,7 +43,7 @@ const TopMenuTab = ({ style }) => {
 
     const [draggedTab, setDraggedTab] = useState(null)
 
-    const { domainLoading } = useDomain()
+    const { domainId, domainLoading } = useDomain()
 
     const navigate = useNavigate()
 
@@ -113,12 +113,15 @@ const TopMenuTab = ({ style }) => {
     const switchTab = useCallback((tabKey) => {
         const tabItem = tabItems.find(item => item.key === tabKey)
         if (tabItem) {
-            const path = tabItem.search ? tabItem.path + tabItem.search : tabItem.path
+            let routePath = tabItem.routePath
+            if (domainId) {
+                routePath = generatePath(routePath, { domainId: domainId })
+            }
+            const path = tabItem.search ? routePath + tabItem.search : routePath
             navigate(path, {
                 state: tabItem.state
             })
         }
-        // eslint-disable-next-line
     }, [tabItems])
 
     const items = useMemo(() => {

@@ -106,8 +106,14 @@ export const layoutSlice = createSlice({
             }
             const path = tabItem.path
             const menuItem = findBestMatchMenu(path, state.flattenMenuItems, state.domainId)
+            if(!menuItem){
+                return
+            }
+            tabItem.key = menuItem.id || path
+            tabItem.routePath = menuItem.routePath
+            tabItem.label = menuItem.name
             // 先检查是否存在
-            const checkTabItem = state.tabItems.find(f => f.path === path)
+            const checkTabItem = state.tabItems.find(f => f.routePath === menuItem.routePath)
             if (checkTabItem) {
                 state.activeKey = checkTabItem.key
                 if (menuItem) {
@@ -116,15 +122,14 @@ export const layoutSlice = createSlice({
                 return
             }
             // 不存在且在菜单中则新增
-            const item = state.tabItems.find(item => item.key === menuItem?.id)
+            const item = state.tabItems.find(item => item.key === menuItem.id)
             if (item) {
                 state.activeKey = menuItem.id
                 return
             }
-            tabItem.key = menuItem?.id || path
             state.tabItems.push(tabItem)
-            state.activeKey = menuItem?.id || path
-            state.openKeys = state.menuCollapsed ? [] : menuItem?.parentPath
+            state.activeKey = menuItem.id || path
+            state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
         },
         removeTabItem: (state, action) => {
             const { payload } = action

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import './index.css'
 import { Dropdown, Tabs, theme } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { findRouteByPath,findBreadcrumbRoutes } from '../../router/router';
+import { findRouteByPath, findBreadcrumbRoutes } from '../../router/router';
 import { useDispatch, useSelector } from 'react-redux';
 import { addTabIem, removeTabItem, setTabIem, removeAllTabItem, removeLeftTabItem, removeOtherTabItem, removeRightTabItem } from '../../redux/slices/layoutSlice';
 import {
@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useTranslation } from 'react-i18next';
 import SortableItem from '../../components/SortableItem';
+import { useDomain } from '../../router/DomainProvider';
 
 
 const TopMenuTab = ({ style }) => {
@@ -42,6 +43,8 @@ const TopMenuTab = ({ style }) => {
 
     const [draggedTab, setDraggedTab] = useState(null)
 
+    const { domainLoading } = useDomain()
+
     const navigate = useNavigate()
 
     const sensors = useSensors(
@@ -56,14 +59,16 @@ const TopMenuTab = ({ style }) => {
     )
 
     useEffect(() => {
+        if (domainLoading) {
+            return
+        }
         if (location.pathname && location.pathname !== '/' && flattenMenuItems && flattenMenuItems.length > 0) {
             const route = findRouteByPath(location.pathname)
             if (route && route.path !== '') {
                 add(location, route)
             }
         }
-        // eslint-disable-next-line
-    }, [flattenMenuItems, location])
+    }, [flattenMenuItems, location, domainLoading])
 
     const add = (location, route) => {
         const path = location.pathname

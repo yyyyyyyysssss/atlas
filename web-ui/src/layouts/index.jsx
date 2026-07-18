@@ -160,16 +160,28 @@ const AppLayout = () => {
                                                 >
                                                     <FullScreenButton targetRef={mainDivRef} onStateChange={(state) => setIsFS(state)} />
                                                 </Affix>
-                                                <AnimatePresence mode="popLayout" initial={false}>
+                                                <AnimatePresence mode="wait" initial={false}>
                                                     <motion.div
                                                         key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
 
-                                                        initial={{ opacity: 0, scale: 0.99, x: 15 }}
-                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                                                        exit={{ opacity: 0, scale: 1.01, x: -15, position: 'absolute' }}
+                                                        initial={{
+                                                            opacity: 0,
+                                                            y: 10
+                                                        }}
+
+                                                        animate={{
+                                                            opacity: 1,
+                                                            y: 0
+                                                        }}
+
+                                                        exit={{
+                                                            opacity: 0,
+                                                            y: -10
+                                                        }}
+
                                                         transition={{
                                                             duration: 0.25,
-                                                            ease: [0.25, 0.1, 0.25, 1.0] // 标准 ease-in-out
+                                                            ease: "easeOut"
                                                         }}
                                                         style={{
                                                             height: '100%',
@@ -198,7 +210,7 @@ const AppLayout = () => {
                                                                     }}
                                                                     ref={nodeRef}
                                                                 >
-                                                                    {domainLoading ? <Loading tip="正在加载..." full={true}/> : outlet}
+                                                                    {domainLoading ? <Loading tip="正在加载..." full={true} /> : outlet}
                                                                 </div>
                                                             </Suspense>
                                                         </ErrorBoundary>

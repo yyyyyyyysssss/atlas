@@ -15,6 +15,9 @@ const TopBreadcrumbTab = () => {
 
     const breadcrumbItems = useMemo(() => {
         const pathname = location.pathname
+        if(pathname === '/' || pathname === '') {
+            return []
+        }
         const routes = findBreadcrumbRoutes(pathname)
 
         return routes.map((route, index) => {

@@ -9,7 +9,10 @@ export const initialState = {
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
-    tabItems: [],
+    tabItems: {
+        global: [],
+        project: []
+    },
     menus: {
         global: [],
         project: []
@@ -94,26 +97,26 @@ export const layoutSlice = createSlice({
         },
         setTabIem: (state, action) => {
             const { payload } = action
-            const { tabItem } = payload
-            state.tabItems = tabItem
+            const { tabItem, domain } = payload
+            state.tabItems[domain] = tabItem
         },
         addTabIem: (state, action) => {
             const { payload } = action
-            const { tabItem } = payload
+            const { tabItem, domain } = payload
             if (!tabItem.label) {
                 state.activeKey = null
                 return
             }
             const path = tabItem.path
             const menuItem = findBestMatchMenu(path, state.flattenMenuItems, state.domainId)
-            if(!menuItem){
+            if (!menuItem) {
                 return
             }
             tabItem.key = menuItem.id || path
             tabItem.routePath = menuItem.routePath
             tabItem.label = menuItem.name
             // 先检查是否存在
-            const checkTabItem = state.tabItems.find(f => f.routePath === menuItem.routePath)
+            const checkTabItem = state.tabItems[domain]?.find(f => f.routePath === menuItem.routePath)
             if (checkTabItem) {
                 state.activeKey = checkTabItem.key
                 if (menuItem) {
@@ -122,68 +125,76 @@ export const layoutSlice = createSlice({
                 return
             }
             // 不存在且在菜单中则新增
-            const item = state.tabItems.find(item => item.key === menuItem.id)
+            const item = state.tabItems[domain]?.find(item => item.key === menuItem.id)
             if (item) {
                 state.activeKey = menuItem.id
                 return
             }
-            state.tabItems.push(tabItem)
+            if (Array.isArray(state.tabItems)) {
+                state.tabItems = {
+                    global: [],
+                    project: []
+                }
+            }
+            state.tabItems[domain] = [...(state.tabItems[domain] || []), tabItem]
             state.activeKey = menuItem.id || path
             state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
         },
         removeTabItem: (state, action) => {
             const { payload } = action
-            const { targetKey, selectKey } = payload
-            const newPanes = state.tabItems.filter(pane => pane.key !== targetKey)
+            const { targetKey, selectKey, domain } = payload
+            const newPanes = state.tabItems[domain]?.filter(pane => pane.key !== targetKey)
             if (selectKey) {
                 state.activeKey = selectKey
                 const menuItem = findMenuByKey(selectKey, state.flattenMenuItems)
                 state.openKeys = state.menuCollapsed ? [] : menuItem?.parentPath
             }
-            state.tabItems = newPanes
+            state.tabItems[domain] = newPanes
         },
         removeAllTabItem: (state, action) => {
-            const newItems = state.tabItems.filter(item => item.closable === false)
+            const { payload } = action
+            const { domain } = payload
+            const newItems = state.tabItems[domain]?.filter(item => item.closable === false)
             if (newItems.length) {
                 const key = newItems[0].key
                 state.activeKey = key
                 const menuItem = findMenuByKey(key, state.flattenMenuItems)
                 state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
             }
-            state.tabItems = newItems
+            state.tabItems[domain] = newItems
         },
         removeOtherTabItem: (state, action) => {
             const { payload } = action
-            const { key, index } = payload
-            const newItems = state.tabItems.filter((item, i) => item.closable === false || i === index)
+            const { key, index, domain } = payload
+            const newItems = state.tabItems[domain]?.filter((item, i) => item.closable === false || i === index)
             if (newItems.length) {
                 state.activeKey = key
                 const menuItem = findMenuByKey(key, state.flattenMenuItems)
                 state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
             }
-            state.tabItems = newItems
+            state.tabItems[domain] = newItems
         },
         removeLeftTabItem: (state, action) => {
             const { payload } = action
-            const { key, index } = payload
-            const newItems = state.tabItems.filter((item, i) => i >= index || item.closable === false)
+            const { key, index, domain } = payload
+            const newItems = state.tabItems[domain]?.filter((item, i) => i >= index || item.closable === false)
             if (newItems.length) {
                 state.activeKey = key
                 const menuItem = findMenuByKey(key, state.flattenMenuItems)
                 state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
             }
-            state.tabItems = newItems
+            state.tabItems[domain] = newItems
         },
         removeRightTabItem: (state, action) => {
             const { payload } = action
-            const { key, index } = payload
-            const newItems = state.tabItems.filter((item, i) => i <= index || item.closable === false)
+            const { key, index, domain } = payload
+            const newItems = state.tabItems[domain]?.filter((item, i) => i <= index || item.closable === false)
             if (newItems.length) {
                 state.activeKey = key
                 const menuItem = findMenuByKey(key, state.flattenMenuItems)
                 state.openKeys = state.menuCollapsed ? [] : menuItem.parentPath
             }
-            state.tabItems = newItems
+            state.tabItems[domain] = newItems
         },
         loadMenuItems: (state, action) => {
             const { payload } = action
@@ -203,7 +214,6 @@ export const layoutSlice = createSlice({
                 state.flattenMenuItems = flattenMenus(menuItems)
                 state.activeKey = ''
                 state.openKeys = []
-                state.tabItems = []
             }
         },
         setDomainLoading: (state, action) => {

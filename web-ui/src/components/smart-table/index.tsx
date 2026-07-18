@@ -24,7 +24,6 @@ import {
 } from '@dnd-kit/sortable'
 import { useReactToPrint } from 'react-to-print'
 import { downloadFileBySource } from '../../utils/Download'
-import html2canvas from 'html2canvas'
 import Loading from '../loading'
 import { Resizable } from 'react-resizable';
 import { SearchOutlined } from '@ant-design/icons';
@@ -289,17 +288,20 @@ const SmartTable = <T extends any>({
         if (storageColums && !isDev) {
             const parsed = JSON.parse(storageColums); // 用户上次保存的列状态（数组）
 
-            // 1. 建立 Key 到 缓存位置(Index) 的映射表，提升 sort 性能
+            // 建立 Key 到 缓存位置(Index) 的映射表，提升 sort 性能
             const orderMap = new Map();
+            // 缓存列 Map
+            const savedMap = new Map<string, any>()
             parsed.forEach((item: any, index: number) => {
                 orderMap.set(item.key, index)
+                savedMap.set(item.key, item)
             })
-
+            
             // 2. 以当前最新的 columns 为主体进行处理
             const merged = columns.map((col: any) => {
                 const key = col.key || col.dataIndex
                 // 找到该列在缓存中的配置
-                const saved = parsed.find((p: any) => p.key === key)
+                const saved = savedMap.get(key)
 
                 return {
                     ...col,   // 始终以最新代码里的配置为底（保证 render 等函数不丢失）
@@ -672,6 +674,9 @@ const SmartTable = <T extends any>({
         // 延迟执行，给 Spin 渲染的时间
         setTimeout(async () => {
             try {
+                const { default: html2canvas } = await import(
+                    'html2canvas'
+                )
                 const canvas = await html2canvas(tableElement, {
                     useCORS: true,
                     scale: 2, // 提高清晰度

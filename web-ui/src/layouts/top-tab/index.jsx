@@ -39,11 +39,13 @@ const TopMenuTab = ({ style }) => {
 
     const activeKey = useSelector(state => state.layout.activeKey)
 
-    const tabItems = useSelector(state => state.layout.tabItems)
+    const tabItemList = useSelector(state => state.layout.tabItems)
 
     const [draggedTab, setDraggedTab] = useState(null)
 
-    const { domainId, domainLoading } = useDomain()
+    const { domain, domainId, domainLoading } = useDomain()
+
+    const tabItems = tabItemList?.[domain] || []
 
     const navigate = useNavigate()
 
@@ -79,12 +81,12 @@ const TopMenuTab = ({ style }) => {
             state: location.state,
             closable: true
         }
-        dispatch(addTabIem({ tabItem: tabItem }))
+        dispatch(addTabIem({ tabItem: tabItem, domain: domain }))
     }
 
     const remove = targetKey => {
         const selectKey = afterRemoveSelectKey(targetKey)
-        dispatch(removeTabItem({ targetKey: targetKey, selectKey: selectKey }))
+        dispatch(removeTabItem({ targetKey: targetKey, selectKey: selectKey, domain: domain }))
         if (selectKey) {
             switchTab(selectKey)
         }
@@ -154,7 +156,7 @@ const TopMenuTab = ({ style }) => {
         const newIndex = tabItems.findIndex(item => item.key === over.id)
         if (oldIndex === -1 || newIndex === -1) return items // 防御性判断
         const newOrder = arrayMove(tabItems, oldIndex, newIndex)
-        dispatch(setTabIem({ tabItem: newOrder }))
+        dispatch(setTabIem({ tabItem: newOrder, domain: domain }))
         setDraggedTab(null)
     }
 
@@ -174,7 +176,7 @@ const TopMenuTab = ({ style }) => {
         };
 
         if (actionKey === 'closeOther') {
-            dispatch(removeOtherTabItem({ key: tabKey, index: tabIndex }));
+            dispatch(removeOtherTabItem({ key: tabKey, index: tabIndex, domain: domain }));
             // 关闭后选中当前 tab
             if (tabKey && tabKey !== activeKey) {
                 switchTab(tabKey);
@@ -183,14 +185,14 @@ const TopMenuTab = ({ style }) => {
         }
 
         if (actionKey === 'closeAll') {
-            dispatch(removeAllTabItem());
+            dispatch(removeAllTabItem({domain: domain}));
             const selectKey = afterCloseAllSelectKey();
             if (selectKey) switchTab(selectKey);
             return;
         }
 
         if (actionKey === 'closeLeft') {
-            dispatch(removeLeftTabItem({ key: tabKey, index: tabIndex }));
+            dispatch(removeLeftTabItem({ key: tabKey, index: tabIndex, domain: domain }));
             if (tabKey && tabKey !== activeKey) {
                 switchTab(tabKey);
             }
@@ -198,7 +200,7 @@ const TopMenuTab = ({ style }) => {
         }
 
         if (actionKey === 'closeRight') {
-            dispatch(removeRightTabItem({ key: tabKey, index: tabIndex }));
+            dispatch(removeRightTabItem({ key: tabKey, index: tabIndex, domain: domain }));
             if (tabKey && tabKey !== activeKey) {
                 switchTab(tabKey);
             }

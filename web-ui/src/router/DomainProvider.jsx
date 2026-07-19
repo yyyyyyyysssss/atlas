@@ -1,15 +1,16 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loadMenuItems, setDomain, setDomainLoading } from "../redux/slices/layoutSlice";
+import { loadMenuItems, setDomain } from "../redux/slices/layoutSlice";
 import { fetchUserPermissions } from "../services/UserProfileService";
 import { setAuthInfo } from "../redux/slices/authSlice";
 
 
 const DomainContext = createContext({
-    loadDomain: async (domain, domainId) => { },
+    loadDomain: async (domain, domainId, routeDomain) => { },
     domain: null,
     domainId: null,
-    domainLoading: false
+    domainLoading: false,
+    domainReady: false
 })
 
 export const DomainProvider = ({ children }) => {
@@ -18,32 +19,44 @@ export const DomainProvider = ({ children }) => {
 
     const domainId = useSelector(state => state.layout.domainId) || null
 
-    const domainLoading = useSelector(state => state.layout.domainLoading) || false
+
+    const [domainLoading, setDomainLoading] = useState(false)
+
+    // 当前路由需要的domain
+    const [routeDomain, setRouteDomain] = useState(null)
+
 
     const dispatch = useDispatch()
 
-    const loadDomain = async (domain, domainId) => {
-        dispatch(setDomainLoading(true))
+    const loadDomain = async (domain, domainId, routeDomain) => {
+        setRouteDomain(routeDomain)
+        setDomainLoading(true)
         try {
             const authInfo = await fetchUserPermissions(domain)
+            dispatch(setDomain({ domain: domain, domainId: domainId }))
             dispatch(setAuthInfo({ authInfo }))
             dispatch(loadMenuItems({
                 domain: domain,
                 menuItems: authInfo.menus
             }))
-            dispatch(setDomain({ domain: domain, domainId: domainId }))
             return authInfo
         } catch (error) {
             console.error("加载域权限失败:", error)
-            dispatch(setDomainLoading(false))
+            setDomainLoading(false)
             throw error
         } finally {
-            dispatch(setDomainLoading(false))
+            setDomainLoading(false)
         }
     }
 
+    const domainReady = !routeDomain || (
+            routeDomain.domain === domain &&
+            routeDomain.domainId === domainId &&
+            !domainLoading
+        )
+
     return (
-        <DomainContext.Provider value={{ domain, domainId, domainLoading, loadDomain }}>
+        <DomainContext.Provider value={{ domain, domainId, domainLoading, domainReady, loadDomain }}>
             {children}
         </DomainContext.Provider>
     )

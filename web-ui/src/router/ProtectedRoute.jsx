@@ -4,6 +4,7 @@ import Forbidden from "../pages/Forbidden";
 import { useHasPermission } from "../components/HasPermission";
 import Loading from "../components/loading";
 import { useEffect } from 'react';
+import { useDomain } from './DomainProvider';
 
 export const ProtectedRoute = ({ children, requiredPermissions, fallback, requireAll = false }) => {
 
@@ -33,7 +34,9 @@ export const ProtectedRoute = ({ children, requiredPermissions, fallback, requir
   }
 
   // 权限不足
-  if (!isAllowed) return fallback || <Forbidden />
+  if (!isAllowed) {
+    return fallback || <Forbidden />
+  }
 
   return children
 }

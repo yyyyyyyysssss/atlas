@@ -5,7 +5,6 @@ import { findRouteByPath } from '../../router/router'
 export const initialState = {
     domain: null,
     domainId: null,
-    domainLoading: false,
     activeKey: '',
     menuCollapsed: false,
     openKeys: [],
@@ -215,13 +214,10 @@ export const layoutSlice = createSlice({
                 state.activeKey = ''
                 state.openKeys = []
             }
-        },
-        setDomainLoading: (state, action) => {
-            state.domainLoading = action.payload
-        },
+        }
     }
 })
 
-export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems, setDomain, setDomainLoading } = layoutSlice.actions
+export const { reset, setActiveKey, menuCollapsed, setOpenKeys, setTabIem, addTabIem, removeTabItem, removeAllTabItem, removeOtherTabItem, removeLeftTabItem, removeRightTabItem, loadMenuItems, setDomain } = layoutSlice.actions
 
 export default layoutSlice.reducer

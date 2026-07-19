@@ -38,7 +38,7 @@ const AppLayout = () => {
 
     const { accessToken } = useAuth()
 
-    const { domainLoading } = useDomain()
+    const { domainReady, domainLoading } = useDomain()
 
     const SSE_URL = useMemo(() => {
         if (!accessToken) {
@@ -210,7 +210,7 @@ const AppLayout = () => {
                                                                     }}
                                                                     ref={nodeRef}
                                                                 >
-                                                                    {domainLoading ? <Loading tip="正在加载..." full={true} /> : outlet}
+                                                                    {!domainReady ? <Loading tip="正在加载..." full={true} /> : outlet}
                                                                 </div>
                                                             </Suspense>
                                                         </ErrorBoundary>

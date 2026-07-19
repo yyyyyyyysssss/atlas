@@ -20,7 +20,7 @@ export const useHasPermission = (
     requireAll: boolean = false
 ): boolean => {
 
-    const permissionCodes = useSelector((state: any) => state.auth.authInfo.permissions || [], shallowEqual)
+    const permissionCodes = useSelector((state: any) => state.auth.authInfo?.permissions || [], shallowEqual)
 
     const permissions = useMemo(() => {
         if (!hasPermissions) return []

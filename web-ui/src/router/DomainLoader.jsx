@@ -24,8 +24,8 @@ const DomainLoader = () => {
         if (targetDomain === domain && targetDomainId === domainId) {
             return
         }
-        loadDomain(targetDomain, targetDomainId)
-    }, [routeDomain.domain, routeDomain.domainId])
+        loadDomain(targetDomain, targetDomainId, routeDomain)
+    }, [routeDomain, domain, domainId])
 
     return null
 }

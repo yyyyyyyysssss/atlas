@@ -16,7 +16,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const OAuth2ClientApplicationEdit = () => {
 
-    const { id } = useFullParams()
+    const { domainId: projectId, id } = useFullParams()
 
     const { token } = theme.useToken()
 
@@ -27,7 +27,7 @@ const OAuth2ClientApplicationEdit = () => {
     const { message, modal } = App.useApp()
 
     const { data: applicationDetail, loading: detailApplicationLoading, refresh: refreshApplicationDetail } = useRequest(
-        () => getApplicationDetail(id),
+        () => getApplicationDetail(projectId, id),
         {
             ready: !!id,
             refreshDeps: [id],
@@ -70,7 +70,7 @@ const OAuth2ClientApplicationEdit = () => {
     }
 
     const handleAddSecret = async (applicationDetail) => {
-        const res = await addClientSecretAsync(applicationDetail.id)
+        const res = await addClientSecretAsync(projectId, applicationDetail.id)
         const { id, clientId, clientSecret } = res
         setCredentialData({
             id: id,
@@ -90,7 +90,7 @@ const OAuth2ClientApplicationEdit = () => {
             loading: deleteClientSecretLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteClientSecretAsync(clientSecretId)
+                await deleteClientSecretAsync(projectId, clientSecretId)
                 message.success('密钥删除成功')
                 refreshApplicationDetail()
             }
@@ -98,7 +98,7 @@ const OAuth2ClientApplicationEdit = () => {
     }
 
     const onFinish = async (values) => {
-        const res = await saveApplicationAsync(values)
+        const res = await saveApplicationAsync(projectId, values)
         message.success('保存成功');
         if (mode === 'create') {
             const { id, clientId, clientSecret } = res

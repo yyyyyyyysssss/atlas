@@ -65,6 +65,7 @@ public class AuthorityServiceImpl extends AbstractAuthorityService implements Au
         authority.setType(AuthorityType.ACTION);
         Authority selectAuthority = authorityMapper.selectById(authority.getParentId());
         authority.setRootId(selectAuthority.getRootId());
+        authority.setAccessControl(selectAuthority.getAccessControl());
         if (authority.getSort() == null){
             Long parentId = authority.getParentId();
             if (authority.getParentId() == null){

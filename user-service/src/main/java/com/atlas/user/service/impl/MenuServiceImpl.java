@@ -23,6 +23,7 @@ import com.atlas.user.service.RoleService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
@@ -80,12 +81,27 @@ public class MenuServiceImpl extends AbstractAuthorityService implements MenuSer
 
     @Override
     @CacheEvict(value = "user:menu", allEntries = true)
+    @Transactional
     public Integer updateMenu(MenuUpdateDTO menuUpdateDTO) {
         Authority authority = authorityMapper.selectById(menuUpdateDTO.getId());
         if (authority == null || !authority.getType().equals(AuthorityType.MENU)) {
             throw new BusinessException("该菜单不存在");
         }
+        AuthorityAccessControl accessControl = authority.getAccessControl();
         AuthorityMapping.INSTANCE.updateAuthority(menuUpdateDTO, authority);
+        if(menuUpdateDTO.getAccessControl() != null && !menuUpdateDTO.getAccessControl().equals(accessControl)){
+            List<Authority> childAuthorities = authorityMapper.selectChildrenById(authority.getId());
+            List<Long> childIds = childAuthorities.stream().map(Authority::getId).filter(f -> !f.equals(authority.getId())).toList();
+            authorityMapper.update(
+                    null,
+                    Wrappers.lambdaUpdate(Authority.class)
+                            .in(Authority::getId, childIds)
+                            .set(
+                                    Authority::getAccessControl,
+                                    menuUpdateDTO.getAccessControl()
+                            )
+            );
+        }
         return authorityMapper.updateById(authority);
     }
 

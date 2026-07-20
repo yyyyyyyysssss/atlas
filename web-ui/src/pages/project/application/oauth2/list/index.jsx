@@ -7,6 +7,7 @@ import { deleteApplication, getApplicationPage } from "../../../../../services/D
 import Loading from "../../../../../components/loading";
 import { AppstoreOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDomain } from "../../../../../router/DomainProvider";
+import useFullParams from "../../../../../hooks/useFullParams";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -17,6 +18,8 @@ const OAuth2ClientApplicationList = () => {
     const navigate = useNavigate();
     const scrollRef = useRef(null);
     const { message, modal } = App.useApp();
+
+    const { domainId: projectId } = useFullParams()
 
     const { runAsync: deleteApplicationAsync, loading: deleteApplicationLoading } = useRequest(deleteApplication, {
         manual: true
@@ -33,7 +36,7 @@ const OAuth2ClientApplicationList = () => {
     } = useInfiniteScroll(
         async (d) => {
             const pageNum = d ? d.nextPage : 1;
-            const res = await getApplicationPage(pageNum, PAGE_SIZE);
+            const res = await getApplicationPage(projectId, pageNum, PAGE_SIZE);
             const hasMore = pageNum * PAGE_SIZE < res.total;
 
             return {
@@ -63,7 +66,7 @@ const OAuth2ClientApplicationList = () => {
             loading: deleteApplicationLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteApplicationAsync(id);
+                await deleteApplicationAsync(projectId, id);
                 message.success('应用删除成功');
                 if (data) {
                     mutate({

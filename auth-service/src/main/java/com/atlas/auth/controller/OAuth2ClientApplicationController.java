@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/{projectId}/application/oauth2")
+@RequestMapping("/{projectCode}/application/oauth2")
 @RequiredArgsConstructor
 public class OAuth2ClientApplicationController {
 
@@ -22,38 +22,38 @@ public class OAuth2ClientApplicationController {
 
 
     @PostMapping("/save")
-    public Result<OAuth2ClientApplicationCreateVO> save(@PathVariable("projectId") String projectId, @RequestBody @Validated OAuth2ClientApplicationSaveDTO saveDTO){
-        OAuth2ClientApplicationCreateVO createVO = oAuth2ApplicationFacadeService.save(saveDTO);
+    public Result<OAuth2ClientApplicationCreateVO> save(@PathVariable("projectCode") String projectCode, @RequestBody @Validated OAuth2ClientApplicationSaveDTO saveDTO){
+        OAuth2ClientApplicationCreateVO createVO = oAuth2ApplicationFacadeService.save(projectCode, saveDTO);
         return ResultGenerator.ok(createVO);
     }
 
     @GetMapping("/{id}")
-    public Result<OAuth2ClientApplicationVO> getDetail(@PathVariable("projectId") String projectId, @PathVariable("id") Long id){
-        OAuth2ClientApplicationVO vo = oAuth2ApplicationFacadeService.getApplicationDetail(id);
+    public Result<OAuth2ClientApplicationVO> getDetail(@PathVariable("projectCode") String projectCode, @PathVariable("id") Long id){
+        OAuth2ClientApplicationVO vo = oAuth2ApplicationFacadeService.getApplicationDetail(projectCode, id);
         return ResultGenerator.ok(vo);
     }
 
     @GetMapping("/page")
-    public Result<PageInfo<OAuth2ClientApplicationVO>> getPage(@PathVariable("projectId") String projectId, OAuth2ClientApplicationQueryDTO queryDTO) {
-        PageInfo<OAuth2ClientApplicationVO> pageInfo = oAuth2ApplicationFacadeService.getPage(queryDTO);
+    public Result<PageInfo<OAuth2ClientApplicationVO>> getPage(@PathVariable("projectCode") String projectCode, OAuth2ClientApplicationQueryDTO queryDTO) {
+        PageInfo<OAuth2ClientApplicationVO> pageInfo = oAuth2ApplicationFacadeService.getPage(projectCode, queryDTO);
         return ResultGenerator.ok(pageInfo);
     }
 
     @PostMapping("/{id}/secret")
-    public Result<OAuth2ClientApplicationCreateVO> addClientSecret(@PathVariable("projectId") String projectId, @PathVariable("id") Long id) {
-        OAuth2ClientApplicationCreateVO createVO = oAuth2ApplicationFacadeService.addClientSecret(id);
+    public Result<OAuth2ClientApplicationCreateVO> addClientSecret(@PathVariable("projectCode") String projectCode, @PathVariable("id") Long id) {
+        OAuth2ClientApplicationCreateVO createVO = oAuth2ApplicationFacadeService.addClientSecret(projectCode, id);
         return ResultGenerator.ok(createVO);
     }
 
     @DeleteMapping("/secret/{clientSecretId}")
-    public Result<Void> deleteClientSecret(@PathVariable("projectId") String projectId, @PathVariable("clientSecretId") Long clientSecretId){
-        oAuth2ApplicationFacadeService.deleteClientSecret(clientSecretId);
+    public Result<Void> deleteClientSecret(@PathVariable("projectCode") String projectCode, @PathVariable("clientSecretId") Long clientSecretId){
+        oAuth2ApplicationFacadeService.deleteClientSecret(projectCode, clientSecretId);
         return ResultGenerator.ok();
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable("projectId") String projectId, @PathVariable("id") Long id){
-        oAuth2ApplicationFacadeService.deleteByApplicationId(id);
+    public Result<Void> delete(@PathVariable("projectCode") String projectCode, @PathVariable("id") Long id){
+        oAuth2ApplicationFacadeService.deleteByApplicationId(projectCode, id);
         return ResultGenerator.ok();
     }
 }

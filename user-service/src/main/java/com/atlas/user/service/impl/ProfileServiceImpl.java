@@ -72,7 +72,7 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         // 用户权限
-        List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId,domain);
+        List<AuthorityVO> authorityVOList = authorityService.findByUserId(userId);
         if (!CollectionUtils.isEmpty(authorityVOList)) {
             Set<String> permissionCodes = authorityVOList.stream().map(AuthorityVO::getCode).collect(Collectors.toSet());
             authInfoVO.setPermissions(permissionCodes);

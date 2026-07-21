@@ -19,7 +19,7 @@ const OAuth2ClientApplicationList = () => {
     const scrollRef = useRef(null);
     const { message, modal } = App.useApp();
 
-    const { domainId: projectId } = useFullParams()
+    const { domainId: projectCode } = useFullParams()
 
     const { runAsync: deleteApplicationAsync, loading: deleteApplicationLoading } = useRequest(deleteApplication, {
         manual: true
@@ -36,7 +36,7 @@ const OAuth2ClientApplicationList = () => {
     } = useInfiniteScroll(
         async (d) => {
             const pageNum = d ? d.nextPage : 1;
-            const res = await getApplicationPage(projectId, pageNum, PAGE_SIZE);
+            const res = await getApplicationPage(projectCode, pageNum, PAGE_SIZE);
             const hasMore = pageNum * PAGE_SIZE < res.total;
 
             return {
@@ -66,7 +66,7 @@ const OAuth2ClientApplicationList = () => {
             loading: deleteApplicationLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteApplicationAsync(projectId, id);
+                await deleteApplicationAsync(projectCode, id);
                 message.success('应用删除成功');
                 if (data) {
                     mutate({

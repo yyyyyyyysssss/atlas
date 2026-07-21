@@ -55,16 +55,16 @@ public class OAuth2ClientApplicationFacadeService {
      * 保存应用（兼容创建和修改）
      */
     @Transactional(rollbackFor = Exception.class)
-    public OAuth2ClientApplicationCreateVO save(OAuth2ClientApplicationSaveDTO saveDTO) {
+    public OAuth2ClientApplicationCreateVO save(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO) {
         if (saveDTO.id() == null){
-            return createApplication(saveDTO);
+            return createApplication(projectCode, saveDTO);
         } else {
             updateApplication(saveDTO);
             return null;
         }
     }
 
-    public PageInfo<OAuth2ClientApplicationVO> getPage(OAuth2ClientApplicationQueryDTO queryDTO){
+    public PageInfo<OAuth2ClientApplicationVO> getPage(String projectCode, OAuth2ClientApplicationQueryDTO queryDTO){
         try (DataPermissionContext ctx = DataPermissionContext.open()){
             Integer pageNum = queryDTO.getPageNum();
             Integer pageSize = queryDTO.getPageSize();
@@ -80,7 +80,7 @@ public class OAuth2ClientApplicationFacadeService {
         }
     }
 
-    public OAuth2ClientApplicationVO getApplicationDetail(Long applicationId){
+    public OAuth2ClientApplicationVO getApplicationDetail(String projectCode, Long applicationId){
         Objects.requireNonNull(applicationId, "applicationId must not be null");
         OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
         if (app == null) {
@@ -95,7 +95,7 @@ public class OAuth2ClientApplicationFacadeService {
     }
 
     @Transactional
-    public void deleteByApplicationId(Long id){
+    public void deleteByApplicationId(String projectCode, Long id){
         log.info("正在删除 OAuth2 应用，ID: {}", id);
         OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(id);
         if (app == null) {
@@ -120,7 +120,7 @@ public class OAuth2ClientApplicationFacadeService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public OAuth2ClientApplicationCreateVO addClientSecret(Long applicationId) {
+    public OAuth2ClientApplicationCreateVO addClientSecret(String projectCode, Long applicationId) {
         Objects.requireNonNull(applicationId, "applicationId must not be null");
         log.info("正在为 OAuth2 应用生成新密钥，ID: {}", applicationId);
         OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
@@ -143,7 +143,7 @@ public class OAuth2ClientApplicationFacadeService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteClientSecret(Long clientSecretId){
+    public void deleteClientSecret(String projectCode, Long clientSecretId){
         Objects.requireNonNull(clientSecretId, "clientSecretId must not be null");
         log.info("正在删除 OAuth2 应用密钥，ID: {}", clientSecretId);
         OAuth2ClientSecret targetSecret = oAuth2ClientSecretService.getById(clientSecretId);
@@ -175,7 +175,7 @@ public class OAuth2ClientApplicationFacadeService {
         log.info("OAuth2 应用密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
     }
 
-    private OAuth2ClientApplicationCreateVO createApplication(OAuth2ClientApplicationSaveDTO saveDTO){
+    private OAuth2ClientApplicationCreateVO createApplication(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO){
         log.info("正在创建 OAuth2 应用，名称: {}", saveDTO.applicationName());
         // oauth2_registered_client 物理主键
         String registeredClientId = UUID.randomUUID().toString().replace("-", "");

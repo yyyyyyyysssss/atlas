@@ -16,7 +16,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const OAuth2ClientApplicationEdit = () => {
 
-    const { domainId: projectId, id } = useFullParams()
+    const { domainId: projectCode, id } = useFullParams()
 
     const { token } = theme.useToken()
 
@@ -27,7 +27,7 @@ const OAuth2ClientApplicationEdit = () => {
     const { message, modal } = App.useApp()
 
     const { data: applicationDetail, loading: detailApplicationLoading, refresh: refreshApplicationDetail } = useRequest(
-        () => getApplicationDetail(projectId, id),
+        () => getApplicationDetail(projectCode, id),
         {
             ready: !!id,
             refreshDeps: [id],
@@ -70,7 +70,7 @@ const OAuth2ClientApplicationEdit = () => {
     }
 
     const handleAddSecret = async (applicationDetail) => {
-        const res = await addClientSecretAsync(projectId, applicationDetail.id)
+        const res = await addClientSecretAsync(projectCode, applicationDetail.id)
         const { id, clientId, clientSecret } = res
         setCredentialData({
             id: id,
@@ -90,7 +90,7 @@ const OAuth2ClientApplicationEdit = () => {
             loading: deleteClientSecretLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteClientSecretAsync(projectId, clientSecretId)
+                await deleteClientSecretAsync(projectCode, clientSecretId)
                 message.success('密钥删除成功')
                 refreshApplicationDetail()
             }
@@ -98,7 +98,7 @@ const OAuth2ClientApplicationEdit = () => {
     }
 
     const onFinish = async (values) => {
-        const res = await saveApplicationAsync(projectId, values)
+        const res = await saveApplicationAsync(projectCode, values)
         message.success('保存成功');
         if (mode === 'create') {
             const { id, clientId, clientSecret } = res
@@ -351,7 +351,7 @@ const OAuth2ClientApplicationEdit = () => {
                                     <Button
                                         type="primary"
                                         htmlType="submit"
-                                        loading={false}
+                                        loading={saveApplicationLoading}
                                     >
                                         保存
                                     </Button>
@@ -365,7 +365,7 @@ const OAuth2ClientApplicationEdit = () => {
                                 </Flex>
                             </Form.Item>
                         </div>
-                    </Form>
+                    </Form> 
                 </Flex>
 
                 <Flex

@@ -20,6 +20,9 @@ public class OAuth2ClientApplication extends BaseEntity {
     public OAuth2ClientApplication() {
     }
 
+    @TableField("project_id")
+    private Long projectId;
+
     @TableField("registered_client_id")
     private String registeredClientId;
 

@@ -23,11 +23,16 @@ public interface ProjectService extends IService<Project> {
     // 保存或更新项目 (根据 ID 自动判定)
     ProjectCreateVO saveProject(ProjectSaveDTO saveDTO);
 
+    ProjectVO getProjectDetail(Long id);
+
     // 根据项目唯一编码获取项目详情
     ProjectVO getByCode(String projectCode);
 
     // 分页条件查询项目列表
-    PageInfo<ProjectVO> page(ProjectQueryDTO queryDTO);
+    PageInfo<ProjectVO> getPage(ProjectQueryDTO queryDTO);
+
+    // 根据 ID 逻辑删除/归档项目
+    void deleteProject(Long id);
 
 }
 

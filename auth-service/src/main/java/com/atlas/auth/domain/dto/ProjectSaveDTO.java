@@ -19,8 +19,6 @@ public record ProjectSaveDTO (
 
         String description,
 
-        Long orgId,
-
         Long ownerId,
 
         String ownerName
@@ -31,7 +29,6 @@ public record ProjectSaveDTO (
         project.setProjectName(projectName);
         project.setStatus(status);
         project.setDescription(description);
-        project.setOrgId(orgId);
         project.setOwnerId(ownerId);
         project.setOwnerName(ownerName);
 

@@ -45,9 +45,9 @@ public class OAuth2ClientApplicationController {
         return ResultGenerator.ok(createVO);
     }
 
-    @DeleteMapping("/secret/{clientSecretId}")
-    public Result<Void> deleteClientSecret(@PathVariable("projectCode") String projectCode, @PathVariable("clientSecretId") Long clientSecretId){
-        oAuth2ApplicationFacadeService.deleteClientSecret(projectCode, clientSecretId);
+    @DeleteMapping("/{id}/secret/{clientSecretId}")
+    public Result<Void> deleteClientSecret(@PathVariable("projectCode") String projectCode, @PathVariable("id") Long id, @PathVariable("clientSecretId") Long clientSecretId){
+        oAuth2ApplicationFacadeService.deleteClientSecret(projectCode, id, clientSecretId);
         return ResultGenerator.ok();
     }
 

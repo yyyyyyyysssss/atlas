@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -59,7 +60,6 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             project.setProjectName(saveDTO.projectName());
             project.setDescription(saveDTO.description());
             project.setStatus(saveDTO.status());
-            project.setOrgId(saveDTO.orgId());
             project.setOwnerId(saveDTO.ownerId());
             project.setOwnerName(saveDTO.ownerName());
             this.updateById(project);
@@ -68,15 +68,29 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     }
 
     @Override
-    public ProjectVO getByCode(String projectCode) {
-        Project project = this.lambdaQuery()
-                .eq(Project::getProjectCode, projectCode)
-                .one();
+    public ProjectVO getProjectDetail(Long id) {
+        Objects.requireNonNull(id, "项目ID不能为空");
+        Project project = this.getById(id);
+        if (project == null) {
+            return null;
+        }
         return ProjectVO.of(project);
     }
 
     @Override
-    public PageInfo<ProjectVO> page(ProjectQueryDTO queryDTO) {
+    public ProjectVO getByCode(String projectCode) {
+        Objects.requireNonNull(projectCode, "项目编码不能为空");
+        Project project = this.lambdaQuery()
+                .eq(Project::getProjectCode, projectCode)
+                .one();
+        if (project == null) {
+            return null;
+        }
+        return ProjectVO.of(project);
+    }
+
+    @Override
+    public PageInfo<ProjectVO> getPage(ProjectQueryDTO queryDTO) {
         try (DataPermissionContext ctx = DataPermissionContext.open()){
             Integer pageNum = queryDTO.getPageNum();
             Integer pageSize = queryDTO.getPageSize();
@@ -90,6 +104,30 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             PageInfo<Project> entityPageInfo = new PageInfo<>(projects);
             return entityPageInfo.convert(ProjectVO::of);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteProject(Long id) {
+        Objects.requireNonNull(id, "项目ID不能为空");
+
+        Project project = this.getById(id);
+        if (project == null) {
+            throw new BusinessException("项目不存在或已被删除");
+        }
+
+        // 已经处于归档状态，避免重复操作
+        if (ProjectStatus.ARCHIVED.equals(project.getStatus())) {
+            throw new BusinessException("项目已处于归档状态，无需重复操作");
+        }
+
+        // 修改状态为归档（逻辑删除）
+        project.setStatus(ProjectStatus.ARCHIVED);
+        boolean updated = this.updateById(project);
+        if (!updated) {
+            throw new BusinessException("删除项目失败，请稍后重试");
+        }
+        log.info("项目成功归档(逻辑删除)，ID: {}, projectCode: {}", id, project.getProjectCode());
     }
 }
 

@@ -47,7 +47,7 @@ public class AuthorizationConsentController {
             throw new OAuth2AuthenticationException("invalid_client");
         }
         // 获取该客户端的应用信息
-        OAuth2ClientApplication auth2ClientApplication = oAuth2ClientApplicationService.getByRegisteredClientId(registeredClient.getId());
+        OAuth2ClientApplication auth2ClientApplication = oAuth2ClientApplicationService.loadClientByRegisteredClientId(registeredClient.getId());
         // 构建url
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(securityProperties.getUiUrl())
                 .path("/oauth2/consent")

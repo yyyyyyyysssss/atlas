@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath, matchRoutes } from "react-router"
-import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg, LayoutGrid, Boxes } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -45,6 +45,7 @@ const OAuth2ClientApplicationList = lazy(() => import('../pages/project/applicat
 const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/oauth2/edit'))
 
 
+const Project = lazy(() => import('../pages/project'))
 const ProjectOverview = lazy(() => import('../pages/project/overview'))
 const ProjectApplication = lazy(() => import('../pages/project/application'))
 
@@ -119,6 +120,21 @@ export const routes = [
                 element: <ProjectWorkbench />,
                 protected: true,
                 requiredPermissions: ['workbench']
+            },
+            {
+                path: 'project-workspace',
+                breadcrumbName: '项目空间',
+                defaultIcon: <Boxes size={18} />,
+                element: <Outlet />,
+                protected: true,
+                requiredPermissions: ['project:workspace'],
+                children: [
+                    {
+                        index: true,
+                        breadcrumbName: '项目空间',
+                        element: <Project />
+                    },
+                ]
             },
             {
                 path: 'account/settings',
@@ -417,7 +433,7 @@ export const lookupRouteByPath = (targetPath) => {
             return null;
         }
         if (route.path !== '') {
-            fullPath = fullPath + (route.path.startsWith('/') ? route.path : '/' + route.path)
+            fullPath = fullPath + (route.path?.startsWith('/') ? route.path : '/' + route.path)
         }
         const result = matchPath({ path: fullPath }, targetPath)
         if (result) {

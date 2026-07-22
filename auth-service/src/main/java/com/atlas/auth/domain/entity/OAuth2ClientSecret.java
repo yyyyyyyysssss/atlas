@@ -26,6 +26,9 @@ public class OAuth2ClientSecret extends BaseIdEntity {
     public OAuth2ClientSecret() {
     }
 
+    @TableField("application_id")
+    private Long applicationId;
+
     // 关联 oauth2_registered_client.id 
     @TableField("registered_client_id")
     private String registeredClientId;

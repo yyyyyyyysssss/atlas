@@ -7,6 +7,8 @@ import com.atlas.auth.domain.entity.OAuth2ClientApplication;
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationCreateVO;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationVO;
+import com.atlas.auth.domain.vo.ProjectVO;
+import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
@@ -51,28 +53,32 @@ public class OAuth2ClientApplicationFacadeService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final ProjectService projectService;
+
     /**
      * 保存应用（兼容创建和修改）
      */
     @Transactional(rollbackFor = Exception.class)
     public OAuth2ClientApplicationCreateVO save(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO) {
-        if (saveDTO.id() == null){
+        if (saveDTO.id() == null) {
             return createApplication(projectCode, saveDTO);
         } else {
-            updateApplication(saveDTO);
+            updateApplication(projectCode, saveDTO);
             return null;
         }
     }
 
-    public PageInfo<OAuth2ClientApplicationVO> getPage(String projectCode, OAuth2ClientApplicationQueryDTO queryDTO){
-        try (DataPermissionContext ctx = DataPermissionContext.open()){
+    public PageInfo<OAuth2ClientApplicationVO> getPage(String projectCode, OAuth2ClientApplicationQueryDTO queryDTO) {
+        ProjectVO projectVO = checkAndGetProject(projectCode);
+        try (DataPermissionContext ctx = DataPermissionContext.open()) {
             Integer pageNum = queryDTO.getPageNum();
             Integer pageSize = queryDTO.getPageSize();
             PageHelper.startPage(pageNum, pageSize);
-            QueryWrapper<OAuth2ClientApplication> queryWrapper = new QueryWrapper<>();
-            queryWrapper.orderByAsc("create_time");
-            List<OAuth2ClientApplication> applications = oAuth2ClientApplicationService.list(queryWrapper);
-            if(CollectionUtils.isEmpty(applications)){
+            List<OAuth2ClientApplication> applications = oAuth2ClientApplicationService.lambdaQuery()
+                    .eq(OAuth2ClientApplication::getProjectId, projectVO.id())
+                    .orderByAsc(OAuth2ClientApplication::getCreateTime)
+                    .list();
+            if (CollectionUtils.isEmpty(applications)) {
                 return PageInfo.emptyPageInfo();
             }
             PageInfo<OAuth2ClientApplication> entityPageInfo = new PageInfo<>(applications);
@@ -80,12 +86,13 @@ public class OAuth2ClientApplicationFacadeService {
         }
     }
 
-    public OAuth2ClientApplicationVO getApplicationDetail(String projectCode, Long applicationId){
+    public OAuth2ClientApplicationVO getApplicationDetail(String projectCode, Long applicationId) {
         Objects.requireNonNull(applicationId, "applicationId must not be null");
         OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
         if (app == null) {
             throw new BusinessException("应用不存在");
         }
+        checkAndGetProject(projectCode, app.getProjectId());
         RegisteredClient registeredClient = registeredClientRepository.findById(app.getRegisteredClientId());
         if (registeredClient == null) {
             throw new BusinessException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
@@ -95,13 +102,14 @@ public class OAuth2ClientApplicationFacadeService {
     }
 
     @Transactional
-    public void deleteByApplicationId(String projectCode, Long id){
+    public void deleteByApplicationId(String projectCode, Long id) {
         log.info("正在删除 OAuth2 应用，ID: {}", id);
         OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(id);
         if (app == null) {
             log.warn("删除 OAuth2 应用失败，应用不存在，ID: {}", id);
             throw new BusinessException("应用不存在或已被删除");
         }
+        checkAndEnsureProjectActive(projectCode, app.getProjectId());
         // 删除oauth2客户端密钥信息
         oAuth2ClientSecretService.removeByRegisteredClientId(app.getRegisteredClientId());
         // 删除oauth2客户端对应的所有token
@@ -111,7 +119,7 @@ public class OAuth2ClientApplicationFacadeService {
 
         // 删除客户端应用主表信息
         boolean delFlag = oAuth2ClientApplicationService.removeById(id);
-        if(!delFlag){
+        if (!delFlag) {
             log.error("删除 OAuth2 应用主表记录失败，ID: {}", id);
             throw new BusinessException("删除应用失败，请稍后重试");
         }
@@ -127,9 +135,10 @@ public class OAuth2ClientApplicationFacadeService {
         if (app == null) {
             throw new BusinessException("应用不存在");
         }
+        checkAndEnsureProjectActive(projectCode, app.getProjectId());
         String registeredClientId = app.getRegisteredClientId();
         long countValidSecrets = oAuth2ClientSecretService.countValidSecrets(registeredClientId);
-        if(countValidSecrets >= 2 ){
+        if (countValidSecrets >= 2) {
             throw new BusinessException("每个应用最多只能同时存在 2 个有效密钥，请先删除旧密钥后再生成新密钥");
         }
         RegisteredClient registeredClient = registeredClientRepository.findById(registeredClientId);
@@ -138,21 +147,30 @@ public class OAuth2ClientApplicationFacadeService {
         }
         String rawSecret = SecureUidGenerator.generate(32);
         // 保存密钥
-        saveClientSecret(registeredClientId, rawSecret);
-        return new OAuth2ClientApplicationCreateVO(app.getId(),registeredClient.getClientId(), rawSecret);
+        saveClientSecret(app, rawSecret);
+        return new OAuth2ClientApplicationCreateVO(app.getId(), registeredClient.getClientId(), rawSecret);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteClientSecret(String projectCode, Long clientSecretId){
+    public void deleteClientSecret(String projectCode, Long applicationId, Long clientSecretId) {
         Objects.requireNonNull(clientSecretId, "clientSecretId must not be null");
         log.info("正在删除 OAuth2 应用密钥，ID: {}", clientSecretId);
+        OAuth2ClientApplication app = oAuth2ClientApplicationService.getById(applicationId);
+        if (app == null) {
+            throw new BusinessException("应用不存在");
+        }
+        checkAndEnsureProjectActive(projectCode, app.getProjectId());
         OAuth2ClientSecret targetSecret = oAuth2ClientSecretService.getById(clientSecretId);
         if (targetSecret == null) {
             throw new BusinessException("该密钥不存在或已被删除");
         }
+        if(!Objects.equals(targetSecret.getApplicationId(),applicationId)){
+            throw new BusinessException("该密钥应用信息不匹配");
+        }
+
         String registeredClientId = targetSecret.getRegisteredClientId();
         List<OAuth2ClientSecret> validSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(registeredClientId);
-        if(CollectionUtils.isEmpty(validSecrets) || validSecrets.size() == 1){
+        if (CollectionUtils.isEmpty(validSecrets) || validSecrets.size() == 1) {
             throw new BusinessException("每个应用必须保留至少 1 个有效密钥，无法继续删除");
         }
         boolean isDeleted = oAuth2ClientSecretService.removeById(clientSecretId);
@@ -175,8 +193,9 @@ public class OAuth2ClientApplicationFacadeService {
         log.info("OAuth2 应用密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
     }
 
-    private OAuth2ClientApplicationCreateVO createApplication(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO){
+    private OAuth2ClientApplicationCreateVO createApplication(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO) {
         log.info("正在创建 OAuth2 应用，名称: {}", saveDTO.applicationName());
+        ProjectVO projectVO = checkAndEnsureProjectActive(projectCode);
         // oauth2_registered_client 物理主键
         String registeredClientId = UUID.randomUUID().toString().replace("-", "");
         // 暴露给用户的 clientId
@@ -236,12 +255,10 @@ public class OAuth2ClientApplicationFacadeService {
 
         registeredClientRepository.save(clientBuilder.build());
 
-        // 保存密钥
-        saveClientSecret(registeredClientId, rawSecret);
-
         // 保存 (oauth2_application)
         OAuth2ClientApplication oAuth2Application = new OAuth2ClientApplication();
         oAuth2Application.setId(IdGen.genId());
+        oAuth2Application.setProjectId(projectVO.id());
         oAuth2Application.setRegisteredClientId(registeredClientId);
         oAuth2Application.setClientId(clientId);
         oAuth2Application.setApplicationName(saveDTO.applicationName());
@@ -253,32 +270,42 @@ public class OAuth2ClientApplicationFacadeService {
         oAuth2Application.setDeveloperEmail(saveDTO.developerEmail());
         oAuth2Application.setDescription(saveDTO.description());
         oAuth2ClientApplicationService.save(oAuth2Application);
+
+        // 保存密钥
+        saveClientSecret(oAuth2Application, rawSecret);
+
         log.info("OAuth2 应用创建成功, id: {}, clientId: {}", oAuth2Application.getId(), clientId);
-        return new OAuth2ClientApplicationCreateVO(oAuth2Application.getId(),clientId, rawSecret);
+        return new OAuth2ClientApplicationCreateVO(oAuth2Application.getId(), clientId, rawSecret);
     }
 
-
-    private void updateApplication(OAuth2ClientApplicationSaveDTO saveDTO){
+    private void updateApplication(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO) {
         Long applicationId = saveDTO.id();
         log.info("正在修改 OAuth2 应用，ID: {}", applicationId);
         OAuth2ClientApplication oauth2Application = oAuth2ClientApplicationService.getById(applicationId);
         if (oauth2Application == null) {
             throw new BusinessException("当前编辑的应用不存在");
         }
+        checkAndEnsureProjectActive(projectCode, oauth2Application.getProjectId());
         RegisteredClient registeredClient = registeredClientRepository.findById(oauth2Application.getRegisteredClientId());
         if (registeredClient == null) {
-            throw new BusinessException("应用["+oauth2Application.getApplicationName()+"]关联的OAuth2客户端数据丢失，请检查数据一致性");
+            throw new BusinessException("应用[" + oauth2Application.getApplicationName() + "]关联的OAuth2客户端数据丢失，请检查数据一致性");
         }
         List<OAuth2ClientSecret> oAuth2ClientSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(oauth2Application.getRegisteredClientId());
-        if(CollectionUtils.isEmpty(oAuth2ClientSecrets)){
+        if (CollectionUtils.isEmpty(oAuth2ClientSecrets)) {
             throw new BusinessException("当前客户端应用密钥为空");
         }
         RegisteredClient updatedClient = RegisteredClient.from(registeredClient)
                 .clientName(saveDTO.applicationName())
                 .clientSecret(oAuth2ClientSecrets.getFirst().getClientSecret())
                 // 清理旧的回调和范围，重新注入新配置
-                .redirectUris(uris -> { uris.clear(); if (saveDTO.redirectUri() != null) uris.addAll(saveDTO.redirectUri()); })
-                .scopes(scopes -> { scopes.clear(); if (saveDTO.scopes() != null) scopes.addAll(saveDTO.scopes()); })
+                .redirectUris(uris -> {
+                    uris.clear();
+                    if (saveDTO.redirectUri() != null) uris.addAll(saveDTO.redirectUri());
+                })
+                .scopes(scopes -> {
+                    scopes.clear();
+                    if (saveDTO.scopes() != null) scopes.addAll(saveDTO.scopes());
+                })
                 // 动态重组授权码、刷新模式与设备码模式
                 .authorizationGrantTypes(types -> {
                     types.clear();
@@ -305,17 +332,51 @@ public class OAuth2ClientApplicationFacadeService {
         log.info("OAuth2 应用配置更新成功, id: {}, applicationName: {}", oauth2Application.getId(), oauth2Application.getApplicationName());
     }
 
-    private void saveClientSecret(String registeredClientId, String rawSecret){
+    private void saveClientSecret(OAuth2ClientApplication auth2ClientApplication, String rawSecret) {
         // 保存密钥
         String hint = rawSecret.length() > 4 ? rawSecret.substring(rawSecret.length() - 4) : rawSecret;
         OAuth2ClientSecret clientSecretEntity = new OAuth2ClientSecret();
         clientSecretEntity.setId(IdGen.genId());
-        clientSecretEntity.setRegisteredClientId(registeredClientId);
+        clientSecretEntity.setApplicationId(auth2ClientApplication.getId());
+        clientSecretEntity.setRegisteredClientId(auth2ClientApplication.getRegisteredClientId());
         clientSecretEntity.setClientSecret(passwordEncoder.encode(rawSecret));
         clientSecretEntity.setClientSecretHint(hint);
         // client_secret_expires_at 默认为空，代表永不过期
         clientSecretEntity.setClientSecretExpiresAt(null);
         clientSecretEntity.setCreateTime(LocalDateTime.now());
         oAuth2ClientSecretService.save(clientSecretEntity);
+    }
+
+    private ProjectVO checkAndEnsureProjectActive(String projectCode) {
+        ProjectVO projectVO = checkAndGetProject(projectCode);
+        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
+            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
+        }
+        return projectVO;
+    }
+
+    private ProjectVO checkAndEnsureProjectActive(String projectCode, Long checkProjectId) {
+        ProjectVO projectVO = checkAndGetProject(projectCode, checkProjectId);
+        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
+            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
+        }
+        return projectVO;
+    }
+
+    private ProjectVO checkAndGetProject(String projectCode, Long checkProjectId) {
+        ProjectVO projectVO = checkAndGetProject(projectCode);
+        if (!Objects.equals(projectVO.id(), checkProjectId)) {
+            throw new BusinessException("项目信息不匹配，请重新刷新页面");
+        }
+        return projectVO;
+    }
+
+    private ProjectVO checkAndGetProject(String projectCode) {
+        Objects.requireNonNull(projectCode, "项目编码不能为空");
+        ProjectVO projectVO = projectService.getByCode(projectCode);
+        if (projectVO == null) {
+            throw new BusinessException("该项目不存在: " + projectCode);
+        }
+        return projectVO;
     }
 }

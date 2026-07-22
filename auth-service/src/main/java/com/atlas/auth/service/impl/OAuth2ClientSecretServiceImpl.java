@@ -23,9 +23,6 @@ import java.util.List;
 @AllArgsConstructor
 @Slf4j
 public class OAuth2ClientSecretServiceImpl extends ServiceImpl<OAuth2ClientSecretMapper, OAuth2ClientSecret> implements OAuth2ClientSecretService {
-    
-    private OAuth2ClientSecretMapper oauth2ClientSecretMapper;
-
 
     @Override
     public List<OAuth2ClientSecret> listValidSecretsByRegisteredClientId(String registeredClientId) {

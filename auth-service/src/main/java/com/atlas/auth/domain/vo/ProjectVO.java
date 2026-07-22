@@ -12,11 +12,10 @@ import java.time.LocalDateTime;
  */
 public record ProjectVO (
 
-        String id,
+        Long id,
         String projectName,
         String projectCode,
         String description,
-        Long orgId,
         ProjectStatus status,
         Long ownerId,
         String ownerName,
@@ -30,11 +29,10 @@ public record ProjectVO (
             return null;
         }
         return new ProjectVO(
-                String.valueOf(entity.getId()),
+                entity.getId(),
                 entity.getProjectName(),
                 entity.getProjectCode(),
                 entity.getDescription(),
-                entity.getOrgId(),
                 entity.getStatus(),
                 entity.getOwnerId(),
                 entity.getOwnerName(),

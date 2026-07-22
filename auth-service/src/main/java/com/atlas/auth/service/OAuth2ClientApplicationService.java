@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface OAuth2ClientApplicationService extends IService<OAuth2ClientApplication> {
 
 
-    OAuth2ClientApplication getByRegisteredClientId(String registeredClientId);
+    OAuth2ClientApplication loadClientByRegisteredClientId(String registeredClientId);
+
+    OAuth2ClientApplication loadClientByClientId(String registeredClientId);
 
 }

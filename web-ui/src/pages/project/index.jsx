@@ -153,7 +153,8 @@ const Project = () => {
                                             cursor: isActive ? "pointer" : "not-allowed",
                                             filter: isActive ? "none" : "grayscale(60%)",
                                             transition: "all 0.2s ease",
-                                            padding: "12px 0"
+                                            padding: "4px 0",
+                                            marginBottom: 8
                                         }}
                                     >
                                         <Flex align="center" justify="space-between" style={{ width: "100%" }} gap={16}>
@@ -169,7 +170,7 @@ const Project = () => {
                                                 <Button
                                                     type="text"
                                                     disabled={project.status !== 'active'}
-                                                    icon={<RightOutlined style={{ fontSize: 18 }} />}
+                                                    icon={<RightOutlined style={{ fontSize: 20 }} />}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         navigate(`/project/${project.projectCode}`, { replace: true });

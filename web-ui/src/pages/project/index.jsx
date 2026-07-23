@@ -1,11 +1,12 @@
 import React, { useRef, useState } from "react";
 import "./index.css";
-import { List, theme, App, Card, Avatar, Typography, Tooltip, Flex, Button } from "antd";
+import { List, theme, App, Card, Avatar, Typography, Tooltip, Flex, Button, Tag, Badge } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteScroll, useRequest } from "ahooks";
-import { FolderOutlined, DeleteOutlined, EditOutlined, FolderOpenOutlined, PlusOutlined } from "@ant-design/icons";
-import { deleteProject, getProjectPage } from "../../services/ProjectService";
+import { FolderOutlined, DeleteOutlined, EditOutlined, FolderOpenOutlined, PlusOutlined, UndoOutlined, RightOutlined } from "@ant-design/icons";
+import { deleteProject, getProjectPage, restoreProject } from "../../services/ProjectService";
 import Loading from "../../components/loading";
+import { Box } from "lucide-react";
 
 const { Text, Title, Paragraph } = Typography;
 const { useToken } = theme;
@@ -13,11 +14,18 @@ const PAGE_SIZE = 10;
 
 const Project = () => {
     const { token } = useToken();
+
     const navigate = useNavigate();
+
     const scrollRef = useRef(null);
+
     const { message, modal } = App.useApp();
 
     const { runAsync: deleteProjectAsync, loading: deleteProjectLoading } = useRequest(deleteProject, {
+        manual: true
+    });
+
+    const { runAsync: restoreProjectAsync, loading: restoreProjectLoading } = useRequest(restoreProject, {
         manual: true
     });
 
@@ -47,32 +55,47 @@ const Project = () => {
         }
     );
 
-    const projectList = data?.list || [];
+    const projectList = data?.list || []
+
+    const hancleCreate = () => {
+        navigate('create', { replace: true })
+    }
+
+    const updateLocalItemStatus = (id, newStatus) => {
+        if (!data) return;
+        mutate({
+            ...data,
+            list: data.list.map((item) => {
+                if (item.id === id) {
+                    return { ...item, status: newStatus };
+                }
+                return item;
+            })
+        });
+    };
 
     // 处理删除项目
-    const handleDeleteProject = (id, e) => {
-        e?.stopPropagation(); // 阻止冒泡，避免触发跳转
-
+    const handleDeleteProject = (id) => {
         modal.confirm({
-            title: "确定要删除该项目吗？",
-            content: "项目删除后，关联的所有数据配置及应用权限都将被清除，此操作不可逆！",
-            okText: "确定删除",
+            title: "确定要归档该项目吗？",
+            content: "归档后该项目及其关联应用将暂停服务，您可以随时在列表中重新启用。",
+            okText: "确认归档",
             okType: "danger",
             loading: deleteProjectLoading,
             cancelText: "取消",
             onOk: async () => {
                 await deleteProjectAsync(id);
-                message.success("项目删除成功");
-                if (data) {
-                    mutate({
-                        ...data,
-                        total: data.total - 1,
-                        list: data.list.filter((item) => item.id !== id)
-                    });
-                }
+                message.success("项目已归档");
+                updateLocalItemStatus(id, "archived");
             }
         });
     };
+
+    const handleRestoreProject = async (id) => {
+        await restoreProjectAsync(id)
+        message.success("项目已重新启用");
+        updateLocalItemStatus(id, "active");
+    }
 
     return (
         <div style={{ padding: "16px 24px" }}>
@@ -89,6 +112,7 @@ const Project = () => {
                     type="primary"
                     icon={<PlusOutlined />}
                     size="middle"
+                    onClick={hancleCreate}
                     style={{ borderRadius: token.borderRadius }}
                 >
                     创建项目
@@ -112,22 +136,44 @@ const Project = () => {
                     <>
                         <List
                             dataSource={projectList}
+                            loading={deleteProjectLoading || restoreProjectLoading}
                             renderItem={(project) => (
                                 <List.Item
                                     key={project.id}
-                                    onClick={() => navigate(`/project/${project.id}`)}
+                                    onClick={() => navigate(`${project.id}`, { replace: true })}
                                     style={{ cursor: "pointer", padding: "12px 0" }}
                                 >
-                                    <div style={{ width: "100%" }}>
-                                        <ProjectItem
-                                            project={project}
-                                            onDelete={(id, e) => handleDeleteProject(id, e)}
-                                            onEdit={(id, e) => {
-                                                e?.stopPropagation();
-                                                navigate(`/project/${id}/edit`);
-                                            }}
-                                        />
-                                    </div>
+                                    <Flex align="center" justify="space-between" style={{ width: "100%" }} gap={16}>
+                                        <div style={{ width: "100%" }}>
+                                            <ProjectItem
+                                                project={project}
+                                                onDelete={(id) => handleDeleteProject(id)}
+                                                onEdit={(id) => navigate(`${id}`, { replace: true })}
+                                                onRestore={(id) => handleRestoreProject(id)}
+                                            />
+                                        </div>
+                                        <Tooltip title="进入项目空间" placement="top">
+                                            <Button
+                                                type="text"
+                                                icon={<RightOutlined style={{ fontSize: 18 }} />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/project/${project.projectCode}`, { replace: true });
+                                                }}
+                                                style={{
+                                                    flexShrink: 0,
+                                                    color: token.colorTextTertiary,
+                                                    borderRadius: "50%", // 圆形按钮，看起来更精致
+                                                    width: 36,
+                                                    height: 36,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center"
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    </Flex>
+
                                 </List.Item>
                             )}
                         />
@@ -152,8 +198,15 @@ const Project = () => {
 
 export default Project;
 
+
+const STATUS_MAP = {
+    active: { text: "启用", color: "processing" },
+    suspended: { text: "暂停", color: "warning" },
+    archived: { text: "归档", color: "error" }
+};
+
 // 单个项目卡片组件
-const ProjectItem = ({ project, onDelete, onEdit }) => {
+const ProjectItem = ({ project, onDelete, onEdit, onRestore }) => {
     const { token } = useToken();
     const { message } = App.useApp();
     const [hovered, setHovered] = useState(false);
@@ -164,6 +217,8 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
         message.success("项目标识已复制");
     };
 
+    const currentStatus = STATUS_MAP[project.status] || { text: project.status, color: "default" };
+
     return (
         <Card
             size="small"
@@ -171,9 +226,7 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             styles={{
-                body: {
-                    padding: 14
-                }
+                body: { padding: 14 }
             }}
             style={{
                 borderRadius: token.borderRadiusLG,
@@ -189,7 +242,7 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
                         size={44}
                         shape="square"
                         src={project.iconUrl}
-                        icon={hovered ? <FolderOpenOutlined /> : <FolderOutlined />}
+                        icon={<Box />}
                         style={{
                             borderRadius: 10,
                             backgroundColor: project.iconUrl ? "transparent" : token.colorPrimaryBg,
@@ -199,7 +252,7 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
 
                     <Flex vertical style={{ flex: 1 }} gap={4}>
                         {/* title row */}
-                        <Flex justify="space-between" align="center">
+                        <Flex align="center" gap={8}>
                             <Text
                                 strong
                                 style={{
@@ -209,6 +262,11 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
                             >
                                 {project.projectName}
                             </Text>
+
+                            {/* 状态 Tag */}
+                            <Tag color={currentStatus.color} bordered={false} style={{ margin: 0, fontSize: 12 }}>
+                                {currentStatus.text}
+                            </Tag>
                         </Flex>
 
                         {/* meta row */}
@@ -272,26 +330,48 @@ const ProjectItem = ({ project, onDelete, onEdit }) => {
                     </Text>
 
                     <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: 44 }}>
-                        <Tooltip title="编辑项目">
-                            <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                onClick={(e) => onEdit?.(project.id, e)}
-                                style={{
-                                    opacity: hovered ? 1 : 0.5
-                                }}
-                            />
-                        </Tooltip>
-                        <Tooltip title="删除项目">
-                            <Button
-                                type="text"
-                                icon={<DeleteOutlined />}
-                                onClick={(e) => onDelete?.(project.id, e)}
-                                style={{
-                                    opacity: hovered ? 1 : 0.5
-                                }}
-                            />
-                        </Tooltip>
+                        {project.status === "active" && (
+                            <>
+                                <Tooltip title="编辑项目">
+                                    <Button
+                                        type="text"
+                                        icon={<EditOutlined />}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onEdit?.(project.id)
+                                        }}
+                                        style={{ opacity: hovered ? 1 : 0.5 }}
+                                    />
+                                </Tooltip>
+                                <Tooltip title="删除项目">
+                                    <Button
+                                        type="text"
+                                        icon={<DeleteOutlined />}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onDelete?.(project.id)
+                                        }}
+                                        style={{ opacity: hovered ? 1 : 0.5 }}
+                                    />
+                                </Tooltip>
+                            </>
+                        )}
+
+                        {project.status === "archived" && (
+                            <Tooltip title="重新启用">
+                                <Button
+                                    type="text"
+                                    icon={<UndoOutlined />}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onRestore?.(project.id)
+                                    }}
+                                    style={{ opacity: hovered ? 1 : 0.5 }}
+                                />
+                            </Tooltip>
+                        )}
+
+                        {project.status === "suspended" && null}
                     </div>
                 </div>
             </Flex>

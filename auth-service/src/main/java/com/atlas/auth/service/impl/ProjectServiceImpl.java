@@ -106,6 +106,27 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         }
     }
 
+
+    @Override
+    public void restoreProject(Long id){
+        Objects.requireNonNull(id, "项目ID不能为空");
+        Project project = this.getById(id);
+        if (project == null) {
+            throw new BusinessException("项目不存在或已被删除");
+        }
+        // 已经处于启用状态，避免重复操作
+        if (ProjectStatus.ACTIVE.equals(project.getStatus())) {
+            throw new BusinessException("项目已处于启用状态，无需重复操作");
+        }
+        // 修改状态为启用
+        project.setStatus(ProjectStatus.ACTIVE);
+        boolean updated = this.updateById(project);
+        if (!updated) {
+            throw new BusinessException("恢复项目失败，请稍后重试");
+        }
+        log.info("项目成功恢复，ID: {}, projectCode: {}", id, project.getProjectCode());
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteProject(Long id) {

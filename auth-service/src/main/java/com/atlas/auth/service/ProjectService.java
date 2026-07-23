@@ -31,6 +31,9 @@ public interface ProjectService extends IService<Project> {
     // 分页条件查询项目列表
     PageInfo<ProjectVO> getPage(ProjectQueryDTO queryDTO);
 
+    // 根据 ID 恢复项目
+    void restoreProject(Long id);
+
     // 根据 ID 逻辑删除/归档项目
     void deleteProject(Long id);
 

@@ -46,6 +46,7 @@ const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/applicat
 
 
 const Project = lazy(() => import('../pages/project'))
+const ProjectEdit = lazy(() => import('../pages/project/edit'))
 const ProjectOverview = lazy(() => import('../pages/project/overview'))
 const ProjectApplication = lazy(() => import('../pages/project/application'))
 
@@ -134,6 +135,16 @@ export const routes = [
                         breadcrumbName: '项目空间',
                         element: <Project />
                     },
+                    {
+                        path: 'create',
+                        element: <ProjectEdit />,
+                        breadcrumbName: '创建',
+                    },
+                    {
+                        path: ':id',
+                        element: <ProjectEdit />,
+                        breadcrumbName: '编辑',
+                    }
                 ]
             },
             {

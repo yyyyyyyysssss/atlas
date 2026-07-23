@@ -43,6 +43,12 @@ public class ProjectController {
         return ResultGenerator.ok(pageInfo);
     }
 
+    @PatchMapping("/{id}/restore")
+    public Result<Void> restoreProject(@PathVariable("id") Long id) {
+        projectService.restoreProject(id);
+        return ResultGenerator.ok();
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> deleteProject(@PathVariable("id") Long id) {
         projectService.deleteProject(id);

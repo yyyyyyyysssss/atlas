@@ -136,46 +136,61 @@ const Project = () => {
                     <>
                         <List
                             dataSource={projectList}
+                            split={false}
                             loading={deleteProjectLoading || restoreProjectLoading}
-                            renderItem={(project) => (
-                                <List.Item
-                                    key={project.id}
-                                    onClick={() => navigate(`${project.id}`, { replace: true })}
-                                    style={{ cursor: "pointer", padding: "12px 0" }}
-                                >
-                                    <Flex align="center" justify="space-between" style={{ width: "100%" }} gap={16}>
-                                        <div style={{ width: "100%" }}>
-                                            <ProjectItem
-                                                project={project}
-                                                onDelete={(id) => handleDeleteProject(id)}
-                                                onEdit={(id) => navigate(`${id}`, { replace: true })}
-                                                onRestore={(id) => handleRestoreProject(id)}
-                                            />
-                                        </div>
-                                        <Tooltip title="进入项目空间" placement="top">
-                                            <Button
-                                                type="text"
-                                                icon={<RightOutlined style={{ fontSize: 18 }} />}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/project/${project.projectCode}`, { replace: true });
-                                                }}
-                                                style={{
-                                                    flexShrink: 0,
-                                                    color: token.colorTextTertiary,
-                                                    borderRadius: "50%", // 圆形按钮，看起来更精致
-                                                    width: 36,
-                                                    height: 36,
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center"
-                                                }}
-                                            />
-                                        </Tooltip>
-                                    </Flex>
+                            renderItem={(project) => {
+                                const isActive = project.status === "active"
+                                return (
+                                    <List.Item
+                                        key={project.id}
+                                        onClick={() => {
+                                            if (isActive) {
+                                                navigate(`${project.id}`, { replace: true })
+                                            }
+                                        }}
+                                        style={{
+                                            opacity: isActive ? 1 : 0.6,
+                                            cursor: isActive ? "pointer" : "not-allowed",
+                                            filter: isActive ? "none" : "grayscale(60%)",
+                                            transition: "all 0.2s ease",
+                                            padding: "12px 0"
+                                        }}
+                                    >
+                                        <Flex align="center" justify="space-between" style={{ width: "100%" }} gap={16}>
+                                            <div style={{ width: "100%" }}>
+                                                <ProjectItem
+                                                    project={project}
+                                                    onDelete={(id) => handleDeleteProject(id)}
+                                                    onEdit={(id) => navigate(`${id}`, { replace: true })}
+                                                    onRestore={(id) => handleRestoreProject(id)}
+                                                />
+                                            </div>
+                                            <Tooltip title={isActive ? "进入项目空间" : "项目未启用，请先启用或恢复"} placement="top">
+                                                <Button
+                                                    type="text"
+                                                    disabled={project.status !== 'active'}
+                                                    icon={<RightOutlined style={{ fontSize: 18 }} />}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/project/${project.projectCode}`, { replace: true });
+                                                    }}
+                                                    style={{
+                                                        flexShrink: 0,
+                                                        color: token.colorTextTertiary,
+                                                        borderRadius: "50%", // 圆形按钮，看起来更精致
+                                                        width: 36,
+                                                        height: 36,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center"
+                                                    }}
+                                                />
+                                            </Tooltip>
+                                        </Flex>
 
-                                </List.Item>
-                            )}
+                                    </List.Item>
+                                )
+                            }}
                         />
 
                         {loadingMore && (
@@ -232,7 +247,6 @@ const ProjectItem = ({ project, onDelete, onEdit, onRestore }) => {
                 borderRadius: token.borderRadiusLG,
                 background: hovered ? token.colorBgTextHover : token.colorBgContainer,
                 transition: "all 0.2s ease",
-                cursor: "pointer"
             }}
         >
             <Flex justify="space-between" align="center">

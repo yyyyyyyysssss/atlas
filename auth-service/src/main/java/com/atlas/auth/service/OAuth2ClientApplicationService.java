@@ -10,4 +10,8 @@ public interface OAuth2ClientApplicationService extends IService<OAuth2ClientApp
 
     OAuth2ClientApplication loadClientByClientId(String registeredClientId);
 
+    OAuth2ClientApplication findByRegisteredClientId(String registeredClientId);
+
+    OAuth2ClientApplication findByClientId(String clientId);
+
 }

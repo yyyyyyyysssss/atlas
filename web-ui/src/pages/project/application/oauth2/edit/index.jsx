@@ -7,7 +7,7 @@ import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import useFullParams from '../../../../../hooks/useFullParams';
 import SmartUpload from '../../../../../components/smart-upload';
-import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../../services/DeveloperSettingsService';
+import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../../services/ApplicationService';
 import Loading from '../../../../../components/loading';
 
 const MAX_CALLBACK_URLS = 5
@@ -90,7 +90,7 @@ const OAuth2ClientApplicationEdit = () => {
             loading: deleteClientSecretLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteClientSecretAsync(projectCode, clientSecretId)
+                await deleteClientSecretAsync(projectCode, applicationDetail.id, clientSecretId)
                 message.success('密钥删除成功')
                 refreshApplicationDetail()
             }
@@ -116,7 +116,7 @@ const OAuth2ClientApplicationEdit = () => {
         setModalVisible(false);
         if (mode === 'create') {
             if (credentialData.id) {
-                navigate(`/developer/settings/oauth2/application/${credentialData.id}`, { replace: true });
+                navigate(`/project/${projectCode}/application/oauth2/${credentialData.id}`, { replace: true });
             }
         } else {
             refreshApplicationDetail()

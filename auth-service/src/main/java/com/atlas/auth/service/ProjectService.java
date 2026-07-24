@@ -37,5 +37,10 @@ public interface ProjectService extends IService<Project> {
     // 根据 ID 逻辑删除/归档项目
     void deleteProject(Long id);
 
+    boolean isProjectActive(Long id);
+
+    // 校验指定客户端所属的项目是否正常启用
+    boolean isProjectActiveByRegisteredClientId(String registeredClientId);
+
 }
 

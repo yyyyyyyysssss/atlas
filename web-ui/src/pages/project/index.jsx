@@ -43,7 +43,7 @@ const Project = () => {
             const hasMore = pageNum * PAGE_SIZE < res.total;
 
             return {
-                list: d?.list ? [...d.list, ...res.list] : res.list,
+                list: res.list,
                 total: res.total,
                 nextPage: hasMore ? pageNum + 1 : pageNum,
                 hasMore: hasMore
@@ -282,6 +282,14 @@ const ProjectItem = ({ project, onDelete, onEdit, onRestore }) => {
                             <Tag color={currentStatus.color} bordered={false} style={{ margin: 0, fontSize: 12 }}>
                                 {currentStatus.text}
                             </Tag>
+
+                            {project.builtin && (
+                                <Tooltip title="系统内置项目，禁止删除或修改启用状态">
+                                    <Tag color="gold" bordered={false} style={{ margin: 0, fontSize: 12 }}>
+                                        内置
+                                    </Tag>
+                                </Tooltip>
+                            )}
                         </Flex>
 
                         {/* meta row */}
@@ -291,7 +299,7 @@ const ProjectItem = ({ project, onDelete, onEdit, onRestore }) => {
                                     type="secondary"
                                     style={{
                                         fontSize: token.fontSizeSM,
-                                        maxWidth: 200,
+                                        maxWidth: '50%',
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
                                         whiteSpace: "nowrap",
@@ -358,17 +366,20 @@ const ProjectItem = ({ project, onDelete, onEdit, onRestore }) => {
                                         style={{ opacity: hovered ? 1 : 0.5 }}
                                     />
                                 </Tooltip>
-                                <Tooltip title="删除项目">
-                                    <Button
-                                        type="text"
-                                        icon={<DeleteOutlined />}
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onDelete?.(project.id)
-                                        }}
-                                        style={{ opacity: hovered ? 1 : 0.5 }}
-                                    />
-                                </Tooltip>
+                                {project.builtin === false && (
+                                    <Tooltip title="删除项目">
+                                        <Button
+                                            type="text"
+                                            icon={<DeleteOutlined />}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onDelete?.(project.id)
+                                            }}
+                                            style={{ opacity: hovered ? 1 : 0.5 }}
+                                        />
+                                    </Tooltip>
+                                )}
+
                             </>
                         )}
 

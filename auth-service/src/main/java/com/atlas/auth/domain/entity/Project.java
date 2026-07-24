@@ -49,6 +49,9 @@ public class Project extends BaseEntity {
     @TableField("owner_name")
     private String ownerName;
 
+    @TableField("builtin")
+    private Boolean builtin;
+
 
 }
 

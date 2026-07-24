@@ -9,7 +9,9 @@ import com.atlas.auth.domain.vo.OAuth2ClientApplicationCreateVO;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationVO;
 import com.atlas.auth.domain.vo.ProjectVO;
 import com.atlas.auth.enums.ProjectStatus;
+import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
+import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
@@ -19,6 +21,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -54,6 +57,8 @@ public class OAuth2ClientApplicationFacadeService {
     private final PasswordEncoder passwordEncoder;
 
     private final ProjectService projectService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 保存应用（兼容创建和修改）
@@ -109,7 +114,10 @@ public class OAuth2ClientApplicationFacadeService {
             log.warn("删除 OAuth2 应用失败，应用不存在，ID: {}", id);
             throw new BusinessException("应用不存在或已被删除");
         }
-        checkAndEnsureProjectActive(projectCode, app.getProjectId());
+        ProjectVO projectVO = checkAndEnsureProjectActive(projectCode, app.getProjectId());
+        if (Boolean.TRUE.equals(projectVO.builtin())) {
+            throw new BusinessException("系统内置项目下的应用为基础服务，禁止删除");
+        }
         // 删除oauth2客户端密钥信息
         oAuth2ClientSecretService.removeByRegisteredClientId(app.getRegisteredClientId());
         // 删除oauth2客户端对应的所有token
@@ -125,6 +133,9 @@ public class OAuth2ClientApplicationFacadeService {
         }
 
         log.info("OAuth2 应用删除成功，ID: {}", id);
+
+        // 发布审计日志
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除应用", "project:application"));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -148,6 +159,10 @@ public class OAuth2ClientApplicationFacadeService {
         String rawSecret = SecureUidGenerator.generate(32);
         // 保存密钥
         saveClientSecret(app, rawSecret);
+
+        // 发布审计日志
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "新增应用密钥", "project:application:secret"));
+
         return new OAuth2ClientApplicationCreateVO(app.getId(), registeredClient.getClientId(), rawSecret);
     }
 
@@ -191,6 +206,9 @@ public class OAuth2ClientApplicationFacadeService {
         }
 
         log.info("OAuth2 应用密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
+
+        // 发布审计日志
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除应用密钥", "project:application:secret"));
     }
 
     private OAuth2ClientApplicationCreateVO createApplication(String projectCode, OAuth2ClientApplicationSaveDTO saveDTO) {
@@ -275,6 +293,10 @@ public class OAuth2ClientApplicationFacadeService {
         saveClientSecret(oAuth2Application, rawSecret);
 
         log.info("OAuth2 应用创建成功, id: {}, clientId: {}", oAuth2Application.getId(), clientId);
+
+        // 发布审计日志
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "创建应用", "project:application"));
+
         return new OAuth2ClientApplicationCreateVO(oAuth2Application.getId(), clientId, rawSecret);
     }
 
@@ -330,6 +352,9 @@ public class OAuth2ClientApplicationFacadeService {
 
         oAuth2ClientApplicationService.updateById(oauth2Application);
         log.info("OAuth2 应用配置更新成功, id: {}, applicationName: {}", oauth2Application.getId(), oauth2Application.getApplicationName());
+
+        // 发布审计日志
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "修改应用", "project:application"));
     }
 
     private void saveClientSecret(OAuth2ClientApplication auth2ClientApplication, String rawSecret) {

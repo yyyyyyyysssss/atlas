@@ -3,7 +3,7 @@ import './index.css';
 import { List, theme, App, Card, Avatar, Typography, Tooltip, Flex, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteScroll, useRequest } from "ahooks";
-import { deleteApplication, getApplicationPage } from "../../../../../services/DeveloperSettingsService";
+import { deleteApplication, getApplicationPage } from "../../../../../services/ApplicationService";
 import Loading from "../../../../../components/loading";
 import { AppstoreOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDomain } from "../../../../../router/DomainProvider";
@@ -40,7 +40,7 @@ const OAuth2ClientApplicationList = () => {
             const hasMore = pageNum * PAGE_SIZE < res.total;
 
             return {
-                list: d?.list ? [...d.list, ...res.list] : res.list,
+                list: res.list,
                 total: res.total,
                 nextPage: hasMore ? pageNum + 1 : pageNum,
                 hasMore: hasMore

@@ -109,6 +109,7 @@ security:
     authenticated:
       - /api/auth/account/**
       - /api/auth/userinfo
+      - /api/auth/audit/log/**
       - /file/**
       - /api/file/**
       - /api/user/profile/**

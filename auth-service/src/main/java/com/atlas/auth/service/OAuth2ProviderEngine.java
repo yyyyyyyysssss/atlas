@@ -10,8 +10,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -20,6 +25,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -90,12 +96,7 @@ public class OAuth2ProviderEngine {
         return spec
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, response) -> {
-                    String errorBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-                    log.error("[{}] 授权验证接口请求失败 [URL: {}, Status: {}, Body: {}]",
-                            provider, request.getURI(), response.getStatusCode(), errorBody);
-                    throw new BusinessException("授权验证失败");
-                })
+                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(provider, EndpointType.TOKEN, request, response))
                 .body(responseType);
     }
 
@@ -115,12 +116,7 @@ public class OAuth2ProviderEngine {
                 .header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader())
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, response) -> {
-                    String errorBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-                    log.error("[{}] 获取用户信息接口请求失败 [URL: {}, Status: {}, Body: {}]",
-                            provider, request.getURI(), response.getStatusCode(), errorBody);
-                    throw new BusinessException("获取用户信息失败");
-                })
+                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(provider, EndpointType.USER_INFO, request, response))
                 .body(responseType);
     }
 
@@ -186,6 +182,58 @@ public class OAuth2ProviderEngine {
         }
         String uriString = builder.build().encode().toUriString();
         return SsoProviderAuthorizeUrlResponse.of(uriString, settings.pkceRequired());
+    }
+
+
+    private enum EndpointType {
+        TOKEN("Token"),
+        USER_INFO("UserInfo");
+
+        private final String label;
+
+        EndpointType(String label) {
+            this.label = label;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
+    private void handleRemoteError(String provider, EndpointType endpointType, HttpRequest request, ClientHttpResponse response) throws IOException {
+        String errorBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+        HttpStatusCode statusCode = response.getStatusCode();
+
+        log.error("[{}] 三方 {} 端点请求失败 [URL: {}, Status: {}, Body: {}]",
+                provider, endpointType.getLabel(), request.getURI(), statusCode, errorBody);
+
+        String errorCode;
+        String description;
+
+        if (statusCode.is4xxClientError()) {
+            if (endpointType == EndpointType.TOKEN) {
+                // Token 端点 4xx：Code 无效/过期、Secret 错等
+                errorCode = OAuth2ErrorCodes.INVALID_GRANT;
+                description = String.format("三方授权码校验失败：授权码无效或已过期 (%s)", provider);
+            } else {
+                // UserInfo 端点 4xx：AccessToken 过期/被撤销/权限不足
+                errorCode = OAuth2ErrorCodes.INVALID_TOKEN;
+                description = String.format("三方用户凭证无效或授权已过期 (%s)", provider);
+            }
+        } else {
+            // 5xx 服务端故障
+            errorCode = OAuth2ErrorCodes.SERVER_ERROR;
+            description = endpointType == EndpointType.TOKEN
+                    ? String.format("三方身份提供商服务异常，请稍后再试 (%s)", provider)
+                    : String.format("三方身份提供商服务异常，获取用户信息失败 (%s)", provider);
+        }
+
+        OAuth2Error error = new OAuth2Error(errorCode, description, null);
+
+        throw new OAuth2AuthenticationException(
+                error,
+                String.format("[%s] 请求三方 %s 失败, Status: %s, Response: %s", provider, endpointType.getLabel(), statusCode, errorBody)
+        );
     }
 
 

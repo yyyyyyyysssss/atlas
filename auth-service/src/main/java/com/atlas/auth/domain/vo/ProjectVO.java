@@ -19,6 +19,7 @@ public record ProjectVO (
         ProjectStatus status,
         Long ownerId,
         String ownerName,
+        Boolean builtin,
         LocalDateTime createTime,
         LocalDateTime updateTime
 
@@ -36,6 +37,7 @@ public record ProjectVO (
                 entity.getStatus(),
                 entity.getOwnerId(),
                 entity.getOwnerName(),
+                entity.getBuiltin(),
                 entity.getCreateTime(),
                 entity.getUpdateTime()
         );

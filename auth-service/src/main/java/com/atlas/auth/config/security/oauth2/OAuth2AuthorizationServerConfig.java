@@ -3,6 +3,7 @@ package com.atlas.auth.config.security.oauth2;
 
 import com.atlas.auth.config.security.oauth2.provider.OAuth2QrAuthorizationCodeRequestAuthenticationProvider;
 import com.atlas.auth.service.OAuth2ClientSecretService;
+import com.atlas.auth.service.ProjectService;
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.auth.service.UserService;
 import com.atlas.common.core.utils.RsaUtils;
@@ -121,7 +122,9 @@ public class OAuth2AuthorizationServerConfig {
                                     authorizationEndpoint.consentPage("/oauth2/consent?type=code");
                                     // 自定义处理器
                                     authorizationEndpoint.authorizationResponseHandler(new AdapterAuthorizationSuccessHandler(eventPublisher));
-
+                                    authorizationEndpoint.errorResponseHandler(
+                                            new OAuth2RedirectAuthenticationFailureHandler(securityProperties.getUiUrl())
+                                    );
                                     // 兼容扫码登录
                                     authorizationEndpoint.authenticationProviders(p -> {
                                         p.addFirst(oAuth2QrAuthorizationCodeRequestAuthenticationProvider());
@@ -179,8 +182,8 @@ public class OAuth2AuthorizationServerConfig {
 
     // 注册客户端应用, 对应 oauth2_registered_client 表
     @Bean
-    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, OAuth2ClientSecretService oauth2ClientSecretService) {
-        return new DelegatingRegisteredClientRepository(new JdbcRegisteredClientRepository(jdbcTemplate),oauth2ClientSecretService);
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate, OAuth2ClientSecretService oauth2ClientSecretService, ProjectService projectService) {
+        return new DelegatingRegisteredClientRepository(new JdbcRegisteredClientRepository(jdbcTemplate),oauth2ClientSecretService,projectService);
     }
 
     // 令牌的发放记录, 对应 oauth2_authorization 表

@@ -6,9 +6,15 @@ import httpWrapper from "./AxiosWrapper"
 
 
 // 获取项目列表
-export const getProjectPage = async (page, size) => {
+export const getProjectPage = async (pageNum, pageSize, status) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/project/page?pageNum=${page}&pageSize=${size}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/project/page`, {
+        params: {
+            pageNum,
+            pageSize,
+            status
+        }
+    }))
 }
 
 // 获取项目详情

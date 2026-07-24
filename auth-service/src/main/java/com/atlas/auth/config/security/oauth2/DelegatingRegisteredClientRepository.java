@@ -2,8 +2,11 @@ package com.atlas.auth.config.security.oauth2;
 
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import com.atlas.auth.service.OAuth2ClientSecretService;
+import com.atlas.auth.service.ProjectService;
 import com.atlas.security.encoder.MultiSecretPayload;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
@@ -19,15 +22,19 @@ import java.util.stream.Collectors;
  * @Author ys
  * @Date 2026/5/11 14:46
  */
+@Slf4j
 public class DelegatingRegisteredClientRepository implements RegisteredClientRepository {
 
     private final RegisteredClientRepository delegate;
 
     private final OAuth2ClientSecretService oauth2ClientSecretService;
 
-    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate, OAuth2ClientSecretService oauth2ClientSecretService){
+    private final ProjectService projectService;
+
+    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate, OAuth2ClientSecretService oauth2ClientSecretService, ProjectService projectService){
         this.delegate = delegate;
         this.oauth2ClientSecretService = oauth2ClientSecretService;
+        this.projectService = projectService;
     }
 
     @Override
@@ -50,6 +57,11 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
     @SuppressWarnings("ConstantConditions")
     private RegisteredClient wrapIfNecessary(RegisteredClient client) {
         if (client == null) {
+            return null;
+        }
+        if(!projectService.isProjectActiveByRegisteredClientId(client.getId())){
+            log.warn("OAuth2 鉴权拦截：客户端 [{}] (RegisteredClientId: {}) 所属项目已被归档、停用或不存在",
+                    client.getClientId(), client.getId());
             return null;
         }
         String combinedSecret;

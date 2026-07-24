@@ -1,6 +1,5 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.common.mybatis.dto.PageQueryDTO;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,12 +7,12 @@ import lombok.Setter;
 /**
  * @Description
  * @Author ys
- * @Date 2026/7/9 11:40
+ * @Date 2026/7/24 15:22
  */
 @Getter
 @Setter
-public class ProjectQueryDTO extends PageQueryDTO {
+public class AuditLogQueryDTO extends PageQueryDTO {
 
-    private String status;
+    private Long userId;
 
 }

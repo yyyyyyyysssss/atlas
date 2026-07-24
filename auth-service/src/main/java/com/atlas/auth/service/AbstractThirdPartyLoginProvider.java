@@ -5,10 +5,12 @@ import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
+import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.TokenResponse;
 import jakarta.annotation.Resource;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * @Description
@@ -28,6 +30,9 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
 
     @Resource
     protected ThirdPartyStateService thirdPartyStateService;
+
+    @Resource
+    private ApplicationEventPublisher eventPublisher;
 
     protected final String generateState(ThirdPartyAuthRequestContext requestContext) {
         String state = requestContext.state();
@@ -76,6 +81,10 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
         }
         String provider = thirdPartyUserIdentity.getProvider();
         userService.bindThirdPartyProvider(provider,currentUserId, thirdPartyUserIdentity);
+
+        // 绑定成功后，发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(currentUserId, "绑定三方账号", "user-provider"));
+
         return ThirdPartyCallbackVO.bindSuccess(stateContext.getTargetUrl());
     }
 

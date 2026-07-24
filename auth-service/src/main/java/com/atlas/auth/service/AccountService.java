@@ -4,6 +4,7 @@ import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.*;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.*;
+import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.token.WebauthnAuthenticationRequest;
@@ -11,6 +12,7 @@ import com.atlas.security.utils.SecureUidGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.CredentialRecord;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,9 @@ public class AccountService {
     private final ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory;
 
     private final List<AuthCredentialChecker> credentialCheckers;
+
+
+    private final ApplicationEventPublisher eventPublisher;
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
@@ -164,6 +169,9 @@ public class AccountService {
             throw new BusinessException("该账号名已被占用，请换一个试试");
         }
         userIdentifierService.updateIdentifier(userId, IdentifierType.USERNAME, newUsername, true);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "修改用户名", "user-identifier:username"));
     }
 
     public void initPassword(Long userId, InitPasswordDTO initPasswordDTO) {
@@ -171,6 +179,9 @@ public class AccountService {
             throw new BusinessException("两次输入的新密码不一致");
         }
         userPasswordCredentialsService.setPassword(userId, initPasswordDTO.password());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "初始化登录密码", "user-password"));
     }
 
     public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
@@ -184,6 +195,9 @@ public class AccountService {
         // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
         validTicket(userId, SecurityScene.RESET_PASSWORD, changePasswordDTO.ticket());
         userPasswordCredentialsService.updatePassword(userId, changePasswordDTO.newPassword());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "修改登录密码", "user-password"));
     }
 
     public void initEmail(Long userId, InitEmailDTO initEmailDTO) {
@@ -198,6 +212,9 @@ public class AccountService {
             throw new BusinessException("验证码错误或已过期");
         }
         userIdentifierService.addIdentifier(userId, new IdentifierSpec(IdentifierType.EMAIL, initEmailDTO.email(), true));
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "绑定邮箱", "user-identifier:email"));
     }
 
     public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {
@@ -213,6 +230,9 @@ public class AccountService {
         // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
         validTicket(userId, SecurityScene.MODIFY_EMAIL, changeEmailDTO.ticket());
         userIdentifierService.updateIdentifier(userId, IdentifierType.EMAIL, changeEmailDTO.newEmail(), true);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "更换邮箱", "user-identifier:email"));
     }
 
     public VerifyPasswordVO verifyPassword(Long userId, VerifyPasswordDTO verifyPasswordDTO) {
@@ -255,7 +275,11 @@ public class AccountService {
     public WebauthnRegistrationResponse registerWebauthn(HttpServletRequest request, Long userId, WebAuthnRegistrationRequest webAuthnRegistrationRequest){
         Objects.requireNonNull(webAuthnRegistrationRequest.ticket(),"安全验证凭证缺失，请重新进行身份验证");
         validTicket(userId,SecurityScene.BIND_WEBAUTHN,webAuthnRegistrationRequest.ticket());
-        return webauthnService.registerCredential(request, webAuthnRegistrationRequest.publicKey());
+        WebauthnRegistrationResponse webauthnRegistrationResponse = webauthnService.registerCredential(request, webAuthnRegistrationRequest.publicKey());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "绑定通行密钥(Passkey)", "user-webauthn"));
+        return webauthnRegistrationResponse;
     }
 
     public void unbindWebauthn(Long userId,UnbindWebauthnDTO unbindWebauthnDTO){
@@ -292,6 +316,9 @@ public class AccountService {
         ensureIdentityNotOrphaned(userId, CredentialType.WEBAUTHN, unbindWebauthnDTO.credentialId());
         // 解绑
         userWebauthnCredentialsService.delete(credentialId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑通行密钥(Passkey)", "user-webauthn"));
         log.info("用户 {} 成功解绑 WebAuthn 凭证: {}", userId, unbindWebauthnDTO.credentialId());
     }
 
@@ -353,6 +380,9 @@ public class AccountService {
         // 生成备份码
         List<String> backupCodes = userMfaBackupCodeService.refreshBackupCodes(userId);
         log.info("用户 {} 的 TOTP 2FA 已成功激活并投入使用，备份码已同步同步下发", userId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "激活 TOTP 双因子认证", "user-totp"));
         return new TotpActivateVO(backupCodes);
     }
 
@@ -369,11 +399,17 @@ public class AccountService {
         // 移除备份码
         userMfaBackupCodeService.removeByUserId(userId);
         log.info("用户 {} 成功解绑并关闭了 TOTP 2FA 双因子验证", userId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑 TOTP 双因子认证", "user-totp"));
     }
 
     public MfaRefreshBackupCodeVO refreshTotpBackupCode(Long userId, MfaRefreshBackupCodeDTO mfaRefreshBackupCodeDTO){
         validTicket(userId, SecurityScene.GENERATE_TOTP_BACKUP_CODE, mfaRefreshBackupCodeDTO.ticket());
         List<String> backupCodes = userMfaBackupCodeService.refreshBackupCodes(userId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "刷新 TOTP 双因子认证备份码", "user-totp:backup-code"));
         return new MfaRefreshBackupCodeVO(backupCodes);
     }
 
@@ -383,11 +419,17 @@ public class AccountService {
         }
         validTicket(userId,SecurityScene.BIND_GESTURE,gestureBindDTO.ticket());
         userGestureCredentialsService.saveOrUpdateGesture(userId,gestureBindDTO.gesture());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "设置/修改手势密码", "user-gesture"));
     }
 
     public void unbindGesture(Long userId,GestureUnbindDTO gestureUnbindDTO){
         validTicket(userId,SecurityScene.UNBIND_GESTURE,gestureUnbindDTO.ticket());
         userGestureCredentialsService.removeByUserId(userId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑手势密码", "user-gesture"));
     }
 
     public GestureVerifyVO verifyGesture(Long userId,GestureVerifyDTO gestureVerifyDTO){
@@ -429,6 +471,9 @@ public class AccountService {
         log.info("【Web3 钱包核验成功】当前登录用户 userId: {}, 事务 web3Id: {}, " +
                         "反解出安全的钱包地址 address: {}, 钱包协议 walletType: {}, 请求来源 source: {}",
                 userId, web3WalletBindDTO.web3Id(), address, walletType, source);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "绑定 Web3 钱包", "user-web3"));
     }
 
     public Web3WalletVerifyVO verifyWeb3Wallet(Long userId,Web3WalletVerifyDTO web3WalletVerifyDTO){
@@ -476,6 +521,9 @@ public class AccountService {
         }
         log.info("【Web3 钱包解绑成功】用户 userId: {}, 成功解除钱包地址: {} [协议: {}, 标签: {}] 的绑定关系",
                 userId, credential.getAddress(), credential.getWalletType(), credential.getLabel());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑 Web3 钱包", "user-web3"));
     }
 
     public ThirdPartyProviderBindVO bindThirdPartyProvider(Long userId, ThirdPartyProviderBindDTO thirdPartyProviderBindDTO){
@@ -499,6 +547,9 @@ public class AccountService {
         ensureIdentityNotOrphaned(userId, CredentialType.THIRD_PARTY, providerId);
         // 执行解绑
         userProviderService.removeById(providerId);
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑三方社交账号", "user-provider"));
     }
 
     /**

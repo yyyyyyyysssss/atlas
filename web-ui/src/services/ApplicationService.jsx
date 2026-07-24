@@ -35,7 +35,7 @@ export const addClientSecret = async (projectCode, id) => {
 }
 
 // 删除oauth2应用密钥
-export const deleteClientSecret = async (projectCode, clientSecretId) => {
+export const deleteClientSecret = async (projectCode, id, clientSecretId) => {
 
-    return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/${projectCode}/application/oauth2/secret/${clientSecretId}`))
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/${projectCode}/application/oauth2/${id}/secret/${clientSecretId}`))
 }

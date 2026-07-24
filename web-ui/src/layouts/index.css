@@ -74,3 +74,32 @@ body {
   overflow: auto !important;
   /* 确保全屏模式下容器允许滚动 */
 }
+
+/* ================= 悬浮显示滚动条扩展 ================= */
+
+/* 1. 默认情况下：滑块背景色设为透明（隐藏） */
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent !important;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* 2. 当鼠标 hover 到容器上时：恢复为你原本定义的背景色 */
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--ant-control-item-bg-active) !important;
+}
+
+/* 3. 当鼠标直接悬浮在滑块上时：使用加深颜色 */
+.hover-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ant-control-item-bg-active-hover) !important;
+}
+
+/* 4. 兼容 Firefox (基于你已有的变量) */
+.hover-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease-in-out;
+}
+
+.hover-scrollbar:hover {
+  scrollbar-color: var(--ant-control-item-bg-active) transparent;
+}

@@ -5,6 +5,7 @@ import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.ProjectCreateVO;
+import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
 import com.atlas.auth.domain.vo.ProjectVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
@@ -41,6 +42,8 @@ public interface ProjectService extends IService<Project> {
 
     // 校验指定客户端所属的项目是否正常启用
     boolean isProjectActiveByRegisteredClientId(String registeredClientId);
+
+    ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode);
 
 }
 

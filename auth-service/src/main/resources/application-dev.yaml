@@ -26,6 +26,7 @@ logging:
 security:
   issuerUrl: http://localhost:9090/api/auth
   uiUrl: http://localhost:3000
+  coexistToken: -1
   webauthn:
     rpId: localhost
     rpName: Atlas Identity Server

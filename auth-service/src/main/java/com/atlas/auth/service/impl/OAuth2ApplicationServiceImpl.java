@@ -16,8 +16,11 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 
 @Service
@@ -53,6 +56,18 @@ public class OAuth2ApplicationServiceImpl extends ServiceImpl<OAuth2ApplicationM
         return this.lambdaQuery()
                 .eq(OAuth2ClientApplication::getClientId, clientId)
                 .one();
+    }
+
+    @Override
+    public List<String> findRegisteredClientIdByProjectId(Long projectId) {
+        List<OAuth2ClientApplication> registeredClientIds = this.lambdaQuery()
+                .select(OAuth2ClientApplication::getRegisteredClientId)
+                .eq(OAuth2ClientApplication::getProjectId, projectId)
+                .list();
+        if(CollectionUtils.isEmpty(registeredClientIds)){
+            return Collections.emptyList();
+        }
+        return registeredClientIds.stream().map(OAuth2ClientApplication::getRegisteredClientId).toList();
     }
 
     private OAuth2ClientApplication loadClient(OAuth2ClientApplication application){

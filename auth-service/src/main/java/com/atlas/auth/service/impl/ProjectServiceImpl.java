@@ -5,6 +5,8 @@ import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.OAuth2ClientApplication;
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.ProjectCreateVO;
+import com.atlas.auth.domain.vo.ProjectDashboardMetricVO;
+import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
 import com.atlas.auth.domain.vo.ProjectVO;
 import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.auth.event.AuditLogEvent;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -220,6 +223,23 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             return false;
         }
         return isProjectActive(auth2ClientApplication.getProjectId());
+    }
+
+    @Override
+    public ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode) {
+        ProjectVO projectVO = this.getByCode(projectCode);
+        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if(CollectionUtils.isEmpty(registeredClientIds)){
+            return ProjectDashboardOverviewTrendVO.empty();
+        }
+        // 概览卡片汇总（当前实时值）
+        ProjectDashboardMetricVO overviewMetric = projectMapper.selectOverviewByRegisteredClientIds(registeredClientIds);
+        // 趋势明细列表：计算近 14 天的时间区间 [13天前, 今天]
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(13);
+        List<ProjectDashboardMetricVO> trendMetrics= projectMapper.selectTrendByRegisteredClientIds(registeredClientIds, startDate, endDate);
+
+        return ProjectDashboardOverviewTrendVO.of(overviewMetric, trendMetrics);
     }
 }
 

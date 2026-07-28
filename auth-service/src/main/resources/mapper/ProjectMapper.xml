@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atlas.auth.mapper.ProjectMapper">
+
+    <resultMap type="com.atlas.auth.domain.entity.Project" id="ProjectMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="projectName" column="project_name" jdbcType="VARCHAR"/>
+        <result property="projectCode" column="project_code" jdbcType="VARCHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="ownerId" column="owner_id" jdbcType="INTEGER"/>
+        <result property="ownerName" column="owner_name" jdbcType="VARCHAR"/>
+        <result property="builtin" column="builtin" jdbcType="INTEGER"/>
+        <result property="creatorId" column="creator_id" jdbcType="INTEGER"/>
+        <result property="creatorName" column="creator_name" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updaterId" column="updater_id" jdbcType="INTEGER"/>
+        <result property="updaterName" column="updater_name" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <select id="selectOverviewByRegisteredClientIds" resultType="com.atlas.auth.domain.vo.ProjectDashboardMetricVO">
+        SELECT
+
+        -- 用户总数
+        COUNT(DISTINCT principal_name) AS total_user_count,
+
+        -- 截止昨天用户总数
+        COUNT(DISTINCT
+        <![CDATA[ CASE WHEN create_time < CURDATE() ]]>
+        THEN principal_name END) AS yesterday_total_user_count,
+
+        -- 截止上周用户总数
+        COUNT(DISTINCT
+        <![CDATA[ CASE WHEN create_time < DATE_SUB(CURDATE(), INTERVAL 7 DAY)  ]]>
+        THEN principal_name END) AS last_week_total_user_count,
+
+        -- 当前活跃用户
+        COUNT(DISTINCT CASE
+        <![CDATA[ WHEN access_token_expires_at > NOW() ]]>
+        THEN principal_name
+        END) AS total_active_user_count,
+
+        -- 活跃会话数
+        COUNT(CASE
+        <![CDATA[ WHEN refresh_token_expires_at > NOW() ]]>
+        THEN 1
+        END) AS total_active_session_count,
+
+        -- 累计授权次数
+        COUNT(*) AS total_history_authorization_count
+        FROM oauth2_authorization
+        <where>
+            <choose>
+                <when test="registeredClientIds != null and registeredClientIds.size() > 0">
+                    registered_client_id IN
+                    <foreach item="registeredClientId" collection="registeredClientIds" open="(" separator="," close=")">
+                        #{registeredClientId}
+                    </foreach>
+                </when>
+                <!-- 兜底防全表扫描：当传入空列表时返回 1=0 查出 0 值 -->
+                <otherwise>
+                    1 = 0
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="selectTrendByRegisteredClientIds" resultType="com.atlas.auth.domain.vo.ProjectDashboardMetricVO">
+        SELECT
+        ds.stat_date AS stat_date,
+
+        -- 累计用户总数：截至 stat_date 当天结束时
+        COALESCE(COUNT(DISTINCT CASE
+        <![CDATA[ WHEN a.create_time < ds.stat_date + INTERVAL 1 DAY ]]>
+        THEN a.principal_name
+        END), 0) AS total_user_count,
+
+        -- 当前活跃用户：在 stat_date 当天内，Access Token 处于有效期
+        COALESCE(COUNT(DISTINCT CASE
+        <![CDATA[ WHEN a.access_token_expires_at > ds.stat_date AND a.access_token_issued_at < ds.stat_date + INTERVAL 1 DAY ]]>
+        THEN a.principal_name
+        END), 0) AS total_active_user_count,
+
+        -- 活跃会话数：在 stat_date 当天内，Refresh Token 处于有效期
+        COALESCE(COUNT(CASE
+        <![CDATA[ WHEN a.refresh_token_expires_at > ds.stat_date AND a.refresh_token_issued_at < ds.stat_date + INTERVAL 1 DAY ]]>
+        THEN 1
+        END), 0) AS total_active_session_count,
+
+        -- 累计授权次数：截至 stat_date 当天结束时
+        COALESCE(COUNT(CASE
+        <![CDATA[ WHEN a.create_time < ds.stat_date + INTERVAL 1 DAY ]]>
+        THEN 1
+        END), 0) AS total_history_authorization_count
+
+        FROM dim_date ds
+        LEFT JOIN oauth2_authorization a
+        ON
+        <choose>
+            <when test="registeredClientIds != null and registeredClientIds.size() > 0">
+                a.registered_client_id IN
+                <foreach item="registeredClientId" collection="registeredClientIds" open="(" separator="," close=")">
+                    #{registeredClientId}
+                </foreach>
+            </when>
+            <otherwise>
+                1 = 0
+            </otherwise>
+        </choose>
+        <![CDATA[ AND a.create_time < ds.stat_date + INTERVAL 1 DAY ]]>
+        <where>
+            -- 确定起始日期 (默认 CURDATE() - INTERVAL 6 DAY)
+            <choose>
+                <when test="startDate != null">
+                    <![CDATA[ ds.stat_date >= #{startDate} ]]>
+                </when>
+                <otherwise>
+                    <![CDATA[ ds.stat_date >= CURDATE() - INTERVAL 6 DAY ]]>
+                </otherwise>
+            </choose>
+            -- 确定截止日期 (默认 CURDATE())
+            AND
+            <choose>
+                <when test="endDate != null">
+                    <![CDATA[ ds.stat_date <= #{endDate} ]]>
+                </when>
+                <otherwise>
+                    <![CDATA[ ds.stat_date <= CURDATE() ]]>
+                </otherwise>
+            </choose>
+        </where>
+        GROUP BY ds.stat_date
+        ORDER BY ds.stat_date ASC
+    </select>
+
+
+</mapper>
+

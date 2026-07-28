@@ -40,3 +40,9 @@ export const deleteProject = async (id) => {
 
     return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/project/${id}`))
 }
+
+
+export const getOverviewAndTrend = async (projectCode) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/project/${projectCode}/dashboard/overview/trend`))
+}

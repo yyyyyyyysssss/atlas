@@ -49,7 +49,10 @@
         END) AS total_active_session_count,
 
         -- 累计授权次数
-        COUNT(*) AS total_history_authorization_count
+        COUNT(*) AS total_history_authorization_count,
+
+        COUNT(CASE WHEN create_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) AS last_week_total_authorization_count
+
         FROM oauth2_authorization
         <where>
             <choose>

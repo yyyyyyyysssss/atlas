@@ -14,6 +14,7 @@ import { useAccount, useSignMessage, useSignTypedData, useDisconnect } from 'wag
 import { useConnectModal, ConnectButton } from '@rainbow-me/rainbowkit';
 import { WalletAvatar } from '../../../components/WalletAvatar';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
+import { useAuthEvent } from '../../../events/AuthEventBus';
 
 const { Text, Title } = Typography;
 
@@ -29,15 +30,12 @@ const WalletItem = ({ context, refresh }) => {
     const [targetItem, setTargetItem] = useState(null)
 
     // 解构绑定的钱包数据
-    const { web3Enabled = false, web3Wallets = [] } = context || {};
+    const { web3Enabled = false, web3Wallets = [] } = context || {}
     const isBound = web3Enabled
 
     // Web3 连接状态与弹窗控制
     const { address, isConnected, chain, connector } = useAccount()
-    const { openConnectModal } = useConnectModal();
-
-    // TanStack 核心异步属性变体
-    const { disconnectAsync } = useDisconnect()
+    const { openConnectModal } = useConnectModal()
 
     const { signMessageAsync } = useSignMessage()
 
@@ -48,7 +46,6 @@ const WalletItem = ({ context, refresh }) => {
     const { runAsync: web3BindAsync, loading: web3BindLoading } = useRequest(web3Bind, { manual: true })
 
     const { runAsync: web3UnbindAsync, loading: web3UnbindLoading } = useRequest(web3Unbind, { manual: true });
-
 
     const getIconColor = () => {
         return isBound ? token.colorPrimary : token.colorTextDescription;
@@ -425,6 +422,12 @@ export default WalletItem;
  */
 export const WalletConnectionCapsule = ({ isConnected, address, displayName, onClick, size = 'middle' }) => {
     const { token } = theme.useToken()
+
+    const { disconnect } = useDisconnect()
+
+    useAuthEvent({
+        onSignout: () => sseManager.destroy()
+    });
 
     const sizeMap = {
         small: {

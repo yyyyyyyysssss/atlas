@@ -45,7 +45,7 @@ class SseManager {
             this.sse.close();
             this.sse = null;
 
-            // 你的指数退避算法
+            // 指数退避算法
             const delay = Math.min(1000 * Math.pow(2, this.reconnectCount), 30000);
             console.warn(`SSE: Lost. Reconnecting in ${delay / 1000}s...`);
 

@@ -36,16 +36,7 @@ const AppLayout = () => {
 
     const redirectTo = useSelector(state => state.layout.redirectTo)
 
-    const { accessToken } = useAuth()
-
     const { domainReady, domainLoading } = useDomain()
-
-    const SSE_URL = useMemo(() => {
-        if (!accessToken) {
-            return null
-        }
-        return `/api/notification/v1/notification/sse/subscribe?terminal=web&access_token=${accessToken}`
-    }, [accessToken])
 
     const location = useLocation()
     const navigate = useNavigate()
@@ -100,7 +91,7 @@ const AppLayout = () => {
                         top: 109,
                     }}
                 >
-                    <SseProvider url={SSE_URL}>
+                    <SseProvider>
                         <Layout style={{ minHeight: '100vh' }}>
                             {/* 侧边菜单 */}
                             <LayoutSider

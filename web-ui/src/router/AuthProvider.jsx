@@ -10,7 +10,7 @@ import Loading from '../components/loading';
 import Cookies from 'js-cookie'
 import { fetchUserPermissions, fetchUserInfo } from '../services/UserProfileService';
 import { useDispatch, useSelector } from 'react-redux';
-import { useDisconnect } from 'wagmi';
+import { authEventBus } from '../events/AuthEventBus';
 
 const AuthContext = createContext({
     isLoginIn: null,
@@ -28,7 +28,23 @@ export const AuthProvider = ({ children }) => {
 
     const dispatch = useDispatch()
 
-    const { disconnect } = useDisconnect()
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (isLoginIn !== true) return
+            const navEntries = performance.getEntriesByType('navigation')
+            const isReload = navEntries.length > 0 && navEntries[0].type === 'reload'
+            // 如果是刷新操作，直接跳过，不触发 signout
+            if (isReload) {
+                return
+            }
+            authEventBus.emitUnload()
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [isLoginIn])
 
     useEffect(() => {
         setGlobalSignout(signout)
@@ -66,13 +82,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signout = async () => {
-        // 强行断开 Web3 钱包连接（防止业务退出后，钱包还挂着）
-        try {
-            disconnect()
-        } catch (error) {
-            console.error("Wagmi 断开钱包失败:", error);
-        }
-
+        authEventBus.emitSignout()
         // 清理持久化存储
         clearToken()
         // 清理内存状态 (Redux)

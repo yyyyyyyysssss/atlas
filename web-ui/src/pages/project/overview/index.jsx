@@ -99,7 +99,6 @@ const ProjectOverview = () => {
                     </Flex>
                   }
                   value={totalUserValue}
-                  prefix={<UserOutlined style={{ marginRight: 8, color: token.colorPrimary }} />}
                 />
                 <Tiny.Area
                   data={totalUserTrend}
@@ -116,14 +115,24 @@ const ProjectOverview = () => {
 
               <Divider style={{ margin: '10px 0' }} />
 
-              <Flex>
-                  <div>
-                    周同比  {overviewAndTrendData?.totalUser?.weekOnWeekGrowth} {overviewAndTrendData?.totalUser?.weekPositive === true ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} /> : <CaretDownFilled style={{ color: '#52c41a' }} />}
-                  </div>
-                  <div>
-                    日同比 {overviewAndTrendData?.totalUser?.dayOnDayGrowth} {overviewAndTrendData?.totalUser?.weekPositive === true ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} /> : <CaretDownFilled style={{ color: '#52c41a' }} />}
-                  </div>
-                </Flex>
+              <Flex gap="middle" wrap="nowrap">
+                <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  周环比 {overviewAndTrendData?.totalUser?.weekGrowth}
+                  {
+                    overviewAndTrendData?.totalUser?.weekPositive === true
+                      ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
+                      : <CaretDownFilled style={{ color: '#52c41a' }} />
+                  }
+                </div>
+                <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  日环比 {overviewAndTrendData?.totalUser?.dayGrowth}
+                  {
+                    overviewAndTrendData?.totalUser?.dayPositive === true
+                      ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
+                      : <CaretDownFilled style={{ color: '#52c41a' }} />
+                  }
+                </div>
+              </Flex>
             </Flex>
           </Card>
 
@@ -137,14 +146,13 @@ const ProjectOverview = () => {
                 <Statistic
                   title={
                     <Flex justify="space-between" align="center">
-                      <span>当前活跃用户</span>
+                      <span>活跃用户数</span>
                       <Tooltip title="当前拥有未过期 Access Token 的独立用户数">
                         <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
                       </Tooltip>
                     </Flex>
                   }
                   value={totalActiveUserValue}
-                  prefix={<KeyOutlined style={{ marginRight: 8, color: '#fa8c16' }} />}
                 />
                 <Tiny.Column
                   data={totalActiveUserTrend}
@@ -157,10 +165,11 @@ const ProjectOverview = () => {
 
               <Divider style={{ margin: '10px 0' }} />
 
-              <Flex align="center" justify="space-between">
-                <Text type="secondary" style={{ fontSize: 13 }}>长效会话覆盖率</Text>
-                <Text strong style={{ fontSize: 13 }}>{tokenToRefreshRatio}%</Text>
+              <Flex gap={8} align='center'>
+                <span style={{ fontSize: 14 }}>活跃率</span>
+                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeUser?.activeRate}</span>
               </Flex>
+
             </Flex>
           </Card>
 
@@ -181,7 +190,6 @@ const ProjectOverview = () => {
                     </Flex>
                   }
                   value={totalActiveSessionValue}
-                  prefix={<SyncOutlined style={{ marginRight: 8, color: '#52c41a' }} />}
                 />
                 <Tiny.Area
                   data={totalActiveSessionTrend}
@@ -198,10 +206,12 @@ const ProjectOverview = () => {
 
               <Divider style={{ margin: '10px 0' }} />
 
-              <Flex align="center" justify="space-between">
-                <Text type="secondary" style={{ fontSize: 13 }}>历史授权留存</Text>
-                <Text strong style={{ fontSize: 13 }}>{refreshRetentionRate}%</Text>
+              <Flex gap={8} align='center'>
+                <span style={{ fontSize: 14 }}>人均会话</span>
+                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeSession?.avgSessionPerUser}</span>
               </Flex>
+
+
             </Flex>
           </Card>
 
@@ -215,29 +225,32 @@ const ProjectOverview = () => {
                 <Statistic
                   title={
                     <Flex justify="space-between" align="center">
-                      <span>历史累计授权次数</span>
+                      <span>累计授权数</span>
                       <Tooltip title="当前应用产生的所有 OAuth2 授权记录总数">
                         <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
                       </Tooltip>
                     </Flex>
                   }
                   value={totalHistoryAuthorizationValue}
-                  prefix={<HistoryOutlined style={{ marginRight: 8, color: '#13c2c2' }} />}
                 />
-                <Tiny.Column
+                <Tiny.Line
                   data={totalHistoryAuthorizationTrend}
                   xField="index"
                   yField="value"
-                  style={{ fill: '#13c2c2' }}
+                  smooth={true}
+                  style={{
+                    stroke: '#13c2c2',
+                    lineWidth: 2
+                  }}
                   tooltip={{ title: '' }}
                 />
               </Flex>
 
               <Divider style={{ margin: '10px 0' }} />
 
-              <Flex align="center" justify="space-between">
-                <Text type="secondary" style={{ fontSize: 13 }}>当前活跃授权占比</Text>
-                <Text strong style={{ fontSize: 13 }}>{activeAuthRatio}%</Text>
+              <Flex gap={8} align='center'>
+                <span style={{ fontSize: 14 }}>近7日新增</span>
+                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.historyAuthorization?.lastWeekTotalAuthorizationCount}</span>
               </Flex>
             </Flex>
           </Card>

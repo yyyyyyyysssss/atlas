@@ -13,6 +13,7 @@ import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.security.handler.ForbiddenAccessHandler;
 import com.atlas.security.handler.UnauthorizedEntryPoint;
+import com.atlas.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.service.TokenService;
 import jakarta.annotation.Resource;
@@ -37,6 +38,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -101,6 +103,12 @@ public class SecurityConfig {
     @Resource
     private Saml2FailureHandler saml2FailureHandler;
 
+    @Resource
+    private JwtAuthenticationConverter jwtAuthenticationConverter;
+
+    @Resource
+    private OAuth2BearerTokenResolver oAuth2BearerTokenResolver;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -153,7 +161,12 @@ public class SecurityConfig {
                                 .logoutUrl("/logout")
                                 .logoutSuccessHandler(logoutSuccessHandler())
                                 .permitAll()
-                );
+                )
+                // oauth2资源服务器
+                .oauth2ResourceServer((resourceServer) -> {
+                    resourceServer.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter));
+                    resourceServer.bearerTokenResolver(oAuth2BearerTokenResolver);
+                });
 
 
         return http.build();

@@ -14,6 +14,7 @@ import './index.css';
 import { useDomain } from '../../../router/DomainProvider';
 import { getOverviewAndTrend } from '../../../services/ProjectService';
 import { useRequest } from 'ahooks';
+import Loading from '../../../components/loading';
 
 const { Text } = Typography;
 
@@ -63,12 +64,13 @@ const ProjectOverview = () => {
   const formatTrendData = (trendList) => {
     if (!Array.isArray(trendList)) return [];
     return trendList.map((item, index) => {
-      // 兼容 item 是 "4" 或 { index: 0, value: "4" }
       const rawVal = typeof item === 'object' && item !== null ? item.value : item;
       const numValue = Number(rawVal);
+      const validValue = Number.isNaN(numValue) ? 0 : numValue;
       return {
         index: typeof item === 'object' && item?.index !== undefined ? item.index : index,
-        value: Number.isNaN(numValue) ? 0 : numValue
+        value: validValue,
+        displayValue: validValue + 0.8
       };
     });
   };
@@ -79,185 +81,225 @@ const ProjectOverview = () => {
   const totalHistoryAuthorizationTrend = formatTrendData(overviewAndTrendData?.historyAuthorization?.trend);
 
   return (
-    <Spin spinning={overviewAndTrendLoading}>
-      <Flex ref={rootRef} className="home-root-flex" gap={20} flex={1} vertical style={{ padding: 24 }}>
-        <Flex gap={20}>
-          {/* 1. 总用户数 */}
-          <Card
-            title="总用户"
-            style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
-          >
-            <Flex flex={1} vertical>
-              <Flex style={{ height: '100px' }} vertical justify="space-between">
-                <Statistic
-                  title={
-                    <Flex justify="space-between" align="center">
-                      <span>总用户数</span>
-                      <Tooltip title="累计产生过授权的独立用户总数">
-                        <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
-                      </Tooltip>
-                    </Flex>
-                  }
-                  value={totalUserValue}
-                />
-                <Tiny.Area
-                  data={totalUserTrend}
-                  shapeField="smooth"
-                  xField="index"
-                  yField="value"
-                  style={{
-                    fill: 'linear-gradient(-90deg, white 0%, darkgreen 100%)',
-                    fillOpacity: 0.6
-                  }}
-                  tooltip={{ title: '' }}
-                />
-              </Flex>
+    <Flex ref={rootRef} className="home-root-flex" gap={20} flex={1} style={{ padding: 24 }} vertical>
 
-              <Divider style={{ margin: '10px 0' }} />
-
-              <Flex gap="middle" wrap="nowrap">
-                <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  周环比 {overviewAndTrendData?.totalUser?.weekGrowth}
-                  {
-                    overviewAndTrendData?.totalUser?.weekPositive === true
-                      ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
-                      : <CaretDownFilled style={{ color: '#52c41a' }} />
-                  }
-                </div>
-                <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  日环比 {overviewAndTrendData?.totalUser?.dayGrowth}
-                  {
-                    overviewAndTrendData?.totalUser?.dayPositive === true
-                      ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
-                      : <CaretDownFilled style={{ color: '#52c41a' }} />
-                  }
-                </div>
-              </Flex>
+      <Flex gap={20}>
+        {/* 1. 总用户数 */}
+        <Card
+          title="总用户"
+          loading={overviewAndTrendLoading}
+          style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+        >
+          <Flex flex={1} vertical>
+            <Flex style={{ height: '100px' }} vertical justify="space-between">
+              <Statistic
+                title={
+                  <Flex justify="space-between" align="center">
+                    <span>总用户数</span>
+                    <Tooltip title="累计产生过授权的独立用户总数">
+                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                    </Tooltip>
+                  </Flex>
+                }
+                value={totalUserValue}
+              />
+              <Tiny.Area
+                data={totalUserTrend}
+                shapeField="smooth"
+                xField="index"
+                yField="displayValue"
+                style={{
+                  fill: 'linear-gradient(-90deg, white 0%, darkgreen 100%)',
+                  fillOpacity: 0.6
+                }}
+                tooltip={{
+                  title: false,
+                  items: [
+                    {
+                      name: '总用户数',
+                      field: 'value'
+                    }
+                  ]
+                }}
+              />
             </Flex>
-          </Card>
 
-          {/* 2. 活跃用户数 */}
-          <Card
-            title="活跃用户"
-            style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
-          >
-            <Flex flex={1} vertical>
-              <Flex style={{ height: '100px' }} vertical justify="space-between">
-                <Statistic
-                  title={
-                    <Flex justify="space-between" align="center">
-                      <span>活跃用户数</span>
-                      <Tooltip title="当前拥有未过期 Access Token 的独立用户数">
-                        <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
-                      </Tooltip>
-                    </Flex>
-                  }
-                  value={totalActiveUserValue}
-                />
-                <Tiny.Column
-                  data={totalActiveUserTrend}
-                  xField="index"
-                  yField="value"
-                  style={{ fill: '#fa8c16' }}
-                  tooltip={{ title: '' }}
-                />
-              </Flex>
+            <Divider style={{ margin: '10px 0' }} />
 
-              <Divider style={{ margin: '10px 0' }} />
-
-              <Flex gap={8} align='center'>
-                <span style={{ fontSize: 14 }}>活跃率</span>
-                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeUser?.activeRate}</span>
-              </Flex>
-
+            <Flex gap="middle" wrap="nowrap">
+              <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+                周环比 {overviewAndTrendData?.totalUser?.weekGrowth}
+                {
+                  overviewAndTrendData?.totalUser?.weekPositive === true
+                    ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
+                    : <CaretDownFilled style={{ color: '#52c41a' }} />
+                }
+              </div>
+              <div style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+                日环比 {overviewAndTrendData?.totalUser?.dayGrowth}
+                {
+                  overviewAndTrendData?.totalUser?.dayPositive === true
+                    ? <CaretUpFilled style={{ color: '#f5222d', marginRight: 8 }} />
+                    : <CaretDownFilled style={{ color: '#52c41a' }} />
+                }
+              </div>
             </Flex>
-          </Card>
+          </Flex>
+        </Card>
 
-          {/* 3. 活跃会话数 (Refresh Token) */}
-          <Card
-            title="活跃会话"
-            style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
-          >
-            <Flex flex={1} vertical>
-              <Flex style={{ height: '100px' }} vertical justify="space-between">
-                <Statistic
-                  title={
-                    <Flex justify="space-between" align="center">
-                      <span>活跃会话数</span>
-                      <Tooltip title="当前未过期的 Refresh Token 总数（长效会话数）">
-                        <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
-                      </Tooltip>
-                    </Flex>
-                  }
-                  value={totalActiveSessionValue}
-                />
-                <Tiny.Area
-                  data={totalActiveSessionTrend}
-                  shapeField="smooth"
-                  xField="index"
-                  yField="value"
-                  style={{
-                    fill: 'linear-gradient(-90deg, white 0%, darkgreen 100%)',
-                    fillOpacity: 0.6
-                  }}
-                  tooltip={{ title: '' }}
-                />
-              </Flex>
-
-              <Divider style={{ margin: '10px 0' }} />
-
-              <Flex gap={8} align='center'>
-                <span style={{ fontSize: 14 }}>人均会话</span>
-                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeSession?.avgSessionPerUser}</span>
-              </Flex>
-
-
+        {/* 2. 活跃用户数 */}
+        <Card
+          title="活跃用户"
+          loading={overviewAndTrendLoading}
+          style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+        >
+          <Flex flex={1} vertical>
+            <Flex style={{ height: '100px' }} vertical justify="space-between">
+              <Statistic
+                title={
+                  <Flex justify="space-between" align="center">
+                    <span>活跃用户数</span>
+                    <Tooltip title="当前拥有未过期 Access Token 的独立用户数">
+                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                    </Tooltip>
+                  </Flex>
+                }
+                value={totalActiveUserValue}
+              />
+              <Tiny.Column
+                data={totalActiveUserTrend}
+                xField="index"
+                yField="displayValue"
+                style={{ fill: '#fa8c16' }}
+                tooltip={{
+                  title: false,
+                  items: [
+                    {
+                      name: '活跃用户数',
+                      field: 'value'
+                    }
+                  ]
+                }}
+              />
             </Flex>
-          </Card>
 
-          {/* 4. 历史累计授权次数 */}
-          <Card
-            title="累计授权"
-            style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
-          >
-            <Flex flex={1} vertical>
-              <Flex style={{ height: '100px' }} vertical justify="space-between">
-                <Statistic
-                  title={
-                    <Flex justify="space-between" align="center">
-                      <span>累计授权数</span>
-                      <Tooltip title="当前应用产生的所有 OAuth2 授权记录总数">
-                        <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
-                      </Tooltip>
-                    </Flex>
-                  }
-                  value={totalHistoryAuthorizationValue}
-                />
-                <Tiny.Line
-                  data={totalHistoryAuthorizationTrend}
-                  xField="index"
-                  yField="value"
-                  smooth={true}
-                  style={{
-                    stroke: '#13c2c2',
-                    lineWidth: 2
-                  }}
-                  tooltip={{ title: '' }}
-                />
-              </Flex>
+            <Divider style={{ margin: '10px 0' }} />
 
-              <Divider style={{ margin: '10px 0' }} />
-
-              <Flex gap={8} align='center'>
-                <span style={{ fontSize: 14 }}>近7日新增</span>
-                <span style={{ fontSize: 14 }}>{overviewAndTrendData?.historyAuthorization?.lastWeekTotalAuthorizationCount}</span>
-              </Flex>
+            <Flex gap={8} align='center'>
+              <span style={{ fontSize: 14 }}>活跃率</span>
+              <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeUser?.activeRate}</span>
             </Flex>
-          </Card>
-        </Flex>
+
+          </Flex>
+        </Card>
+
+        {/* 3. 活跃会话数 (Refresh Token) */}
+        <Card
+          title="活跃会话"
+          loading={overviewAndTrendLoading}
+          style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+        >
+          <Flex flex={1} vertical>
+            <Flex style={{ height: '100px' }} vertical justify="space-between">
+              <Statistic
+                title={
+                  <Flex justify="space-between" align="center">
+                    <span>活跃会话数</span>
+                    <Tooltip title="当前未过期的 Refresh Token 总数（长效会话数）">
+                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                    </Tooltip>
+                  </Flex>
+                }
+                value={totalActiveSessionValue}
+              />
+              <Tiny.Area
+                data={totalActiveSessionTrend}
+                shapeField="smooth"
+                xField="index"
+                yField="displayValue"
+                style={{
+                  fill: 'linear-gradient(-90deg, white 0%, darkgreen 100%)',
+                  fillOpacity: 0.6
+                }}
+                tooltip={{
+                  title: false,
+                  items: [
+                    {
+                      name: '活跃会话数',
+                      field: 'value'
+                    }
+                  ]
+                }}
+              />
+            </Flex>
+
+            <Divider style={{ margin: '10px 0' }} />
+
+            <Flex gap={8} align='center'>
+              <span style={{ fontSize: 14 }}>人均会话</span>
+              <span style={{ fontSize: 14 }}>{overviewAndTrendData?.activeSession?.avgSessionPerUser}</span>
+            </Flex>
+
+
+          </Flex>
+        </Card>
+
+        {/* 4. 历史累计授权次数 */}
+        <Card
+          title="累计授权"
+          loading={overviewAndTrendLoading}
+          style={{ width: '25%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+        >
+          <Flex flex={1} vertical>
+            <Flex style={{ height: '100px' }} vertical justify="space-between">
+              <Statistic
+                title={
+                  <Flex justify="space-between" align="center">
+                    <span>累计授权数</span>
+                    <Tooltip title="当前应用产生的所有 OAuth2 授权记录总数">
+                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                    </Tooltip>
+                  </Flex>
+                }
+                value={totalHistoryAuthorizationValue}
+              />
+              <Tiny.Line
+                data={totalHistoryAuthorizationTrend}
+                xField="index"
+                yField="displayValue"
+                smooth={true}
+                style={{
+                  stroke: '#13c2c2',
+                  lineWidth: 2
+                }}
+                tooltip={{
+                  title: false,
+                  items: [
+                    {
+                      name: '累计授权数',
+                      field: 'value'
+                    }
+                  ]
+                }}
+              />
+            </Flex>
+
+            <Divider style={{ margin: '10px 0' }} />
+
+            <Flex gap={8} align='center'>
+              <span style={{ fontSize: 14 }}>近7日新增</span>
+              <span style={{ fontSize: 14 }}>{overviewAndTrendData?.historyAuthorization?.lastWeekTotalAuthorizationCount}</span>
+            </Flex>
+          </Flex>
+        </Card>
       </Flex>
-    </Spin>
-  );
+
+      <Flex>
+        
+      </Flex>
+
+    </Flex>
+  )
 };
 
 export default ProjectOverview;

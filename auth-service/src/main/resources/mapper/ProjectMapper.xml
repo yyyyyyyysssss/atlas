@@ -24,49 +24,38 @@
         SELECT
 
         -- 用户总数
-        COUNT(DISTINCT principal_name) AS total_user_count,
+        COUNT(DISTINCT a.principal_name) AS total_user_count,
 
         -- 截止昨天用户总数
         COUNT(DISTINCT
-        <![CDATA[ CASE WHEN create_time < CURDATE() ]]>
-        THEN principal_name END) AS yesterday_total_user_count,
+        <![CDATA[ CASE WHEN a.create_time < CURDATE() ]]>
+        THEN a.principal_name END) AS yesterday_total_user_count,
 
         -- 截止上周用户总数
         COUNT(DISTINCT
-        <![CDATA[ CASE WHEN create_time < DATE_SUB(CURDATE(), INTERVAL 7 DAY)  ]]>
-        THEN principal_name END) AS last_week_total_user_count,
+        <![CDATA[ CASE WHEN a.create_time < DATE_SUB(CURDATE(), INTERVAL 7 DAY)  ]]>
+        THEN a.principal_name END) AS last_week_total_user_count,
 
         -- 当前活跃用户
         COUNT(DISTINCT CASE
-        <![CDATA[ WHEN access_token_expires_at > NOW() ]]>
-        THEN principal_name
+        <![CDATA[ WHEN a.access_token_expires_at > NOW() ]]>
+        THEN a.principal_name
         END) AS total_active_user_count,
 
         -- 活跃会话数
         COUNT(CASE
-        <![CDATA[ WHEN refresh_token_expires_at > NOW() ]]>
+        <![CDATA[ WHEN a.refresh_token_expires_at > NOW() ]]>
         THEN 1
         END) AS total_active_session_count,
 
         -- 累计授权次数
         COUNT(*) AS total_history_authorization_count,
 
-        COUNT(CASE WHEN create_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) AS last_week_total_authorization_count
+        COUNT(CASE WHEN a.create_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) AS last_week_total_authorization_count
 
-        FROM oauth2_authorization
+        FROM oauth2_authorization a
         <where>
-            <choose>
-                <when test="registeredClientIds != null and registeredClientIds.size() > 0">
-                    registered_client_id IN
-                    <foreach item="registeredClientId" collection="registeredClientIds" open="(" separator="," close=")">
-                        #{registeredClientId}
-                    </foreach>
-                </when>
-                <!-- 兜底防全表扫描：当传入空列表时返回 1=0 查出 0 值 -->
-                <otherwise>
-                    1 = 0
-                </otherwise>
-            </choose>
+            <include refid="clientInCondition"/>
         </where>
     </select>
 
@@ -100,19 +89,8 @@
 
         FROM dim_date ds
         LEFT JOIN oauth2_authorization a
-        ON
-        <choose>
-            <when test="registeredClientIds != null and registeredClientIds.size() > 0">
-                a.registered_client_id IN
-                <foreach item="registeredClientId" collection="registeredClientIds" open="(" separator="," close=")">
-                    #{registeredClientId}
-                </foreach>
-            </when>
-            <otherwise>
-                1 = 0
-            </otherwise>
-        </choose>
-        <![CDATA[ AND a.create_time < ds.stat_date + INTERVAL 1 DAY ]]>
+            ON <include refid="clientInCondition"/>
+            <![CDATA[ AND a.create_time < ds.stat_date + INTERVAL 1 DAY ]]>
         <where>
             -- 确定起始日期 (默认 CURDATE() - INTERVAL 6 DAY)
             <choose>
@@ -138,6 +116,134 @@
         ORDER BY ds.stat_date ASC
     </select>
 
+    <!-- 统计每日授权/请求总次数 -->
+    <select id="selectDailyAuthCountTrend" resultType="com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO$TrendItem">
+        SELECT
+            d.stat_date AS letter,
+            COUNT(a.id) AS frequency
+        FROM
+        dim_date d
+        LEFT JOIN oauth2_authorization a ON a.create_time >= d.stat_date
+            AND <![CDATA[ a.create_time < DATE_ADD(d.stat_date, INTERVAL 1 DAY) ]]>
+            AND <include refid="clientInCondition"/>
+        WHERE <include refid="dateRangeWhere"/>
+        AND <![CDATA[ d.stat_date <= CURDATE() ]]>
+        GROUP BY d.stat_date
+        ORDER BY letter ASC
+    </select>
+
+
+    <select id="selectDailyActiveUserCountTrend" resultType="com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO$TrendItem">
+        SELECT
+        d.stat_date AS letter,
+        COUNT(DISTINCT a.principal_name) AS frequency
+        FROM dim_date d
+        LEFT JOIN oauth2_authorization a ON a.access_token_issued_at >= d.stat_date
+            AND <![CDATA[ a.access_token_issued_at < DATE_ADD(d.stat_date, INTERVAL 1 DAY) ]]>
+            AND <include refid="clientInCondition"/>
+        WHERE <include refid="dateRangeWhere"/>
+        GROUP BY d.stat_date
+        ORDER BY letter ASC
+    </select>
+
+    <select id="selectApplicationActiveUserRanking" resultType="com.atlas.auth.domain.vo.ProjectDashboardRankingVO">
+        SELECT
+            c.application_name AS applicationName,
+            IFNULL(stats.score, 0) AS score
+        FROM (
+            <foreach item="clientId" collection="registeredClientIds" separator=" UNION ALL ">
+                SELECT #{clientId} AS registered_client_id
+            </foreach>
+        ) t
+        LEFT JOIN oauth2_client_application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN (
+            SELECT
+                a.registered_client_id,
+                COUNT(DISTINCT a.principal_name) AS score
+            FROM
+                oauth2_authorization a
+            WHERE
+                a.access_token_issued_at >= DATE_SUB(CURDATE(), INTERVAL <include refid="daysInterval"/> DAY)
+                AND <![CDATA[ a.access_token_issued_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY) ]]>
+                AND <include refid="clientInCondition"/>
+            GROUP BY
+                a.registered_client_id
+        ) stats ON t.registered_client_id = stats.registered_client_id
+        ORDER BY
+        score DESC
+        <include refid="limitClause"/>
+    </select>
+
+    <select id="selectApplicationAuthCountRanking" resultType="com.atlas.auth.domain.vo.ProjectDashboardRankingVO">
+        SELECT
+            c.application_name AS applicationName,
+            IFNULL(stats.score, 0) AS score
+        FROM (
+            <foreach item="clientId" collection="registeredClientIds" separator=" UNION ALL ">
+                SELECT #{clientId} AS registered_client_id
+            </foreach>
+        ) t
+        LEFT JOIN oauth2_client_application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN (
+            SELECT
+                a.registered_client_id,
+                COUNT(a.id) AS score
+            FROM
+                oauth2_authorization a
+            WHERE
+                a.create_time >= DATE_SUB(CURDATE(), INTERVAL <include refid="daysInterval"/> DAY)
+                AND <![CDATA[ a.create_time < DATE_ADD(CURDATE(), INTERVAL 1 DAY) ]]>
+                AND <include refid="clientInCondition"/>
+            GROUP BY
+                a.registered_client_id
+        ) stats ON t.registered_client_id = stats.registered_client_id
+        ORDER BY
+        score DESC
+        <include refid="limitClause"/>
+    </select>
+
+    <!-- 客户端 ID 的 IN 条件复用 -->
+    <sql id="clientInCondition">
+        <choose>
+            <when test="registeredClientIds != null and registeredClientIds.size() > 0">
+                a.registered_client_id IN
+                <foreach item="registeredClientId" collection="registeredClientIds" open="(" separator="," close=")">
+                    #{registeredClientId}
+                </foreach>
+            </when>
+            <otherwise>
+                1 = 0
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 统一的日期维度查询 WHERE 条件 -->
+    <sql id="dateRangeWhere">
+        d.stat_date >= DATE_SUB(
+        CURDATE(), INTERVAL
+        <choose>
+            <when test="days != null">#{days}</when>
+            <otherwise>30</otherwise>
+        </choose>
+        DAY
+        )
+        AND <![CDATA[ d.stat_date <= CURDATE() ]]>
+    </sql>
+
+    <sql id="daysInterval">
+        <choose>
+            <when test="days != null">#{days}</when>
+            <otherwise>30</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="limitClause">
+        LIMIT
+        <choose>
+            <when test="limit != null">#{limit}</when>
+            <otherwise>10</otherwise>
+        </choose>
+    </sql>
 
 </mapper>
 

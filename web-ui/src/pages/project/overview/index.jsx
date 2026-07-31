@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Card, Divider, Flex, Spin, Statistic, Tooltip, Typography, theme } from 'antd';
+import React, { useMemo, useRef, useState } from 'react';
+import { Card, Divider, Flex, List, Spin, Statistic, Tooltip, Typography, theme } from 'antd';
 import {
   ExclamationCircleOutlined,
   UserOutlined,
@@ -9,30 +9,39 @@ import {
   CaretUpFilled,
   CaretDownFilled
 } from '@ant-design/icons';
-import { Tiny } from '@ant-design/plots';
+import { Column, Tiny } from '@ant-design/plots';
 import './index.css';
 import { useDomain } from '../../../router/DomainProvider';
-import { getOverviewAndTrend } from '../../../services/ProjectService';
+import { getChartTrend, getOverviewAndTrend } from '../../../services/ProjectService';
 import { useRequest } from 'ahooks';
 import Loading from '../../../components/loading';
 
 const { Text } = Typography;
 
 const ProjectOverview = () => {
-  const { domainId } = useDomain();
-  const { token } = theme.useToken();
-  const rootRef = useRef();
+  const { domainId } = useDomain()
 
-  const {
-    data: overviewAndTrendData,
-    loading: overviewAndTrendLoading,
-  } = useRequest(
+  const { token } = theme.useToken()
+
+  const rootRef = useRef()
+
+  const [authActiveTabKey, setAuthActiveTabKey] = useState('ACTIVE_USER')
+
+  const { data: overviewAndTrendData, loading: overviewAndTrendLoading } = useRequest(
     () => getOverviewAndTrend(domainId),
     {
       refreshDeps: [domainId],
       ready: !!domainId
     }
-  );
+  )
+
+  const { data: chartTrendData, loading: chartTrendLoading } = useRequest(
+    () => getChartTrend(domainId, authActiveTabKey),
+    {
+      refreshDeps: [domainId, authActiveTabKey],
+      ready: !!domainId && !!authActiveTabKey
+    }
+  )
 
   // 从真实接口获取 4 个指标的核心数值（转为数字，做安全回退 0 处理）
   const totalUserValue = Number(overviewAndTrendData?.totalUser?.value ?? 0);
@@ -70,7 +79,7 @@ const ProjectOverview = () => {
       return {
         index: typeof item === 'object' && item?.index !== undefined ? item.index : index,
         value: validValue,
-        displayValue: validValue + 0.8
+        displayValue: validValue + 0.1
       };
     });
   };
@@ -80,8 +89,47 @@ const ProjectOverview = () => {
   const totalActiveSessionTrend = formatTrendData(overviewAndTrendData?.activeSession?.trend);
   const totalHistoryAuthorizationTrend = formatTrendData(overviewAndTrendData?.historyAuthorization?.trend);
 
+  const { trendList, rankingList } = useMemo(() => {
+    const trend = chartTrendData?.trendList?.map(item => {
+      const value = Number(item.frequency ?? 0);
+      return {
+        ...item,
+        letter: item.letter?.slice(-2),
+        frequency: value,
+        displayFrequency: value === 0 ? 0.1 : value,
+      };
+    }) ?? [];
+
+    const ranking = chartTrendData?.rankingList?.map(item => {
+      const score = Number(item.score ?? 0);
+      return {
+        ...item,
+        label: item.applicationName,
+        score: score,
+      };
+    }) ?? [];
+
+    return { trendList: trend, rankingList: ranking };
+  }, [chartTrendData]);
+
+
+  const authTabList = [
+    {
+      key: 'ACTIVE_USER',
+      label: '活跃用户',
+    },
+    {
+      key: 'AUTH_COUNT',
+      label: '授权次数',
+    }
+  ]
+
+  const handleAuthActiveTabChange = (key) => {
+    setAuthActiveTabKey(key)
+  }
+
   return (
-    <Flex ref={rootRef} className="home-root-flex" gap={20} flex={1} style={{ padding: 24 }} vertical>
+    <Flex ref={rootRef} className="home-root-flex" gap={20} flex={1} vertical>
 
       <Flex gap={20}>
         {/* 1. 总用户数 */}
@@ -97,7 +145,9 @@ const ProjectOverview = () => {
                   <Flex justify="space-between" align="center">
                     <span>总用户数</span>
                     <Tooltip title="累计产生过授权的独立用户总数">
-                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                      <Typography.Text type="secondary">
+                        <ExclamationCircleOutlined />
+                      </Typography.Text>
                     </Tooltip>
                   </Flex>
                 }
@@ -160,7 +210,9 @@ const ProjectOverview = () => {
                   <Flex justify="space-between" align="center">
                     <span>活跃用户数</span>
                     <Tooltip title="当前拥有未过期 Access Token 的独立用户数">
-                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                      <Typography.Text type="secondary">
+                        <ExclamationCircleOutlined />
+                      </Typography.Text>
                     </Tooltip>
                   </Flex>
                 }
@@ -206,7 +258,9 @@ const ProjectOverview = () => {
                   <Flex justify="space-between" align="center">
                     <span>活跃会话数</span>
                     <Tooltip title="当前未过期的 Refresh Token 总数（长效会话数）">
-                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                      <Typography.Text type="secondary">
+                        <ExclamationCircleOutlined />
+                      </Typography.Text>
                     </Tooltip>
                   </Flex>
                 }
@@ -257,7 +311,9 @@ const ProjectOverview = () => {
                   <Flex justify="space-between" align="center">
                     <span>累计授权数</span>
                     <Tooltip title="当前应用产生的所有 OAuth2 授权记录总数">
-                      <ExclamationCircleOutlined style={{ color: token.colorTextSecondary }} />
+                      <Typography.Text type="secondary">
+                        <ExclamationCircleOutlined />
+                      </Typography.Text>
                     </Tooltip>
                   </Flex>
                 }
@@ -295,11 +351,90 @@ const ProjectOverview = () => {
       </Flex>
 
       <Flex>
-        
+        <Card
+          style={{ width: '100%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+          tabList={authTabList}
+          activeTabKey={authActiveTabKey}
+          onTabChange={handleAuthActiveTabChange}
+          tabProps={{
+            size: 'middle',
+          }}
+          loading={chartTrendLoading}
+        >
+          <Flex justify='space-between'>
+            <Flex style={{ minWidth: '0px' }} flex={8}>
+              <div style={{ width: '100%' }}>
+                <Column
+                  data={trendList}
+                  height={300}
+                  xField='letter'
+                  yField='displayFrequency'
+                  label={{
+                    text: (d) => d.frequency,
+                    textBaseline: 'bottom',
+                  }}
+                  axis={{
+                    x: {
+                      style: {
+                        labelFill: token.colorText,
+                      },
+                    },
+                    y: {
+                      style: {
+                        labelFill: token.colorText,
+                      },
+                      labelFormatter: '~s',
+                    },
+                  }}
+                  tooltip={{
+                    title: false,
+                    items: [
+                      {
+                        name: authActiveTabKey === 'ACTIVE_USER' ? '活跃用户' : '授权次数',
+                        field: 'frequency'
+                      }
+                    ]
+                  }}
+                />
+              </div>
+            </Flex>
+            <Flex style={{ paddingLeft: '20px' }} flex={2} vertical>
+              <RankingList title='应用授权排名' data={rankingList} />
+            </Flex>
+          </Flex>
+        </Card>
       </Flex>
 
     </Flex>
   )
 };
+
+
+const RankingList = ({ title, data }) => (
+  <List
+    size='small'
+    className='ranking-list'
+    header={(
+      <Flex style={{ padding: '0 16px' }}>
+        <Typography.Text strong>{title}</Typography.Text>
+      </Flex>
+    )}
+    style={{ width: '80%' }}
+    dataSource={data}
+    renderItem={(item, index) => (
+      <List.Item style={{ borderBottom: 'none' }}>
+        <Flex flex={1} justify='space-between'>
+          <Flex>
+            <Typography.Text className={index <= 2 ? 'rank-circle-top' : 'rank-circle'}>{index + 1}</Typography.Text>
+            <Typography.Text style={{ flex: 1 }}>{item.label}</Typography.Text>
+          </Flex>
+          <Flex>
+            <Typography.Text>{item.score.toLocaleString()}</Typography.Text>
+          </Flex>
+        </Flex>
+      </List.Item>
+    )}
+  />
+)
 
 export default ProjectOverview;

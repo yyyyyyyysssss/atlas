@@ -4,10 +4,7 @@ import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.OAuth2ClientApplication;
 import com.atlas.auth.domain.entity.Project;
-import com.atlas.auth.domain.vo.ProjectCreateVO;
-import com.atlas.auth.domain.vo.ProjectDashboardMetricVO;
-import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
-import com.atlas.auth.domain.vo.ProjectVO;
+import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.auth.mapper.ProjectMapper;
@@ -31,6 +28,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -240,6 +238,32 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         List<ProjectDashboardMetricVO> trendMetrics= projectMapper.selectTrendByRegisteredClientIds(registeredClientIds, startDate, endDate);
 
         return ProjectDashboardOverviewTrendVO.of(overviewMetric, trendMetrics);
+    }
+
+    @Override
+    public ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days) {
+        int queryDays = (days != null && days > 0) ? days : 30;
+        ProjectVO projectVO = this.getByCode(projectCode);
+        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if(CollectionUtils.isEmpty(registeredClientIds)){
+            return ProjectDashboardChartTrendVO.empty(metricType);
+        }
+        List<ProjectDashboardChartTrendVO.TrendItem> trendItems;
+        List<ProjectDashboardRankingVO> rankingList;
+        switch (metricType){
+            case "ACTIVE_USER":
+                trendItems = projectMapper.selectDailyActiveUserCountTrend(registeredClientIds, queryDays);
+                rankingList = projectMapper.selectApplicationActiveUserRanking(registeredClientIds, days, 6);
+                break;
+            case "AUTH_COUNT":
+                trendItems = projectMapper.selectDailyAuthCountTrend(registeredClientIds, queryDays);
+                rankingList = projectMapper.selectApplicationAuthCountRanking(registeredClientIds, days, 6);
+                break;
+            default:
+                return ProjectDashboardChartTrendVO.empty(metricType);
+        }
+
+        return ProjectDashboardChartTrendVO.of(metricType, trendItems, rankingList);
     }
 }
 

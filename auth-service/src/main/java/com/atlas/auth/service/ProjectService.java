@@ -5,6 +5,7 @@ import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.ProjectCreateVO;
+import com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO;
 import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
 import com.atlas.auth.domain.vo.ProjectVO;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -44,6 +45,8 @@ public interface ProjectService extends IService<Project> {
     boolean isProjectActiveByRegisteredClientId(String registeredClientId);
 
     ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode);
+
+    ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days);
 
 }
 

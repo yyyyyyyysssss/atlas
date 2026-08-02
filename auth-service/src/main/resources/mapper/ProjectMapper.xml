@@ -202,6 +202,33 @@
         <include refid="limitClause"/>
     </select>
 
+    <select id="selectGrantTypeStats" resultType="com.atlas.auth.domain.vo.ProjectDashboardGrantTypeStatsVO$GrantTypeItem">
+        SELECT
+            c.application_name AS applicationName,
+            CASE a.authorization_grant_type
+            WHEN 'authorization_code' THEN '授权码模式'
+            WHEN 'client_credentials' THEN '客户端模式'
+            WHEN 'urn:ietf:params:oauth:grant-type:device_code' THEN '设备码模式'
+            ELSE a.authorization_grant_type
+            END AS grantType,
+            COUNT(*) AS count
+        FROM
+            oauth2_authorization a
+        LEFT JOIN oauth2_client_application c ON a.registered_client_id = c.registered_client_id
+        WHERE
+            a.authorization_grant_type IN (
+            'authorization_code',
+            'client_credentials',
+            'urn:ietf:params:oauth:grant-type:device_code'
+            )
+        AND a.create_time >= #{startTime}
+        <![CDATA[ AND a.create_time <= #{endTime} ]]>
+        AND <include refid="clientInCondition"/>
+        GROUP BY
+            c.application_name,
+            a.authorization_grant_type
+    </select>
+
     <!-- 客户端 ID 的 IN 条件复用 -->
     <sql id="clientInCondition">
         <choose>

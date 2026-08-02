@@ -94,7 +94,7 @@ const ProjectOverview = () => {
       const value = Number(item.frequency ?? 0);
       return {
         ...item,
-        letter: item.letter?.slice(-2),
+        letter: item.letter?.slice(5),
         frequency: value,
         displayFrequency: value === 0 ? 0.1 : value,
       };

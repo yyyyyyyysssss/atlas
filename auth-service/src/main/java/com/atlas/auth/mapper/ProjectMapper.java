@@ -2,6 +2,7 @@ package com.atlas.auth.mapper;
 
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO;
+import com.atlas.auth.domain.vo.ProjectDashboardGrantTypeStatsVO;
 import com.atlas.auth.domain.vo.ProjectDashboardMetricVO;
 import com.atlas.auth.domain.vo.ProjectDashboardRankingVO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -77,6 +78,7 @@ public interface ProjectMapper extends BaseMapper<Project> {
             @Param("days") Integer days,
             @Param("limit") Integer limit
     );
+
     /**
      * 查询应用授权次数排行榜
      *
@@ -89,6 +91,18 @@ public interface ProjectMapper extends BaseMapper<Project> {
             @Param("registeredClientIds") List<String> registeredClientIds,
             @Param("days") Integer days,
             @Param("limit") Integer limit
+    );
+
+    /**
+     * 授权类型统计
+     *
+     * @param registeredClientIds 客户端 ID 列表
+     * @return  授权类型列表
+     */
+    List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> selectGrantTypeStats(
+            @Param("registeredClientIds") List<String> registeredClientIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
     );
 
 }

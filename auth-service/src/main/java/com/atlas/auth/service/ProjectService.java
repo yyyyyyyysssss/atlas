@@ -4,10 +4,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.Project;
-import com.atlas.auth.domain.vo.ProjectCreateVO;
-import com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO;
-import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
-import com.atlas.auth.domain.vo.ProjectVO;
+import com.atlas.auth.domain.vo.*;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
@@ -47,6 +44,8 @@ public interface ProjectService extends IService<Project> {
     ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode);
 
     ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days);
+
+    List<ProjectDashboardGrantTypeStatsVO> getGrantTypeStats(String projectCode);
 
 }
 

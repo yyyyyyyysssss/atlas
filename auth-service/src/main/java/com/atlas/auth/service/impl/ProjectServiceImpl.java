@@ -28,9 +28,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -264,6 +263,41 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         }
 
         return ProjectDashboardChartTrendVO.of(metricType, trendItems, rankingList);
+    }
+
+    @Override
+    public List<ProjectDashboardGrantTypeStatsVO> getGrantTypeStats(String projectCode) {
+        ProjectVO projectVO = this.getByCode(projectCode);
+        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if(CollectionUtils.isEmpty(registeredClientIds)){
+            return Collections.emptyList();
+        }
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(30);
+        List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> grantTypeItems = projectMapper.selectGrantTypeStats(registeredClientIds, startDate, endDate);
+
+        List<ProjectDashboardGrantTypeStatsVO> result = new ArrayList<>();
+
+        Map<String, Long> totalGrantTypeMap = grantTypeItems.stream()
+                .collect(Collectors.groupingBy(
+                        ProjectDashboardGrantTypeStatsVO.GrantTypeItem::grantType,
+                        Collectors.summingLong(ProjectDashboardGrantTypeStatsVO.GrantTypeItem::count)
+                ));
+
+        List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> totalItems = totalGrantTypeMap.entrySet().stream()
+                .map(entry -> ProjectDashboardGrantTypeStatsVO.GrantTypeItem.of("全部应用", entry.getKey(), entry.getValue()))
+                .toList();
+
+        result.add(ProjectDashboardGrantTypeStatsVO.of("全部应用", totalItems));
+
+        Map<String, List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem>> appGroupMap = grantTypeItems.stream()
+                .collect(Collectors.groupingBy(ProjectDashboardGrantTypeStatsVO.GrantTypeItem::applicationName));
+
+        appGroupMap.forEach((appName, items) -> {
+            result.add(ProjectDashboardGrantTypeStatsVO.of(appName, items));
+        });
+
+        return result;
     }
 }
 

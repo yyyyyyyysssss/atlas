@@ -221,8 +221,8 @@
             'client_credentials',
             'urn:ietf:params:oauth:grant-type:device_code'
             )
-        AND a.create_time >= #{startTime}
-        <![CDATA[ AND a.create_time <= #{endTime} ]]>
+        AND a.create_time >= #{startDate}
+        <![CDATA[ AND a.create_time <= #{endDate} ]]>
         AND <include refid="clientInCondition"/>
         GROUP BY
             c.application_name,

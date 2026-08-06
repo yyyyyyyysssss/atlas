@@ -38,7 +38,7 @@ public class ProjectDashboardController {
     }
 
 
-    @GetMapping("/chart/trend")
+    @GetMapping("/grantType/stats")
     public Result<List<ProjectDashboardGrantTypeStatsVO>> grantTypeStats(@PathVariable("projectCode") String projectCode){
         List<ProjectDashboardGrantTypeStatsVO> grantTypeStats = projectService.getGrantTypeStats(projectCode);
         return ResultGenerator.ok(grantTypeStats);

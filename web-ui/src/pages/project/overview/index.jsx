@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Card, Divider, Flex, List, Spin, Statistic, Tooltip, Typography, theme } from 'antd';
+import { Card, Divider, Flex, List, Segmented, Spin, Statistic, Tooltip, Typography, theme } from 'antd';
 import {
   ExclamationCircleOutlined,
   UserOutlined,
@@ -9,14 +9,41 @@ import {
   CaretUpFilled,
   CaretDownFilled
 } from '@ant-design/icons';
-import { Column, Tiny } from '@ant-design/plots';
+import { Column, Pie, Tiny } from '@ant-design/plots';
 import './index.css';
 import { useDomain } from '../../../router/DomainProvider';
-import { getChartTrend, getOverviewAndTrend } from '../../../services/ProjectService';
+import { getChartTrend, getGrantTypeStats, getOverviewAndTrend } from '../../../services/ProjectService';
 import { useRequest } from 'ahooks';
 import Loading from '../../../components/loading';
 
 const { Text } = Typography;
+
+
+// 趋势图数据映射
+const formatTrendData = (trendList) => {
+  if (!Array.isArray(trendList)) return [];
+  return trendList.map((item, index) => {
+    const rawVal = typeof item === 'object' && item !== null ? item.value : item;
+    const numValue = Number(rawVal);
+    const validValue = Number.isNaN(numValue) ? 0 : numValue;
+    return {
+      index: typeof item === 'object' && item?.index !== undefined ? item.index : index,
+      value: validValue,
+      displayValue: validValue + 0.1
+    };
+  });
+};
+
+const authTabList = [
+  {
+    key: 'ACTIVE_USER',
+    label: '活跃用户',
+  },
+  {
+    key: 'AUTH_COUNT',
+    label: '授权次数',
+  }
+]
 
 const ProjectOverview = () => {
   const { domainId } = useDomain()
@@ -26,6 +53,7 @@ const ProjectOverview = () => {
   const rootRef = useRef()
 
   const [authActiveTabKey, setAuthActiveTabKey] = useState('ACTIVE_USER')
+
 
   const { data: overviewAndTrendData, loading: overviewAndTrendLoading } = useRequest(
     () => getOverviewAndTrend(domainId),
@@ -43,89 +71,109 @@ const ProjectOverview = () => {
     }
   )
 
-  // 从真实接口获取 4 个指标的核心数值（转为数字，做安全回退 0 处理）
-  const totalUserValue = Number(overviewAndTrendData?.totalUser?.value ?? 0);
-  const totalActiveUserValue = Number(overviewAndTrendData?.activeUser?.value ?? 0);
-  const totalActiveSessionValue = Number(overviewAndTrendData?.activeSession?.value ?? 0);
-  const totalHistoryAuthorizationValue = Number(overviewAndTrendData?.historyAuthorization?.value ?? 0);
+  const { data: grantTypeStatsData, loading: grantTypeStatsLoading } = useRequest(
+    () => getGrantTypeStats(domainId),
+    {
+      refreshDeps: [domainId],
+      ready: !!domainId
+    }
+  )
 
-  // 1. 人均会话：活跃会话数 / 活跃用户数
-  const avgTokensPerUser = totalActiveUserValue > 0
-    ? (totalActiveSessionValue / totalActiveUserValue).toFixed(2)
-    : '0';
+  const [grantTypeKey, setGrantTypeKey] = useState(() => {
+    return grantTypeStatsData?.length > 0 ? grantTypeStatsData[0].applicationName : 'all'
+  })
 
-  // 2. 长效会话覆盖率：活跃会话数 / 活跃用户数
-  const tokenToRefreshRatio = totalActiveUserValue > 0
-    ? ((totalActiveSessionValue / totalActiveUserValue) * 100).toFixed(1)
-    : '0';
+  const {
+    totalUserValue,
+    totalActiveUserValue,
+    totalActiveSessionValue,
+    totalHistoryAuthorizationValue,
+    totalUserTrend,
+    totalActiveUserTrend,
+    totalActiveSessionTrend,
+    totalHistoryAuthorizationTrend
+  } = useMemo(() => {
+    const totalUserValue = Number(overviewAndTrendData?.totalUser?.value ?? 0)
+    const totalActiveUserValue = Number(overviewAndTrendData?.activeUser?.value ?? 0)
+    const totalActiveSessionValue = Number(overviewAndTrendData?.activeSession?.value ?? 0)
+    const totalHistoryAuthorizationValue = Number(overviewAndTrendData?.historyAuthorization?.value ?? 0)
+    return {
+      // 指标的核心数值
+      totalUserValue,
+      totalActiveUserValue,
+      totalActiveSessionValue,
+      totalHistoryAuthorizationValue,
 
-  // 3. 历史授权留存：当前活跃会话数 / 历史累计授权数
-  const refreshRetentionRate = totalHistoryAuthorizationValue > 0
-    ? ((totalActiveSessionValue / totalHistoryAuthorizationValue) * 100).toFixed(1)
-    : '0';
-
-  // 4. 当前活跃授权占比：当前活跃用户数 / 历史累计授权数
-  const activeAuthRatio = totalHistoryAuthorizationValue > 0
-    ? ((totalActiveUserValue / totalHistoryAuthorizationValue) * 100).toFixed(1)
-    : '0';
-
-  // 趋势图数据映射（兼容纯数组 ["4", "4"] 和 对象数组 [{ value: "4" }]）
-  const formatTrendData = (trendList) => {
-    if (!Array.isArray(trendList)) return [];
-    return trendList.map((item, index) => {
-      const rawVal = typeof item === 'object' && item !== null ? item.value : item;
-      const numValue = Number(rawVal);
-      const validValue = Number.isNaN(numValue) ? 0 : numValue;
-      return {
-        index: typeof item === 'object' && item?.index !== undefined ? item.index : index,
-        value: validValue,
-        displayValue: validValue + 0.1
-      };
-    });
-  };
-
-  const totalUserTrend = formatTrendData(overviewAndTrendData?.totalUser?.trend);
-  const totalActiveUserTrend = formatTrendData(overviewAndTrendData?.activeUser?.trend);
-  const totalActiveSessionTrend = formatTrendData(overviewAndTrendData?.activeSession?.trend);
-  const totalHistoryAuthorizationTrend = formatTrendData(overviewAndTrendData?.historyAuthorization?.trend);
+      // 趋势
+      totalUserTrend: formatTrendData(overviewAndTrendData?.totalUser?.trend),
+      totalActiveUserTrend: formatTrendData(overviewAndTrendData?.activeUser?.trend),
+      totalActiveSessionTrend: formatTrendData(overviewAndTrendData?.activeSession?.trend),
+      totalHistoryAuthorizationTrend: formatTrendData(overviewAndTrendData?.historyAuthorization?.trend),
+    }
+  }, [overviewAndTrendData])
 
   const { trendList, rankingList } = useMemo(() => {
     const trend = chartTrendData?.trendList?.map(item => {
-      const value = Number(item.frequency ?? 0);
+      const value = Number(item.frequency ?? 0)
       return {
         ...item,
         letter: item.letter?.slice(5),
         frequency: value,
         displayFrequency: value === 0 ? 0.1 : value,
       };
-    }) ?? [];
+    }) ?? []
 
     const ranking = chartTrendData?.rankingList?.map(item => {
-      const score = Number(item.score ?? 0);
+      const score = Number(item.score ?? 0)
       return {
         ...item,
         label: item.applicationName,
         score: score,
       };
-    }) ?? [];
+    }) ?? []
 
-    return { trendList: trend, rankingList: ranking };
-  }, [chartTrendData]);
+    return { trendList: trend, rankingList: ranking }
+  }, [chartTrendData])
 
-
-  const authTabList = [
-    {
-      key: 'ACTIVE_USER',
-      label: '活跃用户',
-    },
-    {
-      key: 'AUTH_COUNT',
-      label: '授权次数',
+  const { grantTypeMap, grantTypeOptions } = useMemo(() => {
+    const map = {}
+    const options = []
+    if (!Array.isArray(grantTypeStatsData)) {
+      return {
+        grantTypeMap: map,
+        grantTypeOptions: options,
+      }
     }
-  ]
+    grantTypeStatsData.forEach((item) => {
+      if (!item?.applicationName) {
+        return
+      }
+      const list = Array.isArray(item.grantTypes)
+        ? item.grantTypes.map((g) => ({
+          type: g?.grantType || '未知类型',
+          value: Number(g?.count) || 0,
+        }))
+        :
+        []
+      map[item.applicationName] = list
+      options.push({
+        label: item.applicationName === 'all' ? '全部' : item.applicationName,
+        value: item.applicationName,
+      })
+    })
+    return {
+      grantTypeMap: map,
+      grantTypeOptions: options,
+    }
+  }, [grantTypeStatsData])
+
 
   const handleAuthActiveTabChange = (key) => {
     setAuthActiveTabKey(key)
+  }
+
+  const handleChannelGrantType = (value) => {
+    setGrantTypeKey(value)
   }
 
   return (
@@ -403,6 +451,47 @@ const ProjectOverview = () => {
             </Flex>
           </Flex>
         </Card>
+      </Flex>
+
+      <Flex gap={25}>
+        <Flex style={{ minWidth: '0px' }} flex={1}>
+          <Card
+            style={{ width: '100%', boxShadow: 'var(--ant-box-shadow-tertiary)' }}
+            loading={grantTypeStatsLoading}
+            title={
+              <Flex justify='space-between'>
+                <span>授权类别占比</span>
+                <Segmented
+                  style={{ fontWeight: 'normal' }}
+                  options={grantTypeOptions}
+                  value={grantTypeKey}
+                  onChange={handleChannelGrantType}
+                />
+              </Flex>
+            }
+          >
+            <Flex vertical>
+              <Pie
+                data={grantTypeMap?.[grantTypeKey] || []}
+                angleField='value'
+                colorField='type'
+                radius={0.8}
+                height={350}
+                label={
+                  {
+                    text: (d) => `${d?.type}: ${d?.value}`,
+                    position: 'spider',
+                    style: {
+                      fill: token.colorText,
+                      connectorStroke: token.colorText,
+                    },
+                  }
+                }
+                legend={false}
+              />
+            </Flex>
+          </Card>
+        </Flex>
       </Flex>
 
     </Flex>

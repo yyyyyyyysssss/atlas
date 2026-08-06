@@ -59,15 +59,14 @@ public class OAuth2ApplicationServiceImpl extends ServiceImpl<OAuth2ApplicationM
     }
 
     @Override
-    public List<String> findRegisteredClientIdByProjectId(Long projectId) {
+    public List<OAuth2ClientApplication> findByProjectId(Long projectId) {
         List<OAuth2ClientApplication> registeredClientIds = this.lambdaQuery()
-                .select(OAuth2ClientApplication::getRegisteredClientId)
                 .eq(OAuth2ClientApplication::getProjectId, projectId)
                 .list();
         if(CollectionUtils.isEmpty(registeredClientIds)){
             return Collections.emptyList();
         }
-        return registeredClientIds.stream().map(OAuth2ClientApplication::getRegisteredClientId).toList();
+        return registeredClientIds;
     }
 
     private OAuth2ClientApplication loadClient(OAuth2ClientApplication application){

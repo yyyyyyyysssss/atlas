@@ -64,16 +64,16 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             // 发布审计日志
             eventPublisher.publishEvent(new AuditLogEvent(userId, "创建项目", "project"));
 
-            return new ProjectCreateVO(project.getId(),project.getProjectCode());
+            return new ProjectCreateVO(project.getId(), project.getProjectCode());
         } else {
             // 编辑
             Long id = saveDTO.id();
             Project project = this.getById(id);
-            if(project == null){
+            if (project == null) {
                 throw new BusinessException("项目不存在");
             }
             // 如果是内置项目，强行校验/修正状态，不允许改为 ARCHIVED 或其他禁用状态
-            if(Boolean.TRUE.equals(project.getBuiltin())){
+            if (Boolean.TRUE.equals(project.getBuiltin())) {
                 if (saveDTO.status() != null && !ProjectStatus.ACTIVE.equals(saveDTO.status())) {
                     throw new BusinessException("内置项目状态必须保持启用，不允许修改为非激活状态");
                 }
@@ -89,7 +89,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             // 发布审计日志
             eventPublisher.publishEvent(new AuditLogEvent(userId, "修改项目", "project"));
 
-            return new ProjectCreateVO(project.getId(),project.getProjectCode());
+            return new ProjectCreateVO(project.getId(), project.getProjectCode());
         }
     }
 
@@ -117,17 +117,17 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
 
     @Override
     public PageInfo<ProjectVO> getPage(ProjectQueryDTO queryDTO) {
-        try (DataPermissionContext ctx = DataPermissionContext.open()){
+        try (DataPermissionContext ctx = DataPermissionContext.open()) {
             Integer pageNum = queryDTO.getPageNum();
             Integer pageSize = queryDTO.getPageSize();
             PageHelper.startPage(pageNum, pageSize);
             QueryWrapper<Project> queryWrapper = new QueryWrapper<>();
-            if(queryDTO.getStatus() != null){
+            if (queryDTO.getStatus() != null) {
                 queryWrapper.eq("status", queryDTO.getStatus());
             }
             queryWrapper.orderByAsc("create_time");
             List<Project> projects = projectMapper.selectList(queryWrapper);
-            if(CollectionUtils.isEmpty(projects)){
+            if (CollectionUtils.isEmpty(projects)) {
                 return PageInfo.emptyPageInfo();
             }
             PageInfo<Project> entityPageInfo = new PageInfo<>(projects);
@@ -137,7 +137,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
 
 
     @Override
-    public void restoreProject(Long id){
+    public void restoreProject(Long id) {
         Objects.requireNonNull(id, "项目ID不能为空");
         Project project = this.getById(id);
         if (project == null) {
@@ -172,7 +172,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
             throw new BusinessException("项目不存在或已被删除");
         }
 
-        if(Boolean.TRUE.equals(project.getBuiltin())){
+        if (Boolean.TRUE.equals(project.getBuiltin())) {
             throw new BusinessException("系统内置项目，禁止进行删除或归档操作");
         }
 
@@ -194,7 +194,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     }
 
     @Override
-    public boolean isProjectActive(Long id){
+    public boolean isProjectActive(Long id) {
         if (id == null) {
             return false;
         }
@@ -212,11 +212,11 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
 
     @Override
     public boolean isProjectActiveByRegisteredClientId(String registeredClientId) {
-        if(!StringUtils.hasText(registeredClientId)){
+        if (!StringUtils.hasText(registeredClientId)) {
             return false;
         }
         OAuth2ClientApplication auth2ClientApplication = oAuth2ClientApplicationService.findByRegisteredClientId(registeredClientId);
-        if(auth2ClientApplication == null){
+        if (auth2ClientApplication == null) {
             return false;
         }
         return isProjectActive(auth2ClientApplication.getProjectId());
@@ -225,8 +225,8 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     @Override
     public ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode) {
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
-        if(CollectionUtils.isEmpty(registeredClientIds)){
+        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if (CollectionUtils.isEmpty(registeredClientIds)) {
             return ProjectDashboardOverviewTrendVO.empty();
         }
         // 概览卡片汇总（当前实时值）
@@ -234,7 +234,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         // 趋势明细列表：计算近 14 天的时间区间 [13天前, 今天]
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(13);
-        List<ProjectDashboardMetricVO> trendMetrics= projectMapper.selectTrendByRegisteredClientIds(registeredClientIds, startDate, endDate);
+        List<ProjectDashboardMetricVO> trendMetrics = projectMapper.selectTrendByRegisteredClientIds(registeredClientIds, startDate, endDate);
 
         return ProjectDashboardOverviewTrendVO.of(overviewMetric, trendMetrics);
     }
@@ -243,13 +243,13 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     public ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days) {
         int queryDays = (days != null && days > 0) ? days : 30;
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
-        if(CollectionUtils.isEmpty(registeredClientIds)){
+        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if (CollectionUtils.isEmpty(registeredClientIds)) {
             return ProjectDashboardChartTrendVO.empty(metricType);
         }
         List<ProjectDashboardChartTrendVO.TrendItem> trendItems;
         List<ProjectDashboardRankingVO> rankingList;
-        switch (metricType){
+        switch (metricType) {
             case "ACTIVE_USER":
                 trendItems = projectMapper.selectDailyActiveUserCountTrend(registeredClientIds, queryDays);
                 rankingList = projectMapper.selectApplicationActiveUserRanking(registeredClientIds, days, 6);
@@ -268,13 +268,36 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     @Override
     public List<ProjectDashboardGrantTypeStatsVO> getGrantTypeStats(String projectCode) {
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds= oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
-        if(CollectionUtils.isEmpty(registeredClientIds)){
+        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        if (CollectionUtils.isEmpty(registeredClientIds)) {
             return Collections.emptyList();
         }
+        List<OAuth2ClientApplication> applications = oAuth2ClientApplicationService.findByProjectId(projectVO.id());
+        if (CollectionUtils.isEmpty(applications)) {
+            return Collections.emptyList();
+        }
+        List<String> allApplicationNames = applications.stream().map(OAuth2ClientApplication::getApplicationName).toList();
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(30);
-        List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> grantTypeItems = projectMapper.selectGrantTypeStats(registeredClientIds, startDate, endDate);
+        List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> dbItems = projectMapper.selectGrantTypeStats(registeredClientIds, startDate, endDate);
+
+        List<String> allGrantTypes = Arrays.asList("授权码模式", "客户端模式", "设备码模式");
+
+        // key = "应用名_授权类型", value = count
+        Map<String, Long> dbDataMap = dbItems.stream().collect(Collectors.toMap(
+                item -> item.applicationName() + "_" + item.grantType(),
+                ProjectDashboardGrantTypeStatsVO.GrantTypeItem::count,
+                (k1, k2) -> k1
+        ));
+        // 双循环补全全量数据（应用 × 授权类型），即使为0也会生成一条记录
+        List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> grantTypeItems = new ArrayList<>();
+        for (String appName : allApplicationNames) {
+            for (String grantType : allGrantTypes) {
+                String key = appName + "_" + grantType;
+                long count = dbDataMap.getOrDefault(key, 0L);
+                grantTypeItems.add(ProjectDashboardGrantTypeStatsVO.GrantTypeItem.of(appName, grantType, count));
+            }
+        }
 
         List<ProjectDashboardGrantTypeStatsVO> result = new ArrayList<>();
 
@@ -285,10 +308,10 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
                 ));
 
         List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> totalItems = totalGrantTypeMap.entrySet().stream()
-                .map(entry -> ProjectDashboardGrantTypeStatsVO.GrantTypeItem.of("全部应用", entry.getKey(), entry.getValue()))
+                .map(entry -> ProjectDashboardGrantTypeStatsVO.GrantTypeItem.of("all", entry.getKey(), entry.getValue()))
                 .toList();
 
-        result.add(ProjectDashboardGrantTypeStatsVO.of("全部应用", totalItems));
+        result.add(ProjectDashboardGrantTypeStatsVO.of("all", totalItems));
 
         Map<String, List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem>> appGroupMap = grantTypeItems.stream()
                 .collect(Collectors.groupingBy(ProjectDashboardGrantTypeStatsVO.GrantTypeItem::applicationName));

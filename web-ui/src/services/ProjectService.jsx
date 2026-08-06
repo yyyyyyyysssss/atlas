@@ -57,3 +57,12 @@ export const getChartTrend = async (projectCode, metricType, days = 30) => {
         }
     }))
 }
+
+export const getGrantTypeStats = async (projectCode) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/project/${projectCode}/dashboard/grantType/stats`, {
+        params: {
+            
+        }
+    }))
+}

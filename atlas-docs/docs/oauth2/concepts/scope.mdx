@@ -1,0 +1,147 @@
+# Scope 权限范围说明
+
+`scope`（权限范围）用于描述客户端可以申请访问的用户信息范围。
+
+在 OAuth2 / OpenID Connect（OIDC）流程中，客户端通过申请不同的 Scope 获取对应的用户信息声明（Claims）。
+
+Atlas 认证中心遵循最小权限原则，客户端应根据业务需求申请必要的 Scope。
+
+---
+
+## 1. Atlas 支持的 Scope
+
+| Scope | 说明 | 返回字段 |
+| --- | --- | --- |
+| `openid` | 启用 OpenID Connect 身份认证能力，用于获取用户唯一身份标识。 | `sub` |
+| `profile` | 获取用户基础资料信息。 | `name`、`preferred_username`、`picture` |
+| `email` | 获取用户邮箱信息。 | `email`、`email_verified` |
+| `phone` | 获取用户手机号信息。 | `phone_number`、`phone_number_verified` |
+
+---
+
+### 1.1 openid
+
+`openid` 是 OpenID Connect（OIDC）定义的标准 Scope。
+
+客户端申请 `openid` 后，表示需要获取用户身份认证能力。
+
+返回字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `sub` | string | 用户唯一标识。在 Atlas 认证中心内全局唯一，用于标识当前用户。 |
+
+示例：
+
+```json
+{
+  "sub": "10001"
+}
+```
+
+---
+
+### 1.2 profile
+
+`profile` 用于获取用户基础资料信息。
+
+返回字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `name` | string | 用户名称。 |
+| `preferred_username` | string | 用户登录用户名。 |
+| `picture` | string | 用户头像地址。 |
+
+示例：
+
+```json
+{
+  "name": "张三",
+  "preferred_username": "zhangsan",
+  "picture": "https://example.com/avatar.png"
+}
+```
+
+---
+
+### 1.3 email
+
+`email` 用于获取用户邮箱相关信息。
+
+返回字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `email` | string | 用户邮箱地址。 |
+| `email_verified` | boolean | 邮箱是否已验证。 |
+
+示例：
+
+```json
+{
+  "email": "user@example.com",
+  "email_verified": true
+}
+```
+
+---
+
+### 1.4 phone
+
+`phone` 用于获取用户手机号相关信息。
+
+返回字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `phone_number` | string | 用户手机号。 |
+| `phone_number_verified` | boolean | 手机号是否已验证。 |
+
+示例：
+
+```json
+{
+  "phone_number": "13800138000",
+  "phone_number_verified": true
+}
+```
+
+---
+
+## 6. Scope 组合说明
+
+多个 Scope 可以同时申请，Atlas 会根据申请的 Scope 返回对应字段。
+
+例如：
+
+```text
+scope=openid profile email phone
+```
+
+返回用户信息：
+
+```json
+{
+  "sub": "10001",
+  "name": "张三",
+  "preferred_username": "zhangsan",
+  "picture": "https://example.com/avatar.png",
+  "email": "user@example.com",
+  "email_verified": true,
+  "phone_number": "13800138000",
+  "phone_number_verified": true
+}
+```
+
+---
+
+## 7. 使用建议
+
+Atlas 建议：
+
+- 客户端仅申请业务所需的 Scope。
+- `openid` 用于身份认证场景，通常应作为基础 Scope。
+- `profile` 适用于需要展示用户基础信息的业务。
+- `email`、`phone` 属于用户敏感信息，应根据实际业务需求申请。
+- 未申请对应 Scope 时，用户信息接口不会返回对应字段。

@@ -1,0 +1,9 @@
+{
+  "label": "OAuth2 认证",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "OAuth2 认证接口文档",
+    "description": "Atlas 系统提供标准 OAuth2 与 OIDC 接入能力。以下为各授权模式的后端接口协议、请求参数及对接示例说明。"
+  }
+}

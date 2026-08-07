@@ -8,4 +8,6 @@ public enum ThirdPartyCallbackStatus {
     // 第三方账号绑定
     BIND,
 
+    // 用户拒绝第三方授权
+    DENIED
 }

@@ -7,12 +7,10 @@ import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.auth.service.ThirdPartyStateService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.security.model.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -49,9 +47,15 @@ public class ThirdPartyLoginController {
 
     @GetMapping("/callback/{clientName}")
     public Result<ThirdPartyCallbackVO> callback(@PathVariable("clientName") String clientName,
-                                                 @RequestParam("code") String code,
-                                                 @RequestParam("state") String state,
+                                                 @RequestParam(value = "code", required = false) String code,
+                                                 @RequestParam(value = "state", required = false) String state,
+                                                 @RequestParam(value = "error", required = false) String error,
                                                  @RequestParam(value = "code_verifier", required = false) String codeVerifier) {
+        // 用户拒绝授权
+        if (StringUtils.hasText(error)) {
+            return ResultGenerator.ok(ThirdPartyCallbackVO.denied(error));
+        }
+        // 授权成功
         OAuth2ProviderAuthenticationToken token = new OAuth2ProviderAuthenticationToken(code, state, codeVerifier);
         ThirdPartyStateContext thirdPartyStateContext = thirdPartyStateService.peekContext(state);
         ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(clientName,thirdPartyStateContext.getProtocol()).authenticate(token);

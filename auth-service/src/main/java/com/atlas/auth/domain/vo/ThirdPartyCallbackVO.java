@@ -9,16 +9,22 @@ public record ThirdPartyCallbackVO(
 
         TokenResponse tokenResponse,
 
-        String targetUrl
+        String targetUrl,
+
+        String error
 
 ) {
 
     public static ThirdPartyCallbackVO loginSuccess(TokenResponse tokenResponse, String targetUrl) {
-        return new ThirdPartyCallbackVO(ThirdPartyCallbackStatus.LOGIN, tokenResponse, targetUrl);
+        return new ThirdPartyCallbackVO(ThirdPartyCallbackStatus.LOGIN, tokenResponse, targetUrl, null);
     }
 
     public static ThirdPartyCallbackVO bindSuccess(String targetUrl) {
-        return new ThirdPartyCallbackVO(ThirdPartyCallbackStatus.BIND, null, targetUrl);
+        return new ThirdPartyCallbackVO(ThirdPartyCallbackStatus.BIND, null, targetUrl, null);
+    }
+
+    public static ThirdPartyCallbackVO denied(String error) {
+        return new ThirdPartyCallbackVO(ThirdPartyCallbackStatus.DENIED, null, null, error);
     }
 
 }

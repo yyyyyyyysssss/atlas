@@ -411,6 +411,7 @@ curl --location 'https://atlas.sample.xx/api/auth/oauth2/userinfo' \
   "name": "张三",
   "preferred_username": "zhangsan",
   "phone_number": "13800138000",
+  "phone_number_verified": true,
   "picture": "https://example.com/avatar.png",
   "email": "zhangsan@example.com",
   "email_verified": true
@@ -425,6 +426,7 @@ curl --location 'https://atlas.sample.xx/api/auth/oauth2/userinfo' \
 | `name` | string | 用户名称。 |
 | `preferred_username` | string | 用户登录用户名。 |
 | `phone_number` | string | 用户手机号。仅在授权请求包含 `phone` scope 时返回。 |
+| `phone_number_verified` | boolean | 手机号是否已验证。仅在返回手机号信息时提供。 |
 | `picture` | string | 用户头像地址。 |
 | `email` | string | 用户邮箱地址。仅在授权请求包含 `email` scope 时返回。 |
 | `email_verified` | boolean | 邮箱是否已验证。仅在返回邮箱信息时提供。 |

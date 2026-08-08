@@ -49,6 +49,7 @@ public class OidcUserInfoService {
         // 手机号
         if (authorizedScopes.contains(OidcScopes.PHONE)) {
             builder.phoneNumber(securityUser.getPhone());
+            builder.phoneNumberVerified(true);
         }
         // 地址
         if (authorizedScopes.contains(OidcScopes.ADDRESS)) {

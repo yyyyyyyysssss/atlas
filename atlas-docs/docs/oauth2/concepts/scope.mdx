@@ -21,9 +21,17 @@ Atlas 认证中心遵循最小权限原则，客户端应根据业务需求申�
 
 ### 1.1 openid
 
-`openid` 是 OpenID Connect（OIDC）定义的标准 Scope。
+`openid` 为 OpenID Connect 标准定义的特殊 Scope，用于请求用户身份认证能力。
 
-客户端申请 `openid` 后，表示需要获取用户身份认证能力。
+当前仅支持基于 OAuth2 授权码模式的 OIDC 认证流程。
+
+不支持以下授权模式：
+
+- 设备码模式（Device Authorization Grant）
+- 客户端凭证模式（Client Credentials Grant）
+- 其他非 OIDC 授权流程
+
+申请 `openid` Scope 后，认证服务器会返回 OIDC 相关身份信息（例如 ID Token）。
 
 返回字段：
 

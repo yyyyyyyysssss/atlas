@@ -25,7 +25,7 @@ sequenceDiagram
 
     User->>Atlas: 完成认证并同意授权
 
-    Atlas-->>Client: redirect_uri 回调<br/>code + state
+    Atlas-->>Client: redirect_uri 回调<br/>code + state + code_verifier
 
     Client->>Atlas: 使用 code 换取 Token<br/>POST /api/auth/oauth2/token
 
@@ -86,7 +86,7 @@ sequenceDiagram
 ### 1.4. 调试示例 (cURL)
 
 ```bash
-curl --location --request GET 'https://atlas.sample.xx/api/auth/oauth2/authorize' \
+curl --location --request GET 'https://atlas.ys0921.sbs:4443/api/auth/oauth2/authorize' \
   --header 'Authorization: Bearer xxx' \
   --data-urlencode 'client_id=xxxx' \
   --data-urlencode 'response_type=code' \
@@ -298,7 +298,7 @@ Atlas 认证中心会校验授权码有效性、客户端信息以及 PKCE 参�
 ### 2.4 调用示例(cURL)
 
 ```bash
-curl --location --request POST 'https://atlas.sample.xx/api/auth/oauth2/token' \
+curl --location --request POST 'https://atlas.ys0921.sbs:4443/api/auth/oauth2/token' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
   --data-urlencode 'client_id=xxx' \
   --data-urlencode 'client_secret=xxx' \
@@ -386,7 +386,7 @@ Token 请求成功后，Atlas 返回 Access Token 以及用户身份相关 Token
 ### 3.3. 调试示例 (cURL)
 
 ```bash
-curl --location 'https://atlas.sample.xx/api/auth/oauth2/userinfo' \
+curl --location 'https://atlas.ys0921.sbs:4443/api/auth/oauth2/userinfo' \
   --header 'Authorization: token xxx'
 ```
 

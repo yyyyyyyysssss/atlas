@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: 设备码模式
 ---
 
@@ -7,12 +7,19 @@ title: 设备码模式
 
 设备码模式是 OAuth 2.0 定义的一种授权模式，主要用于**输入能力有限或无法直接打开浏览器完成授权的设备**，例如：
 
-- 智能终端设备
-- CLI 命令行工具
+- 无法直接打开浏览器完成 OAuth 授权的设备
+- 输入能力有限的终端
+- 命令行工具（CLI）
 - IoT 设备
-- 无浏览器环境的应用
+- 智能电视等设备
 
-该模式通过设备生成一个临时 `device_code` 和用户可输入的 `user_code`，用户在其他设备（通常是浏览器）完成登录和授权，客户端随后通过轮询 Token 接口获取 Access Token。
+设备码模式的核心流程：
+
+1. 客户端向 Atlas 获取设备码。
+2. 客户端展示用户验证码。
+3. 用户通过浏览器完成登录和授权。
+4. 客户端轮询 Token 接口获取 Access Token。
+5. 客户端使用 Access Token 调用资源接口。
 
 ---
 
@@ -46,6 +53,96 @@ sequenceDiagram
 
     Atlas-->>Device: 返回用户信息
 ```
+
+---
+
+## 客户端完整接入流程
+
+客户端实现设备码模式时，只需要关注以下流程：
+
+### Step 1：获取设备码
+
+客户端调用：
+
+```
+POST /api/auth/oauth2/device_authorization
+```
+
+详细接口说明请参考：[获取设备码](./device-code#1-获取设备码)
+
+
+
+Atlas 返回：
+
+- device_code
+- user_code
+- verification_uri
+- expires_in
+
+客户端需要：
+
+- 保存 `device_code`
+- 保存有效时间
+- 展示 `verification_uri`
+- 展示 `user_code`
+
+---
+
+### Step 2：提示用户完成授权
+
+客户端展示：
+
+例如：
+
+```
+请使用浏览器访问：
+
+https://atlas.ys0921.sbs:4443/oauth2/activate
+
+输入验证码：
+
+FLSL-SSNW
+```
+
+用户完成：
+
+```
+打开浏览器
+    ↓
+登录 Atlas
+    ↓
+确认授权
+    ↓
+Atlas 更新授权状态
+```
+
+此过程中客户端无需调用接口。
+
+---
+
+### Step 3：轮询 Token
+
+客户端使用 `device_code` 调用：
+
+```
+POST /api/auth/oauth2/token
+```
+
+详细接口说明请参考：[获取token](./device-code#4-获取-access-token)
+
+直到获取 Access Token。
+
+---
+
+### Step 4：获取用户信息
+
+客户端携带 Access Token 调用：
+
+```
+GET /api/auth/oauth2/v1/userinfo
+```
+
+详细接口说明请参考：[获取用户信息](./device-code#5-获取用户信息)
 
 ---
 
@@ -95,7 +192,7 @@ sequenceDiagram
 
 ```bash
 curl --location --request POST \
-'https://atlas.sample.xx/api/auth/oauth2/device_authorization' \
+'https://atlas.ys0921.sbs:4443/api/auth/oauth2/device_authorization' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=xxxx' \
 --data-urlencode 'client_secret=xxxx' \
@@ -215,7 +312,7 @@ curl --location --request POST \
 
 ```bash
 curl --location --request POST \
-'{{host}}/api/auth/oauth2/device_verification' \
+'https://atlas.ys0921.sbs:4443/api/auth/oauth2/device_verification' \
 --header 'Authorization: Bearer xxx' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=xxxx' \
@@ -294,7 +391,7 @@ curl --location --request POST \
 
 ```bash
 curl --location --request POST \
-'https://atlas.sample.xx/api/auth/oauth2/token' \
+'https://atlas.ys0921.sbs:4443/api/auth/oauth2/token' \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data-urlencode 'client_id=xxxx'
 --data-urlencode 'client_secret=xxxx'
@@ -329,3 +426,81 @@ curl --location --request POST \
 | `scope` | string | 最终授权范围。 |
 
 ---
+
+## 5. 获取用户信息
+
+客户端获取 Access Token 后，可以调用用户信息接口获取当前登录用户的基础资料信息。
+
+该接口会根据请求中的 Access Token 识别当前用户，并根据授权阶段申请的 `scope` 返回对应的用户信息。
+
+---
+
+### 5.1 接口请求信息
+
+- **请求地址**: `/api/auth/oauth2/v1/userinfo`
+- **请求方式**: `GET`
+- **接口说明**: 根据 Access Token 获取当前用户信息。客户端需要在请求头中携带 Access Token。
+
+---
+
+### 5.2 请求头 (Headers)
+
+| 参数名 | 类型 | 必填 | 说明 |
+| :--- | :--- | :- | :--- |
+| `Authorization` | string | 是 | 用户访问凭证。格式为 `token <Access Token>`。 |
+
+> **💡 Token 使用说明**：
+>
+> - 调用用户信息接口时，必须携带 Token 请求头。
+> - Token 类型固定为 `token`，用于标识 Atlas OAuth2 Access Token。
+> - 如果 Token 不存在、已过期或无效，接口会返回认证失败。
+
+---
+
+### 5.3 调试示例 (cURL)
+
+```bash
+curl --location 'https://atlas.ys0921.sbs:4443/api/auth/oauth2/v1/userinfo' \
+  --header 'Authorization: token xxx'
+```
+
+---
+
+### 5.4 响应说明
+
+用户信息获取成功后，Atlas 返回当前授权用户的基础信息。
+
+返回字段内容取决于用户最终授予客户端的权限范围（`scope`）。  
+客户端申请的 Scope 经过用户授权确认后，Atlas 会根据最终授权结果决定返回的用户信息字段。
+
+不同 Scope 对应返回字段说明请参考：
+
+[Scope 权限范围说明](/docs/oauth2/concepts/scope)
+
+响应示例：
+
+```json
+{
+  "sub": "10001",
+  "name": "张三",
+  "preferred_username": "zhangsan",
+  "phone_number": "13800138000",
+  "phone_number_verified": true,
+  "picture": "https://example.com/avatar.png",
+  "email": "zhangsan@example.com",
+  "email_verified": true
+}
+```
+
+字段说明：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `sub` | string | 用户唯一标识。该字段在 Atlas 中全局唯一，用于标识当前用户。 |
+| `name` | string | 用户名称。 |
+| `preferred_username` | string | 用户登录用户名。 |
+| `phone_number` | string | 用户手机号。仅在授权请求包含 `phone` scope 时返回。 |
+| `phone_number_verified` | boolean | 手机号是否已验证。仅在返回手机号信息时提供。 |
+| `picture` | string | 用户头像地址。 |
+| `email` | string | 用户邮箱地址。仅在授权请求包含 `email` scope 时返回。 |
+| `email_verified` | boolean | 邮箱是否已验证。仅在返回邮箱信息时提供。 |

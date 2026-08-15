@@ -30,7 +30,7 @@ const IntegrationGuideCard = () => {
                 '废弃 Implicit & Password 模式',
                 '重定向地址严格精确匹配'
             ],
-            link: '/docs/oauth21-guide',
+            link: 'https://atlas-docs.ys0921.sbs:4443/docs/oauth2',
         },
         {
             key: 'oidc',
@@ -44,7 +44,7 @@ const IntegrationGuideCard = () => {
                 'ID Token 验签 (JWKS 公钥库)',
                 '标准 UserInfo 声明与读取'
             ],
-            link: '/docs/oidc-guide',
+            link: 'https://atlas-docs.ys0921.sbs:4443/docs/oauth2/oidc',
         },
         // 新增 SAML 2.0 SP 卡片
         {
@@ -59,7 +59,7 @@ const IntegrationGuideCard = () => {
                 '支持 SAML 断言签名与证书配置',
                 '灵活的属性映射 (Email / Roles)'
             ],
-            link: '/docs/saml2-guide',
+            link: 'https://atlas-docs.ys0921.sbs:4443/docs/saml2',
         },
     ];
 
@@ -75,7 +75,7 @@ const IntegrationGuideCard = () => {
                 <Button
                     type="link"
                     size="small"
-                    onClick={() => navigate('/docs')}
+                    onClick={() => window.open('https://atlas-docs.ys0921.sbs:4443/docs', '_blank')}
                     style={{ padding: 0 }}
                 >
                     完整文档中心 <ExternalLink size={12} />
@@ -89,7 +89,7 @@ const IntegrationGuideCard = () => {
                     {docsList.map((doc) => (
                         <Col xs={24} md={12} lg={8} key={doc.key}>
                             <div
-                                onClick={() => navigate(doc.link)}
+                                onClick={() => window.open(doc.link, '_blank')}
                                 style={{
                                     padding: '16px',
                                     borderRadius: token.borderRadiusLG,

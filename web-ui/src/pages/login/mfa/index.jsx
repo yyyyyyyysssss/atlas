@@ -41,10 +41,13 @@ const LoginMfa = () => {
 
     // 🛡️ 统一的网络请求调用
     const doLogin = async (code) => {
+        const credential = {
+            code: code
+        }
         return await mfaLoginAsync({
             ticket: ticket,
             mfaType: activeMfaType,
-            code: code
+            credential: credential
         });
     };
 

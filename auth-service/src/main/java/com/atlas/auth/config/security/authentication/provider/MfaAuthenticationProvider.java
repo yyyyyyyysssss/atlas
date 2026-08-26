@@ -1,9 +1,6 @@
 package com.atlas.auth.config.security.authentication.provider;
 
-import com.atlas.auth.config.security.mfa.MfaTicketContext;
-import com.atlas.auth.config.security.mfa.MfaTicketRepository;
-import com.atlas.auth.config.security.mfa.MfaVerifyStrategy;
-import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
+import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.service.UserService;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.MfaType;
@@ -45,10 +42,10 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         }
         ClientType clientType = mfaTicketContext.getClientType();
         MfaType mfaType = mfaAuthenticationToken.getMfaType();
-        String code = (String) mfaAuthenticationToken.getCredentials();
+        MfaCredential credential = (MfaCredential) mfaAuthenticationToken.getCredentials();
         MfaVerifyStrategy strategy = mfaVerifyStrategyFactory.getStrategy(mfaType);
         // 如果失败，策略内部会抛出异常
-        strategy.verify(mfaTicketContext, code);
+        strategy.verify(mfaTicketContext, credential);
         Long userId = mfaTicketContext.getUserId();
         // 立刻销毁 Ticket，防止重放轰炸
         mfaTicketRepository.remove(ticket);

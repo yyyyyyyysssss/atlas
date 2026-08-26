@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
+import com.atlas.auth.domain.dto.UserMfaInfo;
 import com.atlas.auth.domain.dto.UserProviderDTO;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierType;
@@ -11,7 +12,6 @@ import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
-import com.atlas.security.model.MfaType;
 import com.atlas.security.model.RequestUrlAuthority;
 import com.atlas.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
@@ -37,13 +37,9 @@ public class UserService implements UserDetailsService {
 
     private final UserProviderService userProviderService;
 
-    private final UserTotpCredentialsService userTotpCredentialsService;
-
-    private final UserGestureCredentialsService userGestureCredentialsService;
-
-    private final UserMfaBackupCodeService userMfaBackupCodeService;
-
     private final UserPasswordCredentialsService userPasswordCredentialsService;
+
+    private final UserMfaService userMfaService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -64,41 +60,13 @@ public class UserService implements UserDetailsService {
 
         SecurityUser securityUser = securityUser(userAuthDTO, userIdentifiers);
 
-        // 织入多因子认证（MFA）
-        populateUserMfa(securityUser, userId);
+        // mfa
+        UserMfaInfo userMfaInfo = userMfaService.getUserMfaInfo(userId);
+        securityUser.setMfaEnabled(userMfaInfo.enabled());
+        securityUser.setActiveMfaStrategies(userMfaInfo.enabledTypes());
+        securityUser.setPreferredMfaType(userMfaInfo.preferredMfaType());
 
         return securityUser;
-    }
-
-    private void populateUserMfa(SecurityUser securityUser, Long userId) {
-        boolean hasTotp = userTotpCredentialsService.getActivatedByUserId(userId) != null;
-        boolean hasGesture = userGestureCredentialsService.getByUserId(userId).isPresent();
-        boolean hasBackupCode = userMfaBackupCodeService.hasActiveCodes(userId);
-
-        boolean mfaEnabled = hasTotp || hasGesture;
-        securityUser.setMfaEnabled(mfaEnabled);
-        if (mfaEnabled) {
-            Set<MfaType> strategies = new HashSet<>();
-            if (hasTotp){
-                strategies.add(MfaType.TOTP);
-            }
-            if (hasGesture) {
-                strategies.add(MfaType.GESTURE);
-            }
-            if (hasBackupCode){
-                strategies.add(MfaType.BACKUP_CODE);
-            }
-            securityUser.setActiveMfaStrategies(strategies);
-            if (hasTotp) {
-                securityUser.setPreferredMfaType(MfaType.TOTP);
-            } else {
-                securityUser.setPreferredMfaType(MfaType.GESTURE);
-            }
-        } else {
-            securityUser.setActiveMfaStrategies(Collections.emptySet());
-            securityUser.setPreferredMfaType(null);
-        }
-
     }
 
     @Transactional

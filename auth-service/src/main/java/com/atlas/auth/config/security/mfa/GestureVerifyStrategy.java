@@ -18,11 +18,12 @@ public class GestureVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaTicketContext mfaTicketContext, String code) {
+    public void verify(MfaTicketContext mfaTicketContext, MfaCredential credential) {
+        GestureMfaCredential mfaCredential = (GestureMfaCredential) credential;
         Long userId = mfaTicketContext.getUserId();
         boolean valid;
         try {
-            valid = userGestureCredentialsService.matchGesture(userId, code);
+            valid = userGestureCredentialsService.matchGesture(userId, mfaCredential.code());
         }catch (Exception e){
             log.error("该用户未绑定手势, userId: {}", userId, e);
             throw new BadCredentialsException("手势错误");

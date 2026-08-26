@@ -7,9 +7,9 @@ public interface MfaVerifyStrategy {
     /**
      * 执行具体的 MFA 验证逻辑
      * @param mfaTicketContext ticket 上下文（内含 userId 等信息）
-     * @param code 用户输入的验证码/凭证
+     * @param mfaCredential 用户输入的凭证
      */
-    void verify(MfaTicketContext mfaTicketContext, String code);
+    void verify(MfaTicketContext mfaTicketContext, MfaCredential mfaCredential);
 
     /**
      * 声明该策略支持哪种 MFA 类型

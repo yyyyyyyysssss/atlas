@@ -1,9 +1,9 @@
 package com.atlas.auth.service;
 
 
-import com.atlas.auth.config.security.mfa.MfaTicketContext;
-import com.atlas.auth.config.security.mfa.MfaTicketRepository;
+import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.domain.dto.*;
+import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.security.enums.AuthAssuranceLevel;
 import com.atlas.security.enums.ClientType;
 import com.atlas.security.model.SecurityUser;
@@ -13,6 +13,7 @@ import com.atlas.security.repository.SecurityContextStore;
 import com.atlas.security.service.TokenService;
 import com.atlas.security.token.*;
 import com.atlas.security.utils.SecureUidGenerator;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -87,7 +88,13 @@ public class LoginService {
 
 
     public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO){
-        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaLoginDTO.code(),mfaLoginDTO.mfaType());
+        JsonNode credential = mfaLoginDTO.credential();
+        MfaCredential mfaCredential = switch (mfaLoginDTO.mfaType()){
+            case TOTP -> JsonUtils.convert(credential, TotpMfaCredential.class);
+            case BACKUP_CODE -> JsonUtils.convert(credential, BackupCodeMfaCredential.class);
+            case GESTURE -> JsonUtils.convert(credential, GestureMfaCredential.class);
+        };
+        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaCredential,mfaLoginDTO.mfaType());
         return login(mfaAuthenticationToken, null);
     }
 

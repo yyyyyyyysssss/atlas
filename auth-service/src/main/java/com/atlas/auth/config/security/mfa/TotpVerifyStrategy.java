@@ -26,7 +26,8 @@ public class TotpVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaTicketContext mfaTicketContext, String code) {
+    public void verify(MfaTicketContext mfaTicketContext, MfaCredential credential) {
+        TotpMfaCredential mfaCredential = (TotpMfaCredential) credential;
         Long userId = mfaTicketContext.getUserId();
         // 获取用户绑定的 TOTP 密钥
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getActivatedByUserId(userId);
@@ -36,7 +37,7 @@ public class TotpVerifyStrategy implements MfaVerifyStrategy{
         boolean verify;
         try {
             // 即使 totpService 接收 Integer，也在这里安全转换，防止非数字引发 500 崩溃
-            verify = totpService.verify(userTotpCredentials.getSecretKey(), Integer.parseInt(code));
+            verify = totpService.verify(userTotpCredentials.getSecretKey(), Integer.parseInt(mfaCredential.code()));
         } catch (NumberFormatException e) {
             verify = false;
         }

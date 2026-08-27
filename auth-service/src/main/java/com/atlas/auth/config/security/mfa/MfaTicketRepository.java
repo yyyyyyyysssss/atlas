@@ -1,12 +1,10 @@
 package com.atlas.auth.config.security.mfa;
 
-import java.time.Duration;
-
 public interface MfaTicketRepository {
 
-    void save(String ticket, MfaTicketContext mfaTicketContext, Duration timeout);
+    void save(MfaChallenge mfaChallenge);
 
-    MfaTicketContext load(String ticket);
+    MfaChallenge load(String ticket);
 
     void remove(String ticket);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, useCallback } from 'react';
 import { Form, Typography, theme, App, Flex, Input, Button } from 'antd';
 import { LoadingOutlined, KeyOutlined, ArrowRightOutlined } from '@ant-design/icons';
 
@@ -19,17 +19,17 @@ const UniversalBackupCodeVerifier = ({
     const [form] = Form.useForm();
 
     const [verifyLoading, setVerifyLoading] = useState(false);
-    
+
     const [part1, setPart1] = useState('');
     const [part2, setPart2] = useState('');
 
     const inputRef1 = useRef(null);
     const inputRef2 = useRef(null);
 
-    const getFullCode = () => {
+    const getFullCode = useCallback(() => {
         if (!part1 || !part2) return '';
         return `${part1.trim()}-${part2.trim()}`.toLowerCase();
-    };
+    }, [part1, part2]);
 
     useEffect(() => {
         inputRef1.current?.focus();
@@ -38,8 +38,7 @@ const UniversalBackupCodeVerifier = ({
     /**
      * 🛡️ 核心网络校验流
      */
-    const executeVerifyWorkflow = async (forcedCode) => {
-        if (verifyLoading) return;
+    const executeVerifyWorkflow = useCallback(async (forcedCode) => {
 
         const finalCode = forcedCode || getFullCode();
         if (finalCode.length !== 11) {
@@ -59,7 +58,25 @@ const UniversalBackupCodeVerifier = ({
         } finally {
             setVerifyLoading(false);
         }
-    };
+    }, [getFullCode, onVerifyAction, errorMsg]);
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: getFullCode,
+        validate: async () => {
+            if (getFullCode().length !== 11) throw new Error('备份码格式不正确');
+            return true;
+        },
+        onVerify: () => {
+            return executeVerifyWorkflow();
+        },
+        reset: () => {
+            setPart1('')
+            setPart2('')
+            requestAnimationFrame(() => {
+                inputRef1.current?.focus();
+            })
+        }
+    }), [getFullCode, executeVerifyWorkflow])
 
     const handleVerifyFailure = (error) => {
         message.error(error.message);
@@ -94,7 +111,7 @@ const UniversalBackupCodeVerifier = ({
         e.preventDefault();
         const pasteData = e.clipboardData.getData('text');
         const pureText = pasteData.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toLowerCase();
-        
+
         if (pureText.length > 0) {
             const p1 = pureText.slice(0, 5);
             const p2 = pureText.slice(5, 10);
@@ -109,23 +126,6 @@ const UniversalBackupCodeVerifier = ({
         }
     };
 
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: getFullCode,
-            validate: async () => {
-                if (getFullCode().length !== 11) throw new Error('备份码格式不正确');
-                return true;
-            },
-            onVerify: async () => {
-                return await executeVerifyWorkflow();
-            },
-            reset: () => {
-                setPart1('');
-                setPart2('');
-            }
-        };
-    }
-
     const isReadyToVerify = part1.length === 5 && part2.length === 5;
     // 决定右侧悬浮动效区是否需要展开
     const showActionButton = isReadyToVerify || verifyLoading;
@@ -138,12 +138,12 @@ const UniversalBackupCodeVerifier = ({
                 </Text>
 
                 <Flex align="center" style={{ width: '100%', overflow: 'hidden' }}>
-                    
+
                     {/* 双输入框核心区域（自带平滑宽度过渡） */}
-                    <Flex 
-                        gap={8} 
-                        align="center" 
-                        style={{ 
+                    <Flex
+                        gap={8}
+                        align="center"
+                        style={{
                             flex: 1,
                             transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
                         }}
@@ -176,9 +176,9 @@ const UniversalBackupCodeVerifier = ({
                             }}
                         />
 
-                        <span style={{ 
-                            color: token.colorTextDisabled, 
-                            fontWeight: 700, 
+                        <span style={{
+                            color: token.colorTextDisabled,
+                            fontWeight: 700,
                             fontSize: '16px',
                             userSelect: 'none'
                         }}>-</span>
@@ -217,13 +217,13 @@ const UniversalBackupCodeVerifier = ({
                     </Flex>
 
                     {/* 🌟 动效裁剪区：未满10位时完全不占空间 */}
-                    <div style={{ 
-                        width: showActionButton ? 48 : 0, 
+                    <div style={{
+                        width: showActionButton ? 48 : 0,
                         opacity: showActionButton ? 1 : 0,
                         transform: showActionButton ? 'translateX(0)' : 'translateX(20px)',
                         transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                        display: 'flex', 
-                        alignItems: 'center', 
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'flex-end',
                         height: 48
                     }}>
@@ -234,11 +234,11 @@ const UniversalBackupCodeVerifier = ({
                                 type="primary"
                                 onClick={handleVerifySubmit}
                                 icon={<ArrowRightOutlined />}
-                                style={{ 
-                                    width: 36, 
-                                    height: 36, 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     justifyContent: 'center',
                                     borderRadius: '8px',
                                     boxShadow: 'none'

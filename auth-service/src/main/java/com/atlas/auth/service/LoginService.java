@@ -53,7 +53,7 @@ public class LoginService {
     }
 
     // 常规账密登录
-    public TokenResponse loginPassword(PasswordLoginDTO passwordLoginDTO){
+    public TokenResponse loginPassword(PasswordLoginDTO passwordLoginDTO) {
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                 passwordLoginDTO.username(), passwordLoginDTO.password()
         );
@@ -61,7 +61,7 @@ public class LoginService {
     }
 
     // 凭证式一次性 Token 登录 (OTT)
-    public TokenResponse loginOtt(OttLoginDTO ottLoginDTO){
+    public TokenResponse loginOtt(OttLoginDTO ottLoginDTO) {
         OneTimeTokenAuthenticationToken oneTimeTokenAuthenticationToken = new OneTimeTokenAuthenticationToken(
                 ottLoginDTO.token()
         );
@@ -69,32 +69,32 @@ public class LoginService {
     }
 
     // FIDO2 / WebAuthn 生物特征或硬件密钥登录
-    public TokenResponse loginWebauthn(WebauthnLoginDTO webauthnLoginDTO){
+    public TokenResponse loginWebauthn(WebauthnLoginDTO webauthnLoginDTO) {
         WebauthnAuthenticationToken webauthnAuthenticationToken = new WebauthnAuthenticationToken(webauthnLoginDTO.webauthnAuthenticationRequest());
         return login(webauthnAuthenticationToken, webauthnLoginDTO.clientType());
     }
 
     // web3钱包登录
-    public TokenResponse loginWeb3(Web3LoginDTO web3LoginDTO){
-        Web3WalletAuthenticationToken web3WalletAuthenticationToken = new Web3WalletAuthenticationToken(web3LoginDTO.web3Id(),web3LoginDTO.signature());
+    public TokenResponse loginWeb3(Web3LoginDTO web3LoginDTO) {
+        Web3WalletAuthenticationToken web3WalletAuthenticationToken = new Web3WalletAuthenticationToken(web3LoginDTO.web3Id(), web3LoginDTO.signature());
         return login(web3WalletAuthenticationToken, web3LoginDTO.clientType());
     }
 
     // 第三方 OAuth2 / 外部身份源导入登录
-    public TokenResponse loginThirdParty(ThirdPartyLoginDTO thirdPartyLoginDTO){
+    public TokenResponse loginThirdParty(ThirdPartyLoginDTO thirdPartyLoginDTO) {
         ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(thirdPartyLoginDTO.userId(), null);
         return login(thirdPartyAuthenticationToken, thirdPartyLoginDTO.clientType());
     }
 
 
-    public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO){
+    public TokenResponse loginMfa(MfaLoginDTO mfaLoginDTO) {
         JsonNode credential = mfaLoginDTO.credential();
-        MfaCredential mfaCredential = switch (mfaLoginDTO.mfaType()){
+        MfaCredential mfaCredential = switch (mfaLoginDTO.mfaType()) {
             case TOTP -> JsonUtils.convert(credential, TotpMfaCredential.class);
             case BACKUP_CODE -> JsonUtils.convert(credential, BackupCodeMfaCredential.class);
             case GESTURE -> JsonUtils.convert(credential, GestureMfaCredential.class);
         };
-        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaCredential,mfaLoginDTO.mfaType());
+        MfaAuthenticationToken mfaAuthenticationToken = new MfaAuthenticationToken(mfaLoginDTO.ticket(), mfaCredential, mfaLoginDTO.mfaType());
         return login(mfaAuthenticationToken, null);
     }
 
@@ -108,10 +108,10 @@ public class LoginService {
     private TokenResponse login(Authentication authenticationToken, ClientType clientType) {
         // 认证
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-        if (clientType == null && authenticate.getDetails() instanceof ClientType ct){
+        if (clientType == null && authenticate.getDetails() instanceof ClientType ct) {
             clientType = ct;
         }
-        if(clientType == null){
+        if (clientType == null) {
             throw new BadCredentialsException("客户端类型不能为空");
         }
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
@@ -124,16 +124,22 @@ public class LoginService {
             currentLevel = awareToken.getAssuranceLevel();
         }
         // 如果当前登录方式的等级低于用户期望的等级，才触发 MFA 拦截
-        if(currentLevel.getRank() < requiredLevel.getRank()){
+        if (currentLevel.getRank() < requiredLevel.getRank()) {
             String ticket = SecureUidGenerator.generate();
-            mfaTicketRepository.save(ticket,new MfaTicketContext(securityUser.getId(),clientType), Duration.ofMinutes(5));
+            MfaChallenge mfaChallenge = MfaChallenge.builder()
+                    .ticket(ticket)
+                    .userId(securityUser.getId())
+                    .clientType(clientType)
+                    .requiredLevel(requiredLevel)
+                    .build();
+            mfaTicketRepository.save(mfaChallenge);
             return TokenResponse.mfaRequired(ticket, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
         }
 
         // 会话控制
         sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
-        return createToken(authenticate,clientType);
+        return createToken(authenticate, clientType);
     }
 
     /**
@@ -150,13 +156,13 @@ public class LoginService {
 
         // 移除旧会话
         String oldTokenId = ((RefreshAuthenticationToken) authenticate).getOldTokenId();
-        sessionControlService.removeSession(securityUser.getId(),oldTokenId,refreshTokenDTO.clientType());
+        sessionControlService.removeSession(securityUser.getId(), oldTokenId, refreshTokenDTO.clientType());
 
-        return createToken(authenticate,refreshTokenDTO.clientType());
+        return createToken(authenticate, refreshTokenDTO.clientType());
     }
 
-    private TokenResponse createToken(Authentication authenticate, ClientType clientType){
-        if(!authenticate.isAuthenticated()){
+    private TokenResponse createToken(Authentication authenticate, ClientType clientType) {
+        if (!authenticate.isAuthenticated()) {
             throw new BadCredentialsException("Unauthenticated");
         }
         if (!(authenticate.getPrincipal() instanceof SecurityUser securityUser)) {

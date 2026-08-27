@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Typography, theme, Flex, App, Badge, Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
 import { Wallet, ShieldCheck, KeyRound, LogOut } from 'lucide-react';
@@ -70,7 +70,7 @@ const UniversalWeb3WalletVerifier = ({
     /**
      * 核心身份鉴权确核逻辑
      */
-    const doWalletAuthenticate = async (currentAddress, currentConnector) => {
+    const doWalletAuthenticate = useCallback(async (currentAddress, currentConnector) => {
         if (isGlobalLoading) return;
 
         try {
@@ -99,7 +99,7 @@ const UniversalWeb3WalletVerifier = ({
             setVerifyLoading(true);
 
             const result = await onVerifyAction(signature, registerOptionsRes.web3Id)
-            
+
             if (!result) {
                 throw new Error('web3钱包验证失败，请重试');
             }
@@ -119,25 +119,22 @@ const UniversalWeb3WalletVerifier = ({
             setHardwareLoading(false);
             setVerifyLoading(false);
         }
-    };
+    }, [isGlobalLoading, web3RegisterOptionsAsync, signMessageAsync, onVerifyAction, disconnect]);
 
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => 'WEB3_WALLET_MODE',
-            validate: async () => {
-
-                return true;
-            },
-            onVerify: async () => {
-                if (!isConnected) {
-                    openConnectModal()
-                    return
-                }
-                return await doWalletAuthenticate(address, connector)
-            },
-            reset: () => { }
-        };
-    }
+    useImperativeHandle(verifierRef, () => ({
+        getValue: () => 'WEB3_WALLET_MODE',
+        validate: () => {
+            return true;
+        },
+        onVerify: () => {
+            if (!isConnected) {
+                openConnectModal()
+                return
+            }
+            return doWalletAuthenticate(address, connector)
+        },
+        reset: () => {}
+    }), [isConnected, openConnectModal, address, connector, doWalletAuthenticate])
 
     return (
         <Flex vertical gap={8} style={{ width: '100%' }}>

@@ -36,19 +36,22 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         MfaAuthenticationToken mfaAuthenticationToken = (MfaAuthenticationToken) authentication;
         String ticket = (String)mfaAuthenticationToken.getPrincipal();
         // 校验凭证是否存在或过期
-        MfaTicketContext mfaTicketContext = mfaTicketRepository.load(ticket);
-        if(mfaTicketContext == null){
-            throw new BadCredentialsException("登录凭证已过期，请重新登录");
+        MfaChallenge mfaChallenge = mfaTicketRepository.load(ticket);
+        if(mfaChallenge == null){
+            throw new BadCredentialsException("MFA认证已失效，请重新登录");
         }
-        ClientType clientType = mfaTicketContext.getClientType();
+        // 认证方式
         MfaType mfaType = mfaAuthenticationToken.getMfaType();
+        // 认证凭证
         MfaCredential credential = (MfaCredential) mfaAuthenticationToken.getCredentials();
+        // 获取对应验证器
         MfaVerifyStrategy strategy = mfaVerifyStrategyFactory.getStrategy(mfaType);
         // 如果失败，策略内部会抛出异常
-        strategy.verify(mfaTicketContext, credential);
-        Long userId = mfaTicketContext.getUserId();
+        strategy.verify(mfaChallenge, credential);
         // 立刻销毁 Ticket，防止重放轰炸
         mfaTicketRepository.remove(ticket);
+        // 加载用户
+        Long userId = mfaChallenge.getUserId();
         // 加载用户核心主体并校验状态
         UserDetails userDetails = userService.loadUserByUserId(userId);
         userDetailsChecker.check(userDetails);
@@ -59,7 +62,7 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
                 mfaType,
                 userDetails.getAuthorities()
         );
-        authenticated.setDetails(clientType);
+        authenticated.setDetails(mfaChallenge.getClientType());
         return authenticated;
     }
 

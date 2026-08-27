@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useImperativeHandle } from 'react';
 import { Typography, theme, Flex, App } from 'antd';
 
 const { Text } = Typography;
@@ -129,7 +129,11 @@ const UniversalGestureVerifier = ({
         return null;
     };
 
-    const doServerAuthenticate = async (gestureSequence) => {
+    const getGestureValue = useCallback(() => {
+        return selectedPoints.join('');
+    }, [selectedPoints])
+
+    const doServerAuthenticate = useCallback(async (gestureSequence) => {
         if (gestureSequence.length < 4) {
             setLocalErrorState(true);
             message.warning('手势连线过短，请至少连接 4 个点');
@@ -151,7 +155,23 @@ const UniversalGestureVerifier = ({
         } finally {
             setVerifyLoading(false);
         }
-    };
+    }, [onVerifyAction, handleReset, message]);
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: getGestureValue,
+        validate: async () => {
+            if (selectedPoints.length < 4) {
+                setLocalErrorState(true);
+                throw new Error('手势连线过短，无法提交验证。');
+            }
+            return true;
+        },
+        onVerify: () => {
+            const seq = getGestureValue()
+            return doServerAuthenticate(seq)
+        },
+        reset: handleReset
+    }), [getGestureValue, doServerAuthenticate, handleReset])
 
     const handleInteractionStart = (e) => {
         if (isGlobalLoading || isErrorState) return;
@@ -227,24 +247,6 @@ const UniversalGestureVerifier = ({
             message.info('手势画布已重置，请重新绘制');
         }
     };
-
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => selectedPoints.join(''),
-            validate: async () => {
-                if (selectedPoints.length < 4) {
-                    setLocalErrorState(true);
-                    throw new Error('手势连线过短，无法提交验证。');
-                }
-                return true;
-            },
-            onVerify: async () => {
-                const seq = selectedPoints.join('');
-                return await doServerAuthenticate(seq);
-            },
-            reset: () => handleReset()
-        };
-    }
 
     const getTipText = () => {
         if (verifyLoading) return '正在验证手势序列...';

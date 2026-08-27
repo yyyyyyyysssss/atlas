@@ -15,18 +15,17 @@ public class RedisMfaTicketRepository implements MfaTicketRepository{
     }
 
     @Override
-    public void save(String ticket, MfaTicketContext mfaTicketContext, Duration timeout) {
-        String key = redisKey(ticket);
-        // 存入 Redis 并直接设置过期时间
-        redisTemplate.opsForValue().set(key, mfaTicketContext, timeout);
+    public void save(MfaChallenge mfaChallenge){
+        String key = redisKey(mfaChallenge.getTicket());
+        redisTemplate.opsForValue().set(key, mfaChallenge, Duration.ofMinutes(5));
     }
 
     @Override
-    public MfaTicketContext load(String ticket) {
+    public MfaChallenge load(String ticket) {
         String key = redisKey(ticket);
         Object value = redisTemplate.opsForValue().get(key);
-        if (value instanceof MfaTicketContext mfaTicketContext) {
-            return mfaTicketContext;
+        if (value instanceof MfaChallenge mfaChallenge) {
+            return mfaChallenge;
         }
         return null;
     }

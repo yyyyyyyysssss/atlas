@@ -26,9 +26,9 @@ public class TotpVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaTicketContext mfaTicketContext, MfaCredential credential) {
+    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         TotpMfaCredential mfaCredential = (TotpMfaCredential) credential;
-        Long userId = mfaTicketContext.getUserId();
+        Long userId = mfaChallenge.getUserId();
         // 获取用户绑定的 TOTP 密钥
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getActivatedByUserId(userId);
         if(userTotpCredentials == null){

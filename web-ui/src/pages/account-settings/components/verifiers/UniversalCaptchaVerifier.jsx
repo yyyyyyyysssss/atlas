@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, useCallback } from 'react';
 import { Form, Typography, theme, Card, App, Flex } from 'antd';
 import { MailOutlined, LoadingOutlined } from '@ant-design/icons';
 
@@ -44,13 +44,17 @@ const UniversalCaptchaVerifier = ({
         return () => clearTimeout(timer);
     }, [countdown]);
 
+
+    const getCode = useCallback(() => {
+        return codeArray.join('')
+    }, [codeArray])
+
     /**
      * 🛡️ 1. 纯净的网络验证流
      */
-    const executeVerifyWorkflow = async (rawCode) => {
-        if (verifyLoading) return;
+    const executeVerifyWorkflow = useCallback(async (rawCode) => {
 
-        const finalCode = rawCode || codeArray.join('');
+        const finalCode = rawCode || getCode();
         if (finalCode.length !== 6) {
             throw new Error('请输入完整的6位验证码');
         }
@@ -77,7 +81,22 @@ const UniversalCaptchaVerifier = ({
         } finally {
             setVerifyLoading(false);
         }
-    };
+    }, [getCode, form, onVerifyAction, errorMsg]);
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: () => getCode,
+        validate: async () => {
+            if (codeArray.join('').length !== 6) throw new Error('验证码必须为6位');
+            return true;
+        },
+        onVerify: () => {
+            return executeVerifyWorkflow();
+        },
+        reset: () => {
+            setCodeArray(['', '', '', '', '', ''])
+            form.resetFields()
+        }
+    }), [getCode, form, executeVerifyWorkflow])
 
     /**
      * 🎯 2. 内部自动触发器
@@ -174,22 +193,6 @@ const UniversalCaptchaVerifier = ({
         }
     };
 
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => codeArray.join(''),
-            validate: async () => {
-                if (codeArray.join('').length !== 6) throw new Error('验证码必须为6位');
-                return true;
-            },
-            onVerify: async () => {
-                return await executeVerifyWorkflow();
-            },
-            reset: () => {
-                setCodeArray(['', '', '', '', '', '']);
-                form.resetFields();
-            }
-        };
-    }
 
     return (
         <Form form={form} layout="vertical" requiredMark={false} style={{ width: '100%' }} component={false}>

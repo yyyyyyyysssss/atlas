@@ -37,7 +37,6 @@ const LoginMfa = () => {
     }, [initialMfaType]);
 
     const { runAsync: mfaLoginAsync } = useRequest(mfaLogin, { manual: true });
-    const verifierRef = useRef();
 
     // 🛡️ 统一的网络请求调用
     const doLogin = async (code) => {
@@ -72,7 +71,6 @@ const LoginMfa = () => {
                 description: t('您的账户已开启两步验证保护，请输入身份验证器生成的 6 位核验码。'),
                 component: (
                     <UniversalTotpVerifier
-                        verifierRef={verifierRef}
                         onVerifyAction={doLogin}
                         onSuccess={loginSuccess}
                     />
@@ -95,7 +93,6 @@ const LoginMfa = () => {
                 description: t('请输入您保存的 10 位安全备份码。每个备份码只能使用一次。'),
                 component: (
                     <UniversalBackupCodeVerifier
-                        verifierRef={verifierRef}
                         codeLabel={t('安全备份码')}
                         onVerifyAction={doLogin}
                         onSuccess={loginSuccess}
@@ -121,7 +118,6 @@ const LoginMfa = () => {
                 component: (
                     <UniversalGestureVerifier
                         label=''
-                        verifierRef={verifierRef}
                         onVerifyAction={doLogin}
                         onSuccess={loginSuccess}
                     />

@@ -20,9 +20,9 @@ public class BackupCodeVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaTicketContext mfaTicketContext, MfaCredential credential) {
+    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         BackupCodeMfaCredential backupCodeMfaCredential = (BackupCodeMfaCredential) credential;
-        Long userId = mfaTicketContext.getUserId();
+        Long userId = mfaChallenge.getUserId();
         boolean valid = userMfaBackupCodeService.verifyAndConsume(userId, backupCodeMfaCredential.code());
         if (!valid) {
             throw new BadCredentialsException("备份码无效或已被使用");

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, useCallback } from 'react';
 import { Form, Typography, theme, App, Flex, Input } from 'antd';
 import { LoadingOutlined, MobileOutlined } from '@ant-design/icons';
 import { Shield } from 'lucide-react';
@@ -17,7 +17,6 @@ const UniversalTotpVerifier = ({
 }) => {
     const { token } = theme.useToken();
     const { message } = App.useApp();
-    const [form] = Form.useForm();
 
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [totpCode, setTotpCode] = useState('');
@@ -33,9 +32,7 @@ const UniversalTotpVerifier = ({
     /**
      * 🛡️ 核心网络校验流
      */
-    const executeVerifyWorkflow = async (rawCode) => {
-        if (verifyLoading) return;
-
+    const executeVerifyWorkflow = useCallback(async (rawCode) => {
         const finalCode = rawCode || totpCode;
         if (finalCode.length !== 6) {
             throw new Error('请输入完整的 6 位动态码');
@@ -58,7 +55,28 @@ const UniversalTotpVerifier = ({
         } finally {
             setVerifyLoading(false);
         }
-    };
+    }, [totpCode, onVerifyAction, errorMsg]);
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: () => {
+            return totpCode;
+        },
+        validate: async () => {
+            if (totpCode.length !== 6) {
+                throw new Error('验证码必须为 6 位');
+            }
+            return true;
+        },
+        onVerify: () => {
+            return executeVerifyWorkflow()
+        },
+        reset: () => {
+            setTotpCode('')
+            requestAnimationFrame(() => {
+                otpRef.current?.focus();
+            })
+        }
+    }), [totpCode, executeVerifyWorkflow])
 
     /**
      * 🎯 当 6 位全部输完时，全自动回调
@@ -82,27 +100,8 @@ const UniversalTotpVerifier = ({
         }
     };
 
-    /**
-     * 穿透命令给父组件
-     */
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => totpCode,
-            validate: async () => {
-                if (totpCode.length !== 6) throw new Error('验证码必须为 6 位');
-                return true;
-            },
-            onVerify: async () => {
-                return await executeVerifyWorkflow()
-            },
-            reset: () => {
-                setTotpCode('')
-            }
-        };
-    }
-
     return (
-        <Form form={form} layout="vertical" style={{ width: '100%' }} component={false}>
+        <Flex gap={12} vertical>
             <Flex vertical gap={12} style={{ marginBottom: 16 }}>
                 <Text style={{ fontWeight: 600, fontSize: 13, color: token.colorTextDescription }}>
                     {codeLabel}
@@ -142,7 +141,7 @@ const UniversalTotpVerifier = ({
                     )}
                 </div>
             </Flex>
-        </Form>
+        </Flex>
     );
 };
 

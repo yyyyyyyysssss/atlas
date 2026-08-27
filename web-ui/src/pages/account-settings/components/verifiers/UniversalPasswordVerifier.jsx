@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { App, Form, Input, Typography, theme } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 
@@ -35,7 +35,7 @@ const UniversalPasswordVerifier = ({
         }
     }, [])
 
-    const handlePasswordVerify = async () => {
+    const handlePasswordVerify = useCallback(async () => {
         setLoading(true)
         try {
             await form.validateFields(['password'])
@@ -59,7 +59,22 @@ const UniversalPasswordVerifier = ({
             setLoading(false)
         }
 
-    }
+    }, [form, onVerifyAction, errorMsg])
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: form.getFieldValue('password'),
+        validate: async () => {
+            await form.validateFields(['password']);
+            return true
+        },
+        onVerify: () => {
+
+            return handlePasswordVerify()
+        },
+        reset: () => {
+            form.resetFields();
+        }
+    }), [form, handlePasswordVerify])
 
     const handleInternalTrigger = async () => {
         try {
@@ -70,24 +85,6 @@ const UniversalPasswordVerifier = ({
         } catch (error) {
             message.error(error.message);
         }
-    }
-
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => {
-                return form.getFieldValue('password');
-            },
-            validate: async () => {
-                return await form.validateFields(['password']);
-            },
-            onVerify: async () => {
-
-                return await handlePasswordVerify()
-            },
-            reset: () => {
-                form.resetFields();
-            }
-        };
     }
 
     return (

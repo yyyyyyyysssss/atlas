@@ -18,9 +18,9 @@ public class GestureVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaTicketContext mfaTicketContext, MfaCredential credential) {
+    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         GestureMfaCredential mfaCredential = (GestureMfaCredential) credential;
-        Long userId = mfaTicketContext.getUserId();
+        Long userId = mfaChallenge.getUserId();
         boolean valid;
         try {
             valid = userGestureCredentialsService.matchGesture(userId, mfaCredential.code());

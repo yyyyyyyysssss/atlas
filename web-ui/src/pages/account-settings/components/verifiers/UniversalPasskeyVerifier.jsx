@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { Typography, theme, Flex, App } from 'antd';
 import { Fingerprint } from 'lucide-react';
 import { useRequest } from 'ahooks';
@@ -46,7 +46,7 @@ const UniversalPasskeyVerifier = ({
 
     const isGlobalLoading = optionsLoading || hardwareLoading || verifyLoading
 
-    const doHardwareAuthenticate = async () => {
+    const doHardwareAuthenticate = useCallback(async () => {
         if (isGlobalLoading) {
             return
         }
@@ -112,7 +112,21 @@ const UniversalPasskeyVerifier = ({
             setHardwareLoading(false)
             setVerifyLoading(false)
         }
-    };
+    }, [isGlobalLoading, isWebAuthnSupported, getAuthOptionsAsync, onVerifyAction]);
+
+    useImperativeHandle(verifierRef, () => ({
+        getValue: () => 'PASSKEY_MODE',
+        validate: () => {
+            if (!isWebAuthnSupported) {
+                throw new Error('当前设备或浏览器版本过低，不支持通行密钥功能。');
+            }
+            return true;
+        },
+        onVerify: () => {
+            return doHardwareAuthenticate();
+        },
+        reset: () => { }
+    }), [isWebAuthnSupported, doHardwareAuthenticate])
 
     const handleInternalTrigger = async () => {
         try {
@@ -138,20 +152,6 @@ const UniversalPasskeyVerifier = ({
         if (hardwareLoading) return '请轻触指纹或面容识别...'
         if (verifyLoading) return '正在完成认证...'
         return '点击触发通行密钥 (Passkey) 认证'
-    }
-
-    if (verifierRef) {
-        verifierRef.current = {
-            getValue: () => 'PASSKEY_MODE',
-            validate: async () => {
-                if (!isWebAuthnSupported) throw new Error('当前设备或浏览器版本过低，不支持通行密钥功能。');
-                return true;
-            },
-            onVerify: async () => {
-                return await doHardwareAuthenticate();
-            },
-            reset: () => { }
-        };
     }
 
     return (

@@ -27,19 +27,6 @@ const getParentKey = (id, tree) => {
     return parentKey
 }
 
-const domains = [
-    {
-        value: 'GLOBAL',
-        label: '平台菜单',
-        description: '平台级菜单权限'
-    },
-    {
-        value: 'PROJECT',
-        label: '项目菜单',
-        description: '项目相关菜单权限'
-    }
-];
-
 const MenuItem = ({ item, selected, onAddMenu, onDeleteMenu }) => {
 
     const { t } = useTranslation()

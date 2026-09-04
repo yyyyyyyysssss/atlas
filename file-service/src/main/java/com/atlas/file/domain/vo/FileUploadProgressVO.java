@@ -3,6 +3,8 @@ package com.atlas.file.domain.vo;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * @Description
  * @Author ys
@@ -16,6 +18,6 @@ public class FileUploadProgressVO {
 
     private Integer totalChunk;
 
-    private Integer uploadedChunkCount;
+    private List<Integer> uploadedParts;
 
 }

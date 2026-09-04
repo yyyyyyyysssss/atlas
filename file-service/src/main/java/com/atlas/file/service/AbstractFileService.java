@@ -1,11 +1,13 @@
 package com.atlas.file.service;
 
 import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.file.config.exception.FileException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
+import com.atlas.file.domain.dto.FileUploadTask;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.domain.vo.FileInfoVO;
 import com.atlas.file.domain.vo.FileUploadChunkVO;
@@ -32,9 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Description
@@ -49,13 +50,11 @@ public abstract class AbstractFileService implements FileService {
 
     protected final int bufferSize = 8192;
 
-    private final String uploadPrefix = "file-service:file:upload:";
+    private final String uploadPrefix = "file:upload:";
 
-    private final String totalChunkField = "totalChunk";
-    private final String totalSizeField = "totalSize";
-    private final String uploadedChunkCountField = "uploadedChunkCount";
-    private final String objectNameField = "objectNameField";
-    private final String accessUrlField = "accessUrlField";
+    private final String uploadPartPrefix = uploadPrefix + "parts:";
+
+    private final String uploadMergeLockPrefix = "file:upload:merge:";
 
     @Value("${file.access-url}")
     private String accessEndpoint;
@@ -64,32 +63,35 @@ public abstract class AbstractFileService implements FileService {
     private RedisHelper redisHelper;
 
     @Resource
+    private DistributedLock distributedLock;
+
+    @Resource
     private ThreadPoolTaskExecutor defaultThreadPool;
 
-    protected abstract String getUploadId(String objectName,String fileType);
+    protected abstract String getUploadId(String objectName, String fileType);
 
     protected abstract FileStorageType fileStorageType();
 
-    protected abstract String storePart(String uploadId,InputStream inputStream,String objectName,Long chunkSize,Integer chunkIndex,Long partSize);
+    protected abstract String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize);
 
     protected abstract Tuple2<String, String> mergePart(String uploadId, String objectName, Integer totalChunk);
 
-    protected abstract Tuple2<String, String> simpleUpload(InputStream inputStream,String objectName,String contentType,Long size);
+    protected abstract Tuple2<String, String> simpleUpload(InputStream inputStream, String objectName, String contentType, Long size);
 
     protected abstract String bucketName();
 
     @Override
-    @Cacheable(value = "file:upload:check", key = "#p0", unless="#result == null")
-    public String checkMD5(String md5){
+    @Cacheable(value = "file:upload:check", key = "#p0", unless = "#result == null")
+    public String checkMD5(String md5) {
         QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
         fileUploadQueryWrapper
                 .lambda()
                 .select(FileRecord::getAccessUrl)
-                .eq(FileRecord::getMd5,md5)
+                .eq(FileRecord::getMd5, md5)
                 .orderByDesc(FileRecord::getId)
                 .last("limit 1");
         FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
-        if(fileUpload != null){
+        if (fileUpload != null) {
             return fileUpload.getAccessUrl();
         }
         return null;
@@ -98,21 +100,20 @@ public abstract class AbstractFileService implements FileService {
     @Override
     public String getUploadId(FileInfoDTO fileInfoDTO) {
         FileRecord fileUpload = createFileUpload(fileInfoDTO);
-        String fileType = StringUtils.isEmpty(fileInfoDTO.getFileType()) ?  "application/octet-stream" : fileInfoDTO.getFileType();
-        String uploadId = getUploadId(fileUpload.getObjectName(),fileType);
+        String fileType = StringUtils.isEmpty(fileInfoDTO.getFileType()) ? "application/octet-stream" : fileInfoDTO.getFileType();
+        String uploadId = getUploadId(fileUpload.getObjectName(), fileType);
         fileUpload.setUploadId(uploadId);
         fileUpload.setObjectName(fileUpload.getObjectName());
         int i = fileMapper.insert(fileUpload);
-        if (i == 0){
+        if (i == 0) {
             throw new DatabaseException("文件上传落库失败");
         }
-        Map<String,Object> map = new HashMap<>();
-        map.put(totalSizeField,fileInfoDTO.getTotalSize());
-        map.put(totalChunkField,fileInfoDTO.getTotalChunk());
-        map.put(uploadedChunkCountField,0);
-        map.put(objectNameField,fileUpload.getObjectName());
-        map.put(accessUrlField,null);
-        redisHelper.addHash(uploadPrefix + uploadId,map, Duration.ofHours(24));
+        FileUploadTask fileUploadTask = new FileUploadTask();
+        fileUploadTask.setUploadId(uploadId);
+        fileUploadTask.setTotalChunk(fileInfoDTO.getTotalChunk());
+        fileUploadTask.setTotalSize(fileInfoDTO.getTotalSize());
+        fileUploadTask.setObjectName(fileUpload.getObjectName());
+        redisHelper.setValue(uploadPrefix + uploadId, fileUploadTask, Duration.ofHours(24));
         return uploadId;
     }
 
@@ -123,59 +124,48 @@ public abstract class AbstractFileService implements FileService {
         Integer chunkIndex = fileChunkDTO.getChunkIndex();
         Long chunkSize = fileChunkDTO.getChunkSize();
         MultipartFile file = fileChunkDTO.getFile();
-        Map<String, Object> map = redisHelper.getHashAll(uploadPrefix + uploadId);
-        if(map == null || map.isEmpty()){
+        // 获取上传任务
+        FileUploadTask fileUploadTask = getFileUploadTask(uploadId);
+        if (fileUploadTask == null) {
             throw new BusinessException("上传任务不存在或已过期: " + uploadId);
         }
-        String objectName = (String) map.get(objectNameField);
-        Long totalSize = Long.parseLong(map.get(totalSizeField).toString());
-        Long totalChunk = Long.parseLong(map.get(totalChunkField).toString());
-        log.debug("uploadId:{}, totalSize:{}, totalChunk:{}, chunkIndex:{}, chunkSize:{}, partSize:{}", uploadId, totalSize, totalChunk, chunkIndex, chunkSize,file.getSize());
+        String objectName = fileUploadTask.getObjectName();
+        Long totalSize = fileUploadTask.getTotalSize();
+        Long totalChunk = fileUploadTask.getTotalChunk().longValue();
+        log.debug("uploadId:{}, totalSize:{}, totalChunk:{}, chunkIndex:{}, chunkSize:{}, partSize:{}", uploadId, totalSize, totalChunk, chunkIndex, chunkSize, file.getSize());
         InputStream inputStream = null;
         try {
             inputStream = file.getInputStream();
             String chunkEtag = storePart(uploadId, inputStream, objectName, chunkSize, chunkIndex, file.getSize());
-            //获取已上传的块数
-            Long uploadedChunkNum = redisHelper.incrHash(uploadPrefix + uploadId, uploadedChunkCountField);
-            if (log.isDebugEnabled()){
+            // 记录分片并返回已完成数量
+            Long uploadedChunkNum = recordPart(uploadId, chunkIndex, chunkEtag, chunkSize);
+            if (log.isDebugEnabled()) {
                 String progress = calculateProgress(uploadedChunkNum, totalChunk);
-                log.debug("上传进度:{}, totalChunk:{}, uploadedChunkNum:{}",progress,totalChunk,uploadedChunkNum);
-            }
-            if (totalChunk.equals(uploadedChunkNum)){
-                Tuple2<String, String> tuple2 = mergePart(uploadId, objectName, totalChunk.intValue());
-                String etag = tuple2.getV1();
-                String originalUrl = tuple2.getV2();
-                String accessUrl = createAccessUrl(objectName);
-                UpdateWrapper<FileRecord> updateWrapper = new UpdateWrapper<>();
-                updateWrapper
-                        .lambda()
-                        .set(FileRecord::getAccessUrl,accessUrl)
-                        .set(FileRecord::getOriginalUrl,originalUrl)
-                        .set(FileRecord::getUploadedChunkCount,uploadedChunkNum)
-                        .set(FileRecord::getStatus,FileStatus.COMPLETED)
-                        .set(FileRecord::getEtag,etag)
-                        .eq(FileRecord::getUploadId,uploadId);
-                fileMapper.update(null, updateWrapper);
-                redisHelper.addHash(uploadPrefix + uploadId,accessUrlField,accessUrl,Duration.ofMinutes(5));
-                // 异步计算md5
-                calculateMD5Async(uploadId,objectName);
+                log.debug("上传进度:{}, totalChunk:{}, uploadedChunkNum:{}", progress, totalChunk, uploadedChunkNum);
             }
             FileUploadChunkVO fileUploadChunkVO = new FileUploadChunkVO();
             fileUploadChunkVO.setUploadId(uploadId);
             fileUploadChunkVO.setChunkIndex(chunkIndex);
             fileUploadChunkVO.setEtag(chunkEtag);
             fileUploadChunkVO.setUploadSize(file.getSize());
+            if (totalChunk.equals(uploadedChunkNum)) {
+                // 合并
+                mergeFile(uploadId, fileUploadTask);
+                // 异步计算md5
+                calculateMD5Async(uploadId, objectName);
+            }
+
             return fileUploadChunkVO;
         } catch (Exception e) {
-            Object uploadedChunkNum = redisHelper.getHash(uploadPrefix + uploadId, uploadedChunkCountField);
+            Set<Integer> part = getUploadedParts(uploadId);
             UpdateWrapper<FileRecord> updateWrapper = new UpdateWrapper<>();
             updateWrapper.lambda()
-                    .set(FileRecord::getUploadedChunkCount,uploadedChunkNum)
-                    .set(FileRecord::getStatus,FileStatus.FAILED)
-                    .eq(FileRecord::getUploadId,uploadId);
+                    .set(FileRecord::getUploadedChunkCount, part.size())
+                    .set(FileRecord::getStatus, FileStatus.FAILED)
+                    .eq(FileRecord::getUploadId, uploadId);
             fileMapper.update(null, updateWrapper);
             throw new FileException("分片上传异常 uploadId: " + uploadId);
-        }finally {
+        } finally {
             if (inputStream != null) {
                 try {
                     inputStream.close();
@@ -186,31 +176,79 @@ public abstract class AbstractFileService implements FileService {
         }
     }
 
-    private String calculateProgress(long uploadedChunkNum,long totalChunk) {
+    private void mergeFile(String uploadId) {
+        // 获取上传任务
+        FileUploadTask fileUploadTask = getFileUploadTask(uploadId);
+        if (fileUploadTask == null) {
+            throw new BusinessException("上传任务不存在或已过期: " + uploadId);
+        }
+        mergeFile(uploadId, fileUploadTask);
+    }
+
+    // 合并文件
+    private void mergeFile(String uploadId, FileUploadTask fileUploadTask) {
+        String lockKey = uploadMergeLockPrefix + uploadId;
+        DistributedLock.LockHandle lock = distributedLock.tryLockAuto(lockKey);
+        if (lock == null) {
+            return;
+        }
+        try (lock) {
+            FileRecord fileRecord = fileMapper.selectOne(
+                    new QueryWrapper<FileRecord>()
+                            .select("status")
+                            .eq("upload_id", uploadId)
+            );
+            if (fileRecord != null && FileStatus.COMPLETED.equals(fileRecord.getStatus())) {
+                return;
+            }
+            Tuple2<String, String> tuple2 = mergePart(uploadId, fileUploadTask.getObjectName(), fileUploadTask.getTotalChunk());
+            String etag = tuple2.getV1();
+            String originalUrl = tuple2.getV2();
+            String accessUrl = createAccessUrl(fileUploadTask.getObjectName());
+            // 获取已生产的分片
+            Set<Integer> uploadedParts = getUploadedParts(uploadId);
+            UpdateWrapper<FileRecord> updateWrapper = new UpdateWrapper<>();
+            updateWrapper
+                    .lambda()
+                    .set(FileRecord::getAccessUrl, accessUrl)
+                    .set(FileRecord::getOriginalUrl, originalUrl)
+                    .set(FileRecord::getUploadedChunkCount, uploadedParts.size())
+                    .set(FileRecord::getStatus, FileStatus.COMPLETED)
+                    .set(FileRecord::getEtag, etag)
+                    .eq(FileRecord::getUploadId, uploadId);
+            fileMapper.update(null, updateWrapper);
+            // 合并完成记录文件url
+            fileUploadTask.setAccessUrl(accessUrl);
+            redisHelper.setValue(uploadPrefix + uploadId, fileUploadTask, Duration.ofMinutes(5));
+        }
+    }
+
+    private String calculateProgress(long uploadedChunkNum, long totalChunk) {
         double d = (double) uploadedChunkNum / totalChunk * 100;
-        return String.format("%.2f%%",d);
+        return String.format("%.2f%%", d);
     }
 
     @Override
     public FileUploadProgressVO getUploadProgress(String uploadId) {
         FileUploadProgressVO fileUploadProgressVO = new FileUploadProgressVO();
         fileUploadProgressVO.setUploadId(uploadId);
-        Map<String, Object> map = redisHelper.getHashAll(uploadPrefix + uploadId);
-        if (map != null && !map.isEmpty()){
-            Integer totalChunk = (Integer) map.get(totalChunkField);
-            Integer uploadedChunkCount = (Integer) map.get(uploadedChunkCountField);
-            fileUploadProgressVO.setTotalChunk(totalChunk);
-            fileUploadProgressVO.setUploadedChunkCount(uploadedChunkCount);
-        }else {
+        // 获取上传任务
+        FileUploadTask fileUploadTask = getFileUploadTask(uploadId);
+        if (fileUploadTask != null) {
+            String partsKey = uploadPartPrefix + uploadId;
+            Set<Integer> uploadPars = redisHelper.getSetMembers(partsKey, Integer.class);
+            fileUploadProgressVO.setTotalChunk(fileUploadTask.getTotalChunk());
+            fileUploadProgressVO.setUploadedParts(new ArrayList<>(uploadPars));
+        } else {
             QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
             fileUploadQueryWrapper.select("id,total_chunk,uploaded_chunk_count");
-            fileUploadQueryWrapper.eq("upload_id",uploadId);
+            fileUploadQueryWrapper.eq("upload_id", uploadId);
             FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
-            if (fileUpload == null){
+            if (fileUpload == null) {
                 throw new BusinessException("该上传任务不存在: " + uploadId);
             }
             fileUploadProgressVO.setTotalChunk(fileUpload.getTotalChunk());
-            fileUploadProgressVO.setUploadedChunkCount(fileUpload.getUploadedChunkCount());
+            fileUploadProgressVO.setUploadedParts(Collections.emptyList());
         }
         return fileUploadProgressVO;
     }
@@ -218,18 +256,19 @@ public abstract class AbstractFileService implements FileService {
 
     @Override
     public String getAccessUrl(String uploadId) {
-        String accessUrl = (String) redisHelper.getHash(uploadPrefix + uploadId, accessUrlField);
-        if (accessUrl != null && !accessUrl.isEmpty()){
-            return accessUrl;
+        // 获取上传任务
+        FileUploadTask fileUploadTask = getFileUploadTask(uploadId);
+        if (fileUploadTask != null) {
+            return fileUploadTask.getAccessUrl();
         }
         QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
-        fileUploadQueryWrapper.select("access_url","status");
-        fileUploadQueryWrapper.eq("upload_id",uploadId);
+        fileUploadQueryWrapper.select("access_url", "status");
+        fileUploadQueryWrapper.eq("upload_id", uploadId);
         FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
-        if (fileUpload == null){
+        if (fileUpload == null) {
             throw new BusinessException("该上传任务不存在: " + uploadId);
         }
-        if (!fileUpload.getStatus().equals(FileStatus.COMPLETED)){
+        if (!fileUpload.getStatus().equals(FileStatus.COMPLETED)) {
             throw new BusinessException("该上传任务未完成: " + uploadId);
         }
         return fileUpload.getAccessUrl();
@@ -249,10 +288,10 @@ public abstract class AbstractFileService implements FileService {
     @Override
     public String uploadSingleFile(InputStream inputStream, String fileName, String fileType) {
         FileRecord fileUpload = null;
-        try (InputStream in = inputStream){
+        try (InputStream in = inputStream) {
             long size = inputStream.available();
             fileUpload = createFileUpload(fileName, fileType, size, 1, (int) size);
-            fileUpload.setUploadId(UUID.randomUUID().toString().replaceAll("-",""));
+            fileUpload.setUploadId(UUID.randomUUID().toString().replaceAll("-", ""));
             fileUpload.setUploadedChunkCount(1);
 
             Tuple2<String, String> tuple2 = simpleUpload(in, fileUpload.getObjectName(), fileType, size);
@@ -267,7 +306,7 @@ public abstract class AbstractFileService implements FileService {
             fileMapper.insert(fileUpload);
             return accessUrl;
         } catch (IOException e) {
-            log.error("upload error: ",e);
+            log.error("upload error: ", e);
             if (fileUpload != null) {
                 fileUpload.setStatus(FileStatus.FAILED);
                 fileMapper.insert(fileUpload);  // 将失败的上传记录插入数据库
@@ -279,7 +318,7 @@ public abstract class AbstractFileService implements FileService {
     @Override
     public FileInfoVO getFileInfo(String bucketName, String objectName) {
         FileRecord fileUpload = getFileUpload(bucketName, objectName);
-        if(fileUpload == null){
+        if (fileUpload == null) {
             throw new BusinessException("文件不存在或已被删除: " + objectName);
         }
         FileInfoVO fileInfoVO = new FileInfoVO();
@@ -297,18 +336,18 @@ public abstract class AbstractFileService implements FileService {
         return File.separator;
     }
 
-    protected void calculateMD5Async(String uploadId,String objectName){
+    protected void calculateMD5Async(String uploadId, String objectName) {
         defaultThreadPool.execute(() -> {
-            try (InputStream inputStream = download(bucketName(),objectName)){
+            try (InputStream inputStream = download(bucketName(), objectName)) {
                 String md5 = MD5Utils.getMD5(inputStream);
                 UpdateWrapper<FileRecord> fileUploadUpdateWrapper = new UpdateWrapper<>();
                 fileUploadUpdateWrapper
                         .lambda()
-                        .set(FileRecord::getMd5,md5)
-                        .eq(FileRecord::getUploadId,uploadId);
-                fileMapper.update(null,fileUploadUpdateWrapper);
-            }catch (Exception e){
-                log.error("文件md5计算异常; uploadId: {}",uploadId,e);
+                        .set(FileRecord::getMd5, md5)
+                        .eq(FileRecord::getUploadId, uploadId);
+                fileMapper.update(null, fileUploadUpdateWrapper);
+            } catch (Exception e) {
+                log.error("文件md5计算异常; uploadId: {}", uploadId, e);
             }
         });
     }
@@ -325,24 +364,40 @@ public abstract class AbstractFileService implements FileService {
         }
     }
 
-    protected FileRecord getFileUpload(String bucketName, String objectName){
-        if(bucketName == null || bucketName.isEmpty() || objectName == null || objectName.isEmpty()){
+    private FileUploadTask getFileUploadTask(String uploadId) {
+        return redisHelper.getValue(uploadPrefix + uploadId, FileUploadTask.class);
+    }
+
+    private Long recordPart(String uploadId, Integer chunkIndex, String etag, Long size) {
+        // 记录分片
+        String partsKey = uploadPartPrefix + uploadId;
+        redisHelper.addSet(partsKey, chunkIndex, Duration.ofHours(24));
+        return (long) getUploadedParts(partsKey).size();
+    }
+
+    private Set<Integer> getUploadedParts(String uploadId) {
+        String partsKey = uploadPartPrefix + uploadId;
+        return redisHelper.getSetMembers(partsKey, Integer.class);
+    }
+
+    protected FileRecord getFileUpload(String bucketName, String objectName) {
+        if (bucketName == null || bucketName.isEmpty() || objectName == null || objectName.isEmpty()) {
             throw new NullPointerException("bucketName or objectName is null");
         }
         QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
         fileUploadQueryWrapper
                 .lambda()
-                .eq(FileRecord::getBucketName,bucketName)
-                .eq(FileRecord::getObjectName,objectName);
+                .eq(FileRecord::getBucketName, bucketName)
+                .eq(FileRecord::getObjectName, objectName);
         return fileMapper.selectOne(fileUploadQueryWrapper);
     }
 
-    protected String createObjectName(String originFilename){
-        if (StringUtils.isEmpty(originFilename)){
+    protected String createObjectName(String originFilename) {
+        if (StringUtils.isEmpty(originFilename)) {
             throw new NullPointerException("文件名称不可为空");
         }
         String fileSuffix = originFilename.substring(originFilename.lastIndexOf("."));
-        return UUID.randomUUID().toString().replaceAll("-","") + fileSuffix;
+        return UUID.randomUUID().toString().replaceAll("-", "") + fileSuffix;
     }
 
     protected String createAccessUrl(String objectName) {
@@ -357,7 +412,7 @@ public abstract class AbstractFileService implements FileService {
         return accessEndpoint + "/file/" + bucketName() + objectName;
     }
 
-    protected FileRecord createFileUpload(FileInfoDTO fileInfoDTO){
+    protected FileRecord createFileUpload(FileInfoDTO fileInfoDTO) {
 
         return createFileUpload(
                 fileInfoDTO.getFilename(),
@@ -368,7 +423,7 @@ public abstract class AbstractFileService implements FileService {
         );
     }
 
-    protected FileRecord createFileUpload(String filename,String fileType,Long totalSize,Integer totalChunk,Integer chunkSize){
+    protected FileRecord createFileUpload(String filename, String fileType, Long totalSize, Integer totalChunk, Integer chunkSize) {
         String objectName = createObjectName(filename);
         FileRecord fileRecord = FileRecord
                 .builder()

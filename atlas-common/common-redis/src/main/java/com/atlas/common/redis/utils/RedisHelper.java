@@ -350,6 +350,10 @@ public class RedisHelper {
         return result;
     }
 
+    public Long getSetSize(String key) {
+        return redisTemplate.opsForSet().size(key);
+    }
+
     /**
      * 判断某值是否存在于 Set 中
      */

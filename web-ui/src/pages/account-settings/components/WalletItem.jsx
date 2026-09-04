@@ -426,7 +426,7 @@ export const WalletConnectionCapsule = ({ isConnected, address, displayName, onC
     const { disconnect } = useDisconnect()
 
     useAuthEvent({
-        onSignout: () => sseManager.destroy()
+        onSignout: () => disconnect()
     });
 
     const sizeMap = {

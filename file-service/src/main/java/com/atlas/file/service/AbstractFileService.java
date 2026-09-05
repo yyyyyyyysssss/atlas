@@ -83,17 +83,17 @@ public abstract class AbstractFileService implements FileService {
     @Override
     @Cacheable(value = "file:upload:check", key = "#p0", unless = "#result == null")
     public String checkMD5(String md5) {
-//        QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
-//        fileUploadQueryWrapper
-//                .lambda()
-//                .select(FileRecord::getAccessUrl)
-//                .eq(FileRecord::getMd5, md5)
-//                .orderByDesc(FileRecord::getId)
-//                .last("limit 1");
-//        FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
-//        if (fileUpload != null) {
-//            return fileUpload.getAccessUrl();
-//        }
+        QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
+        fileUploadQueryWrapper
+                .lambda()
+                .select(FileRecord::getAccessUrl)
+                .eq(FileRecord::getMd5, md5)
+                .orderByDesc(FileRecord::getId)
+                .last("limit 1");
+        FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
+        if (fileUpload != null) {
+            return fileUpload.getAccessUrl();
+        }
         return null;
     }
 

@@ -1,7 +1,7 @@
 import React, { lazy } from "react";
 import { Navigate, createBrowserRouter, Outlet } from 'react-router-dom';
 import { matchPath, matchRoutes } from "react-router"
-import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg, LayoutGrid, Boxes } from "lucide-react";
+import { Settings, UserCog, Menu, ShieldUser, ShieldCheck, Building2, NotepadText, Gauge, LayoutDashboard, AppWindow, Bell, Megaphone, Mail, UserPen, Code, Octagon, Egg, LayoutGrid, Boxes, Files, FileArchive, FolderOpen } from "lucide-react";
 import { LoginRoute } from "./LoginRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
@@ -30,6 +30,8 @@ const AnnouncementDetails = lazy(() => import('../pages/notification-center/anno
 const NotificationMessage = lazy(() => import('../pages/notification-center/message'))
 
 const AccountSettings = lazy(() => import('../pages/account-settings'))
+
+const FileCenter = lazy(() => import('../pages/file-center'))
 
 const OAuth2Consent = lazy(() => import('../pages/login/oauth2/consent'))
 const OAuth2Activate = lazy(() => import('../pages/login/oauth2/activate'))
@@ -279,6 +281,21 @@ export const routes = [
                         defaultIcon: <Mail size={18} />,
                         protected: true,
                         requiredPermissions: ['notification:message']
+                    },
+                ]
+            },
+            {
+                path: 'file-center',
+                breadcrumbName: '文件中心',
+                defaultIcon: <FolderOpen size={18} />,
+                element: <Outlet />,
+                protected: true,
+                requiredPermissions: ['file:center'],
+                children: [
+                    {
+                        index: true,
+                        breadcrumbName: '文件中心',
+                        element: <FileCenter />
                     },
                 ]
             },

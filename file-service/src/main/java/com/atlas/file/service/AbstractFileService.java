@@ -83,17 +83,17 @@ public abstract class AbstractFileService implements FileService {
     @Override
     @Cacheable(value = "file:upload:check", key = "#p0", unless = "#result == null")
     public String checkMD5(String md5) {
-        QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
-        fileUploadQueryWrapper
-                .lambda()
-                .select(FileRecord::getAccessUrl)
-                .eq(FileRecord::getMd5, md5)
-                .orderByDesc(FileRecord::getId)
-                .last("limit 1");
-        FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
-        if (fileUpload != null) {
-            return fileUpload.getAccessUrl();
-        }
+//        QueryWrapper<FileRecord> fileUploadQueryWrapper = new QueryWrapper<>();
+//        fileUploadQueryWrapper
+//                .lambda()
+//                .select(FileRecord::getAccessUrl)
+//                .eq(FileRecord::getMd5, md5)
+//                .orderByDesc(FileRecord::getId)
+//                .last("limit 1");
+//        FileRecord fileUpload = fileMapper.selectOne(fileUploadQueryWrapper);
+//        if (fileUpload != null) {
+//            return fileUpload.getAccessUrl();
+//        }
         return null;
     }
 
@@ -371,8 +371,8 @@ public abstract class AbstractFileService implements FileService {
     private Long recordPart(String uploadId, Integer chunkIndex, String etag, Long size) {
         // 记录分片
         String partsKey = uploadPartPrefix + uploadId;
-        redisHelper.addSet(partsKey, chunkIndex, Duration.ofHours(24));
-        return (long) getUploadedParts(partsKey).size();
+        redisHelper.addSet(partsKey, Duration.ofHours(24), chunkIndex);
+        return (long) getUploadedParts(uploadId).size();
     }
 
     private Set<Integer> getUploadedParts(String uploadId) {

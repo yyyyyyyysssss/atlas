@@ -15,34 +15,34 @@ class AuthEventBus extends EventTarget {
     }
 
     // 关闭页签/浏览器事件（不含刷新）
-    emitUnload() {
-        this.dispatchEvent(new CustomEvent('unload'))
+    emitAuthUnload() {
+        this.dispatchEvent(new CustomEvent('authUnload'))
     }
-    onUnload(callback) {
-        this.addEventListener('unload', callback);
-        return () => this.removeEventListener('unload', callback)
+    onAuthUnload(callback) {
+        this.addEventListener('authUnload', callback);
+        return () => this.removeEventListener('authUnload', callback)
     }
 }
 
 export const authEventBus = new AuthEventBus()
 
 
-export function useAuthEvent({ onSignout, onUnload }) {
+export function useAuthEvent({ onSignout, onAuthUnload }) {
     useEffect(() => {
         let unsubscribeSignout
-        let unsubscribeUnload
+        let unsubscribeAuthUnload
 
         if (onSignout) {
             unsubscribeSignout = authEventBus.onSignout(onSignout)
         }
-        if (onUnload) {
-            unsubscribeUnload = authEventBus.onUnload(onUnload)
+        if (onAuthUnload) {
+            unsubscribeAuthUnload = authEventBus.onAuthUnload(onAuthUnload)
         }
 
         // 组件卸载时统一取消订阅
         return () => {
             if (unsubscribeSignout) unsubscribeSignout()
-            if (unsubscribeUnload) unsubscribeUnload()
+            if (unsubscribeAuthUnload) unsubscribeAuthUnload()
         };
-    }, [onSignout, onUnload])
+    }, [onSignout, onAuthUnload])
 }

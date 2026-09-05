@@ -39,6 +39,7 @@ spring:
 logging:
   level:
     com.atlas.common.core.api: info
+    com.atlas.file: debug
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*xml

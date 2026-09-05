@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           // rewrite: (path) => path.replace(/^\/api/, ''), // 重写路径
           agent: agent
         },
-        '/file': {
+        '^/file/': {
           target: apiUrl,
           changeOrigin: true,
           secure: isHttps,

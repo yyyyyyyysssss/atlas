@@ -246,7 +246,7 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
     }
 
     const renderItem = (originNode: React.ReactElement, file: UploadFile) => {
-        if (file.status === 'uploading') {
+        if (file.status !== 'done') {
             const percent = Math.round(file.percent || 0)
             if (listType == 'picture-card' || listType == 'picture-circle') {
                 const isCircle = listType === 'picture-circle'
@@ -281,18 +281,28 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
                 )
             } else {
                 return (
-                    <div className="ant-upload-list-item ant-upload-list-item-uploading" style={{ overflow: 'visible', paddingBottom: 8, }}>
-                        <Flex gap={6} justify="center" align="center" style={{ width: '100%' }}>
-                            <Progress
-                                percent={percent}
-                                size="small"
-                                showInfo={false}
-                                strokeColor={token.colorPrimary}
-                                style={{ width: '100%' }}
-                            />
-                            <span style={{ fontSize: 12, color: token.colorTextDescription }}>
-                                {percent}%
-                            </span>
+                    <div
+                        style={{
+                            width: '100%',
+                            padding: '2px 8px',
+                        }}
+                    >
+                        <Flex style={{ width: '100%' }} vertical>
+                            <Typography.Text type="secondary">
+                                {file.name}
+                            </Typography.Text>
+                            <Flex gap={6} justify="center" align="center" style={{ width: '100%' }}>
+                                <Progress
+                                    percent={percent}
+                                    size="small"
+                                    showInfo={false}
+                                    strokeColor={token.colorPrimary}
+                                    style={{ width: '160px' }}
+                                />
+                                <Typography.Text type="secondary">
+                                    {percent}%
+                                </Typography.Text>
+                            </Flex>
                         </Flex>
                     </div>
                 )
@@ -356,9 +366,14 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
 
     const uploadButton = (
         componentDisabled === false && (
-            <button style={{ border: 0, background: 'none' }} type="button">
-                <PlusOutlined style={{ fontSize: 24, color: '#999' }} />
-            </button>
+            <Button
+                type="text"
+                icon={<PlusOutlined />}
+                style={{
+                    fontSize: 24,
+                    color: '#999'
+                }}
+            />
         )
     )
 

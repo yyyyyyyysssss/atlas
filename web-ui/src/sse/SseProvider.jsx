@@ -23,7 +23,7 @@ export const SseProvider = ({ url, children }) => {
 
     useAuthEvent({
         onSignout: () => sseManager.destroy(),
-        onUnload: () => sseManager.destroy(),
+        onAuthUnload: () => sseManager.destroy(),
     })
 
     const sseUrl = useMemo(() => {

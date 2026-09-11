@@ -1,26 +1,26 @@
 package com.atlas.file.domain.vo;
 
 import com.atlas.file.enums.FileUploadTaskStatus;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * @Description
  * @Author ys
- * @Date 2024/11/16 19:51
+ * @Date 2024/8/18 21:01
  */
 @Getter
 @Setter
-public class FileUploadProgressVO {
+@AllArgsConstructor
+@NoArgsConstructor
+public class FileMergeVO {
 
     private String uploadId;
 
-    private Integer totalChunk;
-
     private FileUploadTaskStatus status;
 
-    private List<Integer> uploadedParts;
+    private String accessUrl;
 
 }

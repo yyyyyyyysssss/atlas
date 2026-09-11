@@ -6,7 +6,7 @@ import com.atlas.file.domain.dto.FileRangeDTO;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.domain.vo.FileStreamVO;
 import com.atlas.file.enums.FileStorageType;
-import com.atlas.file.mapper.FileMapper;
+import com.atlas.file.mapper.FileRecordMapper;
 import com.atlas.file.service.AbstractFileService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import groovy.lang.Tuple2;
@@ -36,7 +36,7 @@ public class MinioFileServiceImpl extends AbstractFileService {
 
     private final MinioHelper minioHelper;
 
-    private final FileMapper fileMapper;
+    private final FileRecordMapper fileMapper;
 
     @Override
     public FileStorageType fileStorageType() {

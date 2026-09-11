@@ -4,10 +4,7 @@ package com.atlas.file.service;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
 import com.atlas.file.domain.dto.FileRangeDTO;
-import com.atlas.file.domain.vo.FileInfoVO;
-import com.atlas.file.domain.vo.FileStreamVO;
-import com.atlas.file.domain.vo.FileUploadChunkVO;
-import com.atlas.file.domain.vo.FileUploadProgressVO;
+import com.atlas.file.domain.vo.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -24,9 +21,11 @@ public interface FileService {
 
     String pathSeparator();
 
-    String getUploadId(FileInfoDTO fileInfoDTO);
+    String initUpload(FileInfoDTO fileInfoDTO);
 
     FileUploadChunkVO uploadChunk(FileChunkDTO fileChunkDTO);
+
+    FileMergeVO merge(String uploadId);
 
     FileUploadProgressVO getUploadProgress(String uploadId);
 
@@ -36,7 +35,7 @@ public interface FileService {
 
     String uploadSingleFile(MultipartFile file);
 
-    String uploadSingleFile(InputStream inputStream, String fileName, String fileType);
+    String uploadSingleFile(InputStream inputStream, String fileName, String fileType, Long fileSize);
 
     InputStream download(String bucketName, String objectName);
 

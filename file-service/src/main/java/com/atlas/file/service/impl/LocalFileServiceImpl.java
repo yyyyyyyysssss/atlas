@@ -118,7 +118,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
     public FileStreamVO getFileStream(String bucketName, String objectName, FileRangeDTO range) {
         Map<String, String> headerMap = new HashMap<>();
         try {
-            FileRecord fileUpload = getFileUpload(bucketName,objectName);
+            FileRecord fileUpload = fileRecordService.getByObject(bucketName,objectName);
             headerMap.put(HttpHeaders.ACCEPT_RANGES,"bytes");
             headerMap.put(HttpHeaders.CONTENT_TYPE, fileUpload.getFileType());
             headerMap.put(HttpHeaders.ETAG,fileUpload.getEtag());

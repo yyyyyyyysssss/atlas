@@ -4,7 +4,9 @@ import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
+import com.atlas.file.domain.dto.FileMergeDTO;
 import com.atlas.file.domain.vo.FileMD5CheckVO;
+import com.atlas.file.domain.vo.FileMergeVO;
 import com.atlas.file.domain.vo.FileUploadChunkVO;
 import com.atlas.file.domain.vo.FileUploadProgressVO;
 import com.atlas.file.service.FileService;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,7 +51,7 @@ public class FileUploadController {
     // 初始化获取上传id
     @PostMapping("/init")
     public Result<String> init(@RequestBody FileInfoDTO fileInfoDTO) {
-        String uploadId = fileService.getUploadId(fileInfoDTO);
+        String uploadId = fileService.initUpload(fileInfoDTO);
         return ResultGenerator.ok(uploadId);
     }
 
@@ -57,6 +60,13 @@ public class FileUploadController {
     public Result<FileUploadChunkVO> uploadChunk(FileChunkDTO uploadChunkDTO) {
         FileUploadChunkVO fileUploadChunkVO = fileService.uploadChunk(uploadChunkDTO);
         return ResultGenerator.ok(fileUploadChunkVO);
+    }
+
+    // 合并
+    @PostMapping("/merge")
+    public Result<FileMergeVO> merge(@RequestBody @Validated FileMergeDTO mergeDTO) {
+        FileMergeVO vo = fileService.merge(mergeDTO.getUploadId());
+        return ResultGenerator.ok(vo);
     }
 
     // 获取上传进度

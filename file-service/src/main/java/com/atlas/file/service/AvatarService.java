@@ -42,7 +42,7 @@ public class AvatarService {
                 ? "image/svg+xml"
                 : "image/png";
         try (InputStream inputStream = new ByteArrayInputStream(avatarBytes)){
-            return fileService.uploadSingleFile(inputStream, fileName, fileType);
+            return fileService.uploadSingleFile(inputStream, fileName, fileType, (long) avatarBytes.length);
         } catch (IOException e) {
             throw new FileException("头像上传过程中流处理异常");
         }

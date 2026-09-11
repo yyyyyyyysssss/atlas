@@ -1,6 +1,8 @@
 package com.atlas.file.domain.vo;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -10,14 +12,11 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class FileUploadChunkVO {
 
     private String uploadId;
-
-    //当前块索引
-    private Integer chunkIndex;
-
-    private Long uploadSize;
 
     private String etag;
 

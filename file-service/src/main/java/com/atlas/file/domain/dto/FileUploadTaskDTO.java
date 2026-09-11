@@ -10,7 +10,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class FileUploadTask {
+public class FileUploadTaskDTO {
 
     private String uploadId;
 

@@ -69,7 +69,7 @@ public class MinioHelper extends MinioAsyncClient {
                     inputStream,
                     partSize,
                     uploadId,
-                    chunkIndex + 1,
+                    chunkIndex,
                     null,
                     null
             );

@@ -173,11 +173,12 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
                 const limitRequest = pLimit(5)
                 const chunks = splitFile(file, SLICE_SIZE)
                 const promises = chunks.map((chunk, index) => limitRequest(async () => {
-                    console.log(`第${index + 1}块正在上传,当前块大小：${(chunk.size / (1024 * 1024)).toFixed(2)}MB,起始偏移量：${index * SLICE_SIZE} 结束偏移量：${index * SLICE_SIZE + chunk.size}`)
+                    const chunkNumber = index + 1
+                    console.log(`第${chunkNumber}块正在上传,当前块大小：${(chunk.size / (1024 * 1024)).toFixed(2)}MB,起始偏移量：${index * SLICE_SIZE} 结束偏移量：${index * SLICE_SIZE + chunk.size}`)
                     const uploadFormData = new FormData()
                     uploadFormData.append("uploadId", uploadId)
                     uploadFormData.append("chunkSize", SLICE_SIZE.toString())
-                    uploadFormData.append("chunkIndex", index.toString())
+                    uploadFormData.append("chunkIndex", chunkNumber.toString())
                     uploadFormData.append("filename", filename)
                     uploadFormData.append("file", chunk)
                     await uploadChunkFile(uploadFormData, progressCallback)

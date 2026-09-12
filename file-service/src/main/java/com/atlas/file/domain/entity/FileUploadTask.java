@@ -4,7 +4,9 @@ import com.atlas.common.mybatis.entity.BaseEntity;
 import com.atlas.file.enums.FileUploadTaskStatus;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Tolerate;
 
 /**
@@ -47,9 +49,6 @@ public class FileUploadTask extends BaseEntity {
 
     @TableField("chunk_size")
     private Integer chunkSize;
-
-    @TableField("uploaded_chunk_count")
-    private Integer uploadedChunkCount;
 
     @TableField("status")
     private FileUploadTaskStatus status;

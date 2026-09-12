@@ -57,7 +57,6 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
                 .totalSize(fileInfoDTO.getTotalSize())
                 .totalChunk(fileInfoDTO.getTotalChunk())
                 .chunkSize(fileInfoDTO.getChunkSize())
-                .uploadedChunkCount(0)
                 .status(FileUploadTaskStatus.PENDING)
                 .build();
         fileUploadTask.setId(IdGen.genId());
@@ -168,9 +167,10 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
                 .uploadId(uploadId)
                 .partEtag(partEtag)
                 .partNumber(fileChunkDTO.getChunkIndex())
-                .partSize(fileChunkDTO.getChunkSize())
+                .partSize(fileChunkDTO.getFile().getSize())
                 .createTime(LocalDateTime.now())
                 .build();
+        taskPart.setId(IdGen.genId());
         boolean save = fileUploadTaskPartService.save(taskPart);
         if (!save) {
             throw new FileException("记录分片异常: " + uploadId);
@@ -179,9 +179,7 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
         String partsKey = UPLOAD_PART_PREFIX + uploadId;
         redisHelper.addSet(partsKey, Duration.ofHours(24), taskPart);
         // 获取已上传的数量
-        long uploadedCount = fileUploadTaskPartService.lambdaQuery()
-                .eq(FileUploadTaskPart::getUploadId, uploadId)
-                .count();
+        long uploadedCount = redisHelper.getSetSize(partsKey);
         return UploadPartResult.builder()
                 .uploadedChunkCount((int) uploadedCount)
                 .totalChunk(fileUploadTask.getTotalChunk())

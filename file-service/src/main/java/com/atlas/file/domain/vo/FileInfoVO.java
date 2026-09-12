@@ -21,7 +21,7 @@ public class FileInfoVO {
     private String fileType;
 
     //文件总大小
-    private Long totalSize;
+    private Long fileSize;
 
     private String etag;
 

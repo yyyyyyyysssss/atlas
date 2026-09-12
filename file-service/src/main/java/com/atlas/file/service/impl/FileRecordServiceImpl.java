@@ -39,7 +39,7 @@ public class FileRecordServiceImpl extends ServiceImpl<FileRecordMapper, FileRec
                 .objectName(createDTO.getObjectName())
                 .fileName(createDTO.getFileName())
                 .fileType(createDTO.getFileType())
-                .totalSize(createDTO.getFileSize())
+                .fileSize(createDTO.getFileSize())
                 .storageType(createDTO.getStorageType())
                 .accessUrl(createDTO.getAccessUrl())
                 .originalUrl(createDTO.getOriginalUrl())

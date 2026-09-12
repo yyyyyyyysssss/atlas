@@ -57,13 +57,18 @@ public class LocalFileServiceImpl extends AbstractFileService {
     public String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize) {
         String tmpFilePath = buildFilePath(objectName) + ".tmp";
         try (RandomAccessFile raf = new RandomAccessFile(tmpFilePath, "rw")) {
-            raf.seek(chunkIndex * chunkSize);
+            raf.seek((chunkIndex - 1L) * chunkSize);
 
             MessageDigest md = MessageDigest.getInstance("MD5");
 
             byte[] buffer = new byte[bufferSize];
+            long written = 0;
             int n;
             while ((n = inputStream.read(buffer)) != -1) {
+                written += n;
+                if (written > partSize) {
+                    throw new IllegalArgumentException("chunk size exceeds expected size");
+                }
                 raf.write(buffer, 0, n);
                 md.update(buffer, 0, n);
             }

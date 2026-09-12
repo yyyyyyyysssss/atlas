@@ -110,8 +110,8 @@ public abstract class AbstractFileService implements FileService {
             throw new FileException("上传任务不存在或已过期: " + uploadId);
         }
         // 开始上传
-        if(fileUploadTask.getStatus().equals(FileUploadTaskStatus.PENDING)
-                || fileUploadTask.getStatus().equals(FileUploadTaskStatus.PAUSED)){
+        if (fileUploadTask.getStatus().equals(FileUploadTaskStatus.PENDING)
+                || fileUploadTask.getStatus().equals(FileUploadTaskStatus.PAUSED)) {
             fileUploadTaskService.startUpload(uploadId);
         }
         String objectName = fileUploadTask.getObjectName();
@@ -304,7 +304,7 @@ public abstract class AbstractFileService implements FileService {
         FileInfoVO fileInfoVO = new FileInfoVO();
         fileInfoVO.setFilename(fileUpload.getFileName());
         fileInfoVO.setFileType(fileUpload.getFileType());
-        fileInfoVO.setTotalSize(fileUpload.getTotalSize());
+        fileInfoVO.setFileSize(fileUpload.getFileSize());
         fileInfoVO.setEtag(fileUpload.getEtag());
         fileInfoVO.setMd5(fileUpload.getMd5());
         fileInfoVO.setLastModified(fileUpload.getUpdateTime());

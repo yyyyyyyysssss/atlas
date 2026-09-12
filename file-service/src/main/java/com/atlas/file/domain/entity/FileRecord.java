@@ -1,7 +1,6 @@
 package com.atlas.file.domain.entity;
 
 import com.atlas.common.mybatis.entity.BaseEntity;
-import com.atlas.file.enums.FileStatus;
 import com.atlas.file.enums.FileStorageType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -26,9 +25,6 @@ public class FileRecord extends BaseEntity {
 
     }
 
-    @TableField("upload_id")
-    private String uploadId;
-
     @TableField("bucket_name")
     private String bucketName;
 
@@ -41,17 +37,8 @@ public class FileRecord extends BaseEntity {
     @TableField("file_type")
     private String fileType;
 
-    @TableField("total_size")
-    private Long totalSize;
-
-    @TableField("total_chunk")
-    private Integer totalChunk;
-
-    @TableField("chunk_size")
-    private Integer chunkSize;
-
-    @TableField("uploaded_chunk_count")
-    private Integer uploadedChunkCount;
+    @TableField("file_size")
+    private Long fileSize;
 
     @TableField("etag")
     private String etag;
@@ -64,9 +51,6 @@ public class FileRecord extends BaseEntity {
 
     @TableField("md5")
     private String md5;
-
-    @TableField("status")
-    private FileStatus status;
 
     @TableField("storage_type")
     private FileStorageType storageType;

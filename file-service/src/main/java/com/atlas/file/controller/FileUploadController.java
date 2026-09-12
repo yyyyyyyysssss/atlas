@@ -57,7 +57,7 @@ public class FileUploadController {
 
     // 分片上传
     @PostMapping(value = "/chunk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<FileUploadChunkVO> uploadChunk(FileChunkDTO uploadChunkDTO) {
+    public Result<FileUploadChunkVO> uploadChunk(@Validated FileChunkDTO uploadChunkDTO) {
         FileUploadChunkVO fileUploadChunkVO = fileService.uploadChunk(uploadChunkDTO);
         return ResultGenerator.ok(fileUploadChunkVO);
     }

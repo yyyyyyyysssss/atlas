@@ -7,6 +7,7 @@ import com.atlas.file.domain.entity.FileUploadTask;
 import com.atlas.file.domain.entity.FileUploadTaskPart;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
 import java.util.Set;
 
 public interface FileUploadTaskService extends IService<FileUploadTask> {
@@ -25,6 +26,6 @@ public interface FileUploadTaskService extends IService<FileUploadTask> {
 
     UploadPartResult recordPart(FileChunkDTO fileChunkDTO, FileUploadTask fileUploadTask, String uploadId, String partEtag);
 
-    Set<FileUploadTaskPart> getPart(String uploadId);
+    List<FileUploadTaskPart> listParts(String uploadId);
 
 }

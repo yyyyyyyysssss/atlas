@@ -22,10 +22,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @Description
@@ -188,21 +185,23 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
     }
 
     @Override
-    public Set<FileUploadTaskPart> getPart(String uploadId) {
+    public List<FileUploadTaskPart> listParts(String uploadId) {
         String partsKey = UPLOAD_PART_PREFIX + uploadId;
         Set<FileUploadTaskPart> parts = redisHelper.getSetMembers(partsKey, FileUploadTaskPart.class);
         if (!CollectionUtils.isEmpty(parts)) {
-            return parts;
+            return parts.stream()
+                    .sorted(Comparator.comparing(FileUploadTaskPart::getPartNumber))
+                    .toList();
         }
         List<FileUploadTaskPart> list = fileUploadTaskPartService.lambdaQuery()
                 .eq(FileUploadTaskPart::getUploadId, uploadId)
+                .orderByAsc(FileUploadTaskPart::getPartNumber)
                 .list();
         if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
-        parts = new LinkedHashSet<>(list);
-        redisHelper.addSet(partsKey, Duration.ofHours(24), parts.toArray());
-        return parts;
+        redisHelper.addSet(partsKey, Duration.ofHours(24), list.toArray());
+        return list;
     }
 
     private void refreshCache(String uploadId) {

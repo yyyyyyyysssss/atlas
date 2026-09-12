@@ -2,12 +2,15 @@ package com.atlas.file.service.impl;
 
 import com.atlas.file.config.exception.FileException;
 import com.atlas.file.domain.dto.FileRangeDTO;
+import com.atlas.file.domain.dto.UploadPart;
+import com.atlas.file.domain.dto.UploadResult;
 import com.atlas.file.domain.entity.FileRecord;
+import com.atlas.file.domain.entity.FileUploadTask;
+import com.atlas.file.domain.entity.FileUploadTaskPart;
 import com.atlas.file.domain.vo.FileStreamVO;
 import com.atlas.file.enums.FileStorageType;
 import com.atlas.file.service.AbstractFileService;
 import com.atlas.file.utils.MD5Utils;
-import groovy.lang.Tuple2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
@@ -25,6 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,7 +48,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
 
 
     @Override
-    public String getUploadId(String objectName, String fileType) {
+    public String createMultipartUpload(String objectName, String contentType) {
         return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
@@ -54,10 +58,10 @@ public class LocalFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize) {
+    public String uploadPart(String uploadId, InputStream inputStream, String objectName, Integer partNumber, Long offset, Long partSize) {
         String tmpFilePath = buildFilePath(objectName) + ".tmp";
         try (RandomAccessFile raf = new RandomAccessFile(tmpFilePath, "rw")) {
-            raf.seek((chunkIndex - 1L) * chunkSize);
+            raf.seek(offset);
 
             MessageDigest md = MessageDigest.getInstance("MD5");
 
@@ -88,7 +92,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public Tuple2<String, String> mergePart(String uploadId, String objectName, Integer totalChunk) {
+    public UploadResult mergePart(String uploadId, String objectName, List<UploadPart> uploadParts) {
         String tmpFilePath = buildFilePath(objectName) + ".tmp";
         Path tmpPath = Paths.get(tmpFilePath);
         String filePath = buildFilePath(objectName);
@@ -97,7 +101,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
             Files.move(tmpPath, path, StandardCopyOption.REPLACE_EXISTING);
             String etag = MD5Utils.getMD5(new File(filePath));
             log.info("upload success; objectName:{}, accessUrl:{}", objectName, filePath);
-            return new Tuple2<>(etag, filePath);
+            return new UploadResult(etag, filePath);
         } catch (IOException e) {
             log.error("upload  Files.move error: ", e);
             throw new FileException(e);
@@ -178,7 +182,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public Tuple2<String, String> simpleUpload(InputStream inputStream, String objectName, String contentType, Long size) {
+    public UploadResult simpleUpload(InputStream inputStream, String objectName, String contentType, Long size) {
         String filePath = buildFilePath(objectName);
         FileOutputStream fileOutputStream = null;
         try {
@@ -192,7 +196,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
             }
             byte[] md5Bytes = md.digest();
             String etag = Hex.encodeHexString(md5Bytes);
-            return new Tuple2<>(etag, filePath);
+            return new UploadResult(etag, filePath);
         } catch (Exception e) {
             log.error("simpleUpload error: ", e);
             throw new FileException("simpleUpload error: " + e.getMessage());

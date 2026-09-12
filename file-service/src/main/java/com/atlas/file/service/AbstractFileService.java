@@ -4,10 +4,7 @@ import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.file.config.exception.FileException;
-import com.atlas.file.domain.dto.FileChunkDTO;
-import com.atlas.file.domain.dto.FileInfoDTO;
-import com.atlas.file.domain.dto.FileRecordCreateDTO;
-import com.atlas.file.domain.dto.UploadPartResult;
+import com.atlas.file.domain.dto.*;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.domain.entity.FileUploadTask;
 import com.atlas.file.domain.entity.FileUploadTaskPart;
@@ -65,15 +62,15 @@ public abstract class AbstractFileService implements FileService {
     @Resource
     private TransactionTemplate transactionTemplate;
 
-    protected abstract String getUploadId(String objectName, String fileType);
+    protected abstract String createMultipartUpload(String objectName, String contentType);
 
     protected abstract FileStorageType fileStorageType();
 
-    protected abstract String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize);
+    protected abstract String uploadPart(String uploadId, InputStream inputStream, String objectName, Integer partNumber, Long offset, Long partSize);
 
-    protected abstract Tuple2<String, String> mergePart(String uploadId, String objectName, Integer totalChunk);
+    protected abstract UploadResult mergePart(String uploadId, String objectName, List<UploadPart> parts);
 
-    protected abstract Tuple2<String, String> simpleUpload(InputStream inputStream, String objectName, String contentType, Long size);
+    protected abstract UploadResult simpleUpload(InputStream inputStream, String objectName, String contentType, Long size);
 
     protected abstract String bucketName();
 
@@ -92,7 +89,7 @@ public abstract class AbstractFileService implements FileService {
         // 生成对象存储唯一名称
         String objectName = createObjectName(fileInfoDTO.getFilename());
         String fileType = StringUtils.isEmpty(fileInfoDTO.getFileType()) ? "application/octet-stream" : fileInfoDTO.getFileType();
-        String uploadId = getUploadId(objectName, fileType);
+        String uploadId = createMultipartUpload(objectName, fileType);
         // 创建上传任务
         fileUploadTaskService.createTask(fileInfoDTO, uploadId, objectName);
         return uploadId;
@@ -121,7 +118,8 @@ public abstract class AbstractFileService implements FileService {
         // 分片上传
         String chunkEtag;
         try (InputStream inputStream = file.getInputStream()) {
-            chunkEtag = storePart(uploadId, inputStream, objectName, chunkSize, chunkIndex, file.getSize());
+            long offset = (chunkIndex.longValue() - 1) * chunkSize;
+            chunkEtag = uploadPart(uploadId, inputStream, objectName, chunkIndex, offset, file.getSize());
         } catch (Exception e) {
             fileUploadTaskService.markFailed(uploadId);
             throw new FileException("分片上传异常 uploadId:" + uploadId);
@@ -169,9 +167,17 @@ public abstract class AbstractFileService implements FileService {
             }
 
             // 合并
-            Tuple2<String, String> tuple2 = mergePart(uploadId, fileUploadTask.getObjectName(), fileUploadTask.getTotalChunk());
-            String etag = tuple2.getV1();
-            String originalUrl = tuple2.getV2();
+            List<FileUploadTaskPart> taskParts = fileUploadTaskService.listParts(uploadId);
+            List<UploadPart> uploadParts = taskParts.stream()
+                            .map(item -> new UploadPart(
+                                    item.getPartNumber(),
+                                    item.getPartEtag(),
+                                    item.getPartSize()
+                            ))
+                            .toList();
+            UploadResult uploadResult = mergePart(uploadId, fileUploadTask.getObjectName(), uploadParts);
+            String etag = uploadResult.getEtag();
+            String originalUrl = uploadResult.getUrl();
             String accessUrl = createAccessUrl(fileUploadTask.getObjectName());
 
             // 保存
@@ -216,10 +222,9 @@ public abstract class AbstractFileService implements FileService {
         if (fileUploadTask == null) {
             throw new FileException("上传任务不存在: " + uploadId);
         }
-        Set<FileUploadTaskPart> parts = fileUploadTaskService.getPart(uploadId);
+        List<FileUploadTaskPart> parts = fileUploadTaskService.listParts(uploadId);
         List<Integer> uploadedParts = parts.stream()
                 .map(FileUploadTaskPart::getPartNumber)
-                .sorted()
                 .toList();
         FileUploadProgressVO vo = new FileUploadProgressVO();
         vo.setUploadId(uploadId);
@@ -268,9 +273,9 @@ public abstract class AbstractFileService implements FileService {
     public String uploadSingleFile(InputStream inputStream, String fileName, String fileType, Long fileSize) {
         try (InputStream in = inputStream) {
             String objectName = createObjectName(fileName);
-            Tuple2<String, String> tuple2 = simpleUpload(in, objectName, fileType, fileSize);
-            String etag = tuple2.getV1();
-            String originalUrl = tuple2.getV2();
+            UploadResult result = simpleUpload(in, objectName, fileType, fileSize);
+            String etag = result.getEtag();
+            String originalUrl = result.getUrl();
             String accessUrl = createAccessUrl(objectName);
             // 记录文件最终产物
             fileRecordService.createFileRecord(

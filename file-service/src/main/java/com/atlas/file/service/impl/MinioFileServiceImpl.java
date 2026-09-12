@@ -3,7 +3,11 @@ package com.atlas.file.service.impl;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.file.config.minio.MinioHelper;
 import com.atlas.file.domain.dto.FileRangeDTO;
+import com.atlas.file.domain.dto.UploadPart;
+import com.atlas.file.domain.dto.UploadResult;
 import com.atlas.file.domain.entity.FileRecord;
+import com.atlas.file.domain.entity.FileUploadTask;
+import com.atlas.file.domain.entity.FileUploadTaskPart;
 import com.atlas.file.domain.vo.FileStreamVO;
 import com.atlas.file.enums.FileStorageType;
 import com.atlas.file.mapper.FileRecordMapper;
@@ -12,6 +16,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import groovy.lang.Tuple2;
 import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
+import io.minio.messages.Part;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,18 +50,25 @@ public class MinioFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public String getUploadId(String objectName, String fileType) {
-        return minioHelper.uploadId(objectName, fileType);
+    public String createMultipartUpload(String objectName, String contentType) {
+        return minioHelper.uploadId(objectName, contentType);
     }
 
     @Override
-    public String storePart(String uploadId, InputStream inputStream, String objectName, Long chunkSize, Integer chunkIndex, Long partSize) {
-        return minioHelper.uploadPart(uploadId, inputStream, objectName, chunkIndex, partSize);
+    public String uploadPart(String uploadId, InputStream inputStream, String objectName, Integer partNumber, Long offset, Long partSize) {
+        return minioHelper.uploadPart(uploadId, inputStream, objectName, partNumber, partSize);
     }
 
     @Override
-    public Tuple2<String, String> mergePart(String uploadId, String objectName, Integer totalChunk) {
-        return minioHelper.mergePart(uploadId, objectName, totalChunk);
+    public UploadResult mergePart(String uploadId, String objectName, List<UploadPart> uploadParts) {
+        List<Part> parts = uploadParts.stream()
+                .map(item -> new Part(
+                        item.getPartNumber(),
+                        item.getEtag()
+                ))
+                .toList();
+        Tuple2<String, String> tuple2 = minioHelper.mergePart(uploadId, objectName, parts);
+        return new UploadResult(tuple2.getV1(), tuple2.getV2());
     }
 
     @Override
@@ -73,8 +86,9 @@ public class MinioFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public Tuple2<String, String> simpleUpload(InputStream inputStream, String objectName, String contentType, Long size) {
-        return minioHelper.upload(inputStream, objectName, contentType, size);
+    public UploadResult simpleUpload(InputStream inputStream, String objectName, String contentType, Long size) {
+        Tuple2<String, String> tuple2 = minioHelper.upload(inputStream, objectName, contentType, size);
+        return new UploadResult(tuple2.getV1(), tuple2.getV2());
     }
 
     @Override

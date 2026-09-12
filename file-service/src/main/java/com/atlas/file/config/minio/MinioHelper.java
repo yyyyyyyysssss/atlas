@@ -82,9 +82,8 @@ public class MinioHelper extends MinioAsyncClient {
         }
     }
 
-    public Tuple2<String, String> mergePart(String uploadId,String objectName,Integer totalChunk){
+    public Tuple2<String, String> mergePart(String uploadId,String objectName, List<Part> parts){
         try {
-            List<Part> parts = listParts(uploadId, objectName ,totalChunk);
             CompletableFuture<ObjectWriteResponse> completableFuture = this.completeMultipartUploadAsync(
                     minioConfig.getBucketName(),
                     null,

@@ -2,6 +2,7 @@ package com.atlas.file.service;
 
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.lock.DistributedLock;
+import com.atlas.common.redis.lock.LockHandle;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.file.config.exception.FileException;
 import com.atlas.file.domain.dto.*;
@@ -143,12 +144,11 @@ public abstract class AbstractFileService implements FileService {
     @Override
     public FileMergeVO merge(String uploadId) {
         String lockKey = "file:upload:merge:" + uploadId;
-        DistributedLock.LockHandle lock = distributedLock.tryLockAuto(lockKey);
-        if (lock == null) {
-            log.warn("已有节点合并处理中 uploadId={}", uploadId);
-            return new FileMergeVO(uploadId, FileUploadTaskStatus.MERGING, null);
-        }
-        try (lock) {
+        try (LockHandle lock = distributedLock.tryLock(lockKey)) {
+            if (!lock.acquired()) {
+                log.warn("已有节点合并处理中 uploadId={}", uploadId);
+                return new FileMergeVO(uploadId, FileUploadTaskStatus.MERGING, null);
+            }
             FileUploadTask fileUploadTask = fileUploadTaskService.findByUploadId(uploadId);
             if (fileUploadTask == null) {
                 throw new FileException("上传任务不存在: " + uploadId);

@@ -86,9 +86,10 @@ public class FileRecordServiceImpl extends ServiceImpl<FileRecordMapper, FileRec
     }
 
     @Override
-    public FileRecord getByMd5(String md5) {
+    public FileRecord getByFileHash(String md5, Long fileSize) {
         return this.lambdaQuery()
                 .eq(FileRecord::getMd5, md5)
+                .eq(FileRecord::getFileSize, fileSize)
                 .orderByDesc(FileRecord::getId)
                 .last("limit 1")
                 .one();

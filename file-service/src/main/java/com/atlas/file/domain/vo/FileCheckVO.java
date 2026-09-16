@@ -10,7 +10,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class FileMD5CheckVO {
+public class FileCheckVO {
 
     private String accessUrl;
 

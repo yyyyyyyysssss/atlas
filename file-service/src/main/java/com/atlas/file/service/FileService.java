@@ -1,6 +1,7 @@
 package com.atlas.file.service;
 
 
+import com.atlas.file.domain.dto.FileCheckDTO;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
 import com.atlas.file.domain.dto.FileRangeDTO;
@@ -17,7 +18,7 @@ import java.time.Duration;
  */
 public interface FileService {
 
-    String checkMD5(String md5);
+    FileCheckVO checkFile(FileCheckDTO checkDTO);
 
     String pathSeparator();
 

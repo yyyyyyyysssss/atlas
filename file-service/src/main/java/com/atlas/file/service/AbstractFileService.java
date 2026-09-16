@@ -9,18 +9,13 @@ import com.atlas.file.domain.dto.*;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.domain.entity.FileUploadTask;
 import com.atlas.file.domain.entity.FileUploadTaskPart;
-import com.atlas.file.domain.vo.FileInfoVO;
-import com.atlas.file.domain.vo.FileMergeVO;
-import com.atlas.file.domain.vo.FileUploadChunkVO;
-import com.atlas.file.domain.vo.FileUploadProgressVO;
+import com.atlas.file.domain.vo.*;
 import com.atlas.file.enums.FileStorageType;
 import com.atlas.file.enums.FileUploadTaskStatus;
-import groovy.lang.Tuple2;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -76,13 +70,23 @@ public abstract class AbstractFileService implements FileService {
     protected abstract String bucketName();
 
     @Override
-    @Cacheable(value = "file:upload:check", key = "#p0", unless = "#result == null")
-    public String checkMD5(String md5) {
-        FileRecord fileRecord = fileRecordService.getByMd5(md5);
-        if (fileRecord != null) {
-            return fileRecord.getAccessUrl();
+    public FileCheckVO checkFile(FileCheckDTO checkDTO) {
+        String cacheKey = "file:upload:check:" + checkDTO.getMd5() + ":" + checkDTO.getSize();
+        FileCheckVO fileCheckVO = redisHelper.getValue(cacheKey, FileCheckVO.class);
+        if(fileCheckVO != null){
+            return fileCheckVO;
         }
-        return null;
+        FileRecord fileRecord = fileRecordService.getByFileHash(checkDTO.getMd5(), checkDTO.getSize());
+        fileCheckVO = new FileCheckVO();
+        fileCheckVO.setFound(false);
+        if (fileRecord != null) {
+            fileCheckVO.setFound(true);
+            fileCheckVO.setAccessUrl(fileRecord.getAccessUrl());
+            redisHelper.setValue(cacheKey, fileCheckVO, Duration.ofHours(2));
+        } else {
+            redisHelper.setValue(cacheKey, fileCheckVO, Duration.ofMinutes(5));
+        }
+        return fileCheckVO;
     }
 
     @Override

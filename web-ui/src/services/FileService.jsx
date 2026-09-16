@@ -2,9 +2,9 @@ import { apiRequestWrapper } from "./ApiRequestWrapper"
 import httpWrapper from "./AxiosWrapper"
 
 // MD5校验
-export const checkMD5 = (md5) => {
+export const checkFile = (md5, fileSize) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/file/upload/check/${md5}`))
+    return apiRequestWrapper(() => httpWrapper.post('/api/file/upload/check', {md5: md5, size: fileSize}))
 }
 
 

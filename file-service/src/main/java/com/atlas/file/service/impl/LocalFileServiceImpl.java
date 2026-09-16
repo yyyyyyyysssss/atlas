@@ -14,6 +14,7 @@ import com.atlas.file.utils.MD5Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -37,6 +38,7 @@ import java.util.UUID;
  * @Author ys
  * @Date 2024/11/16 23:11
  */
+@Primary
 @Service("localFileService")
 @Slf4j
 @RequiredArgsConstructor
@@ -119,7 +121,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
         try {
             return new FileInputStream(filePath);
         } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new FileException(e);
         }
     }
 

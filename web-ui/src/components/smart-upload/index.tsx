@@ -1,5 +1,5 @@
 import { App, Button, ConfigProvider, Flex, Image, Progress, theme, Tooltip, Typography, Upload, UploadFile, UploadProps } from "antd"
-import { checkMD5, fetchAccessUrl, fetchUploadId, simpleUploadFile, uploadChunkFile } from "../../services/FileService";
+import { checkFile, fetchAccessUrl, fetchUploadId, simpleUploadFile, uploadChunkFile } from "../../services/FileService";
 import {
     LoadingOutlined,
     PlusOutlined,
@@ -108,7 +108,7 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
         )
         setFileList(updatedFileList)
         const md5 = await calculateMD5AsFile(file)
-        const checkMD5Result = await checkMD5(md5)
+        const checkMD5Result = await checkFile(md5, file.size)
         const { found, accessUrl } = checkMD5Result
         if (found) {
             (file as any).accessUrl = accessUrl

@@ -34,7 +34,7 @@ import java.util.Map;
  * @Author ys
  * @Date 2024/8/19 10:19
  */
-@Primary
+//@Primary
 @Service("minioFileService")
 @Slf4j
 @RequiredArgsConstructor

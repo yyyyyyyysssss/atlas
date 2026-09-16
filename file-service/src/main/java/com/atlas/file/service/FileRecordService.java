@@ -12,6 +12,6 @@ public interface FileRecordService extends IService<FileRecord> {
 
     FileRecord getByObject(String bucketName, String objectName);
 
-    FileRecord getByMd5(String md5);
+    FileRecord getByFileHash(String md5, Long fileSize);
 
 }

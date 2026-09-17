@@ -18,8 +18,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Duration;
-
 /**
  * @Description
  * @Author ys
@@ -70,11 +68,7 @@ public class FileUploadController {
 
     // 根据上传id获取访问文件访问路径
     @GetMapping("/accessUrl")
-    public Result<String> accessUrl(@RequestParam("uploadId") String uploadId, @RequestParam(required = false, value = "expiryHours") Integer expiryHours) {
-        if (expiryHours != null && expiryHours > 0) {
-            String temporaryUrl = fileService.generateTemporaryUrl(uploadId, Duration.ofHours(expiryHours));
-            return ResultGenerator.ok(temporaryUrl);
-        }
+    public Result<String> accessUrl(@RequestParam("uploadId") String uploadId) {
         String accessUrl = fileService.getAccessUrl(uploadId);
         return ResultGenerator.ok(accessUrl);
     }

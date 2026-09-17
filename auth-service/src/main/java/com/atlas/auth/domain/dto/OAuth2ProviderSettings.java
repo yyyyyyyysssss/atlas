@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.security.utils.AesUtils;
+import com.atlas.common.core.utils.AesUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;

@@ -1,6 +1,7 @@
 package com.atlas.file.domain.entity;
 
 import com.atlas.common.mybatis.entity.BaseEntity;
+import com.atlas.file.domain.vo.FileInfoVO;
 import com.atlas.file.enums.FileStorageType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -54,5 +55,19 @@ public class FileRecord extends BaseEntity {
 
     @TableField("storage_type")
     private FileStorageType storageType;
+
+    public FileInfoVO toFileInfo(){
+        FileInfoVO fileInfoVO = new FileInfoVO();
+        fileInfoVO.setId(fileInfoVO.getId());
+        fileInfoVO.setFilename(this.fileName);
+        fileInfoVO.setFileType(this.fileType);
+        fileInfoVO.setFileSize(this.fileSize);
+        fileInfoVO.setBucketName(this.bucketName);
+        fileInfoVO.setObjectName(this.objectName);
+        fileInfoVO.setEtag(this.etag);
+        fileInfoVO.setMd5(this.md5);
+        fileInfoVO.setLastModified(this.createTime);
+        return fileInfoVO;
+    }
 
 }

@@ -109,7 +109,7 @@ const SmartUpload: React.FC<SmartUploadProps & Partial<UploadProps>> = ({ childr
         setFileList(updatedFileList)
         const md5 = await calculateMD5AsFile(file)
         const checkMD5Result = await checkFile(md5, file.size)
-        const { found, accessUrl } = checkMD5Result
+        const { found = false , accessUrl = null } = checkMD5Result || {}
         if (found) {
             (file as any).accessUrl = accessUrl
             return true

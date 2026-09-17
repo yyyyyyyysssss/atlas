@@ -14,7 +14,7 @@ import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
-import com.atlas.security.utils.SecureUidGenerator;
+import com.atlas.security.utils.SecureTokenGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
@@ -57,7 +57,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         if (saveDTO.id() == null) {
             Project project = saveDTO.toProject();
             project.setId(IdGen.genId());
-            project.setProjectCode(SecureUidGenerator.generateUniqueHex(8));
+            project.setProjectCode(SecureTokenGenerator.generateUniqueHex(8));
             project.setStatus(ProjectStatus.ACTIVE);
             this.save(project);
 

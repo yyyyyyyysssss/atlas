@@ -1,4 +1,4 @@
-package com.atlas.security.utils;
+package com.atlas.common.core.utils;
 
 import lombok.extern.slf4j.Slf4j;
 

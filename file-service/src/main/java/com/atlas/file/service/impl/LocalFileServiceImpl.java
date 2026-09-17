@@ -5,8 +5,7 @@ import com.atlas.file.domain.dto.FileRangeDTO;
 import com.atlas.file.domain.dto.UploadPart;
 import com.atlas.file.domain.dto.UploadResult;
 import com.atlas.file.domain.entity.FileRecord;
-import com.atlas.file.domain.entity.FileUploadTask;
-import com.atlas.file.domain.entity.FileUploadTaskPart;
+import com.atlas.file.domain.vo.FileInfoVO;
 import com.atlas.file.domain.vo.FileStreamVO;
 import com.atlas.file.enums.FileStorageType;
 import com.atlas.file.service.AbstractFileService;
@@ -26,7 +25,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
@@ -111,11 +109,6 @@ public class LocalFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public String generateTemporaryUrl(String uploadId, Duration duration) {
-        throw new UnsupportedOperationException("本地文件暂不支持生成临时访问url");
-    }
-
-    @Override
     public InputStream download(String bucketName, String objectName) {
         String filePath = buildFilePath(bucketName,objectName);
         try {
@@ -126,10 +119,10 @@ public class LocalFileServiceImpl extends AbstractFileService {
     }
 
     @Override
-    public FileStreamVO getFileStream(String bucketName, String objectName, FileRangeDTO range) {
+    public FileStreamVO getFileStream(FileInfoVO fileInfo, FileRangeDTO range) {
         Map<String, String> headerMap = new HashMap<>();
         try {
-            FileRecord fileUpload = fileRecordService.getByObject(bucketName,objectName);
+            FileRecord fileUpload = fileRecordService.getByObject(bucketName,fileInfo.getObjectName());
             headerMap.put(HttpHeaders.ACCEPT_RANGES,"bytes");
             headerMap.put(HttpHeaders.CONTENT_TYPE, fileUpload.getFileType());
             headerMap.put(HttpHeaders.ETAG,fileUpload.getEtag());

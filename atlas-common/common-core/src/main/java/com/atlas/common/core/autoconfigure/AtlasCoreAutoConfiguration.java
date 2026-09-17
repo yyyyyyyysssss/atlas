@@ -5,6 +5,8 @@ import com.atlas.common.core.api.file.FileApi;
 import com.atlas.common.core.api.notification.NotificationApi;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.aspect.ControllerLogAspect;
+import com.atlas.common.core.crypto.KeyDerivationService;
+import com.atlas.common.core.crypto.KeyProperties;
 import com.atlas.common.core.http.HttpClientConfiguration;
 import com.atlas.common.core.http.factory.HttpClientFactory;
 import com.atlas.common.core.jackson.JacksonConfiguration;
@@ -20,6 +22,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,8 +40,10 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @AutoConfiguration
 @Import({
         HttpClientConfiguration.class,
-        JacksonConfiguration.class
+        JacksonConfiguration.class,
+        KeyDerivationService.class
 })
+@EnableConfigurationProperties(KeyProperties.class)
 public class AtlasCoreAutoConfiguration {
 
 

@@ -11,7 +11,7 @@ import com.atlas.security.model.SecurityUser;
 import com.atlas.security.model.TokenInfo;
 import com.atlas.security.properties.SecurityProperties;
 import com.atlas.security.repository.SecurityContextStore;
-import com.atlas.security.utils.DigestUtils;
+import com.atlas.common.core.utils.DigestUtils;
 import com.atlas.security.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

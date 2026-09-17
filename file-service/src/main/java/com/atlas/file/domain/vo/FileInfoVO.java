@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 @Setter
 public class FileInfoVO {
 
+    private Long id;
+
     //文件名称
     private String filename;
 
@@ -22,6 +24,10 @@ public class FileInfoVO {
 
     //文件总大小
     private Long fileSize;
+
+    private String bucketName;
+
+    private String objectName;
 
     private String etag;
 

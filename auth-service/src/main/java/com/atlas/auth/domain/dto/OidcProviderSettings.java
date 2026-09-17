@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.security.utils.AesUtils;
+import com.atlas.common.core.utils.AesUtils;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 
 import java.util.Map;

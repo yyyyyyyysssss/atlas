@@ -1,4 +1,4 @@
-package com.atlas.security.utils;
+package com.atlas.common.core.utils;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;

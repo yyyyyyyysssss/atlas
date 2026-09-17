@@ -107,6 +107,7 @@ security:
       - /error
       - /favicon.ico
       - /api/auth/code/**
+      - /api/file/temporary/{token}
     authenticated:
       - /api/auth/account/**
       - /api/auth/userinfo
@@ -138,7 +139,9 @@ logging:
     org.springframework.cloud.gateway: info
     org.springframework.web: DEBUG
 
-
+atlas:
+  crypto:
+    master-key: ${ATLAS_MASTER_KEY}
 
 http:
   config:

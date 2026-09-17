@@ -3,7 +3,7 @@ package com.atlas.security.utils;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class SecureUidGenerator {
+public class SecureTokenGenerator {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -11,7 +11,7 @@ public class SecureUidGenerator {
 
     private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
 
-    private SecureUidGenerator() {}
+    private SecureTokenGenerator() {}
 
     public static String generate() {
         return generate(DEFAULT_BYTE_LENGTH);
@@ -34,7 +34,7 @@ public class SecureUidGenerator {
     }
 
     public static void main(String[] args) {
-        System.out.println(SecureUidGenerator.generateUniqueHex(8));
+        System.out.println(SecureTokenGenerator.generateUniqueHex(8));
     }
 
     /**

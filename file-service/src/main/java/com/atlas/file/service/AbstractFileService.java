@@ -1,10 +1,10 @@
 package com.atlas.file.service;
 
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.lock.LockHandle;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.properties.FileProperties;
 import com.atlas.file.domain.dto.*;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.domain.entity.FileUploadTask;
@@ -15,7 +15,6 @@ import com.atlas.file.enums.FileUploadTaskStatus;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,8 +38,8 @@ public abstract class AbstractFileService implements FileService {
 
     private final String FILE_ACCESS_URL_PREFIX = "file:access:url:";
 
-    @Value("${file.access-url}")
-    private String accessEndpoint;
+    @Resource
+    private FileProperties fileProperties;
 
     @Resource
     private RedisHelper redisHelper;
@@ -86,7 +85,7 @@ public abstract class AbstractFileService implements FileService {
         } else {
             redisHelper.setValue(cacheKey, fileCheckVO, Duration.ofMinutes(5));
         }
-        return fileCheckVO;
+        return null;
     }
 
     @Override
@@ -306,18 +305,11 @@ public abstract class AbstractFileService implements FileService {
 
     @Override
     public FileInfoVO getFileInfo(String bucketName, String objectName) {
-        FileRecord fileUpload = fileRecordService.getByObject(bucketName, objectName);
-        if (fileUpload == null) {
-            throw new BusinessException("文件不存在或已被删除: " + objectName);
+        FileRecord fileRecord = fileRecordService.getByObject(bucketName, objectName);
+        if (fileRecord == null) {
+            throw new FileException("文件不存在或已被删除: " + objectName);
         }
-        FileInfoVO fileInfoVO = new FileInfoVO();
-        fileInfoVO.setFilename(fileUpload.getFileName());
-        fileInfoVO.setFileType(fileUpload.getFileType());
-        fileInfoVO.setFileSize(fileUpload.getFileSize());
-        fileInfoVO.setEtag(fileUpload.getEtag());
-        fileInfoVO.setMd5(fileUpload.getMd5());
-        fileInfoVO.setLastModified(fileUpload.getUpdateTime());
-        return fileInfoVO;
+        return fileRecord.toFileInfo();
     }
 
     @Override
@@ -359,13 +351,13 @@ public abstract class AbstractFileService implements FileService {
 
     protected String createAccessUrl(String objectName) {
         if (StringUtils.isEmpty(objectName)) {
-            throw new BusinessException("objectName cannot be empty");
+            throw new FileException("objectName cannot be empty");
         }
         String pathSeparator = pathSeparator();
         objectName = objectName.replace(pathSeparator, "/");
         if (!objectName.startsWith("/")) {
             objectName = "/" + objectName;
         }
-        return accessEndpoint + "/file/" + bucketName() + objectName;
+        return fileProperties.getAccessUrl() + "/file/" + bucketName() + objectName;
     }
 }

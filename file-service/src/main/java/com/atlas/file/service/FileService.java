@@ -32,15 +32,13 @@ public interface FileService {
 
     String getAccessUrl(String uploadId);
 
-    String generateTemporaryUrl(String uploadId, Duration duration);
-
     String uploadSingleFile(MultipartFile file);
 
     String uploadSingleFile(InputStream inputStream, String fileName, String fileType, Long fileSize);
 
     InputStream download(String bucketName, String objectName);
 
-    FileStreamVO getFileStream(String bucketName, String objectName, FileRangeDTO range);
+    FileStreamVO getFileStream(FileInfoVO fileInfo, FileRangeDTO range);
 
     FileInfoVO getFileInfo(String bucketName, String objectName);
 

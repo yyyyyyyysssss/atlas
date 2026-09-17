@@ -1,7 +1,7 @@
 package com.atlas.file.service;
 
 import com.atlas.file.config.exception.FileException;
-import com.atlas.file.config.properties.AvatarConfig;
+import com.atlas.file.config.properties.FileProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,13 +17,14 @@ import java.io.InputStream;
 @Slf4j
 public class AvatarService {
 
-    private final AvatarConfig avatarConfig;
+    private final FileProperties fileProperties;
 
     private final RestClient defaultRestClient;
 
     private final FileService fileService;
 
     public String generateAvatar(String seed) {
+        FileProperties.Avatar avatarConfig = fileProperties.getAvatar();
         // 构建完整url
         String finalUri = UriComponentsBuilder.fromUriString(avatarConfig.getBaseUrl())
                 .pathSegment(avatarConfig.getDefaultType(), avatarConfig.getDefaultFormat())

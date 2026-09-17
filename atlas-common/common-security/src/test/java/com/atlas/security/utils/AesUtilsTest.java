@@ -1,14 +1,13 @@
 package com.atlas.security.utils;
 
+import com.atlas.common.core.crypto.KeyDerivationService;
+import com.atlas.common.core.crypto.KeyProperties;
+import com.atlas.common.core.utils.AesUtils;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.File;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 class AesUtilsTest {
@@ -33,7 +32,11 @@ class AesUtilsTest {
     void crypt() {
         String serviceName = "abc";
         String plainText = "123456";
-        String key = KeyManager.deriveServiceKey(serviceName);
+
+        KeyProperties properties = new KeyProperties();
+        properties.setMasterKey("test-master-key");
+        KeyDerivationService service = new KeyDerivationService(properties);
+        String key = service.derive(serviceName);
 
         String encrypt = AesUtils.encrypt(plainText, key);
         log.info("encrypt: {}", encrypt);

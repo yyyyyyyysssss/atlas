@@ -68,6 +68,8 @@ http:
     proxy:
 
 atlas:
+  crypto:
+    master-key: ${ATLAS_MASTER_KEY}
   user:
     server-url: http://user-service
   auth:

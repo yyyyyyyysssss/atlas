@@ -1,7 +1,7 @@
 package com.atlas.auth.domain.vo;
 
 import com.atlas.auth.enums.ThirdPartyCallbackStatus;
-import com.atlas.security.model.TokenResponse;
+import com.atlas.common.security.model.TokenResponse;
 
 public record ThirdPartyCallbackVO(
 

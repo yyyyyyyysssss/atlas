@@ -7,7 +7,7 @@ import com.atlas.auth.service.UserPasswordCredentialsService;
 import com.atlas.common.core.api.auth.dto.*;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.security.utils.PasswordGeneratorUtils;
+import com.atlas.common.security.utils.PasswordGeneratorUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;

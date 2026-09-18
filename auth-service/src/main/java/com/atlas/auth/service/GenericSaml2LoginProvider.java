@@ -6,8 +6,6 @@ import com.atlas.auth.domain.dto.Saml2UserInfo;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.enums.ThirdPartyAuthAction;
-import com.atlas.security.model.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;

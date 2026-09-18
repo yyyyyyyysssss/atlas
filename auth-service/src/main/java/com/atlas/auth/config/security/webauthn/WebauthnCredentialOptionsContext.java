@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.webauthn;
 
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

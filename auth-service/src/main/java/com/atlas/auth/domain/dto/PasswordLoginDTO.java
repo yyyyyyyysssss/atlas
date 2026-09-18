@@ -1,7 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.security.enums.ClientType;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.atlas.common.security.enums.ClientType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

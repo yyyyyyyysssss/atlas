@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.webauthn;
 
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;

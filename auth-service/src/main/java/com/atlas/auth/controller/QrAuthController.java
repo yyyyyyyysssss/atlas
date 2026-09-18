@@ -5,7 +5,7 @@ import com.atlas.auth.domain.vo.QrAuthTicketVO;
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.common.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

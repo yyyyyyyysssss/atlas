@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.mfa;
 
-import com.atlas.security.enums.AuthAssuranceLevel;
-import com.atlas.security.enums.ClientType;
+import com.atlas.common.security.enums.AuthAssuranceLevel;
+import com.atlas.common.security.enums.ClientType;
 import lombok.*;
 
 /**

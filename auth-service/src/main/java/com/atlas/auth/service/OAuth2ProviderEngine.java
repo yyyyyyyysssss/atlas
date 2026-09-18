@@ -5,7 +5,7 @@ import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;

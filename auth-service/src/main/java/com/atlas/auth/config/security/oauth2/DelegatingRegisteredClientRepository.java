@@ -3,10 +3,9 @@ package com.atlas.auth.config.security.oauth2;
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import com.atlas.auth.service.OAuth2ClientSecretService;
 import com.atlas.auth.service.ProjectService;
-import com.atlas.security.encoder.MultiSecretPayload;
+import com.atlas.common.security.encoder.MultiSecretPayload;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
@@ -14,8 +13,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * @Description

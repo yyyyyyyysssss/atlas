@@ -1,7 +1,7 @@
 package com.atlas.auth.domain.dto;
 
 import com.atlas.auth.enums.LoginType;
-import com.atlas.security.enums.ClientType;
+import com.atlas.common.security.enums.ClientType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;

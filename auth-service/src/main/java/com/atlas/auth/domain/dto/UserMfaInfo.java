@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.security.model.MfaType;
+import com.atlas.common.security.model.MfaType;
 
 import java.util.Set;
 

@@ -2,7 +2,7 @@ package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.entity.OAuth2ClientApplication;
 import com.atlas.auth.service.OAuth2ClientApplicationService;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;

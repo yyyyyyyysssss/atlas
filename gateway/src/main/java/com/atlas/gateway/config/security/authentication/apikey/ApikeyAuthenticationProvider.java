@@ -1,9 +1,8 @@
 package com.atlas.gateway.config.security.authentication.apikey;
 
 
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;

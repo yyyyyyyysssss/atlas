@@ -29,6 +29,11 @@
             <artifactId>common-security</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.atlas.common</groupId>
+            <artifactId>common-crypto</artifactId>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,10 +1,10 @@
 package com.atlas.auth.service;
 
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.security.constant.SecurityConstant;
-import com.atlas.security.enums.ClientType;
-import com.atlas.security.properties.SecurityProperties;
-import com.atlas.security.service.TokenService;
+import com.atlas.common.security.constant.SecurityConstant;
+import com.atlas.common.security.enums.ClientType;
+import com.atlas.common.security.properties.SecurityProperties;
+import com.atlas.common.security.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ZSetOperations;

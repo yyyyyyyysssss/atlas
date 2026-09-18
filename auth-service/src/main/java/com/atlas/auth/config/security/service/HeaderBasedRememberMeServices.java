@@ -1,8 +1,8 @@
 package com.atlas.auth.config.security.service;
 
-import com.atlas.security.enums.TokenType;
-import com.atlas.security.model.PayloadInfo;
-import com.atlas.security.service.TokenService;
+import com.atlas.common.security.enums.TokenType;
+import com.atlas.common.security.model.PayloadInfo;
+import com.atlas.common.security.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationDetailsSource;

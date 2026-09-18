@@ -10,7 +10,7 @@ import com.atlas.auth.mapper.SsoProviderMapper;
 import com.atlas.auth.service.SsoProviderService;
 import com.atlas.auth.service.SsoProviderSettingsService;
 import com.atlas.common.core.utils.JsonUtils;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import com.atlas.common.core.crypto.KeyDerivationService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;

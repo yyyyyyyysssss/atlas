@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.mfa;
 
 import com.atlas.auth.service.UserGestureCredentialsService;
-import com.atlas.security.model.MfaType;
+import com.atlas.common.security.model.MfaType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;

@@ -7,8 +7,8 @@ import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.security.enums.ClientType;
-import com.atlas.security.model.TokenResponse;
+import com.atlas.common.security.enums.ClientType;
+import com.atlas.common.security.model.TokenResponse;
 import jakarta.annotation.Resource;
 import org.springframework.context.ApplicationEventPublisher;
 

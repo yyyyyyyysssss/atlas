@@ -7,7 +7,7 @@ import com.atlas.auth.enums.IdentifierType;
 import com.atlas.auth.service.UserService;
 import com.atlas.auth.service.UserWeb3CredentialsService;
 import com.atlas.auth.service.Web3WalletService;
-import com.atlas.security.token.Web3WalletAuthenticationToken;
+import com.atlas.common.security.token.Web3WalletAuthenticationToken;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;

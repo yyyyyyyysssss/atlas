@@ -1,7 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.UserMfaInfo;
-import com.atlas.security.model.MfaType;
+import com.atlas.common.security.model.MfaType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

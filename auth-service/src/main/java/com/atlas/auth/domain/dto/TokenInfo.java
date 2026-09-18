@@ -1,7 +1,7 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.security.enums.ClientType;
-import com.atlas.security.enums.TokenScheme;
+import com.atlas.common.security.enums.ClientType;
+import com.atlas.common.security.enums.TokenScheme;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Getter;

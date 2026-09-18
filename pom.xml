@@ -13,6 +13,7 @@
         <module>atlas-common/common-redis</module>
         <module>atlas-common/common-mybatis</module>
         <module>atlas-common/common-security</module>
+        <module>atlas-common/common-crypto</module>
         <module>gateway</module>
         <module>notification-service</module>
         <module>user-service</module>
@@ -90,6 +91,12 @@
             <dependency>
                 <groupId>com.atlas.common</groupId>
                 <artifactId>common-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.atlas.common</groupId>
+                <artifactId>common-crypto</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -4,7 +4,7 @@ import com.atlas.auth.domain.dto.Saml2ProviderSettings;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.service.SsoProviderService;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;

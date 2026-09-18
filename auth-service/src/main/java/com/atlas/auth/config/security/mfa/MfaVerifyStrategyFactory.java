@@ -1,6 +1,6 @@
 package com.atlas.auth.config.security.mfa;
 
-import com.atlas.security.model.MfaType;
+import com.atlas.common.security.model.MfaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 

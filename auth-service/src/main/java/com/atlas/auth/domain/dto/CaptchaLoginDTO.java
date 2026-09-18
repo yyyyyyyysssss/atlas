@@ -1,7 +1,7 @@
 package com.atlas.auth.domain.dto;
 
 import com.atlas.auth.enums.CaptchaType;
-import com.atlas.security.enums.ClientType;
+import com.atlas.common.security.enums.ClientType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

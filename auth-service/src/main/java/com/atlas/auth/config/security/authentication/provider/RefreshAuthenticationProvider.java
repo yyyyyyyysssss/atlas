@@ -1,10 +1,10 @@
 package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.service.UserService;
-import com.atlas.security.enums.TokenType;
-import com.atlas.security.model.PayloadInfo;
-import com.atlas.security.service.TokenService;
-import com.atlas.security.token.RefreshAuthenticationToken;
+import com.atlas.common.security.enums.TokenType;
+import com.atlas.common.security.model.PayloadInfo;
+import com.atlas.common.security.service.TokenService;
+import com.atlas.common.security.token.RefreshAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;

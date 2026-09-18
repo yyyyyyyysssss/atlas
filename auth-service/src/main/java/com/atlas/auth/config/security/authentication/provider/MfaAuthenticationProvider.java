@@ -2,9 +2,8 @@ package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.service.UserService;
-import com.atlas.security.enums.ClientType;
-import com.atlas.security.model.MfaType;
-import com.atlas.security.token.MfaAuthenticationToken;
+import com.atlas.common.security.model.MfaType;
+import com.atlas.common.security.token.MfaAuthenticationToken;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;

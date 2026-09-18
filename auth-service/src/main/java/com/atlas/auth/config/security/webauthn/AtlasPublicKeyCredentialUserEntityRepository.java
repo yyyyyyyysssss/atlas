@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.webauthn;
 
 import com.atlas.auth.service.UserService;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.common.security.model.SecurityUser;
 import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;

@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.webauthn;
 
 import com.atlas.auth.service.UserWebauthnCredentialsService;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

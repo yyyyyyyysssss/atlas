@@ -1,13 +1,12 @@
 package com.atlas.auth.config.security.authentication.provider;
 
 import com.atlas.auth.service.UserService;
-import com.atlas.security.token.ThirdPartyAuthenticationToken;
+import com.atlas.common.security.token.ThirdPartyAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * @Description 用于提供三方登录的身份认证

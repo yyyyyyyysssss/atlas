@@ -5,8 +5,6 @@ import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.enums.ThirdPartyAuthAction;
-import com.atlas.security.model.TokenResponse;
 import org.springframework.security.core.Authentication;
 
 import java.util.Map;

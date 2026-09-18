@@ -2,7 +2,7 @@ package com.atlas.gateway.config.security.authorization;
 
 
 import com.atlas.common.core.api.user.dto.AuthorityResource;
-import com.atlas.security.model.RequestUrlAuthority;
+import com.atlas.common.security.model.RequestUrlAuthority;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;

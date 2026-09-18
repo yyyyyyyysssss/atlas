@@ -2,7 +2,7 @@ package com.atlas.gateway.config.security.filter;
 
 import com.atlas.common.core.constant.CommonConstant;
 import com.atlas.common.core.web.wrapper.HeaderEnhanceRequestWrapper;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.common.security.model.SecurityUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,7 +15,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**

@@ -5,7 +5,7 @@ import com.atlas.auth.domain.vo.Web3WalletRegisterOptionsVO;
 import com.atlas.auth.enums.Web3WalletType;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.security.utils.SecureTokenGenerator;
+import com.atlas.common.security.utils.SecureTokenGenerator;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

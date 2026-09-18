@@ -1,9 +1,9 @@
 package com.atlas.gateway.config.security.filter;
 
-import com.atlas.security.repository.RedisSecurityContextRepository;
-import com.atlas.security.enums.TokenType;
-import com.atlas.security.model.PayloadInfo;
-import com.atlas.security.service.TokenService;
+import com.atlas.common.security.repository.RedisSecurityContextRepository;
+import com.atlas.common.security.enums.TokenType;
+import com.atlas.common.security.model.PayloadInfo;
+import com.atlas.common.security.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;

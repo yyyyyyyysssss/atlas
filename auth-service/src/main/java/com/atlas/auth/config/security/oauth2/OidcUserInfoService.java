@@ -1,7 +1,7 @@
 package com.atlas.auth.config.security.oauth2;
 
 import com.atlas.auth.service.UserService;
-import com.atlas.security.model.SecurityUser;
+import com.atlas.common.security.model.SecurityUser;
 import jakarta.annotation.Resource;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;

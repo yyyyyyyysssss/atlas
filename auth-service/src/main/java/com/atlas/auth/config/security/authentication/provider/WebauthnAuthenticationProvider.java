@@ -3,7 +3,7 @@ package com.atlas.auth.config.security.authentication.provider;
 import com.atlas.auth.domain.dto.WebauthnAuthenticateResponse;
 import com.atlas.auth.service.UserService;
 import com.atlas.auth.service.WebauthnService;
-import com.atlas.security.token.WebauthnAuthenticationToken;
+import com.atlas.common.security.token.WebauthnAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;

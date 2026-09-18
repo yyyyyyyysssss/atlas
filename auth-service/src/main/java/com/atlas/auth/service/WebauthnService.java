@@ -5,7 +5,7 @@ import com.atlas.auth.config.security.webauthn.RedisPublicKeyCredentialRequestOp
 import com.atlas.auth.domain.dto.*;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.ServletHolder;
-import com.atlas.security.token.WebauthnAuthenticationRequest;
+import com.atlas.common.security.token.WebauthnAuthenticationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

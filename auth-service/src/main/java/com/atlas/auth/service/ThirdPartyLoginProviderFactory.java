@@ -3,7 +3,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.common.core.exception.BusinessException;
-import com.atlas.security.properties.SecurityProperties;
+import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

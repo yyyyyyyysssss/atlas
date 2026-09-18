@@ -8,7 +8,7 @@ import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.token.WebauthnAuthenticationRequest;
-import com.atlas.common.security.utils.SecureTokenGenerator;
+import com.atlas.common.crypto.random.SecureRandomUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -576,7 +576,7 @@ public class AccountService {
     }
 
     private String generateTicket(Long userId, SecurityScene securityScene) {
-        String ticket = SecureTokenGenerator.generate();
+        String ticket = SecureRandomUtils.generate();
         String redisKey = "account:ticket:" + securityScene.getCode() + ":" + ticket;
         redisHelper.setValue(redisKey, userId, Duration.ofMinutes(5));
         return ticket;

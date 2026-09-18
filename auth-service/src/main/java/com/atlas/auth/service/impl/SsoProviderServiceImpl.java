@@ -11,7 +11,7 @@ import com.atlas.auth.service.SsoProviderService;
 import com.atlas.auth.service.SsoProviderSettingsService;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.common.security.properties.SecurityProperties;
-import com.atlas.common.core.crypto.KeyDerivationService;
+import com.atlas.common.key.KeyDerivationService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class SsoProviderServiceImpl extends ServiceImpl<SsoProviderMapper, SsoPr
         T t = (T)JsonUtils.convert(ssoProviderSettings.getSettings(), protocol.getSettingsClass());
         // 解密 clientSecret
         if(t instanceof Decryptable<?> d){
-            t = (T) d.decrypt(keyDerivationService.derive(provider));
+            t = (T) d.decrypt(keyDerivationService.deriveHex(provider));
         }
         // 动态应用 BaseUrl
         if (t instanceof BaseUrlAppliable<?> b) {

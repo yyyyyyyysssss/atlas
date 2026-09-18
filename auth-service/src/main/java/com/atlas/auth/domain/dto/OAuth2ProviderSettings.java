@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.common.core.utils.AesUtils;
+import com.atlas.common.crypto.symmetric.AESUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -99,7 +99,7 @@ public record OAuth2ProviderSettings(
                     throw new IllegalStateException("未找到名为 [" + envKey + "] 的系统环境变量配置！");
                 }
             } else {
-                finalSecret = AesUtils.decrypt(finalSecret, key);
+                finalSecret = AESUtils.decrypt(finalSecret, key);
             }
         }
         return new OAuth2ProviderSettings(

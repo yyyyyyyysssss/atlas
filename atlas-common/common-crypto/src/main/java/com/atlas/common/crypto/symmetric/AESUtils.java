@@ -1,4 +1,6 @@
-package com.atlas.common.core.utils;
+package com.atlas.common.crypto.symmetric;
+
+import com.atlas.common.crypto.exception.CryptoException;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -9,16 +11,28 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * @Description
- * @Author ys
- * @Date 2026/6/18 9:36
+ * AES对称加密工具
+ * 默认:
+ * AES/GCM/NoPadding
+ * 特点:
+ * - 加密
+ * - 完整性校验
+ * - 防篡改
  */
-public class AesUtils {
+public final class AESUtils {
 
+    private AESUtils() {
+    }
+
+    private static final String AES = "AES";
+
+    // AES-GCM模式
     private static final String ALGORITHM = "AES/GCM/NoPadding";
 
+    // IV长度
     private static final int GCM_IV_LENGTH = 12;
 
+    // GCM认证长度
     private static final int GCM_TAG_LENGTH = 128;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -38,7 +52,7 @@ public class AesUtils {
             SECURE_RANDOM.nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "AES");
+            SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), AES);
             cipher.init(Cipher.ENCRYPT_MODE, keySpec, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
 
             byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
@@ -50,7 +64,7 @@ public class AesUtils {
             return Base64.getEncoder().encodeToString(byteBuffer.array());
 
         }catch (Exception e){
-            throw new SecurityException("AES Encryption failed: " + e.getMessage(), e);
+            throw new CryptoException("AES Encryption Error ", e);
         }
     }
 
@@ -77,13 +91,13 @@ public class AesUtils {
 
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new SecurityException("AES Decryption failed: " + e.getMessage(), e);
+            throw new CryptoException("AES Decryption Error ", e);
         }
     }
 
     private static void validateKey(String key) {
         if (key == null || key.length() != 32) {
-            throw new IllegalArgumentException("AES-256 requires a 32-character key.");
+            throw new CryptoException("AES-256 requires a 32-character key");
         }
     }
 }

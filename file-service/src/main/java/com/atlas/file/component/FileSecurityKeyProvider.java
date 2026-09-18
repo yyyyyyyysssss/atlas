@@ -1,6 +1,6 @@
 package com.atlas.file.component;
 
-import com.atlas.common.core.crypto.KeyDerivationService;
+import com.atlas.common.key.KeyDerivationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +18,7 @@ public class FileSecurityKeyProvider {
     private final KeyDerivationService keyDerivationService;
 
     public String getKey() {
-        return keyDerivationService.derive("file-service");
+        return keyDerivationService.deriveHex("file-service");
     }
 
 }

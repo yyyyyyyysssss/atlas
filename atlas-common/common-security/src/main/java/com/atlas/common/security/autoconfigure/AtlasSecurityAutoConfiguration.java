@@ -2,6 +2,7 @@ package com.atlas.common.security.autoconfigure;
 
 import com.atlas.common.core.api.user.dto.AuthorityResource;
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
+import com.atlas.common.crypto.autoconfigure.CryptoAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.exception.SecurityExceptionAdvice;
@@ -52,10 +53,14 @@ import org.springframework.security.web.webauthn.jackson.WebauthnJackson2Module;
  * @Author ys
  * @Date 2026/2/14 12:59
  */
-@AutoConfiguration(after = {
-        AtlasCoreAutoConfiguration.class,
-        AtlasRedisAutoConfiguration.class
-})
+@AutoConfiguration(
+        before = {
+                CryptoAutoConfiguration.class
+        },
+        after = {
+                AtlasCoreAutoConfiguration.class,
+                AtlasRedisAutoConfiguration.class
+        })
 @Import({SecurityExceptionAdvice.class})
 @EnableConfigurationProperties(SecurityProperties.class)
 public class AtlasSecurityAutoConfiguration {
@@ -141,7 +146,8 @@ public class AtlasSecurityAutoConfiguration {
 
         // 屏蔽 WebAuthn 的类型信息
         @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-        abstract class IgnoreTypeInfoMixin {}
+        abstract class IgnoreTypeInfoMixin {
+        }
         objectMapper.addMixIn(org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInputs.class,
                 IgnoreTypeInfoMixin.class);
         objectMapper.addMixIn(org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInput.class,

@@ -1,17 +1,17 @@
 package com.atlas.common.security.service;
 
+import com.atlas.common.crypto.digest.HmacUtils;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.common.security.exception.TokenAuthenticationException;
-import com.atlas.common.security.model.PayloadInfo;
-import com.atlas.common.security.model.SecurityUser;
-import com.atlas.common.security.model.TokenInfo;
 import com.atlas.common.security.constant.SecurityConstant;
 import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.enums.TokenScheme;
 import com.atlas.common.security.enums.TokenType;
+import com.atlas.common.security.exception.TokenAuthenticationException;
+import com.atlas.common.security.model.PayloadInfo;
+import com.atlas.common.security.model.SecurityUser;
+import com.atlas.common.security.model.TokenInfo;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.atlas.common.security.repository.SecurityContextStore;
-import com.atlas.common.core.utils.DigestUtils;
 import com.atlas.common.security.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +176,7 @@ public class DefaultTokenService implements TokenService {
                 clientType.name()
         );
         // 生成签名
-        String signature = DigestUtils.hmacSha256(data, securityProperties.getJwt().getSecretKey());
+        String signature = HmacUtils.hmacSha256(data, securityProperties.getJwt().getSecretKey());
         String rawData = String.join(":",
                 userId.toString(),
                 tokenId,
@@ -210,7 +210,7 @@ public class DefaultTokenService implements TokenService {
         }
         // 重新计算签名并比对 (验签)
         String dataToVerify = String.join(":", userId, Long.toString(expiration), clientType);
-        String expectedSignature = DigestUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
+        String expectedSignature = HmacUtils.hmac(dataToVerify, securityProperties.getJwt().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             throw new TokenAuthenticationException("刷新令牌已无效");
         }
@@ -229,7 +229,7 @@ public class DefaultTokenService implements TokenService {
                 clientType.name()
         );
         // 生成签名
-        String signature = DigestUtils.hmacSha256(data, securityProperties.getRememberMe().getSecretKey());
+        String signature = HmacUtils.hmacSha256(data, securityProperties.getRememberMe().getSecretKey());
         String rawData = String.join(":",
                 userId.toString(),
                 tokenId,
@@ -270,7 +270,7 @@ public class DefaultTokenService implements TokenService {
                 userDetails.getPassword(),
                 clientType
         );
-        String expectedSignature = DigestUtils.hmac(dataToVerify, securityProperties.getRememberMe().getSecretKey(), algorithm);
+        String expectedSignature = HmacUtils.hmac(dataToVerify, securityProperties.getRememberMe().getSecretKey(), algorithm);
         if (!expectedSignature.equals(signature)) {
             // 签名不匹配通常意味着令牌被伪造，或者用户修改了密码
             throw new TokenAuthenticationException("记住我令牌已失效");

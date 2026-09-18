@@ -1,8 +1,7 @@
-package com.atlas.security.utils;
+package com.atlas.common.crypto.aes;
 
-import com.atlas.common.core.crypto.KeyDerivationService;
-import com.atlas.common.core.crypto.KeyProperties;
-import com.atlas.common.core.utils.AesUtils;
+import com.atlas.common.crypto.symmetric.AESUtils;
+import com.atlas.common.key.KeyDerivationService;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -33,15 +32,13 @@ class AesUtilsTest {
         String serviceName = "abc";
         String plainText = "123456";
 
-        KeyProperties properties = new KeyProperties();
-        properties.setMasterKey("test-master-key");
-        KeyDerivationService service = new KeyDerivationService(properties);
-        String key = service.derive(serviceName);
+        KeyDerivationService service = new KeyDerivationService("test-master-key");
+        String key = service.deriveHex(serviceName);
 
-        String encrypt = AesUtils.encrypt(plainText, key);
+        String encrypt = AESUtils.encrypt(plainText, key);
         log.info("encrypt: {}", encrypt);
 
-        String decrypt = AesUtils.decrypt(encrypt, key);
+        String decrypt = AESUtils.decrypt(encrypt, key);
         log.info("decrypt: {}", decrypt);
 
         Assertions.assertEquals(decrypt, plainText);

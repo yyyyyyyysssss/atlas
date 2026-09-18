@@ -12,7 +12,7 @@ import com.atlas.common.security.model.TokenResponse;
 import com.atlas.common.security.repository.SecurityContextStore;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.*;
-import com.atlas.common.security.utils.SecureTokenGenerator;
+import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +123,7 @@ public class LoginService {
         }
         // 如果当前登录方式的等级低于用户期望的等级，才触发 MFA 拦截
         if (currentLevel.getRank() < requiredLevel.getRank()) {
-            String ticket = SecureTokenGenerator.generate();
+            String ticket = SecureRandomUtils.generate();
             MfaChallenge mfaChallenge = MfaChallenge.builder()
                     .ticket(ticket)
                     .userId(securityUser.getId())

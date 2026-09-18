@@ -7,7 +7,7 @@ import com.atlas.auth.service.UserPasswordCredentialsService;
 import com.atlas.common.core.api.auth.dto.*;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.common.security.utils.PasswordGeneratorUtils;
+import com.atlas.common.security.password.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -61,7 +61,7 @@ public class AuthInternalController {
         // 创建用户标识
         userIdentifierService.createIdentifier(dto);
         // 生成初始密码
-        String initPassword = PasswordGeneratorUtils.generate(16);
+        String initPassword = PasswordGenerator.generate();
         userPasswordCredentialsService.setPassword(dto.getUserId(), initPassword);
         UserIdentifierDisplayDTO userIdentifierDisplayDTO = new UserIdentifierDisplayDTO();
         userIdentifierDisplayDTO.setUserId(dto.getUserId());
@@ -84,7 +84,7 @@ public class AuthInternalController {
 
     @PostMapping("/resetPassword")
     public Result<String> resetPassword(@RequestBody UserPasswordResetDTO userPasswordResetDTO) {
-        String initPassword = PasswordGeneratorUtils.generate(16);
+        String initPassword = PasswordGenerator.generate();
         userPasswordCredentialsService.setPassword(userPasswordResetDTO.getUserId(), initPassword);
         return ResultGenerator.ok(initPassword);
     }

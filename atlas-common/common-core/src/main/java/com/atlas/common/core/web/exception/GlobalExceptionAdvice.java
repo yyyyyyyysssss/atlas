@@ -53,7 +53,7 @@ public class GlobalExceptionAdvice {
     @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(BaseException.class)
     public Result<?> handleBaseException(BaseException e) {
-        log.warn("业务异常: [{}] {}, 详情: {}", e.getErrorCode().getCode(), e.getErrorCode().getMessage(), e.getDetail());
+        log.error("业务异常: [{}] {}, 详情: {}", e.getErrorCode().getCode(), e.getErrorCode().getMessage(), e.getDetail(), e);
         return ResultGenerator.failed(e.getErrorCode(), e.getMessage());
     }
 

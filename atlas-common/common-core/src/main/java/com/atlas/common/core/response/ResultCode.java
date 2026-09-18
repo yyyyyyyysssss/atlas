@@ -47,6 +47,10 @@ public enum ResultCode implements IErrorCode{
     /* --- 52xx: 文件 --- */
     FILE_SERVICE_ERROR(5200, "文件服务异常"),
 
+
+    /* --- 59xx: 安全与密码 --- */
+    CRYPTO_ERROR(5900, "密码服务异常"),
+
     /* ============================================================
      * 7xxx - 9xxx: 业务逻辑异常号段 (Business Logic Range)
      * 每个业务模块需在此区间申请专属号段

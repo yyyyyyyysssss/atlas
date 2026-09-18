@@ -6,7 +6,7 @@ import com.atlas.auth.service.OAuth2ClientSecretService;
 import com.atlas.auth.service.ProjectService;
 import com.atlas.auth.service.QrAuthService;
 import com.atlas.auth.service.UserService;
-import com.atlas.common.core.utils.RsaUtils;
+import com.atlas.common.crypto.asymmetric.RSAKeyLoader;
 import com.atlas.common.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -247,9 +247,9 @@ public class OAuth2AuthorizationServerConfig {
 
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() throws Exception {
-        RSAPublicKey publicKey = (RSAPublicKey) RsaUtils.loadLocalPublicKey();
-        RSAPrivateKey privateKey = (RSAPrivateKey) RsaUtils.loadLocalPrivateKey();
+    public JWKSource<SecurityContext> jwkSource() {
+        RSAPublicKey publicKey = (RSAPublicKey) RSAKeyLoader.loadDefaultPublicKey();
+        RSAPrivateKey privateKey = (RSAPrivateKey) RSAKeyLoader.loadDefaultPrivateKey();
         String kid = DigestUtils.md5DigestAsHex(publicKey.getEncoded());
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)

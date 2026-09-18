@@ -7,7 +7,7 @@ import com.atlas.auth.enums.ThirdPartyAuthAction;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.model.SecurityUser;
-import com.atlas.common.security.utils.SecureTokenGenerator;
+import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,7 @@ public class ThirdPartyStateService {
             SecurityUser securityUser = (SecurityUser) securityContext.getAuthentication().getPrincipal();
             currentUserId = securityUser.getId();
         }
-        String state = SecureTokenGenerator.generate(32);
+        String state = SecureRandomUtils.generate(32);
         String key = OAUTH2_STATE_PREFIX_KEY + state;
 
         ThirdPartyStateContext stateContext = new ThirdPartyStateContext(providerName, action, currentUserId, protocol, requestContext.targetUrl());

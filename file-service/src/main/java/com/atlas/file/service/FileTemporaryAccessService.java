@@ -1,6 +1,7 @@
 package com.atlas.file.service;
 
-import com.atlas.common.core.utils.DigestUtils;
+import com.atlas.common.crypto.digest.DigestUtils;
+import com.atlas.common.crypto.digest.HmacUtils;
 import com.atlas.file.component.FileSecurityKeyProvider;
 import com.atlas.file.config.exception.FileException;
 import com.atlas.file.config.properties.FileProperties;
@@ -53,7 +54,7 @@ public class FileTemporaryAccessService {
         // base64编码
         String encodedPayload = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes(StandardCharsets.UTF_8));
         // 签名
-        String signature = DigestUtils.hmacSha256(fileSecurityKeyProvider.getKey(), encodedPayload);
+        String signature = HmacUtils.hmacSha256(fileSecurityKeyProvider.getKey(), encodedPayload);
         String token = encodedPayload + "." + signature;
         return fileProperties.getAccessUrl()
                 + "/api/file/temporary/"
@@ -71,7 +72,7 @@ public class FileTemporaryAccessService {
         String encodedPayload = parts[0];
         String signature = parts[1];
         // 重新计算签名
-        String expectedSignature = DigestUtils.hmacSha256(fileSecurityKeyProvider.getKey(), encodedPayload);
+        String expectedSignature = HmacUtils.hmacSha256(fileSecurityKeyProvider.getKey(), encodedPayload);
         if (!MessageDigest.isEqual(signature.getBytes(StandardCharsets.UTF_8), expectedSignature.getBytes(StandardCharsets.UTF_8))) {
             throw new FileException("临时访问token无效");
         }

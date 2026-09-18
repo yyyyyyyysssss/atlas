@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.dto;
 
-import com.atlas.common.core.utils.AesUtils;
+import com.atlas.common.crypto.symmetric.AESUtils;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 
 import java.util.Map;
@@ -29,7 +29,7 @@ public record OidcProviderSettings(
 
     @Override
     public OidcProviderSettings decrypt(String key) {
-        String decryptedSecret = AesUtils.decrypt(this.clientSecret, key);
+        String decryptedSecret = AESUtils.decrypt(this.clientSecret, key);
         return new OidcProviderSettings(
                 this.clientName,
                 this.clientId,

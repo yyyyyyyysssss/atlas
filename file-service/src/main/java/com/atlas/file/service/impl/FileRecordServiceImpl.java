@@ -2,6 +2,7 @@ package com.atlas.file.service.impl;
 
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.redis.utils.RedisHelper;
+import com.atlas.file.config.exception.FileException;
 import com.atlas.file.domain.dto.FileRecordCreateDTO;
 import com.atlas.file.domain.entity.FileRecord;
 import com.atlas.file.mapper.FileRecordMapper;
@@ -90,7 +91,7 @@ public class FileRecordServiceImpl extends ServiceImpl<FileRecordMapper, FileRec
     @Override
     public FileRecord getByObject(String bucketName, String objectName) {
         if (bucketName == null || bucketName.isEmpty() || objectName == null || objectName.isEmpty()) {
-            throw new NullPointerException("bucketName or objectName is null");
+            throw new FileException("bucketName or objectName is null");
         }
         String key = cacheKey(bucketName, objectName);
         FileRecord fileRecord = redisHelper.getValue(key, FileRecord.class);

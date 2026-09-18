@@ -34,6 +34,11 @@
             <artifactId>common-redis</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.atlas.common</groupId>
+            <artifactId>common-crypto</artifactId>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -63,13 +68,6 @@
                     <groupId>org.apache.shardingsphere</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.78</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-validation -->

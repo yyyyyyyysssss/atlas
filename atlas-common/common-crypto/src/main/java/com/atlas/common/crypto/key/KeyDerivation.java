@@ -1,4 +1,4 @@
-package com.atlas.common.key;
+package com.atlas.common.crypto.key;
 
 import com.atlas.common.crypto.digest.HmacUtils;
 import com.atlas.common.crypto.exception.CryptoException;

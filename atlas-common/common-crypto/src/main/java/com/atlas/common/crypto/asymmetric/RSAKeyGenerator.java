@@ -11,17 +11,17 @@ import java.util.Base64;
  * @Author ys
  * @Date 2026/9/18 15:07
  */
-public final  class RSAKeyGenerator {
+public final class RSAKeyGenerator {
 
     private RSAKeyGenerator(){}
 
 
-    public static RSAKeyPair generate(){
+    public static SecurityKeyPair generate(){
 
         return generate(2048);
     }
 
-    public static RSAKeyPair generate(int keySize){
+    public static SecurityKeyPair generate(int keySize){
         if(keySize != 2048 && keySize !=3072 && keySize !=4096){
             throw new CryptoException("RSA invalid key size");
         }
@@ -31,7 +31,7 @@ public final  class RSAKeyGenerator {
             KeyPair keyPair = generator.generateKeyPair();
             String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
-            return new RSAKeyPair(publicKey, privateKey);
+            return new SecurityKeyPair(publicKey, privateKey);
         }catch (Exception e){
             throw new CryptoException("RSA generateKeyPair error ", e);
         }

@@ -1,7 +1,6 @@
-package com.atlas.common.crypto.aes;
+package com.atlas.common.crypto.symmetric;
 
-import com.atlas.common.crypto.symmetric.AESUtils;
-import com.atlas.common.key.KeyDerivationService;
+import com.atlas.common.crypto.key.KeyDerivationService;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;

@@ -1,8 +1,8 @@
 package com.atlas.common.crypto.autoconfigure;
 
 import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
-import com.atlas.common.key.KeyDerivationService;
-import com.atlas.common.key.KeyProperties;
+import com.atlas.common.crypto.key.KeyDerivationService;
+import com.atlas.common.crypto.key.KeyProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

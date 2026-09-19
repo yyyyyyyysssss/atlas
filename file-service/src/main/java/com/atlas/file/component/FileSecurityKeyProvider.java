@@ -1,6 +1,6 @@
 package com.atlas.file.component;
 
-import com.atlas.common.key.KeyDerivationService;
+import com.atlas.common.crypto.key.KeyDerivationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

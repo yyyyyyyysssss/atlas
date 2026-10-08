@@ -17,9 +17,11 @@ import java.util.List;
 
 public record Saml2ProviderSettings(
         String entityId,
+        String metadataUrl,
         String clientName,
         Acs acs,
-        AssertingParty assertingparty
+        AssertingParty assertingparty,
+        Mapping mappings
 ) implements SsoSettings {
 
     public record Acs(
@@ -31,8 +33,7 @@ public record Saml2ProviderSettings(
     public record AssertingParty(
             String entityId,
             SingleSignOn singlesignon,
-            Verification verification,
-            Mapping mappings
+            Verification verification
     ) {
     }
 

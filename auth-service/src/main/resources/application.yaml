@@ -35,9 +35,37 @@ spring:
 
 
 security:
-  issuerUrl: https://atlas.ys0921.sbs:4443/api/auth
-  uiUrl: https://atlas.ys0921.sbs:4443
-  saml2AuthUrl: ${security.issuerUrl}/saml2/authenticate/{registrationId}
+  issuer-url: https://atlas.ys0921.sbs:4443/api/auth
+  ui-url: https://atlas.ys0921.sbs:4443
+  saml2:
+    sp:
+      authenticate-url: ${security.issuer-url}/saml2/authenticate/{registrationId}
+    idp:
+      entity-id: ${security.issuer-url}/saml2/idp
+      sso-url: ${security.issuer-url}/saml2/idp/sso
+      metadata-url: ${security.issuer-url}/saml2/idp/metadata
+      signing:
+        certificate: |
+          -----BEGIN CERTIFICATE-----
+          MIIDMzCCAhugAwIBAgIUEHigX/ZupVL5txn3S+/1jPEMK64wDQYJKoZIhvcNAQEL
+          BQAwKTEXMBUGA1UEAwwOQXRsYXMgU0FNTCBJZFAxDjAMBgNVBAoMBUF0bGFzMB4X
+          DTI2MTAwODAzNTUxOVoXDTM2MTAwNTAzNTUxOVowKTEXMBUGA1UEAwwOQXRsYXMg
+          U0FNTCBJZFAxDjAMBgNVBAoMBUF0bGFzMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+          MIIBCgKCAQEAtl10TB9SeiCO0EBeQhpLjmLDuoZCB2jr6FswY9sIzhEZF6KU9OUA
+          zKdoKwZ18Etu+hFNDxogXN4guq+2+6Rqvm+syieyYDDAOxxtmKVSEEAylcAEzP4I
+          nHuuAM5jW3DyzKCEeQ/c+yuvdWQacgpuHnPizogREw59GVh3Xbhr6Hk2f+5lhsj7
+          nXcTlCRSxKOpQyB3rz/4m0KIqCpGA8PPSsFA05cM0fqHUAiZBUsaaSpSDb52i8d/
+          lIrSX6gLwM2wagGLKOJmKiMbGnQiksztKtAqLAfsosNR64wr/WFdHXG/LfhedVfk
+          zXzu+gN4Za2fz95JPktUhQCqwbp4+iWSqQIDAQABo1MwUTAdBgNVHQ4EFgQU6P1h
+          f1zjOB0TfnWBR/wyP3M8hdswHwYDVR0jBBgwFoAU6P1hf1zjOB0TfnWBR/wyP3M8
+          hdswDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAKMCzmVJ3D+Wt
+          F2ykLwaMNfINYTlBfOrcJ4GDR1YPGuvg2VnSVX6cfL9de4Cq3rWZhDgBaWy+am4g
+          Ga/851wYLmhsg7UGYqhmAcfbDGyKmY2LK4pBhiPen5Dys4+2HG8blURCkA2nbpoY
+          /AqbNzk90DeuISGhPjpu3Zd6S/GDFKuusrB+RkQKPbLqEiPraUeOXgPlpjNKoInA
+          8xLcM68RWEILNpPwypFQmeWH2ylOvrq8ENYrz9qMxvOVtmbL+txBt5RIuVVx5htK
+          HDdiLZXBFCi1QmaBt+u3gFNi+n3O6nRm8f0Kh1M3n6RwSPn0apuxJE1uGjl+dM/N
+          3tRON6rP0A==
+          -----END CERTIFICATE-----
   authorize:
     permit:
       - /login/*
@@ -47,6 +75,7 @@ security:
       - /oauth2/activate
       - /oauth2/qr/ticket
       - /oauth2/qr/status
+      - /saml2/idp/metadata
       - /thirdParty/**
       - /activated
       - /actuator/**
@@ -57,16 +86,16 @@ security:
       - /web3/wallet/register/options
       - /internal/**
   # 用户设备最大token数量 -1 表示不限制
-  coexistToken: 1
+  coexist-token: 1
   # jwt token配置
   jwt:
-    secretKey: ${ATLAS_AUTH_JWT_SECRET_KEY}
+    secret-key: ${ATLAS_AUTH_JWT_SECRET_KEY}
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 24h
-    refreshExpiration: 7d
+    refresh-expiration: 7d
   # 记住密码
-  rememberMe:
-    secretKey: ${ATLAS_AUTH_REMEMBER_ME_SECRET_KEY}
+  remember-me:
+    secret-key: ${ATLAS_AUTH_REMEMBER_ME_SECRET_KEY}
     # 单位：s:秒 m:分钟 h:小时 d:天 默认 秒
     expiration: 7d
   webauthn:

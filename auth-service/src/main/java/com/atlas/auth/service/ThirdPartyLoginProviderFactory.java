@@ -47,7 +47,7 @@ public class ThirdPartyLoginProviderFactory {
         });
 
         // 动态注册 SAML2 提供商
-        registerDynamicProviders(SsoProviderProtocol.SAML2, name -> new GenericSaml2LoginProvider(name, securityProperties.getSaml2AuthUrl()));
+        registerDynamicProviders(SsoProviderProtocol.SAML2, name -> new GenericSaml2LoginProvider(name, securityProperties.getSaml2().getSp().getAuthenticateUrl()));
 
         // 动态注册 OIDC 提供商
         registerDynamicProviders(SsoProviderProtocol.OIDC, name -> new GenericOidcLoginProvider(name, oidcProviderEngine));

@@ -13,6 +13,7 @@ import org.springframework.security.saml2.core.Saml2X509Credential;
 import org.springframework.security.saml2.provider.service.registration.IterableRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrations;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
@@ -60,38 +61,59 @@ public class DelegateRelyingPartyRegistrationRepository implements IterableRelyi
             return Optional.empty();
         }
         try {
-            // 提取并转换证书凭证
-            List<Saml2X509Credential> credentials = new ArrayList<>();
-            if (settings.assertingparty() != null && settings.assertingparty().verification() != null) {
-                CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                for (Saml2ProviderSettings.Credential cred : settings.assertingparty().verification().credentials()) {
-                    // 通过 Resource 载入输入流并解析 X509 证书
-                    try (InputStream is = cred.certificateLocation().getInputStream()) {
-                        X509Certificate certificate = (X509Certificate) factory.generateCertificate(is);
-                        credentials.add(Saml2X509Credential.verification(certificate));
-                    }
-                }
+            // 优先使用 SAML Metadata
+            if (settings.metadataUrl() != null && !settings.metadataUrl().isBlank()) {
+                log.info("[SAML2] 提供商 [{}] 使用 Metadata 加载模式，metadataUrl={}", provider, settings.metadataUrl());
+                RelyingPartyRegistration relyingPartyRegistration = loadByMetadata(provider, settings);
+                return Optional.of(relyingPartyRegistration);
             }
-            // 映射构建 RelyingPartyRegistration 实例
-            RelyingPartyRegistration registration = RelyingPartyRegistration
-                    .withRegistrationId(provider)
-                    .entityId(settings.entityId())
-                    .assertionConsumerServiceLocation(securityProperties.getIssuerUrl() + settings.acs().location())
-                    .assertionConsumerServiceBinding(settings.acs().binding())
-                    // 使用官方推荐的 assertingPartyMetadata
-                    .assertingPartyMetadata(party -> {
-                        party.entityId(Objects.requireNonNull(settings.assertingparty()).entityId())
-                                .singleSignOnServiceLocation(settings.assertingparty().singlesignon().url())
-                                .singleSignOnServiceBinding(settings.assertingparty().singlesignon().binding())
-                                .wantAuthnRequestsSigned(Objects.requireNonNull(settings.assertingparty()).singlesignon().signRequest())
-                                .verificationX509Credentials(c -> c.addAll(credentials));
-                    })
-                    .build();
-            return Optional.of(registration);
+            log.info("[SAML2] 提供商 [{}] 使用手工配置加载模式", provider);
+            RelyingPartyRegistration relyingPartyRegistration = loadByConfiguration(provider, settings);
+            return Optional.of(relyingPartyRegistration);
         } catch (Exception e) {
             log.error("[SAML2] 动态加载提供商 [" + provider + "] 配置失败!", e);
             return Optional.empty();
         }
+    }
+
+    private RelyingPartyRegistration loadByMetadata(String provider, Saml2ProviderSettings settings) {
+        return RelyingPartyRegistrations
+                .fromMetadataLocation(settings.metadataUrl())
+                .registrationId(provider)
+                .entityId(settings.entityId())
+                .assertionConsumerServiceLocation(securityProperties.getIssuerUrl() + settings.acs().location())
+                .assertionConsumerServiceBinding(settings.acs().binding())
+                .build();
+    }
+
+    private RelyingPartyRegistration loadByConfiguration(String provider, Saml2ProviderSettings settings) throws Exception {
+        // 提取并转换证书凭证
+        List<Saml2X509Credential> credentials = new ArrayList<>();
+        if (settings.assertingparty() != null && settings.assertingparty().verification() != null) {
+            CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            for (Saml2ProviderSettings.Credential cred : settings.assertingparty().verification().credentials()) {
+                // 通过 Resource 载入输入流并解析 X509 证书
+                try (InputStream is = cred.certificateLocation().getInputStream()) {
+                    X509Certificate certificate = (X509Certificate) factory.generateCertificate(is);
+                    credentials.add(Saml2X509Credential.verification(certificate));
+                }
+            }
+        }
+        // 映射构建 RelyingPartyRegistration 实例
+        return RelyingPartyRegistration
+                .withRegistrationId(provider)
+                .entityId(settings.entityId())
+                .assertionConsumerServiceLocation(securityProperties.getIssuerUrl() + settings.acs().location())
+                .assertionConsumerServiceBinding(settings.acs().binding())
+                // 使用官方推荐的 assertingPartyMetadata
+                .assertingPartyMetadata(party -> {
+                    party.entityId(Objects.requireNonNull(settings.assertingparty()).entityId())
+                            .singleSignOnServiceLocation(settings.assertingparty().singlesignon().url())
+                            .singleSignOnServiceBinding(settings.assertingparty().singlesignon().binding())
+                            .wantAuthnRequestsSigned(Objects.requireNonNull(settings.assertingparty()).singlesignon().signRequest())
+                            .verificationX509Credentials(c -> c.addAll(credentials));
+                })
+                .build();
     }
 
     @NotNull

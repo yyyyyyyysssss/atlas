@@ -5,6 +5,7 @@ import com.atlas.auth.config.security.authentication.provider.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
+import com.atlas.auth.config.security.saml2.DelegateRelyingPartyRegistrationRepository;
 import com.atlas.auth.config.security.saml2.Saml2FailureHandler;
 import com.atlas.auth.config.security.saml2.Saml2SuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
@@ -104,6 +105,9 @@ public class SecurityConfig {
     private Saml2FailureHandler saml2FailureHandler;
 
     @Resource
+    private DelegateRelyingPartyRegistrationRepository relyingPartyRegistrationRepository;
+
+    @Resource
     private JwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Resource
@@ -135,6 +139,7 @@ public class SecurityConfig {
                         .loginProcessingUrl("/saml2/sso/{registrationId}")
                         .successHandler(saml2SuccessHandler)
                         .failureHandler(saml2FailureHandler)
+                        .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository)
                 )
                 //记住我
                 .rememberMe(rememberMe -> rememberMe.rememberMeServices(rememberMeServices()))

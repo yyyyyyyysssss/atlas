@@ -24,7 +24,7 @@ public class SecurityProperties {
 
     private String uiUrl;
 
-    private String saml2AuthUrl;
+    private Saml2Config saml2 = new Saml2Config();
 
     private AuthorizeConfig authorize = new AuthorizeConfig();
 
@@ -138,6 +138,74 @@ public class SecurityProperties {
         private String rpName;
 
         private Set<String> origins;
+    }
+
+    @Getter
+    @Setter
+    public static class Saml2Config {
+
+        /**
+         * Atlas 作为 SAML2 Service Provider
+         */
+        private SpConfig sp = new SpConfig();
+
+        /**
+         * Atlas 作为 SAML2 Identity Provider
+         */
+        private IdpConfig idp = new IdpConfig();
+    }
+
+    /**
+     * SAML2 SP 配置
+     *
+     * Atlas -> 外部 SAML2 IdP
+     */
+    @Getter
+    @Setter
+    public static class SpConfig {
+
+        /**
+         * SAML2 认证入口
+         *
+         * Spring Security 默认：
+         * /saml2/authenticate/{registrationId}
+         */
+        private String authenticateUrl;
+    }
+
+
+    /**
+     * SAML2 IdP 配置
+     *
+     * 外部 SAML2 SP -> Atlas
+     */
+    @Getter
+    @Setter
+    public static class IdpConfig {
+
+        /**
+         * Atlas SAML2 IdP Entity ID
+         */
+        private String entityId;
+
+        /**
+         * Atlas SAML2 IdP SSO 地址
+         */
+        private String ssoUrl;
+
+        /**
+         * Atlas SAML2 IdP Metadata 地址
+         */
+        private String metadataUrl;
+
+        private SigningConfig signing = new SigningConfig();
+    }
+
+    @Getter
+    @Setter
+    public static class SigningConfig {
+
+        private String certificate;
     }
 
 }

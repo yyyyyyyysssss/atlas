@@ -24,9 +24,9 @@ logging:
     com.atlas.common.core.api: info
 
 security:
-  issuerUrl: http://localhost:9090/api/auth
-  uiUrl: http://localhost:3000
-  coexistToken: -1
+  issuer-url: http://localhost:9090/api/auth
+  ui-url: http://localhost:3000
+  coexist-token: -1
   webauthn:
     rpId: localhost
     rpName: Atlas Identity Server

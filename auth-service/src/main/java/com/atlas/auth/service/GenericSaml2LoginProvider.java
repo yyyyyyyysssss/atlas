@@ -43,7 +43,7 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
         String providerName = getProviderName();
         Saml2ProviderSettings saml2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.SAML2);
         // 配置的映射对象
-        Saml2ProviderSettings.Mapping mappings = saml2ProviderSettings.assertingparty().mappings();
+        Saml2ProviderSettings.Mapping mappings = saml2ProviderSettings.mappings();
         Saml2AuthenticatedPrincipal principal = (Saml2AuthenticatedPrincipal) authentication.getPrincipal();
         Saml2UserInfo saml2User = Saml2UserInfo.fromPrincipal(principal, mappings);
         saml2User.setProvider(providerName);

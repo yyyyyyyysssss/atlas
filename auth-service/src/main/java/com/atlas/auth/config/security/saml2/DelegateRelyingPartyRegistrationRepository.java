@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Component("relyingPartyRegistrationRepository")
 @Slf4j
-public class DelegateRelyingPartyRegistrationRepository implements IterableRelyingPartyRegistrationRepository, RelyingPartyRegistrationRepository {
+public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyRegistrationRepository {
 
     private final SsoProviderService ssoProviderService;
 
@@ -116,20 +116,20 @@ public class DelegateRelyingPartyRegistrationRepository implements IterableRelyi
                 .build();
     }
 
-    @NotNull
-    @Override
-    public Iterator<RelyingPartyRegistration> iterator() {
-        List<SsoProvider> ssoProviders = ssoProviderService.listByProtocol(SsoProviderProtocol.SAML2);
-        if (ssoProviders == null) {
-            return Collections.emptyIterator();
-        }
-        return ssoProviders.stream()
-                .map(SsoProvider::getProvider)
-                .map(this::findByRegistrationId)
-                .filter(Objects::nonNull)
-                .toList()
-                .iterator();
-    }
+//    @NotNull
+//    @Override
+//    public Iterator<RelyingPartyRegistration> iterator() {
+//        List<SsoProvider> ssoProviders = ssoProviderService.listByProtocol(SsoProviderProtocol.SAML2);
+//        if (ssoProviders == null) {
+//            return Collections.emptyIterator();
+//        }
+//        return ssoProviders.stream()
+//                .map(SsoProvider::getProvider)
+//                .map(this::findByRegistrationId)
+//                .filter(Objects::nonNull)
+//                .toList()
+//                .iterator();
+//    }
 
     public void clearCache(String provider) {
         if (provider != null) {

@@ -1,6 +1,6 @@
 package com.atlas.auth.controller;
 
-import com.atlas.auth.service.Saml2IdpService;
+import com.atlas.auth.config.security.saml2.Saml2IdpService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;

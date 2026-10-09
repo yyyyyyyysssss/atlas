@@ -149,7 +149,7 @@ const ThirdPartyLogin = () => {
                                     }}
                                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                                    onClick={() => authorizeCodeLogin('auth0', 'SAML2')}
+                                    onClick={() => authorizeCodeLogin('atlas', 'SAML2')}
                                 />
                             </motion.div>
                         </Tooltip>

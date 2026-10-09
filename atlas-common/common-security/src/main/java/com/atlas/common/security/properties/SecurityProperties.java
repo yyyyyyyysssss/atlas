@@ -205,7 +205,20 @@ public class SecurityProperties {
     @Setter
     public static class SigningConfig {
 
-        private String certificate;
+        /**
+         * PKCS#12 密钥库路径。
+         */
+        private String keyStore;
+
+        /**
+         * 密钥库密码。
+         */
+        private String keyStorePassword;
+
+        /**
+         * 私钥条目别名。
+         */
+        private String keyAlias;
     }
 
 }

@@ -45,27 +45,9 @@ security:
       sso-url: ${security.issuer-url}/saml2/idp/sso
       metadata-url: ${security.issuer-url}/saml2/idp/metadata
       signing:
-        certificate: |
-          -----BEGIN CERTIFICATE-----
-          MIIDMzCCAhugAwIBAgIUEHigX/ZupVL5txn3S+/1jPEMK64wDQYJKoZIhvcNAQEL
-          BQAwKTEXMBUGA1UEAwwOQXRsYXMgU0FNTCBJZFAxDjAMBgNVBAoMBUF0bGFzMB4X
-          DTI2MTAwODAzNTUxOVoXDTM2MTAwNTAzNTUxOVowKTEXMBUGA1UEAwwOQXRsYXMg
-          U0FNTCBJZFAxDjAMBgNVBAoMBUF0bGFzMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
-          MIIBCgKCAQEAtl10TB9SeiCO0EBeQhpLjmLDuoZCB2jr6FswY9sIzhEZF6KU9OUA
-          zKdoKwZ18Etu+hFNDxogXN4guq+2+6Rqvm+syieyYDDAOxxtmKVSEEAylcAEzP4I
-          nHuuAM5jW3DyzKCEeQ/c+yuvdWQacgpuHnPizogREw59GVh3Xbhr6Hk2f+5lhsj7
-          nXcTlCRSxKOpQyB3rz/4m0KIqCpGA8PPSsFA05cM0fqHUAiZBUsaaSpSDb52i8d/
-          lIrSX6gLwM2wagGLKOJmKiMbGnQiksztKtAqLAfsosNR64wr/WFdHXG/LfhedVfk
-          zXzu+gN4Za2fz95JPktUhQCqwbp4+iWSqQIDAQABo1MwUTAdBgNVHQ4EFgQU6P1h
-          f1zjOB0TfnWBR/wyP3M8hdswHwYDVR0jBBgwFoAU6P1hf1zjOB0TfnWBR/wyP3M8
-          hdswDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAKMCzmVJ3D+Wt
-          F2ykLwaMNfINYTlBfOrcJ4GDR1YPGuvg2VnSVX6cfL9de4Cq3rWZhDgBaWy+am4g
-          Ga/851wYLmhsg7UGYqhmAcfbDGyKmY2LK4pBhiPen5Dys4+2HG8blURCkA2nbpoY
-          /AqbNzk90DeuISGhPjpu3Zd6S/GDFKuusrB+RkQKPbLqEiPraUeOXgPlpjNKoInA
-          8xLcM68RWEILNpPwypFQmeWH2ylOvrq8ENYrz9qMxvOVtmbL+txBt5RIuVVx5htK
-          HDdiLZXBFCi1QmaBt+u3gFNi+n3O6nRm8f0Kh1M3n6RwSPn0apuxJE1uGjl+dM/N
-          3tRON6rP0A==
-          -----END CERTIFICATE-----
+        key-store: classpath:saml2/saml-idp-signing.p12
+        key-store-password: ${ATLAS_SAML_KEYSTORE_PASSWORD}
+        key-alias: saml-idp
   authorize:
     permit:
       - /login/*
@@ -76,6 +58,7 @@ security:
       - /oauth2/qr/ticket
       - /oauth2/qr/status
       - /saml2/idp/metadata
+      - /saml2/idp/sso
       - /thirdParty/**
       - /activated
       - /actuator/**

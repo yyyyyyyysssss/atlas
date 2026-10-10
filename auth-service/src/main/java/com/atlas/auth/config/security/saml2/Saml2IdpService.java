@@ -240,24 +240,48 @@ public class Saml2IdpService {
         }
         // 校验签名策略及证书配置
         boolean requireSignature = Boolean.TRUE.equals(saml2RegisteredClient.getRequireSignedAuthnRequest());
+        // 实际签名是否存在
+        boolean signaturePresent;
+        // 是否已完成签名验证
         boolean signatureVerified = false;
-        if (requireSignature) {
+        // 按请求绑定方式判断签名是否存在
+        Map<String, String> params = null;
+        if (Saml2MessageBinding.REDIRECT.equals(binding)) {
+            params = parseRawQueryString(rawQueryString);
+            // Redirect 绑定使用查询参数签名
+            boolean hasSigAlg = params.containsKey("SigAlg");
+            boolean hasSignature = params.containsKey("Signature");
+            // 只要出现任意一个签名参数，就视为尝试签名
+            // 避免攻击者只传入部分签名参数而绕过检查
+            if (hasSigAlg != hasSignature) {
+                throw invalidRequest("Incomplete Redirect signature parameters");
+            }
+            signaturePresent = hasSignature;
+        } else if (Saml2MessageBinding.POST.equals(binding)) {
+            // POST 绑定通过 XML 内部的 ds:Signature 签名
+            signaturePresent = authnRequest.getSignature() != null;
+        } else {
+            throw invalidRequest("Unsupported SAML binding");
+        }
+        // 要求签名时，如果请求没有携带签名，直接拒绝
+        if (requireSignature && !signaturePresent) {
+            throw invalidRequest("AuthnRequest signature is required");
+        }
+        // 只要实际携带签名，就必须验证 不受 requireSignedAuthnRequest 配置影响
+        if (signaturePresent) {
             X509Certificate x509Certificate = parseCertificate(saml2RegisteredClient.getVerificationCertificate());
             if (x509Certificate == null) {
                 throw invalidRequest("SP verification certificate is not configured");
             }
             if (Saml2MessageBinding.REDIRECT.equals(binding)) {
-                Map<String, String> params = parseRawQueryString(rawQueryString);
                 verifyRedirectSignature(
                         params.get("SAMLRequest"),
                         params.get("SigAlg"),
                         params.get("Signature"),
                         params.get("RelayState"),
                         x509Certificate);
-            } else if (Saml2MessageBinding.POST.equals(binding)) {
-                verifyPostSignature(authnRequest, x509Certificate);
             } else {
-                throw invalidRequest("Unsupported SAML binding");
+                verifyPostSignature(authnRequest, x509Certificate);
             }
             signatureVerified = true;
         }

@@ -30,16 +30,16 @@ public class FileCookieAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
 
-    private final RequestMatcher tokenEndpointMatcher;
+    private final RequestMatcher requestMatcher;
 
     public FileCookieAuthenticationFilter(TokenService tokenService){
         this.tokenService = tokenService;
-        this.tokenEndpointMatcher = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET,"/file/**");
+        this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET,"/file/**");
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if(!this.tokenEndpointMatcher.matches(request)){
+        if(!this.requestMatcher.matches(request)){
             filterChain.doFilter(request, response);
             return;
         }

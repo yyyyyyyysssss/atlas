@@ -1,6 +1,7 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.config.security.saml2.Saml2IdpService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
@@ -30,8 +31,8 @@ public class Saml2IdpController {
      * AuthnRequest 通常通过 URL 参数 SAMLRequest 传递。
      */
     @GetMapping("/sso")
-    public ResponseEntity<String> ssoGet(@RequestParam("SAMLRequest") String samlRequest){
-        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.REDIRECT);
+    public ResponseEntity<String> ssoGet(@RequestParam("SAMLRequest") String samlRequest, HttpServletRequest request){
+        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.REDIRECT, request.getQueryString());
         return ResponseEntity.ok(ssoResponse);
     }
 
@@ -42,7 +43,7 @@ public class Saml2IdpController {
      */
     @PostMapping("/sso")
     public ResponseEntity<String> ssoPost(@RequestParam("SAMLRequest") String samlRequest) {
-        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.POST);
+        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.POST, null);
         return ResponseEntity.ok(ssoResponse);
     }
 

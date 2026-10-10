@@ -1,21 +1,20 @@
 package com.atlas.auth.config.security.saml2;
 
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
+import com.atlas.auth.service.Saml2RegisteredClientService;
 import com.atlas.common.crypto.random.SecureRandomUtils;
+import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.properties.SecurityProperties;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.shibboleth.utilities.java.support.xml.BasicParserPool;
+import net.shibboleth.utilities.java.support.xml.ParserPool;
 import net.shibboleth.utilities.java.support.xml.SerializeSupport;
+import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.XMLObjectBuilder;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
-import org.opensaml.core.xml.io.Marshaller;
-import org.opensaml.core.xml.io.MarshallingException;
-import org.opensaml.core.xml.io.Unmarshaller;
-import org.opensaml.core.xml.io.UnmarshallerFactory;
+import org.opensaml.core.xml.io.*;
 import org.opensaml.core.xml.schema.XSAny;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
@@ -29,6 +28,8 @@ import org.opensaml.saml.saml2.metadata.impl.EntityDescriptorBuilder;
 import org.opensaml.saml.saml2.metadata.impl.IDPSSODescriptorBuilder;
 import org.opensaml.saml.saml2.metadata.impl.KeyDescriptorBuilder;
 import org.opensaml.saml.saml2.metadata.impl.SingleSignOnServiceBuilder;
+import org.opensaml.saml.security.impl.SAMLSignatureProfileValidator;
+import org.opensaml.security.credential.Credential;
 import org.opensaml.security.credential.UsageType;
 import org.opensaml.security.x509.BasicX509Credential;
 import org.opensaml.xmlsec.signature.KeyInfo;
@@ -38,9 +39,9 @@ import org.opensaml.xmlsec.signature.impl.KeyInfoBuilder;
 import org.opensaml.xmlsec.signature.impl.X509CertificateBuilder;
 import org.opensaml.xmlsec.signature.impl.X509DataBuilder;
 import org.opensaml.xmlsec.signature.support.SignatureConstants;
+import org.opensaml.xmlsec.signature.support.SignatureException;
+import org.opensaml.xmlsec.signature.support.SignatureValidator;
 import org.opensaml.xmlsec.signature.support.Signer;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.core.OpenSamlInitializationService;
@@ -48,23 +49,23 @@ import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.stereotype.Component;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import javax.xml.namespace.QName;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.Objects;
+import java.util.*;
+import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 
 /**
  * @Description
@@ -77,70 +78,63 @@ public class Saml2IdpService {
 
     private final SecurityProperties securityProperties;
 
+    private final Saml2RegisteredClientService saml2RegisteredClientService;
+
+    private final RedisHelper redisHelper;
+
     /**
      * IdP 签名证书。
      */
-    @Getter
     private final X509Certificate signingCertificate;
 
     /**
      * OpenSAML 签名凭据。
      */
-    @Getter
-    private final BasicX509Credential signingCredential;
+    private final Credential signingCredential;
 
     private static final long RESPONSE_VALIDITY_SECONDS = 300;
 
-    public Saml2IdpService(SecurityProperties securityProperties, ResourceLoader resourceLoader){
+    // 防止超大 XML 被解析1 最大限制1MB
+    private static final int MAX_SAML_XML_BYTES = 1024 * 1024;// 1 MiB
+
+    // 限制HTTP-Redirect 解码后的压缩数据的大小，避免处理异常大的请求
+    private static final int MAX_REDIRECT_REQUEST_BYTES = 256 * 1024; // 256 KiB
+
+    // 在 Base64 解码之前就拦截超长输入，减少不必要的内存分配
+    private static final int MAX_SAML_REQUEST_LENGTH = 1_400_000;
+
+    private static final String SAML_REQUEST_REPLAY_KEY = "saml2:idp:replay:";
+
+    private static final Map<String, String> REDIRECT_SIGNATURE_ALGORITHMS = Map.of(
+            "http://www.w3.org/2000/09/xmldsig#rsa-sha1", "SHA1withRSA",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "SHA256withRSA",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384", "SHA384withRSA",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA"
+    );
+
+    private static final Set<String> SUPPORTED_RESPONSE_BINDINGS = Set.of(
+            SAMLConstants.SAML2_POST_BINDING_URI,
+            SAMLConstants.SAML2_REDIRECT_BINDING_URI
+    );
+
+    public Saml2IdpService(SecurityProperties securityProperties,
+                           Saml2RegisteredClientService saml2RegisteredClientService,
+                           Saml2SigningCredentialLoader saml2SigningCredentialLoader,
+                           RedisHelper redisHelper) {
         this.securityProperties = securityProperties;
+        this.saml2RegisteredClientService = saml2RegisteredClientService;
+        this.redisHelper = redisHelper;
+
         SecurityProperties.SigningConfig config = securityProperties.getSaml2().getIdp().getSigning();
         String keyStoreLocation = config.getKeyStore();
         String keyStorePassword = config.getKeyStorePassword();
         String keyAlias = config.getKeyAlias();
-        if (keyStoreLocation == null || keyStoreLocation.isBlank()) {
-            throw new IllegalStateException("未配置 SAML IdP 签名密钥库路径");
-        }
 
-        if (keyStorePassword == null || keyStorePassword.isBlank()) {
-            throw new IllegalStateException("未配置 SAML IdP 签名密钥库密码");
-        }
+        Saml2SigningCredentialLoader.Saml2SigningCredential saml2SigningCredential = saml2SigningCredentialLoader.load(keyStoreLocation, keyStorePassword, keyAlias);
 
-        if (keyAlias == null || keyAlias.isBlank()) {
-            throw new IllegalStateException("未配置 SAML IdP 签名密钥别名");
-        }
-        try {
-            Resource resource = resourceLoader.getResource(keyStoreLocation);
+        this.signingCertificate = saml2SigningCredential.certificate();
+        this.signingCredential = saml2SigningCredential.toOpenSamlCredential();
 
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-
-            char[] password = keyStorePassword.toCharArray();
-
-            try (InputStream input = resource.getInputStream()) {
-                keyStore.load(input, password);
-            }
-            if (!keyStore.containsAlias(keyAlias)) {
-                throw new IllegalStateException("SAML IdP 签名密钥库中不存在别名: " + keyAlias);
-            }
-
-            Key key = keyStore.getKey(keyAlias, password);
-
-            if (!(key instanceof PrivateKey privateKey)) {
-                throw new IllegalStateException("SAML IdP 指定条目不包含私钥: " + keyAlias);
-            }
-
-            Certificate certificate = keyStore.getCertificate(keyAlias);
-
-            if (!(certificate instanceof X509Certificate x509Certificate)) {
-                throw new IllegalStateException("SAML IdP 指定条目不包含 X.509 证书: " + keyAlias);
-            }
-
-            x509Certificate.checkValidity();
-            this.signingCertificate = x509Certificate;
-            this.signingCredential = new BasicX509Credential(x509Certificate, privateKey);
-            log.info("[SAML2-IdP] 签名密钥加载成功，alias={}, algorithm={}", keyAlias, privateKey.getAlgorithm());
-        }catch (Exception e){
-            throw new IllegalStateException("加载 SAML IdP 签名密钥失败", e);
-        }
     }
 
     static {
@@ -163,88 +157,195 @@ public class Saml2IdpService {
         }
     }
 
-    public String sso(String samlRequest, Saml2MessageBinding binding) {
+    public String sso(String samlRequest, Saml2MessageBinding binding, String rawQueryString) {
         if (samlRequest == null || samlRequest.isBlank()) {
-            invalidRequest("invalid SAMLRequest");
+            throw invalidRequest("invalid SAMLRequest");
+        }
+        if (samlRequest.length() > MAX_SAML_REQUEST_LENGTH) {
+            throw invalidRequest("SAMLRequest exceeds the maximum allowed length");
         }
         if (binding == null) {
-            invalidRequest("invalid SAML binding");
+            throw invalidRequest("invalid SAML binding");
         }
         log.info("SAML SSO request received, binding={}", binding.name());
-        log.info("SAMLRequest: {}", samlRequest);
-        AuthnRequest authnRequest = parseAuthnRequest(samlRequest, binding);
+        // 解析 AuthnRequest
+        AuthnRequest authnRequest = authnRequest(samlRequest, binding);
+        if (!SAMLVersion.VERSION_20.equals(authnRequest.getVersion())) {
+            throw invalidRequest("Unsupported SAML protocol version");
+        }
+        // 校验响应方式
+        String protocolBinding = authnRequest.getProtocolBinding();
+        if (protocolBinding != null && !SUPPORTED_RESPONSE_BINDINGS.contains(protocolBinding)) {
+            throw invalidRequest("Unsupported SAML Response binding");
+        }
+        // 校验 AuthnRequest 的时间，防止接受过期请求
+        if (authnRequest.getIssueInstant() == null) {
+            throw invalidRequest("AuthnRequest IssueInstant is required");
+        }
+        Instant issueInstant = authnRequest.getIssueInstant();
+        Instant now = Instant.now();
+        // 最多允许 1 分钟的未来时钟偏差
+        if (issueInstant.isAfter(now.plusSeconds(60))) {
+            throw invalidRequest("AuthnRequest IssueInstant is in the future");
+        }
+        // 请求最多允许存在 5 分钟
+        if (issueInstant.isBefore(now.minusSeconds(300))) {
+            throw invalidRequest("AuthnRequest IssueInstant has expired");
+        }
+
         String requestId = authnRequest.getID();
-        String issuer = authnRequest.getIssuer() != null ? authnRequest.getIssuer().getValue() : null;
-
         if (requestId == null || requestId.isBlank()) {
-            invalidRequest("invalid AuthnRequest ID");
+            throw invalidRequest("invalid AuthnRequest ID");
         }
 
+        String issuer = authnRequest.getIssuer() != null ? authnRequest.getIssuer().getValue() : null;
         if (issuer == null || issuer.isBlank()) {
-            invalidRequest("invalid AuthnRequest Issuer");
+            throw invalidRequest("invalid AuthnRequest Issuer");
         }
 
-
+        // 校验 Destination
         String destination = authnRequest.getDestination();
-        String assertionConsumerServiceUrl = authnRequest.getAssertionConsumerServiceURL();
-        log.info(
-                "[SAML2 IdP] AuthnRequest 解析完成，requestId={}, issuer={}, destination={}, acs={}",
+        String expectedDestination = securityProperties.getSaml2().getIdp().getSsoUrl();
+        if (destination == null || destination.isBlank()) {
+            throw invalidRequest("AuthnRequest Destination is required");
+        }
+        if (!expectedDestination.equals(destination)) {
+            throw invalidRequest("Invalid AuthnRequest Destination");
+        }
+
+        // 当前仅支持通过已注册的 ACS URL 确定响应地址
+        if (authnRequest.getAssertionConsumerServiceIndex() != null) {
+            throw invalidRequest("AssertionConsumerServiceIndex is not supported");
+        }
+
+        // 根据 Issuer 查询已注册的 SP
+        Saml2RegisteredClient saml2RegisteredClient = saml2RegisteredClientService.getEnabledByEntityId(issuer);
+        if (saml2RegisteredClient == null) {
+            throw invalidRequest("Unregistered SAML Service Provider");
+        }
+        // 校验 Entity ID
+        if (saml2RegisteredClient.getEntityId() == null || !issuer.equals(saml2RegisteredClient.getEntityId())) {
+            throw invalidRequest("SAML Service Provider Entity ID mismatch");
+        }
+        String acsUrl = authnRequest.getAssertionConsumerServiceURL();
+        // 校验 ACS 配置
+        String registeredAcsUrl = saml2RegisteredClient.getAcsUrl();
+        if (registeredAcsUrl == null || registeredAcsUrl.isBlank()) {
+            throw invalidRequest("SAML Service Provider ACS URL is not configured");
+        }
+        if (acsUrl != null && !acsUrl.isBlank()) {
+            if (!registeredAcsUrl.equals(acsUrl)) {
+                throw invalidRequest("Unregistered AssertionConsumerServiceURL");
+            }
+        }
+        // 校验签名策略及证书配置
+        boolean requireSignature = Boolean.TRUE.equals(saml2RegisteredClient.getRequireSignedAuthnRequest());
+        boolean signatureVerified = false;
+        if (requireSignature) {
+            X509Certificate x509Certificate = parseCertificate(saml2RegisteredClient.getVerificationCertificate());
+            if (x509Certificate == null) {
+                throw invalidRequest("SP verification certificate is not configured");
+            }
+            if (Saml2MessageBinding.REDIRECT.equals(binding)) {
+                Map<String, String> params = parseRawQueryString(rawQueryString);
+                verifyRedirectSignature(
+                        params.get("SAMLRequest"),
+                        params.get("SigAlg"),
+                        params.get("Signature"),
+                        params.get("RelayState"),
+                        x509Certificate);
+            } else if (Saml2MessageBinding.POST.equals(binding)) {
+                verifyPostSignature(authnRequest, x509Certificate);
+            } else {
+                throw invalidRequest("Unsupported SAML binding");
+            }
+            signatureVerified = true;
+        }
+        // 防重放
+        if (!markRequestAsSeen(issuer, requestId)){
+            throw invalidRequest("Duplicate AuthnRequest");
+        }
+        log.info("[SAML2 IdP] AuthnRequest validation completed, requestId={}, issuer={}, binding={}, destination={}, acs={} signatureRequired={}, signatureVerified={}",
                 requestId,
                 issuer,
+                binding.name(),
                 destination,
-                assertionConsumerServiceUrl
+                acsUrl,
+                requireSignature,
+                signatureVerified
         );
         return null;
     }
 
-    private AuthnRequest parseAuthnRequest(String samlRequest, Saml2MessageBinding binding){
-        try {
-            // 第一步：Base64 解码
-            byte[] decoded = Base64.getDecoder().decode(samlRequest);
-            byte[] xmlBytes;
-            if (Saml2MessageBinding.REDIRECT.equals(binding)) {
-                // HTTP-Redirect 使用原始 DEFLATE（无 zlib header）
-                try (InputStream input = new InflaterInputStream(new ByteArrayInputStream(decoded), new Inflater(true)); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-                    input.transferTo(output);
-                    xmlBytes = output.toByteArray();
-                }
-            } else if (Saml2MessageBinding.POST.equals(binding)) {
-                // HTTP-POST 不进行 DEFLATE 解压
-                xmlBytes = decoded;
-            } else {
-                invalidRequest("Unsupported SAML binding: " + binding);
-            }
-            // 第二步：解析 XML
-            BasicParserPool parserPool = (BasicParserPool) XMLObjectProviderRegistrySupport.getParserPool();
-            if(parserPool == null){
-                throw new IllegalStateException("OpenSAML XML ParserPool has not been initialized");
-            }
-            org.w3c.dom.Element element;
-            try (InputStream input = new ByteArrayInputStream(xmlBytes)) {
-                element = parserPool.parse(input).getDocumentElement();
-            }
-            // 第三步：通过 OpenSAML Unmarshaller 转为对象
-            UnmarshallerFactory factory = XMLObjectProviderRegistrySupport.getUnmarshallerFactory();
-
-            Unmarshaller unmarshaller = factory.getUnmarshaller(element);
-            if (unmarshaller == null) {
-                invalidRequest("Unsupported SAML XML element");
-            }
-            XMLObject xmlObject = unmarshaller.unmarshall(element);
-
-            if (!(xmlObject instanceof AuthnRequest authnRequest)) {
-                throw new IllegalArgumentException("SAMLRequest is not an AuthnRequest");
-            }
-            return authnRequest;
-
-        } catch (Saml2AuthenticationException | IllegalStateException e) {
-            throw e;
-        } catch (Exception e) {
-            invalidRequest("Failed to parse SAML AuthnRequest");
+    public AuthnRequest authnRequest(String samlRequest, Saml2MessageBinding binding) {
+        // 校验
+        if (samlRequest == null || samlRequest.isBlank()) {
+            throw invalidRequest("SAMLRequest must not be empty");
         }
+        if (binding == null) {
+            throw invalidRequest("SAML binding must not be null");
+        }
+        boolean redirect = Saml2MessageBinding.REDIRECT.equals(binding);
+        boolean post = Saml2MessageBinding.POST.equals(binding);
+        if (!redirect && !post) {
+            throw invalidRequest("Unsupported SAML binding");
+        }
+        // 第一步：Base64 解码
+        final byte[] decoded;
+        try {
+            decoded = Base64.getDecoder().decode(samlRequest);
+        } catch (IllegalArgumentException e) {
+            throw invalidRequest("SAMLRequest is not valid Base64");
+        }
+        if (decoded.length == 0) {
+            throw invalidRequest("SAMLRequest must not be empty");
+        }
+        byte[] xmlBytes;
+        if (redirect) {
+            if (decoded.length > MAX_REDIRECT_REQUEST_BYTES) {
+                throw invalidRequest("Compressed SAMLRequest exceeds the maximum allowed size");
+            }
+            xmlBytes = inflateRawDeflate(decoded, MAX_SAML_XML_BYTES);
+        } else {
+            if (decoded.length > MAX_SAML_XML_BYTES) {
+                throw invalidRequest("SAML XML exceeds the maximum allowed size");
+            }
+            xmlBytes = decoded;
+        }
+        // 第二步：解析 XML
+        ParserPool parserPool = XMLObjectProviderRegistrySupport.getParserPool();
+        if (parserPool == null) {
+            throw new IllegalStateException("OpenSAML XML ParserPool has not been initialized");
+        }
+        final Element element;
+        try (InputStream input = new ByteArrayInputStream(xmlBytes)) {
+            element = parserPool.parse(input).getDocumentElement();
+        } catch (XMLParserException | IOException e) {
+            throw invalidRequest("Failed to parse SAML XML");
+        }
+        if (element == null) {
+            throw invalidRequest("SAMLRequest contains an empty XML document");
+        }
+        // 通过 OpenSAML 转换为 XMLObject
+        UnmarshallerFactory factory = XMLObjectProviderRegistrySupport.getUnmarshallerFactory();
+        Unmarshaller unmarshaller = factory.getUnmarshaller(element);
+        if (unmarshaller == null) {
+            throw invalidRequest("Unsupported SAML XML element");
+        }
+        final XMLObject xmlObject;
+        try {
+            xmlObject = unmarshaller.unmarshall(element);
+        } catch (UnmarshallingException e) {
+            throw invalidRequest("Failed to unmarshal SAML XML");
+        }
+        // 确认根对象确实是 AuthnRequest
+        if (!(xmlObject instanceof AuthnRequest authnRequest)) {
+            throw invalidRequest("SAMLRequest root element is not AuthnRequest");
+        }
+        return authnRequest;
     }
 
-    public Response createResponse(AuthnRequest authnRequest, Saml2RegisteredClient registeredClient, Authentication authentication) {
+    public Response response(AuthnRequest authnRequest, Saml2RegisteredClient registeredClient, Authentication authentication) {
         Objects.requireNonNull(authnRequest, "authnRequest");
         Objects.requireNonNull(registeredClient, "registeredClient");
         Objects.requireNonNull(authentication, "authentication");
@@ -364,11 +465,66 @@ public class Saml2IdpService {
             XMLObjectSupport.marshall(response);
             Node node = response.getDOM();
             if (node == null) {
-                invalidResponse("SAML Response DOM is null after marshalling");
+                throw invalidResponse("SAML Response DOM is null after marshalling");
             }
             return SerializeSupport.nodeToString(node);
         } catch (MarshallingException e) {
             throw new IllegalStateException("Failed to serialize SAML 2.0 Response", e);
+        }
+    }
+
+
+    private byte[] inflateRawDeflate(byte[] compressed, int maxOutputBytes) {
+        if (compressed == null || compressed.length == 0) {
+            throw invalidRequest("Compressed SAMLRequest must not be empty");
+        }
+        if (maxOutputBytes <= 0) {
+            throw new IllegalArgumentException("maxOutputBytes must be greater than zero");
+        }
+        Inflater inflater = new Inflater(true);
+        try {
+            inflater.setInput(compressed);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            while (!inflater.finished()) {
+                final int count;
+                try {
+                    count = inflater.inflate(buffer);
+                } catch (DataFormatException e) {
+                    throw invalidRequest("Invalid DEFLATE data in SAMLRequest");
+                }
+                if (count > 0) {
+                    // 防止 total + count 发生整数溢出。
+                    if (count > maxOutputBytes - total) {
+                        throw invalidRequest("Decompressed SAMLRequest exceeds the maximum allowed size");
+                    }
+                    output.write(buffer, 0, count);
+                    total += count;
+                    continue;
+                }
+                if (inflater.needsDictionary()) {
+                    throw invalidRequest("SAMLRequest DEFLATE stream requires a dictionary");
+                }
+                if (inflater.needsInput()) {
+                    throw invalidRequest("Incomplete DEFLATE stream in SAMLRequest");
+                }
+                // 没有输出、没有结束、也不需要更多输入，
+                // 说明解压器无法继续正常推进。
+                throw invalidRequest("Unable to make progress while decompressing SAMLRequest");
+            }
+
+            // 输入一次性提供给 Inflater，因此可以检查整个输入数组中
+            // 是否还有未消费的数据。
+            if (inflater.getRemaining() != 0) {
+                throw invalidRequest("Unexpected trailing data in DEFLATE stream");
+            }
+            if (total == 0) {
+                throw invalidRequest("Decompressed SAMLRequest must not be empty");
+            }
+            return output.toByteArray();
+        } finally {
+            inflater.end();
         }
     }
 
@@ -384,20 +540,20 @@ public class Saml2IdpService {
         } else if (object instanceof Response response) {
             response.setSignature(signature);
         } else {
-            invalidResponse("Unsupported SAML object: " + object.getClass().getName());
+            throw invalidResponse("Unsupported SAML object: " + object.getClass().getName());
         }
         try {
             Marshaller marshaller = XMLObjectProviderRegistrySupport
-                            .getMarshallerFactory()
-                            .getMarshaller(object);
+                    .getMarshallerFactory()
+                    .getMarshaller(object);
 
             if (marshaller == null) {
-                invalidResponse("No marshaller registered for SAML object");
+                throw invalidResponse("No marshaller registered for SAML object");
             }
             marshaller.marshall(object);
             Signer.signObject(signature);
         } catch (MarshallingException | org.opensaml.xmlsec.signature.support.SignatureException e) {
-            invalidResponse("Failed to sign SAML object: " + e.getMessage());
+            throw invalidResponse("Failed to sign SAML object: " + e.getMessage());
         }
     }
 
@@ -420,7 +576,7 @@ public class Saml2IdpService {
 
         XMLObjectBuilder<?> builder = factory.getBuilder(name);
         if (builder == null) {
-            invalidResponse("No OpenSAML builder registered for " + name);
+            throw invalidResponse("No OpenSAML builder registered for " + name);
         }
 
         return (T) builder.buildObject(name);
@@ -437,7 +593,7 @@ public class Saml2IdpService {
         // SAML 2.0 Protocol
         idpDescriptor.addSupportedProtocol(SAMLConstants.SAML20P_NS);
         // 当前阶段不要求 SP 对 AuthnRequest 签名。 后续如果 Atlas 要求所有 AuthnRequest 必须由 SP 签名，这里改成 true。
-        idpDescriptor.setWantAuthnRequestsSigned(false);
+        idpDescriptor.setWantAuthnRequestsSigned(true);
         // Signing Certificate
         KeyDescriptor keyDescriptor = new KeyDescriptorBuilder().buildObject();
         keyDescriptor.setUse(UsageType.SIGNING);
@@ -521,6 +677,91 @@ public class Saml2IdpService {
         return keyInfo;
     }
 
+
+    private void verifyRedirectSignature(String samlRequest, String sigAlg, String signature, String relayState, X509Certificate certificate) {
+        if (samlRequest == null || samlRequest.isBlank()) {
+            throw invalidRequest("SAMLRequest must not be empty");
+        }
+        if (sigAlg == null || sigAlg.isBlank()) {
+            throw invalidRequest("SigAlg must not be empty");
+        }
+        if (signature == null || signature.isBlank()) {
+            throw invalidRequest("Signature must not be empty");
+        }
+        if (certificate == null) {
+            throw invalidRequest("SP signing certificate must not be empty");
+        }
+        String decodedSigAlg = URLDecoder.decode(sigAlg, StandardCharsets.UTF_8);
+        String decodedSignature = URLDecoder.decode(signature, StandardCharsets.UTF_8);
+
+        String jcaAlgorithm = REDIRECT_SIGNATURE_ALGORITHMS.get(decodedSigAlg);
+        if (jcaAlgorithm == null) {
+            throw invalidRequest("Unsupported signature algorithm");
+        }
+        try {
+            StringBuilder signedQuery = new StringBuilder()
+                    .append("SAMLRequest=")
+                    .append(samlRequest);
+            if (relayState != null) {
+                signedQuery.append("&RelayState=").append(relayState);
+            }
+            signedQuery.append("&SigAlg=").append(sigAlg);
+            byte[] signedBytes = signedQuery.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] signatureBytes = Base64.getDecoder().decode(decodedSignature);
+            java.security.Signature verifier = java.security.Signature.getInstance(jcaAlgorithm);
+            verifier.initVerify(certificate.getPublicKey());
+            verifier.update(signedBytes);
+            if (!verifier.verify(signatureBytes)) {
+                throw invalidRequest("Invalid REDIRECT request signature");
+            }
+        } catch (IllegalArgumentException e) {
+            throw invalidRequest("Invalid REDIRECT request signature encoding");
+        } catch (java.security.GeneralSecurityException e) {
+            throw invalidRequest("Failed to verify REDIRECT request signature");
+        }
+    }
+
+    private Map<String, String> parseRawQueryString(String queryString) {
+        Map<String, String> params = new HashMap<>();
+        if (queryString == null || queryString.isBlank()) {
+            throw invalidRequest("Missing query string");
+        }
+        for (String pair : queryString.split("&")) {
+            int index = pair.indexOf('=');
+            if (index <= 0) {
+                continue;
+            }
+            String key = pair.substring(0, index);
+            String value = pair.substring(index + 1);
+            if (params.putIfAbsent(key, value) != null) {
+                throw invalidRequest("Duplicate SAML query parameter");
+            }
+        }
+        return params;
+    }
+
+    private void verifyPostSignature(AuthnRequest authnRequest, X509Certificate certificate) {
+        if (authnRequest == null) {
+            throw invalidRequest("AuthnRequest must not be null");
+        }
+        if (certificate == null) {
+            throw invalidRequest("SP signing certificate must not be empty");
+        }
+        if (authnRequest.getSignature() == null) {
+            throw invalidRequest("POST AuthnRequest signature is missing");
+        }
+        try {
+            // 校验 SAML XML Signature Profile
+            SAMLSignatureProfileValidator profileValidator = new SAMLSignatureProfileValidator();
+            profileValidator.validate(authnRequest.getSignature());
+            // 使用 SP 注册的 X.509 证书验证 XML 数字签名
+            BasicX509Credential credential = new BasicX509Credential(certificate);
+            SignatureValidator.validate(authnRequest.getSignature(), credential);
+        } catch (SignatureException e) {
+            throw invalidRequest("Invalid POST request signature");
+        }
+    }
+
     /**
      * 将配置中的 PEM 格式证书转换为 Java X509Certificate。
      *
@@ -536,7 +777,6 @@ public class Saml2IdpService {
         if (pem == null || pem.isBlank()) {
             throw new IllegalStateException("SAML IdP signing certificate is not configured");
         }
-
         try {
             String base64Certificate = pem
                     .replace("-----BEGIN CERTIFICATE-----", "")
@@ -550,18 +790,22 @@ public class Saml2IdpService {
             return (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(derCertificate));
 
         } catch (Exception e) {
-            throw new IllegalStateException("Invalid SAML IdP X.509 certificate", e);
+            throw invalidRequest("Invalid SAML IdP X.509 certificate");
         }
     }
 
-    public static void invalidRequest(String description) {
-
-        throw new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Requester", description));
+    private boolean markRequestAsSeen(String issuer, String requestId) {
+        return redisHelper.setIfAbsent(SAML_REQUEST_REPLAY_KEY + ":" + issuer + ":" + requestId, "1", Duration.ofMinutes(5));
     }
 
-    public static void invalidResponse(String description) {
+    public static Saml2AuthenticationException invalidRequest(String description) {
 
-        throw new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Response", description));
+        return new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Requester", description));
+    }
+
+    public static Saml2AuthenticationException invalidResponse(String description) {
+
+        return new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Response", description));
     }
 
 }

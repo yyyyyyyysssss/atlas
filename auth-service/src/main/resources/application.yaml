@@ -40,6 +40,11 @@ security:
   saml2:
     sp:
       authenticate-url: ${security.issuer-url}/saml2/authenticate/{registrationId}
+      # SP 和 IdP 可以共用签名密钥；生产环境可根据安全策略分别管理
+      signing:
+        key-store: classpath:saml2/saml-idp-signing.p12
+        key-store-password: ${ATLAS_SAML_KEYSTORE_PASSWORD}
+        key-alias: saml-idp
     idp:
       entity-id: ${security.issuer-url}/saml2/idp
       sso-url: ${security.issuer-url}/saml2/idp/sso

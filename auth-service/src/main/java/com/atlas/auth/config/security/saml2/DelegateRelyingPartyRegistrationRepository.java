@@ -1,16 +1,13 @@
 package com.atlas.auth.config.security.saml2;
 
 import com.atlas.auth.domain.dto.Saml2ProviderSettings;
-import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.service.SsoProviderService;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.security.saml2.core.Saml2X509Credential;
-import org.springframework.security.saml2.provider.service.registration.IterableRelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrations;
@@ -19,7 +16,10 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,14 +35,24 @@ public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyR
 
     private final SecurityProperties securityProperties;
 
+    private final Saml2X509Credential signingCredential;
+
     private final Cache<String, Optional<RelyingPartyRegistration>> registrationCache = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.HOURS)
             .maximumSize(1000)
             .build();
 
-    public DelegateRelyingPartyRegistrationRepository(SsoProviderService ssoProviderService, SecurityProperties securityProperties) {
+    public DelegateRelyingPartyRegistrationRepository(SsoProviderService ssoProviderService, SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader) {
         this.ssoProviderService = ssoProviderService;
         this.securityProperties = securityProperties;
+
+        SecurityProperties.SigningConfig config = securityProperties.getSaml2().getSp().getSigning();
+        String keyStoreLocation = config.getKeyStore();
+        String keyStorePassword = config.getKeyStorePassword();
+        String keyAlias = config.getKeyAlias();
+
+        Saml2SigningCredentialLoader.Saml2SigningCredential saml2SigningCredential = saml2SigningCredentialLoader.load(keyStoreLocation, keyStorePassword, keyAlias);
+        this.signingCredential = saml2SigningCredential.toSpringCredential();
     }
 
     @Override
@@ -83,6 +93,7 @@ public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyR
                 .entityId(settings.entityId())
                 .assertionConsumerServiceLocation(securityProperties.getIssuerUrl() + settings.acs().location())
                 .assertionConsumerServiceBinding(settings.acs().binding())
+                .signingX509Credentials(signingX509Credentials -> signingX509Credentials.add(signingCredential))
                 .build();
     }
 
@@ -113,23 +124,9 @@ public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyR
                             .wantAuthnRequestsSigned(Objects.requireNonNull(settings.assertingparty()).singlesignon().signRequest())
                             .verificationX509Credentials(c -> c.addAll(credentials));
                 })
+                .signingX509Credentials(signingX509Credentials -> signingX509Credentials.add(signingCredential))
                 .build();
     }
-
-//    @NotNull
-//    @Override
-//    public Iterator<RelyingPartyRegistration> iterator() {
-//        List<SsoProvider> ssoProviders = ssoProviderService.listByProtocol(SsoProviderProtocol.SAML2);
-//        if (ssoProviders == null) {
-//            return Collections.emptyIterator();
-//        }
-//        return ssoProviders.stream()
-//                .map(SsoProvider::getProvider)
-//                .map(this::findByRegistrationId)
-//                .filter(Objects::nonNull)
-//                .toList()
-//                .iterator();
-//    }
 
     public void clearCache(String provider) {
         if (provider != null) {

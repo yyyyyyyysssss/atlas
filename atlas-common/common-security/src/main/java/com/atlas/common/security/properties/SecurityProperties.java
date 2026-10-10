@@ -171,6 +171,8 @@ public class SecurityProperties {
          * /saml2/authenticate/{registrationId}
          */
         private String authenticateUrl;
+
+        private SigningConfig signing = new SigningConfig();
     }
 
 

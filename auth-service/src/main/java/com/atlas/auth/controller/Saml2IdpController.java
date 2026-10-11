@@ -1,11 +1,11 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.config.security.saml2.Saml2IdpService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @Description
@@ -23,28 +23,6 @@ public class Saml2IdpController {
     public ResponseEntity<String> metadata() {
 
         return ResponseEntity.ok(saml2IdpService.metadata());
-    }
-
-    /**
-     * SAML 2.0 SSO。
-     * HTTP-Redirect Binding。
-     * AuthnRequest 通常通过 URL 参数 SAMLRequest 传递。
-     */
-    @GetMapping("/sso")
-    public ResponseEntity<String> ssoGet(@RequestParam("SAMLRequest") String samlRequest, HttpServletRequest request){
-        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.REDIRECT, request.getQueryString());
-        return ResponseEntity.ok(ssoResponse);
-    }
-
-    /**
-     * SAML 2.0 SSO。
-     * HTTP-POST Binding。
-     * AuthnRequest 通常通过 form 参数 SAMLRequest 传递。
-     */
-    @PostMapping("/sso")
-    public ResponseEntity<String> ssoPost(@RequestParam("SAMLRequest") String samlRequest) {
-        String ssoResponse = saml2IdpService.sso(samlRequest, Saml2MessageBinding.POST, null);
-        return ResponseEntity.ok(ssoResponse);
     }
 
 }

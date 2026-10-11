@@ -12,8 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.saml2.core.Saml2Error;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
-import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
+import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.web.authentication.*;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -21,8 +20,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * @Description
@@ -38,6 +37,8 @@ public final class Saml2IdpFilter extends OncePerRequestFilter {
 
     private final AuthenticationManager authenticationManager;
 
+    private final Saml2IdpService saml2IdpService;
+
     private AuthenticationConverter authenticationConverter;
 
     private AuthenticationSuccessHandler authenticationSuccessHandler;
@@ -46,22 +47,12 @@ public final class Saml2IdpFilter extends OncePerRequestFilter {
 
     private AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource;
 
-    // 防止超大 XML 被解析1 最大限制1MB
-    private static final int MAX_SAML_XML_BYTES = 1024 * 1024;// 1 MiB
-
-    // 限制HTTP-Redirect 解码后的压缩数据的大小，避免处理异常大的请求
-    private static final int MAX_REDIRECT_REQUEST_BYTES = 256 * 1024; // 256 KiB
-
-    // 在 Base64 解码之前就拦截超长输入，减少不必要的内存分配
-    private static final int MAX_SAML_REQUEST_LENGTH = 1_400_000;
-
-    private static final int MAX_RELAY_STATE_LENGTH = 80;
-
-    public Saml2IdpFilter(AuthenticationManager authenticationManager) {
+    public Saml2IdpFilter(AuthenticationManager authenticationManager, Saml2IdpService saml2IdpService) {
         this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(DEFAULT_TOKEN_ENDPOINT_URI);
         this.authenticationManager = authenticationManager;
+        this.saml2IdpService = saml2IdpService;
         this.authenticationDetailsSource = new WebAuthenticationDetailsSource();
-        this.authenticationConverter = new DelegatingAuthenticationConverter(Arrays.asList(new Saml2IdpRedirectAuthenticationConverter(), new Saml2IdpPostAuthenticationConverter()));
+        this.authenticationConverter = new DelegatingAuthenticationConverter(Arrays.asList(new Saml2IdpAuthenticationConverter()));
     }
 
     @Override
@@ -82,48 +73,22 @@ public final class Saml2IdpFilter extends OncePerRequestFilter {
             if (this.authenticationSuccessHandler != null) {
                 this.authenticationSuccessHandler.onAuthenticationSuccess(request, response, saml2IdpAuthenticationToken);
             }
+        } catch (Saml2IdpAuthenticationException e){
+            log.warn("SAML authentication failed: {}", e.getMessage());
+            // SAML协议异常
+            writeSamlErrorResponse(response, e);
         } catch (AuthenticationException e) {
-            if (this.authenticationFailureHandler != null) {
+            // 自身认证异常
+            if(authenticationFailureHandler != null){
                 this.authenticationFailureHandler.onAuthenticationFailure(request, response, e);
             } else {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                throw e;
             }
         } catch (Exception e) {
-            log.error("SAML IdP request processing failed", e);
-            if (this.authenticationFailureHandler != null) {
-                this.authenticationFailureHandler.onAuthenticationFailure(request, response, invalidRequest("SAML AuthnRequest processing failed"));
-            }
+            // IdP内部未知异常
+            log.error("Unexpected SAML IdP error", e);
+            writeSamlErrorResponse(response, new Saml2IdpAuthenticationException(new Saml2Error(Saml2ErrorCodes.INTERNAL_VALIDATION_ERROR, "Internal SAML IdP error"), null));
         }
-    }
-
-    private Saml2IdpRequest resolveRequest(HttpServletRequest request) {
-        Saml2MessageBinding binding;
-        if ("GET".equalsIgnoreCase(request.getMethod())) {
-            binding = Saml2MessageBinding.REDIRECT;
-        } else if ("POST".equalsIgnoreCase(request.getMethod())) {
-            binding = Saml2MessageBinding.POST;
-        } else {
-            throw invalidRequest("Unsupported HTTP method");
-        }
-        if (binding == Saml2MessageBinding.POST) {
-            String contentType = request.getContentType();
-            if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("application/x-www-form-urlencoded")) {
-                throw invalidRequest("Unsupported SAML POST content type");
-            }
-        }
-        String samlRequest = getSingleParameter(request, "SAMLRequest");
-        String relayState = getSingleParameter(request, "RelayState");
-        String rawQueryString = request.getQueryString();
-        if (samlRequest == null || samlRequest.isBlank()) {
-            throw invalidRequest("SAMLRequest parameter is required");
-        }
-        if (samlRequest.length() > MAX_SAML_REQUEST_LENGTH) {
-            throw invalidRequest("SAMLRequest exceeds the maximum allowed length");
-        }
-        if (relayState != null && relayState.length() > MAX_RELAY_STATE_LENGTH) {
-            throw invalidRequest("RelayState exceeds the maximum allowed length");
-        }
-        return new Saml2IdpRequest(binding, samlRequest, relayState, rawQueryString);
     }
 
     public void setAuthenticationSuccessHandler(AuthenticationSuccessHandler authenticationSuccessHandler) {
@@ -136,20 +101,22 @@ public final class Saml2IdpFilter extends OncePerRequestFilter {
         this.authenticationFailureHandler = authenticationFailureHandler;
     }
 
-    private String getSingleParameter(HttpServletRequest request, String name) {
-        String[] values = request.getParameterValues(name);
-        if (values == null || values.length == 0) {
-            return null;
-        }
-        if (values.length != 1) {
-            throw invalidRequest("Duplicate " + name + " parameter");
-        }
-
-        return values[0];
+    public void setAuthenticationDetailsSource(AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource) {
+        Assert.notNull(authenticationDetailsSource, "authenticationDetailsSource cannot be null");
+        this.authenticationDetailsSource = authenticationDetailsSource;
     }
 
-    public static Saml2AuthenticationException invalidRequest(String description) {
+    private void writeSamlErrorResponse(HttpServletResponse response, Saml2IdpAuthenticationException e) throws IOException {
+        String responseXml = saml2IdpService.buildErrorResponse(e);
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/saml+xml");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write(responseXml);
+        response.getWriter().flush();
+    }
 
-        return new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Requester", description));
+    public static Saml2IdpAuthenticationException invalidRequest(String description) {
+
+        return new Saml2IdpAuthenticationException(new Saml2Error(Saml2ErrorCodes.INVALID_REQUEST, description));
     }
 }

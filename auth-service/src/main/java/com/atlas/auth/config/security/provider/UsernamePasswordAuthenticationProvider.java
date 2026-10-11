@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security;
+package com.atlas.auth.config.security.provider;
 
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import org.springframework.security.authentication.BadCredentialsException;

@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security.authentication.provider;
+package com.atlas.auth.config.security.provider;
 
 import com.atlas.auth.domain.dto.Web3WalletVerifySignatureDTO;
 import com.atlas.auth.domain.dto.Web3WalletVerifySignatureResponse;

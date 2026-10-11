@@ -1,9 +1,7 @@
 package com.atlas.auth.config.security.saml2;
 
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
-import com.atlas.auth.service.Saml2RegisteredClientService;
 import com.atlas.common.crypto.random.SecureRandomUtils;
-import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.properties.SecurityProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +18,7 @@ import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.saml2.core.*;
+import org.opensaml.saml.saml2.core.impl.ResponseBuilder;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.KeyDescriptor;
@@ -46,7 +45,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.core.OpenSamlInitializationService;
 import org.springframework.security.saml2.core.Saml2Error;
-import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
+import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Element;
@@ -61,9 +60,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Objects;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -77,10 +77,6 @@ import java.util.zip.Inflater;
 public class Saml2IdpService {
 
     private final SecurityProperties securityProperties;
-
-    private final Saml2RegisteredClientService saml2RegisteredClientService;
-
-    private final RedisHelper redisHelper;
 
     /**
      * IdP 签名证书。
@@ -100,11 +96,6 @@ public class Saml2IdpService {
     // 限制HTTP-Redirect 解码后的压缩数据的大小，避免处理异常大的请求
     private static final int MAX_REDIRECT_REQUEST_BYTES = 256 * 1024; // 256 KiB
 
-    // 在 Base64 解码之前就拦截超长输入，减少不必要的内存分配
-    private static final int MAX_SAML_REQUEST_LENGTH = 1_400_000;
-
-    private static final String SAML_REQUEST_REPLAY_KEY = "saml2:idp:replay:";
-
     private static final Map<String, String> REDIRECT_SIGNATURE_ALGORITHMS = Map.of(
             "http://www.w3.org/2000/09/xmldsig#rsa-sha1", "SHA1withRSA",
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "SHA256withRSA",
@@ -112,18 +103,8 @@ public class Saml2IdpService {
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA"
     );
 
-    private static final Set<String> SUPPORTED_RESPONSE_BINDINGS = Set.of(
-            SAMLConstants.SAML2_POST_BINDING_URI,
-            SAMLConstants.SAML2_REDIRECT_BINDING_URI
-    );
-
-    public Saml2IdpService(SecurityProperties securityProperties,
-                           Saml2RegisteredClientService saml2RegisteredClientService,
-                           Saml2SigningCredentialLoader saml2SigningCredentialLoader,
-                           RedisHelper redisHelper) {
+    public Saml2IdpService(SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader) {
         this.securityProperties = securityProperties;
-        this.saml2RegisteredClientService = saml2RegisteredClientService;
-        this.redisHelper = redisHelper;
 
         SecurityProperties.SigningConfig config = securityProperties.getSaml2().getIdp().getSigning();
         String keyStoreLocation = config.getKeyStore();
@@ -155,150 +136,6 @@ public class Saml2IdpService {
         } catch (MarshallingException e) {
             throw new IllegalStateException("Failed to generate SAML 2.0 IdP metadata", e);
         }
-    }
-
-    public String sso(String samlRequest, Saml2MessageBinding binding, String rawQueryString) {
-        if (samlRequest == null || samlRequest.isBlank()) {
-            throw invalidRequest("invalid SAMLRequest");
-        }
-        if (samlRequest.length() > MAX_SAML_REQUEST_LENGTH) {
-            throw invalidRequest("SAMLRequest exceeds the maximum allowed length");
-        }
-        if (binding == null) {
-            throw invalidRequest("invalid SAML binding");
-        }
-        log.info("SAML SSO request received, binding={}", binding.name());
-        // 解析 AuthnRequest
-        AuthnRequest authnRequest = authnRequest(samlRequest, binding);
-        if (!SAMLVersion.VERSION_20.equals(authnRequest.getVersion())) {
-            throw invalidRequest("Unsupported SAML protocol version");
-        }
-        // 校验响应方式
-        String protocolBinding = authnRequest.getProtocolBinding();
-        if (protocolBinding != null && !SUPPORTED_RESPONSE_BINDINGS.contains(protocolBinding)) {
-            throw invalidRequest("Unsupported SAML Response binding");
-        }
-        // 校验 AuthnRequest 的时间，防止接受过期请求
-        if (authnRequest.getIssueInstant() == null) {
-            throw invalidRequest("AuthnRequest IssueInstant is required");
-        }
-        Instant issueInstant = authnRequest.getIssueInstant();
-        Instant now = Instant.now();
-        // 最多允许 1 分钟的未来时钟偏差
-        if (issueInstant.isAfter(now.plusSeconds(60))) {
-            throw invalidRequest("AuthnRequest IssueInstant is in the future");
-        }
-        // 请求最多允许存在 5 分钟
-        if (issueInstant.isBefore(now.minusSeconds(300))) {
-            throw invalidRequest("AuthnRequest IssueInstant has expired");
-        }
-
-        String requestId = authnRequest.getID();
-        if (requestId == null || requestId.isBlank()) {
-            throw invalidRequest("invalid AuthnRequest ID");
-        }
-
-        String issuer = authnRequest.getIssuer() != null ? authnRequest.getIssuer().getValue() : null;
-        if (issuer == null || issuer.isBlank()) {
-            throw invalidRequest("invalid AuthnRequest Issuer");
-        }
-
-        // 校验 Destination
-        String destination = authnRequest.getDestination();
-        String expectedDestination = securityProperties.getSaml2().getIdp().getSsoUrl();
-        if (destination == null || destination.isBlank()) {
-            throw invalidRequest("AuthnRequest Destination is required");
-        }
-        if (!expectedDestination.equals(destination)) {
-            throw invalidRequest("Invalid AuthnRequest Destination");
-        }
-
-        // 当前仅支持通过已注册的 ACS URL 确定响应地址
-        if (authnRequest.getAssertionConsumerServiceIndex() != null) {
-            throw invalidRequest("AssertionConsumerServiceIndex is not supported");
-        }
-
-        // 根据 Issuer 查询已注册的 SP
-        Saml2RegisteredClient saml2RegisteredClient = saml2RegisteredClientService.getEnabledByEntityId(issuer);
-        if (saml2RegisteredClient == null) {
-            throw invalidRequest("Unregistered SAML Service Provider");
-        }
-        // 校验 Entity ID
-        if (saml2RegisteredClient.getEntityId() == null || !issuer.equals(saml2RegisteredClient.getEntityId())) {
-            throw invalidRequest("SAML Service Provider Entity ID mismatch");
-        }
-        String acsUrl = authnRequest.getAssertionConsumerServiceURL();
-        // 校验 ACS 配置
-        String registeredAcsUrl = saml2RegisteredClient.getAcsUrl();
-        if (registeredAcsUrl == null || registeredAcsUrl.isBlank()) {
-            throw invalidRequest("SAML Service Provider ACS URL is not configured");
-        }
-        if (acsUrl != null && !acsUrl.isBlank()) {
-            if (!registeredAcsUrl.equals(acsUrl)) {
-                throw invalidRequest("Unregistered AssertionConsumerServiceURL");
-            }
-        }
-        // 校验签名策略及证书配置
-        boolean requireSignature = Boolean.TRUE.equals(saml2RegisteredClient.getRequireSignedAuthnRequest());
-        // 实际签名是否存在
-        boolean signaturePresent;
-        // 是否已完成签名验证
-        boolean signatureVerified = false;
-        // 按请求绑定方式判断签名是否存在
-        Map<String, String> params = null;
-        if (Saml2MessageBinding.REDIRECT.equals(binding)) {
-            params = parseRawQueryString(rawQueryString);
-            // Redirect 绑定使用查询参数签名
-            boolean hasSigAlg = params.containsKey("SigAlg");
-            boolean hasSignature = params.containsKey("Signature");
-            // 只要出现任意一个签名参数，就视为尝试签名
-            // 避免攻击者只传入部分签名参数而绕过检查
-            if (hasSigAlg != hasSignature) {
-                throw invalidRequest("Incomplete Redirect signature parameters");
-            }
-            signaturePresent = hasSignature;
-        } else if (Saml2MessageBinding.POST.equals(binding)) {
-            // POST 绑定通过 XML 内部的 ds:Signature 签名
-            signaturePresent = authnRequest.getSignature() != null;
-        } else {
-            throw invalidRequest("Unsupported SAML binding");
-        }
-        // 要求签名时，如果请求没有携带签名，直接拒绝
-        if (requireSignature && !signaturePresent) {
-            throw invalidRequest("AuthnRequest signature is required");
-        }
-        // 只要实际携带签名，就必须验证 不受 requireSignedAuthnRequest 配置影响
-        if (signaturePresent) {
-            X509Certificate x509Certificate = parseCertificate(saml2RegisteredClient.getVerificationCertificate());
-            if (x509Certificate == null) {
-                throw invalidRequest("SP verification certificate is not configured");
-            }
-            if (Saml2MessageBinding.REDIRECT.equals(binding)) {
-                verifyRedirectSignature(
-                        params.get("SAMLRequest"),
-                        params.get("SigAlg"),
-                        params.get("Signature"),
-                        params.get("RelayState"),
-                        x509Certificate);
-            } else {
-                verifyPostSignature(authnRequest, x509Certificate);
-            }
-            signatureVerified = true;
-        }
-        // 防重放
-        if (!markRequestAsSeen(issuer, requestId)){
-            throw invalidRequest("Duplicate AuthnRequest");
-        }
-        log.info("[SAML2 IdP] AuthnRequest validation completed, requestId={}, issuer={}, binding={}, destination={}, acs={} signatureRequired={}, signatureVerified={}",
-                requestId,
-                issuer,
-                binding.name(),
-                destination,
-                acsUrl,
-                requireSignature,
-                signatureVerified
-        );
-        return null;
     }
 
     public AuthnRequest authnRequest(String samlRequest, Saml2MessageBinding binding) {
@@ -497,6 +334,61 @@ public class Saml2IdpService {
         }
     }
 
+    public String buildErrorResponse(Saml2IdpAuthenticationException exception){
+        Response response = new ResponseBuilder().buildObject();
+        response.setID("_" + SecureRandomUtils.generate());
+        response.setIssueInstant(Instant.now());
+        response.setVersion(SAMLVersion.VERSION_20);
+        // 设置 IdP Issuer
+        Issuer responseIssuer = build(Issuer.DEFAULT_ELEMENT_NAME);
+        responseIssuer.setValue(securityProperties.getSaml2().getIdp().getEntityId());
+        response.setIssuer(responseIssuer);
+        // 设置失败状态
+        Status status = build(Status.DEFAULT_ELEMENT_NAME);
+        StatusCode statusCode = build(StatusCode.DEFAULT_ELEMENT_NAME);
+        statusCode.setValue(resolveStatusCode(exception.getSaml2Error()));
+        status.setStatusCode(statusCode);
+        String message = exception.getSaml2Error().getDescription();
+        if (message != null) {
+            StatusMessage statusMessage = build(StatusMessage.DEFAULT_ELEMENT_NAME);
+            statusMessage.setValue(message);
+            status.setStatusMessage(statusMessage);
+        }
+        response.setStatus(status);
+
+        AuthnRequest authnRequest = exception.getAuthnRequest();
+        if (authnRequest != null){
+            response.setInResponseTo(authnRequest.getID());
+            String acsUrl = authnRequest.getAssertionConsumerServiceURL();
+            if (acsUrl != null && !acsUrl.isBlank()) {
+                response.setDestination(acsUrl);
+            } else if (authnRequest.getDestination() != null) {
+                response.setDestination(authnRequest.getDestination());
+            }
+        }
+
+        return serializeResponse(response);
+    }
+
+    private String resolveStatusCode(Saml2Error error) {
+
+        return switch (error.getErrorCode()) {
+            // 请求方错误
+            case Saml2ErrorCodes.INVALID_REQUEST,
+                 Saml2ErrorCodes.MALFORMED_REQUEST_DATA,
+                 Saml2ErrorCodes.INVALID_DESTINATION,
+                 Saml2ErrorCodes.INVALID_SIGNATURE,
+                 Saml2ErrorCodes.INVALID_ISSUER,
+                 Saml2ErrorCodes.RELYING_PARTY_REGISTRATION_NOT_FOUND,
+                 Saml2ErrorCodes.INVALID_IN_RESPONSE_TO -> StatusCode.REQUESTER;
+
+            // IdP内部错误
+            case Saml2ErrorCodes.INTERNAL_VALIDATION_ERROR,
+                 Saml2ErrorCodes.DECRYPTION_ERROR -> StatusCode.RESPONDER;
+
+            default -> StatusCode.RESPONDER;
+        };
+    }
 
     private byte[] inflateRawDeflate(byte[] compressed, int maxOutputBytes) {
         if (compressed == null || compressed.length == 0) {
@@ -702,21 +594,29 @@ public class Saml2IdpService {
     }
 
 
-    private void verifyRedirectSignature(String samlRequest, String sigAlg, String signature, String relayState, X509Certificate certificate) {
-        if (samlRequest == null || samlRequest.isBlank()) {
+    public void verifyRedirectSignature(Map<String, String> requestParams, String verificationCertificate){
+        if(requestParams == null || requestParams.isEmpty()){
+            throw invalidRequest("requestParams must not be empty");
+        }
+        X509Certificate x509Certificate = parseCertificate(verificationCertificate);
+        if (x509Certificate == null) {
+            throw invalidRequest("SP verification certificate is not configured");
+        }
+        String rawSamlRequest = requestParams.get("SAMLRequest");
+        String rawSigAlg = requestParams.get("SigAlg");
+        String rawSignature = requestParams.get("Signature");
+        String rawRelayState = requestParams.get("RelayState");
+        if (rawSamlRequest == null || rawSamlRequest.isBlank()) {
             throw invalidRequest("SAMLRequest must not be empty");
         }
-        if (sigAlg == null || sigAlg.isBlank()) {
+        if (rawSigAlg == null || rawSigAlg.isBlank()) {
             throw invalidRequest("SigAlg must not be empty");
         }
-        if (signature == null || signature.isBlank()) {
+        if (rawSignature == null || rawSignature.isBlank()) {
             throw invalidRequest("Signature must not be empty");
         }
-        if (certificate == null) {
-            throw invalidRequest("SP signing certificate must not be empty");
-        }
-        String decodedSigAlg = URLDecoder.decode(sigAlg, StandardCharsets.UTF_8);
-        String decodedSignature = URLDecoder.decode(signature, StandardCharsets.UTF_8);
+        String decodedSigAlg = URLDecoder.decode(rawSigAlg, StandardCharsets.UTF_8);
+        String decodedSignature = URLDecoder.decode(rawSignature, StandardCharsets.UTF_8);
 
         String jcaAlgorithm = REDIRECT_SIGNATURE_ALGORITHMS.get(decodedSigAlg);
         if (jcaAlgorithm == null) {
@@ -725,15 +625,15 @@ public class Saml2IdpService {
         try {
             StringBuilder signedQuery = new StringBuilder()
                     .append("SAMLRequest=")
-                    .append(samlRequest);
-            if (relayState != null) {
-                signedQuery.append("&RelayState=").append(relayState);
+                    .append(rawSamlRequest);
+            if (rawRelayState != null) {
+                signedQuery.append("&RelayState=").append(rawRelayState);
             }
-            signedQuery.append("&SigAlg=").append(sigAlg);
+            signedQuery.append("&SigAlg=").append(rawSigAlg);
             byte[] signedBytes = signedQuery.toString().getBytes(StandardCharsets.UTF_8);
             byte[] signatureBytes = Base64.getDecoder().decode(decodedSignature);
             java.security.Signature verifier = java.security.Signature.getInstance(jcaAlgorithm);
-            verifier.initVerify(certificate.getPublicKey());
+            verifier.initVerify(x509Certificate.getPublicKey());
             verifier.update(signedBytes);
             if (!verifier.verify(signatureBytes)) {
                 throw invalidRequest("Invalid REDIRECT request signature");
@@ -745,29 +645,14 @@ public class Saml2IdpService {
         }
     }
 
-    private Map<String, String> parseRawQueryString(String queryString) {
-        Map<String, String> params = new HashMap<>();
-        if (queryString == null || queryString.isBlank()) {
-            throw invalidRequest("Missing query string");
-        }
-        for (String pair : queryString.split("&")) {
-            int index = pair.indexOf('=');
-            if (index <= 0) {
-                continue;
-            }
-            String key = pair.substring(0, index);
-            String value = pair.substring(index + 1);
-            if (params.putIfAbsent(key, value) != null) {
-                throw invalidRequest("Duplicate SAML query parameter");
-            }
-        }
-        return params;
-    }
-
-    private void verifyPostSignature(AuthnRequest authnRequest, X509Certificate certificate) {
+    public void verifyPostSignature(AuthnRequest authnRequest, String verificationCertificate) {
         if (authnRequest == null) {
             throw invalidRequest("AuthnRequest must not be null");
         }
+        if(verificationCertificate == null || verificationCertificate.isBlank()){
+            throw invalidRequest("verificationCertificate must not be null");
+        }
+        X509Certificate certificate = parseCertificate(verificationCertificate);
         if (certificate == null) {
             throw invalidRequest("SP signing certificate must not be empty");
         }
@@ -818,18 +703,14 @@ public class Saml2IdpService {
         }
     }
 
-    private boolean markRequestAsSeen(String issuer, String requestId) {
-        return redisHelper.setIfAbsent(SAML_REQUEST_REPLAY_KEY + ":" + issuer + ":" + requestId, "1", Duration.ofMinutes(5));
+    public static Saml2IdpAuthenticationException invalidRequest(String description) {
+
+        return new Saml2IdpAuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Requester", description));
     }
 
-    public static Saml2AuthenticationException invalidRequest(String description) {
+    public static Saml2IdpAuthenticationException invalidResponse(String description) {
 
-        return new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Requester", description));
-    }
-
-    public static Saml2AuthenticationException invalidResponse(String description) {
-
-        return new Saml2AuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Response", description));
+        return new Saml2IdpAuthenticationException(new Saml2Error("urn:oasis:names:tc:SAML:2.0:status:Response", description));
     }
 
 }

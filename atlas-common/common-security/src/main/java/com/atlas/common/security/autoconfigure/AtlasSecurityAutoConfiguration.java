@@ -5,20 +5,20 @@ import com.atlas.common.core.autoconfigure.AtlasCoreAutoConfiguration;
 import com.atlas.common.crypto.autoconfigure.CryptoAutoConfiguration;
 import com.atlas.common.redis.autoconfigure.AtlasRedisAutoConfiguration;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.common.security.exception.SecurityExceptionAdvice;
-import com.atlas.common.security.model.SecurityUser;
-import com.atlas.common.security.model.RequestUrlAuthority;
-import com.atlas.common.security.resolver.NormalBearerTokenResolver;
 import com.atlas.common.security.encoder.MultiSecretDelegatingPasswordEncoder;
+import com.atlas.common.security.exception.SecurityExceptionAdvice;
 import com.atlas.common.security.jackson.AuthorityResourceMixin;
 import com.atlas.common.security.jackson.OneTimeTokenAuthenticationTokenMixin;
 import com.atlas.common.security.jackson.RequestUrlAuthorityMixin;
 import com.atlas.common.security.jackson.SecurityUserMixin;
+import com.atlas.common.security.model.RequestUrlAuthority;
+import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.oauth2.JwtGrantedScopeAuthoritiesConverter;
 import com.atlas.common.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.atlas.common.security.repository.RedisSecurityContextRepository;
 import com.atlas.common.security.repository.SecurityContextStore;
+import com.atlas.common.security.resolver.NormalBearerTokenResolver;
 import com.atlas.common.security.service.DefaultTokenService;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.*;
@@ -143,6 +143,7 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(WebauthnAuthenticationToken.class, WebauthnAuthenticationToken.WebAuthnAuthenticationTokenMixin.class);
         objectMapper.addMixIn(Web3WalletAuthenticationToken.class, Web3WalletAuthenticationToken.Web3WalletAuthenticationTokenMixin.class);
         objectMapper.addMixIn(MfaAuthenticationToken.class, MfaAuthenticationToken.MfaAuthenticationTokenMixin.class);
+        objectMapper.addMixIn(Saml2IdpAuthenticationToken.class, Saml2IdpAuthenticationToken.Saml2IdpAuthenticationTokenMixin.class);
 
         // 屏蔽 WebAuthn 的类型信息
         @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)

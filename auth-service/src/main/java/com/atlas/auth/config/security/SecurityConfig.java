@@ -1,13 +1,11 @@
 package com.atlas.auth.config.security;
 
 
-import com.atlas.auth.config.security.authentication.provider.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
-import com.atlas.auth.config.security.saml2.DelegateRelyingPartyRegistrationRepository;
-import com.atlas.auth.config.security.saml2.Saml2FailureHandler;
-import com.atlas.auth.config.security.saml2.Saml2SuccessHandler;
+import com.atlas.auth.config.security.provider.*;
+import com.atlas.auth.config.security.saml2.*;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.service.*;
@@ -54,49 +52,13 @@ import org.springframework.security.web.webauthn.management.PublicKeyCredentialU
 public class SecurityConfig {
 
     @Resource
-    private LogoutService logoutService;
-
-    @Resource
-    private RedisHelper redisHelper;
-
-    @Resource
-    private UserService userService;
-
-    @Resource
-    private MfaTicketRepository mfaTicketRepository;
-
-    @Resource
-    private MfaVerifyStrategyFactory mfaVerifyStrategyFactory;
-
-    @Resource
-    private WebauthnService webauthnService;
-
-    @Resource
-    private PasswordEncoder passwordEncoder;
-
-    @Resource
     private SecurityProperties securityProperties;
-
-    @Resource
-    private TokenService tokenService;
-
-    @Resource
-    private JdbcTemplate jdbcTemplate;
 
     @Resource
     private OneTimeTokenGenerationSuccessService oneTimeTokenGenerationSuccessService;
 
     @Resource
     private SecurityContextRepository redisSecurityContextRepository;
-
-    @Resource
-    private CaptchaFactory captchaFactory;
-
-    @Resource
-    private Web3WalletService web3WalletService;
-
-    @Resource
-    private UserWeb3CredentialsService userWeb3CredentialsService;
 
     @Resource
     private Saml2SuccessHandler saml2SuccessHandler;
@@ -115,7 +77,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, Saml2IdpFilter saml2IdpFilter, OneTimeTokenService oneTimeTokenService, LogoutSuccessHandler logoutSuccessHandler) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -141,8 +103,6 @@ public class SecurityConfig {
                         .failureHandler(saml2FailureHandler)
                         .relyingPartyRegistrationRepository(relyingPartyRegistrationRepository)
                 )
-                //记住我
-                .rememberMe(rememberMe -> rememberMe.rememberMeServices(rememberMeServices()))
                 //一次性令牌
                 .oneTimeTokenLogin((ott) -> {
                     //生成一次性令牌的路径
@@ -152,19 +112,19 @@ public class SecurityConfig {
                     //禁用默认提交页面
                     ott.showDefaultSubmitPage(false);
                     //令牌生成以及存储
-                    ott.tokenService(oneTimeTokenService());
+                    ott.tokenService(oneTimeTokenService);
                     //令牌生成成功处理器
                     ott.tokenGenerationSuccessHandler(oneTimeTokenGenerationSuccessService);
                 })
                 .securityContext(securityContext -> {
                     securityContext.securityContextRepository(redisSecurityContextRepository);
                 })
-                //记住我过滤器
-                .addFilterBefore(rememberMeFilter(authenticationManager(http), rememberMeServices()), UsernamePasswordAuthenticationFilter.class)
+                // saml2 idp
+                .addFilterBefore(saml2IdpFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout")
-                                .logoutSuccessHandler(logoutSuccessHandler())
+                                .logoutSuccessHandler(logoutSuccessHandler)
                                 .permitAll()
                 )
                 // oauth2资源服务器
@@ -180,34 +140,46 @@ public class SecurityConfig {
     //身份认证管理器
     @Bean
     @Primary
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+    public AuthenticationManager authenticationManager(HttpSecurity http,
+                                                       DaoAuthenticationProvider daoAuthenticationProvider,
+                                                       CaptchaAuthenticationProvider captchaAuthenticationProvider,
+                                                       ThirdPartyAuthenticationProvider thirdPartyAuthenticationProvider,
+                                                       RefreshAuthenticationProvider refreshAuthenticationProvider,
+                                                       RememberMeAuthenticationProvider rememberMeAuthenticationProvider,
+                                                       OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider,
+                                                       WebauthnAuthenticationProvider webauthnAuthenticationProvider,
+                                                       Web3WalletAuthenticationProvider web3WalletAuthenticationProvider,
+                                                       Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider,
+                                                       MfaAuthenticationProvider mfaAuthenticationProvider) throws Exception {
 
         return http.getSharedObject(AuthenticationManagerBuilder.class)
                 //用户名密码身份认证
-                .authenticationProvider(daoAuthenticationProvider())
+                .authenticationProvider(daoAuthenticationProvider)
                 // 验证码认证
-                .authenticationProvider(captchaAuthenticationProvider())
+                .authenticationProvider(captchaAuthenticationProvider)
                 //用于使用三方登录的身份认证
-                .authenticationProvider(thirdPartyAuthenticationProvider())
+                .authenticationProvider(thirdPartyAuthenticationProvider)
                 // 刷新令牌
-                .authenticationProvider(refreshAuthenticationProvider())
+                .authenticationProvider(refreshAuthenticationProvider)
                 //记住我身份认证
-                .authenticationProvider(rememberMeAuthenticationProvider())
+                .authenticationProvider(rememberMeAuthenticationProvider)
                 //一次性令牌认证
-                .authenticationProvider(oneTimeTokenAuthenticationProvider())
+                .authenticationProvider(oneTimeTokenAuthenticationProvider)
                 //webauthn通行密钥认证
-                .authenticationProvider(webauthnAuthenticationProvider())
+                .authenticationProvider(webauthnAuthenticationProvider)
                 // web3认证
-                .authenticationProvider(web3WalletAuthenticationProvider())
+                .authenticationProvider(web3WalletAuthenticationProvider)
+                // saml idp
+                .authenticationProvider(saml2IdpAuthenticationProvider)
                 // mfa双因子认证
-                .authenticationProvider(mfaAuthenticationProvider())
+                .authenticationProvider(mfaAuthenticationProvider)
                 .parentAuthenticationManager(null)
                 .build();
     }
 
     //基于用户名密码认证
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
+    public DaoAuthenticationProvider daoAuthenticationProvider(RedisHelper redisHelper, UserService userService, PasswordEncoder passwordEncoder) {
         // 密码防暴力破解登录
         LoginAttemptHandler loginAttemptService = new LoginAttemptHandler(redisHelper);
         DaoAuthenticationProvider authProvider = new UsernamePasswordAuthenticationProvider(userService, loginAttemptService);
@@ -218,7 +190,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RememberMeAuthenticationProvider rememberMeAuthenticationProvider() {
+    public RememberMeAuthenticationProvider rememberMeAuthenticationProvider(SecurityProperties securityProperties) {
         String secretKey = securityProperties.getRememberMe().getSecretKey();
         return new RememberMeAuthenticationProvider(secretKey);
     }
@@ -231,63 +203,63 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RememberMeServices rememberMeServices() {
+    public RememberMeServices rememberMeServices(SecurityProperties securityProperties, TokenService tokenService, UserService userService) {
         String secretKey = securityProperties.getRememberMe().getSecretKey();
         return new HeaderBasedRememberMeServices(secretKey, tokenService, userService);
     }
 
     // 验证码认证
     @Bean
-    public CaptchaAuthenticationProvider captchaAuthenticationProvider() {
+    public CaptchaAuthenticationProvider captchaAuthenticationProvider(UserService userService, CaptchaFactory captchaFactory) {
         return new CaptchaAuthenticationProvider(userService, captchaFactory);
     }
 
     //一次性令牌
     //使用数据库存储
     @Bean
-    public OneTimeTokenService oneTimeTokenService() {
+    public OneTimeTokenService oneTimeTokenService(JdbcTemplate jdbcTemplate) {
         return new JdbcOneTimeTokenService(jdbcTemplate);
     }
 
     @Bean
-    public OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider() {
-        return new OneTimeTokenAuthenticationProvider(oneTimeTokenService(), userService);
+    public OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider(OneTimeTokenService oneTimeTokenService, UserService userService) {
+        return new OneTimeTokenAuthenticationProvider(oneTimeTokenService, userService);
     }
 
     // 通行密钥
     @Bean
-    public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository() {
+    public PublicKeyCredentialUserEntityRepository publicKeyCredentialUserEntityRepository(UserService userService) {
         return new AtlasPublicKeyCredentialUserEntityRepository(userService);
     }
 
     @Bean
-    public WebauthnAuthenticationProvider webauthnAuthenticationProvider() {
+    public WebauthnAuthenticationProvider webauthnAuthenticationProvider(WebauthnService webauthnService, UserService userService) {
 
         return new WebauthnAuthenticationProvider(webauthnService, userService);
     }
 
     // web3凭证
     @Bean
-    public Web3WalletAuthenticationProvider web3WalletAuthenticationProvider() {
+    public Web3WalletAuthenticationProvider web3WalletAuthenticationProvider(UserService userService, Web3WalletService web3WalletService, UserWeb3CredentialsService userWeb3CredentialsService) {
 
         return new Web3WalletAuthenticationProvider(userService, web3WalletService, userWeb3CredentialsService);
     }
 
     //三方登录认证
     @Bean
-    public ThirdPartyAuthenticationProvider thirdPartyAuthenticationProvider() {
+    public ThirdPartyAuthenticationProvider thirdPartyAuthenticationProvider(UserService userService) {
 
         return new ThirdPartyAuthenticationProvider(userService);
     }
 
     @Bean
-    public RefreshAuthenticationProvider refreshAuthenticationProvider() {
+    public RefreshAuthenticationProvider refreshAuthenticationProvider(UserService userService, TokenService tokenService) {
 
         return new RefreshAuthenticationProvider(userService, tokenService);
     }
 
     @Bean
-    public MfaAuthenticationProvider mfaAuthenticationProvider() {
+    public MfaAuthenticationProvider mfaAuthenticationProvider(UserService userService, MfaTicketRepository mfaTicketRepository, MfaVerifyStrategyFactory mfaVerifyStrategyFactory) {
 
         return new MfaAuthenticationProvider(
                 userService,
@@ -297,9 +269,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public LogoutSuccessHandler logoutSuccessHandler() {
+    public LogoutSuccessHandler logoutSuccessHandler(LogoutService logoutService) {
 
         return logoutService;
+    }
+
+    // saml2 idp
+    @Bean
+    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager, Saml2IdpService saml2IdpService) {
+
+        return new Saml2IdpFilter(authenticationManager,saml2IdpService);
+    }
+
+    @Bean
+    public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider(Saml2IdpService saml2IdpService,
+                                                                         Saml2RegisteredClientService saml2RegisteredClientService,
+                                                                         SecurityProperties securityProperties,
+                                                                         RedisHelper redisHelper) {
+
+        return new Saml2IdpAuthenticationProvider(saml2IdpService, saml2RegisteredClientService, securityProperties, redisHelper);
     }
 
 }

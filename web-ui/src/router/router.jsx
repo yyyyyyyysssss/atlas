@@ -40,7 +40,7 @@ const OAuth2QrScan = lazy(() => import('../pages/login/oauth2/qr-scan'))
 const OAuth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
 
 const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
-
+const Saml2IdpSso = lazy(() => import('../pages/login/saml2/idp'))
 
 const OAuth2ClientApplication = lazy(() => import('../pages/project/application/oauth2'))
 const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/oauth2/list'))
@@ -103,6 +103,11 @@ export const routes = [
         path: 'saml2/callback/:providerName?',
         element: <Saml2Callback />,
         protected: false,
+    },
+    {
+        path: 'saml2/idp/sso',
+        element: <Saml2IdpSso />,
+        protected: true,
     },
     {
         path: '',

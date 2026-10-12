@@ -149,6 +149,7 @@ public class SecurityConfig {
                                                        OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider,
                                                        WebauthnAuthenticationProvider webauthnAuthenticationProvider,
                                                        Web3WalletAuthenticationProvider web3WalletAuthenticationProvider,
+                                                       Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider,
                                                        Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider,
                                                        MfaAuthenticationProvider mfaAuthenticationProvider) throws Exception {
 
@@ -170,6 +171,7 @@ public class SecurityConfig {
                 // web3认证
                 .authenticationProvider(web3WalletAuthenticationProvider)
                 // saml idp
+                .authenticationProvider(saml2IdpRequestAuthenticationProvider)
                 .authenticationProvider(saml2IdpAuthenticationProvider)
                 // mfa双因子认证
                 .authenticationProvider(mfaAuthenticationProvider)
@@ -276,18 +278,30 @@ public class SecurityConfig {
 
     // saml2 idp
     @Bean
-    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager, Saml2IdpService saml2IdpService) {
+    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager, Saml2IdpService saml2IdpService, SecurityProperties securityProperties, Saml2IdpRequestContextRepository saml2IdpRequestContextRepository) {
 
-        return new Saml2IdpFilter(authenticationManager,saml2IdpService);
+        return new Saml2IdpFilter(authenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository);
     }
 
     @Bean
-    public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider(Saml2IdpService saml2IdpService,
-                                                                         Saml2RegisteredClientService saml2RegisteredClientService,
-                                                                         SecurityProperties securityProperties,
-                                                                         RedisHelper redisHelper) {
+    public Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider(Saml2IdpService saml2IdpService,
+                                                                                Saml2RegisteredClientService saml2RegisteredClientService,
+                                                                                SecurityProperties securityProperties,
+                                                                                Saml2IdpRequestContextRepository saml2IdpRequestContextRepository) {
 
-        return new Saml2IdpAuthenticationProvider(saml2IdpService, saml2RegisteredClientService, securityProperties, redisHelper);
+        return new Saml2IdpRequestAuthenticationProvider(saml2IdpService, saml2RegisteredClientService, securityProperties, saml2IdpRequestContextRepository);
+    }
+
+    @Bean
+    public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider() {
+
+        return new Saml2IdpAuthenticationProvider();
+    }
+
+    @Bean
+    public Saml2IdpRequestContextRepository saml2IdpRequestContextRepository(RedisHelper redisHelper){
+
+        return new RedisSaml2IdpRequestContextRepository(redisHelper);
     }
 
 }

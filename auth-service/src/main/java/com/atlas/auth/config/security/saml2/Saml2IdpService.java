@@ -1,6 +1,7 @@
 package com.atlas.auth.config.security.saml2;
 
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
+import com.atlas.auth.service.Saml2RegisteredClientService;
 import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.properties.SecurityProperties;
@@ -13,7 +14,11 @@ import org.opensaml.core.xml.XMLObjectBuilder;
 import org.opensaml.core.xml.XMLObjectBuilderFactory;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
 import org.opensaml.core.xml.io.*;
-import org.opensaml.core.xml.schema.XSAny;
+import org.opensaml.core.xml.schema.XSBoolean;
+import org.opensaml.core.xml.schema.XSBooleanValue;
+import org.opensaml.core.xml.schema.XSString;
+import org.opensaml.core.xml.schema.impl.XSBooleanBuilder;
+import org.opensaml.core.xml.schema.impl.XSStringBuilder;
 import org.opensaml.core.xml.util.XMLObjectSupport;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
@@ -48,6 +53,7 @@ import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -57,6 +63,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -65,6 +72,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
 import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
@@ -77,6 +85,8 @@ import java.util.zip.Inflater;
 public class Saml2IdpService {
 
     private final SecurityProperties securityProperties;
+
+    private final Saml2RegisteredClientService saml2RegisteredClientService;
 
     /**
      * IdP 签名证书。
@@ -103,9 +113,9 @@ public class Saml2IdpService {
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA"
     );
 
-    public Saml2IdpService(SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader) {
+    public Saml2IdpService(SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader, Saml2RegisteredClientService saml2RegisteredClientService) {
         this.securityProperties = securityProperties;
-
+        this.saml2RegisteredClientService = saml2RegisteredClientService;
         SecurityProperties.SigningConfig config = securityProperties.getSaml2().getIdp().getSigning();
         String keyStoreLocation = config.getKeyStore();
         String keyStorePassword = config.getKeyStorePassword();
@@ -206,17 +216,19 @@ public class Saml2IdpService {
         return authnRequest;
     }
 
-    public Response response(AuthnRequest authnRequest, Saml2RegisteredClient registeredClient, Authentication authentication) {
-        Objects.requireNonNull(authnRequest, "authnRequest");
-        Objects.requireNonNull(registeredClient, "registeredClient");
+    public String createResponse(Saml2IdpRequestContext requestContext, Authentication authentication) {
+        Objects.requireNonNull(requestContext, "requestContext");
         Objects.requireNonNull(authentication, "authentication");
         if (!authentication.isAuthenticated()) {
             throw new BadCredentialsException("BadCredentials");
         }
+        Saml2RegisteredClient registeredClient = saml2RegisteredClientService.getById(requestContext.getRegisteredClientId());
+        Objects.requireNonNull(registeredClient, "registeredClient");
         String entityId = securityProperties.getSaml2().getIdp().getEntityId();
-        String requestId = authnRequest.getID();
-        String acsUrl = registeredClient.getAcsUrl();
+        String requestId = requestContext.getRequestId();
+        String acsUrl = requestContext.getAcsUrl();
         String audience = registeredClient.getEntityId();
+        String nameIdFormat = requestContext.getNameIdFormat();
 
 
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
@@ -226,7 +238,7 @@ public class Saml2IdpService {
 
         // 构建 Response
         Response response = build(Response.DEFAULT_ELEMENT_NAME);
-        response.setID(SecureRandomUtils.generate());
+        response.setID(generateSamlId());
         response.setVersion(SAMLVersion.VERSION_20);
         response.setIssueInstant(now);
         response.setDestination(acsUrl);
@@ -246,7 +258,7 @@ public class Saml2IdpService {
 
         // 构建 Assertion
         Assertion assertion = build(Assertion.DEFAULT_ELEMENT_NAME);
-        assertion.setID(SecureRandomUtils.generate());
+        assertion.setID(generateSamlId());
         assertion.setVersion(SAMLVersion.VERSION_20);
         assertion.setIssueInstant(now);
         Issuer assertionIssuer = build(Issuer.DEFAULT_ELEMENT_NAME);
@@ -256,7 +268,11 @@ public class Saml2IdpService {
         // Subject / NameID
         Subject subject = build(Subject.DEFAULT_ELEMENT_NAME);
         NameID nameID = build(NameID.DEFAULT_ELEMENT_NAME);
-        nameID.setFormat(NameID.UNSPECIFIED);
+        if (nameIdFormat == null || nameIdFormat.isBlank()) {
+            nameIdFormat = NameID.UNSPECIFIED;
+        }
+        nameID.setFormat(nameIdFormat);
+        nameID.setFormat(requestContext.getNameIdFormat());
         nameID.setValue(userId.toString());
         subject.setNameID(nameID);
 
@@ -294,7 +310,7 @@ public class Saml2IdpService {
         // AuthnStatement / AuthnContext
         AuthnStatement authnStatement = build(AuthnStatement.DEFAULT_ELEMENT_NAME);
         authnStatement.setAuthnInstant(now);
-        authnStatement.setSessionIndex(SecureRandomUtils.generate());
+        authnStatement.setSessionIndex(generateSamlId());
         authnStatement.setSessionNotOnOrAfter(expiresAt);
         AuthnContext authnContext = build(AuthnContext.DEFAULT_ELEMENT_NAME);
         AuthnContextClassRef classRef = build(AuthnContextClassRef.DEFAULT_ELEMENT_NAME);
@@ -318,23 +334,10 @@ public class Saml2IdpService {
             sign(response);
         }
 
-        return response;
+        return serializeResponseXml(response);
     }
 
-    public String serializeResponse(Response response) {
-        try {
-            XMLObjectSupport.marshall(response);
-            Node node = response.getDOM();
-            if (node == null) {
-                throw invalidResponse("SAML Response DOM is null after marshalling");
-            }
-            return SerializeSupport.nodeToString(node);
-        } catch (MarshallingException e) {
-            throw new IllegalStateException("Failed to serialize SAML 2.0 Response", e);
-        }
-    }
-
-    public String buildErrorResponse(Saml2IdpAuthenticationException exception){
+    public String createErrorResponse(Saml2IdpAuthenticationException exception){
         Response response = new ResponseBuilder().buildObject();
         response.setID("_" + SecureRandomUtils.generate());
         response.setIssueInstant(Instant.now());
@@ -367,7 +370,47 @@ public class Saml2IdpService {
             }
         }
 
-        return serializeResponse(response);
+        return serializeResponseXml(response);
+    }
+
+    private String serializeResponseXml(Response response) {
+        try {
+            XMLObjectSupport.marshall(response);
+            Node node = response.getDOM();
+            if (node == null) {
+                throw invalidResponse("SAML Response DOM is null after marshalling");
+            }
+            return SerializeSupport.nodeToString(node);
+        } catch (MarshallingException e) {
+            throw new IllegalStateException("Failed to serialize SAML 2.0 Response", e);
+        }
+    }
+
+    public Saml2IdpResponse createRedirectResponse(Saml2IdpRequestContext requestContext,Authentication authentication){
+        String samlResponse = createResponse(requestContext, authentication);
+        String encodedResponse = encodeRedirect(samlResponse);
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromUriString(requestContext.getAcsUrl())
+                .queryParam("SAMLResponse", encodedResponse);
+        String relayState = requestContext.getRelayState();
+        if (relayState != null && !relayState.isBlank()) {
+            builder.queryParam("RelayState", URLEncoder.encode(relayState, StandardCharsets.UTF_8));
+        }
+        return Saml2IdpResponse.builder()
+                .binding(Saml2MessageBinding.REDIRECT.name())
+                .redirectUrl(builder.build(true).toUriString())
+                .build();
+    }
+
+    public Saml2IdpResponse createPostResponse(Saml2IdpRequestContext requestContext, Authentication authentication) {
+        String samlResponse = createResponse(requestContext, authentication);
+        String encodedResponse = Base64.getEncoder().encodeToString(samlResponse.getBytes(StandardCharsets.UTF_8));
+        return Saml2IdpResponse.builder()
+                .binding(Saml2MessageBinding.POST.name())
+                .acsUrl(requestContext.getAcsUrl())
+                .samlResponse(encodedResponse)
+                .relayState(requestContext.getRelayState())
+                .build();
     }
 
     private String resolveStatusCode(Saml2Error error) {
@@ -444,6 +487,22 @@ public class Saml2IdpService {
         }
     }
 
+    private String encodeRedirect(String xml) {
+        byte[] xmlBytes = xml.getBytes(StandardCharsets.UTF_8);
+        Deflater deflater = new Deflater(Deflater.DEFLATED, true);
+        deflater.setInput(xmlBytes);
+        deflater.finish();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[512];
+        while (!deflater.finished()) {
+            int count = deflater.deflate(buffer);
+            outputStream.write(buffer, 0, count);
+        }
+        deflater.end();
+        byte[] compressed = outputStream.toByteArray();
+        return URLEncoder.encode(Base64.getEncoder().encodeToString(compressed), StandardCharsets.UTF_8);
+    }
+
     // 对 SAML 对象签名。
     private void sign(XMLObject object) {
         Signature signature = build(Signature.DEFAULT_ELEMENT_NAME);
@@ -480,9 +539,31 @@ public class Saml2IdpService {
         }
         Attribute attribute = build(Attribute.DEFAULT_ELEMENT_NAME);
         attribute.setName(name);
-        XSAny attributeValue = build(org.opensaml.core.xml.schema.XSAny.TYPE_NAME);
-        attributeValue.setTextContent(value.toString());
-        attribute.getAttributeValues().add(attributeValue);
+
+
+        if (value instanceof Boolean bool) {
+            XSBooleanBuilder booleanBuilder = (XSBooleanBuilder) XMLObjectProviderRegistrySupport
+                            .getBuilderFactory()
+                            .getBuilder(XSBoolean.TYPE_NAME);
+            if (booleanBuilder == null) {
+                throw new IllegalStateException("OpenSAML XSString builder not initialized");
+            }
+            XSBoolean booleanValue = booleanBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME, XSBoolean.TYPE_NAME);
+            booleanValue.setValue(new XSBooleanValue(bool, false));
+            attribute.getAttributeValues().add(booleanValue);
+
+        } else {
+            XSStringBuilder stringBuilder = (XSStringBuilder) XMLObjectProviderRegistrySupport
+                            .getBuilderFactory()
+                            .getBuilder(XSString.TYPE_NAME);
+            if (stringBuilder == null) {
+                throw new IllegalStateException("OpenSAML XSString builder not initialized");
+            }
+            XSString stringValue = stringBuilder.buildObject(AttributeValue.DEFAULT_ELEMENT_NAME, XSString.TYPE_NAME);
+            stringValue.setValue(String.valueOf(value));
+            attribute.getAttributeValues().add(stringValue);
+        }
+
         statement.getAttributes().add(attribute);
     }
 
@@ -701,6 +782,10 @@ public class Saml2IdpService {
         } catch (Exception e) {
             throw invalidRequest("Invalid SAML IdP X.509 certificate");
         }
+    }
+
+    private String generateSamlId() {
+        return "_" + SecureRandomUtils.generate();
     }
 
     public static Saml2IdpAuthenticationException invalidRequest(String description) {

@@ -143,7 +143,6 @@ public class AtlasSecurityAutoConfiguration {
         objectMapper.addMixIn(WebauthnAuthenticationToken.class, WebauthnAuthenticationToken.WebAuthnAuthenticationTokenMixin.class);
         objectMapper.addMixIn(Web3WalletAuthenticationToken.class, Web3WalletAuthenticationToken.Web3WalletAuthenticationTokenMixin.class);
         objectMapper.addMixIn(MfaAuthenticationToken.class, MfaAuthenticationToken.MfaAuthenticationTokenMixin.class);
-        objectMapper.addMixIn(Saml2IdpAuthenticationToken.class, Saml2IdpAuthenticationToken.Saml2IdpAuthenticationTokenMixin.class);
 
         // 屏蔽 WebAuthn 的类型信息
         @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)

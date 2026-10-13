@@ -6,6 +6,8 @@ import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
 import com.atlas.auth.config.security.provider.*;
 import com.atlas.auth.config.security.saml2.*;
+import com.atlas.auth.config.security.saml2.sp.Saml2FailureHandler;
+import com.atlas.auth.config.security.saml2.sp.Saml2SuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
 import com.atlas.auth.service.*;

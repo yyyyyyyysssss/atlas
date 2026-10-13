@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security.saml2;
+package com.atlas.auth.config.security.saml2.sp;
 
 import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.servlet.ServletException;

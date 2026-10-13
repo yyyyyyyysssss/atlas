@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security.saml2;
+package com.atlas.auth.config.security.saml2.sp;
 
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;

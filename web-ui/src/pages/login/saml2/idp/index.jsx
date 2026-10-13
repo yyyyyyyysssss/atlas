@@ -92,7 +92,7 @@ const Saml2IdpSso = () => {
 
     }, [samlIssuer, samlRequestId, navigate, runAsync])
 
-    return <Loading fullscreen tip="正在完成 SAML2 认证..." />
+    return <Loading fullscreen tip="正在完成登录跳转..." />
 }
 
 export default Saml2IdpSso;

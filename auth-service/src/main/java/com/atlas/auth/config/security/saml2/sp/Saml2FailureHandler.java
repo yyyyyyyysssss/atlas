@@ -1,6 +1,5 @@
 package com.atlas.auth.config.security.saml2.sp;
 
-import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -19,14 +17,13 @@ import java.nio.charset.StandardCharsets;
  * @Author ys
  * @Date 2026/6/12 14:34
  */
-@Component // 🌟 让 Spring 来 new 它，并自动把 securityProperties 塞给它
 @Slf4j
 public class Saml2FailureHandler implements AuthenticationFailureHandler {
 
-    private final SecurityProperties securityProperties;
+    private final String uiUrl;
 
-    public Saml2FailureHandler(SecurityProperties securityProperties){
-        this.securityProperties = securityProperties;
+    public Saml2FailureHandler(String uiUrl){
+        this.uiUrl = uiUrl;
     }
 
     @Override
@@ -42,7 +39,6 @@ public class Saml2FailureHandler implements AuthenticationFailureHandler {
         String encodedError = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
         String encodedDetail = URLEncoder.encode(detailMessage != null ? detailMessage : "", StandardCharsets.UTF_8);
 
-        String uiUrl = securityProperties.getUiUrl();
         String targetUrl = String.format("%s/saml2/callback?error=%s&error_description=%s",uiUrl, encodedError, encodedDetail);
 
         log.warn("SAML2 认证彻底失败，正在将用户重定向回前端登录页: {}", targetUrl);

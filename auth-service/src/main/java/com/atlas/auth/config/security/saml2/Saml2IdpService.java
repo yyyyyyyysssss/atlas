@@ -68,9 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -288,12 +286,18 @@ public class Saml2IdpService {
         assertion.setSubject(subject);
 
         // 设置用户信息
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put("sub", userId);
+        attributes.put("email", securityUser.getEmail());
+        attributes.put("avatar", securityUser.getAvatar());
+        attributes.put("fullName", securityUser.getFullName());
+        attributes.put("emailVerified", true);
         AttributeStatement attributeStatement = build(AttributeStatement.DEFAULT_ELEMENT_NAME);
-        addAttribute(attributeStatement, "sub", userId);
-        addAttribute(attributeStatement, "email", securityUser.getEmail());
-        addAttribute(attributeStatement, "avatar", securityUser.getAvatar());
-        addAttribute(attributeStatement, "fullName", securityUser.getFullName());
-        addAttribute(attributeStatement, "emailVerified", true);
+        Map<String,String> mappings = Optional.ofNullable(registeredClient.getAttributeMappings()).orElse(Collections.emptyMap());
+        attributes.forEach((key, value) -> {
+            String attributeName = mappings.getOrDefault(key, key);
+            addAttribute(attributeStatement, attributeName, value);
+        });
         assertion.getAttributeStatements().add(attributeStatement);
 
         // Conditions：限定断言有效期和目标 SP

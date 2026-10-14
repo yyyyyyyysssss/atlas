@@ -3,7 +3,10 @@ package com.atlas.auth.domain.entity;
 import com.atlas.common.mybatis.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
+
+import java.util.Map;
 
 /**
  * @Description
@@ -12,7 +15,7 @@ import lombok.*;
  */
 @Getter
 @Setter
-@TableName("saml2_registered_client")
+@TableName(value = "saml2_registered_client", autoResultMap = true)
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -41,6 +44,9 @@ public class Saml2RegisteredClient extends BaseEntity {
 
     @TableField("sign_response")
     private Boolean signResponse;
+
+    @TableField(value = "attribute_mappings", typeHandler = JacksonTypeHandler.class)
+    private Map<String, String> attributeMappings;
 
     @TableField("enabled")
     private Boolean enabled;

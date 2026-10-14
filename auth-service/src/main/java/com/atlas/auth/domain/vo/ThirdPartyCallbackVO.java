@@ -2,7 +2,12 @@ package com.atlas.auth.domain.vo;
 
 import com.atlas.auth.enums.ThirdPartyCallbackStatus;
 import com.atlas.common.security.model.TokenResponse;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.CLASS,
+        property = "@class"
+)
 public record ThirdPartyCallbackVO(
 
         ThirdPartyCallbackStatus callbackStatus,

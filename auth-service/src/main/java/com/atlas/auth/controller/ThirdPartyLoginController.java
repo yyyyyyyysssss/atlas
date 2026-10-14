@@ -11,6 +11,7 @@ import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.auth.service.ThirdPartyStateService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.common.security.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,8 @@ public class ThirdPartyLoginController {
     private final ThirdPartyLoginProviderFactory providerFactory;
 
     private final ThirdPartyStateService thirdPartyStateService;
+
+    private final TicketService ticketService;
 
     @GetMapping("/authorizeUrl/{clientName}")
     public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName,
@@ -61,5 +64,12 @@ public class ThirdPartyLoginController {
         ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(clientName,thirdPartyStateContext.getProtocol()).authenticate(token);
         return ResultGenerator.ok(thirdPartyCallbackVO);
     }
+
+    @GetMapping("/callback/ticket")
+    public Result<ThirdPartyCallbackVO> callbackTicket(@RequestParam("ticket") String ticket) {
+        ThirdPartyCallbackVO callbackVO = ticketService.consume(ticket, ThirdPartyCallbackVO.class);
+        return ResultGenerator.ok(callbackVO);
+    }
+
 
 }

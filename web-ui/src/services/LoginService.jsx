@@ -105,6 +105,17 @@ export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
     )
 }
 
+export const restoreThirdPartyCallback = (ticket) => {
+
+    return apiRequestWrapper(() =>
+        httpWrapper.get('/api/auth/thirdParty/callback/ticket', {
+            params: {
+                ticket: ticket,
+            }
+        })
+    )
+}
+
 
 export const saveToken = (tokenInfo) => {
     Cookies.set('accessToken', tokenInfo.access.value)

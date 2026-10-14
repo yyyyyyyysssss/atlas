@@ -20,6 +20,8 @@ import com.atlas.common.security.repository.RedisSecurityContextRepository;
 import com.atlas.common.security.repository.SecurityContextStore;
 import com.atlas.common.security.resolver.NormalBearerTokenResolver;
 import com.atlas.common.security.service.DefaultTokenService;
+import com.atlas.common.security.service.RedisTicketService;
+import com.atlas.common.security.service.TicketService;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.*;
 import com.atlas.common.security.utils.JwtUtils;
@@ -190,6 +192,13 @@ public class AtlasSecurityAutoConfiguration {
     public OAuth2BearerTokenResolver oAuth2BearerTokenResolver() {
 
         return new OAuth2BearerTokenResolver();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TicketService ticketService(RedisHelper redisHelper){
+
+        return new RedisTicketService(redisHelper);
     }
 
 }

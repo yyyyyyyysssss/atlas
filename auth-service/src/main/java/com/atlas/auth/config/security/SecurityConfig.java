@@ -16,6 +16,7 @@ import com.atlas.common.security.handler.ForbiddenAccessHandler;
 import com.atlas.common.security.handler.UnauthorizedEntryPoint;
 import com.atlas.common.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.common.security.properties.SecurityProperties;
+import com.atlas.common.security.service.TicketService;
 import com.atlas.common.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
@@ -63,12 +64,6 @@ public class SecurityConfig {
     private SecurityContextRepository redisSecurityContextRepository;
 
     @Resource
-    private Saml2SuccessHandler saml2SuccessHandler;
-
-    @Resource
-    private Saml2FailureHandler saml2FailureHandler;
-
-    @Resource
     private DelegateRelyingPartyRegistrationRepository relyingPartyRegistrationRepository;
 
     @Resource
@@ -79,7 +74,12 @@ public class SecurityConfig {
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, Saml2IdpFilter saml2IdpFilter, OneTimeTokenService oneTimeTokenService, LogoutSuccessHandler logoutSuccessHandler) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
+                                                          Saml2IdpFilter saml2IdpFilter,
+                                                          OneTimeTokenService oneTimeTokenService,
+                                                          Saml2SuccessHandler saml2SuccessHandler,
+                                                          Saml2FailureHandler saml2FailureHandler,
+                                                          LogoutSuccessHandler logoutSuccessHandler) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -304,6 +304,20 @@ public class SecurityConfig {
     public Saml2IdpRequestContextRepository saml2IdpRequestContextRepository(RedisHelper redisHelper){
 
         return new RedisSaml2IdpRequestContextRepository(redisHelper);
+    }
+
+    // saml2 sp
+    @Bean
+    public Saml2SuccessHandler saml2SuccessHandler(SecurityProperties securityProperties,
+                                                   ThirdPartyLoginProviderFactory providerFactory,
+                                                   TicketService ticketService){
+        return new Saml2SuccessHandler(securityProperties.getUiUrl(), providerFactory, ticketService);
+    }
+
+    @Bean
+    public Saml2FailureHandler saml2FailureHandler(SecurityProperties securityProperties){
+
+        return new Saml2FailureHandler(securityProperties.getUiUrl());
     }
 
 }

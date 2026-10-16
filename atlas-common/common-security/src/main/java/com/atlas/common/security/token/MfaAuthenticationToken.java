@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,11 +84,6 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken implemen
     }
 
     static class MfaAuthenticationTokenDeserializer extends JsonDeserializer<MfaAuthenticationToken>{
-
-        private static final TypeReference<List<GrantedAuthority>> GRANTED_AUTHORITY_LIST = new TypeReference<>() {
-        };
-        private static final TypeReference<Object> OBJECT = new TypeReference<>() {
-        };
 
         @Override
         public MfaAuthenticationToken deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {

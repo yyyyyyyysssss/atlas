@@ -19,6 +19,8 @@ public interface SsoProviderService extends IService<SsoProvider> {
 
     SsoProvider getProvider(String provider);
 
+    <T extends SsoSettings> void saveSettings(String provider, SsoProviderProtocol protocol, T settings);
+
     <T extends SsoSettings> T getSettings(String provider, SsoProviderProtocol protocol);
 
     List<SsoProvider> listByProtocol(SsoProviderProtocol protocol);

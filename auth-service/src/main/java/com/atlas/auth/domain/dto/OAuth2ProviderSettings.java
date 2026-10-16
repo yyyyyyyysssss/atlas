@@ -16,7 +16,7 @@ public record OAuth2ProviderSettings(
         Endpoints endpoints,
         boolean pkceRequired,
         ExtraParams extraParams
-) implements SsoSettings, Decryptable<OAuth2ProviderSettings>, BaseUrlAppliable<OAuth2ProviderSettings> {
+) implements SsoSettings, Decryptable<OAuth2ProviderSettings>, Encryptable<OAuth2ProviderSettings>, BaseUrlAppliable<OAuth2ProviderSettings> {
 
     private static final Pattern ENV_PATTERN = Pattern.compile("^\\$\\{(.+?)}$");
 
@@ -100,6 +100,27 @@ public record OAuth2ProviderSettings(
                 }
             } else {
                 finalSecret = AESUtils.decrypt(finalSecret, key);
+            }
+        }
+        return new OAuth2ProviderSettings(
+                this.clientName,
+                this.clientId,
+                finalSecret,
+                this.redirectUrl,
+                this.scope,
+                this.endpoints,
+                this.pkceRequired,
+                this.extraParams
+        );
+    }
+
+    @Override
+    public OAuth2ProviderSettings encrypt(String key) {
+        String finalSecret = this.clientSecret;
+        if (finalSecret != null) {
+            Matcher matcher = ENV_PATTERN.matcher(finalSecret.trim());
+            if (!matcher.matches()) {
+                finalSecret = AESUtils.encrypt(finalSecret, key);
             }
         }
         return new OAuth2ProviderSettings(

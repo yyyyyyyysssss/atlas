@@ -1,9 +1,6 @@
 package com.atlas.auth.controller;
 
-import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
-import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
-import com.atlas.auth.domain.dto.ThirdPartyStateContext;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -59,15 +56,21 @@ public class ThirdPartyLoginController {
             return ResultGenerator.ok(ThirdPartyCallbackVO.denied(error));
         }
         // 授权成功
-        OAuth2ProviderAuthenticationToken token = new OAuth2ProviderAuthenticationToken(code, state, codeVerifier);
+        ThirdPartyLoginRequest request = new OAuth2LoginRequest(code, state, codeVerifier);
         ThirdPartyStateContext thirdPartyStateContext = thirdPartyStateService.peekContext(state);
-        ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(clientName,thirdPartyStateContext.getProtocol()).authenticate(token);
+        ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(clientName,thirdPartyStateContext.getProtocol()).authenticate(request);
         return ResultGenerator.ok(thirdPartyCallbackVO);
     }
 
     @GetMapping("/callback/ticket")
     public Result<ThirdPartyCallbackVO> callbackTicket(@RequestParam("ticket") String ticket) {
         ThirdPartyCallbackVO callbackVO = ticketService.consume(ticket, ThirdPartyCallbackVO.class);
+        return ResultGenerator.ok(callbackVO);
+    }
+
+    @PostMapping("/ldap/login/{clientName}")
+    public Result<ThirdPartyCallbackVO> ldapLogin(@PathVariable("clientName") String clientName, @RequestBody LdapLoginRequest request) {
+        ThirdPartyCallbackVO callbackVO = providerFactory.getProvider(clientName, SsoProviderProtocol.LDAP).authenticate(request);
         return ResultGenerator.ok(callbackVO);
     }
 

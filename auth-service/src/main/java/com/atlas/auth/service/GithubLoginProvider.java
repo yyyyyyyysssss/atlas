@@ -1,6 +1,5 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -12,7 +11,6 @@ import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -48,9 +46,9 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     }
 
     @Override
-    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
-        OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
-        return processCallback(authenticationToken.code(),authenticationToken.state(),authenticationToken.codeVerifier());
+    public ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request) {
+        OAuth2LoginRequest oauth2 = (OAuth2LoginRequest) request;
+        return processCallback(oauth2.code(),oauth2.state(),oauth2.codeVerifier());
     }
 
     public ThirdPartyCallbackVO processCallback(String code, String state, String codeVerifier) {

@@ -2,6 +2,7 @@ package com.atlas.auth.service.impl;
 
 import com.atlas.auth.domain.dto.BaseUrlAppliable;
 import com.atlas.auth.domain.dto.Decryptable;
+import com.atlas.auth.domain.dto.Encryptable;
 import com.atlas.auth.domain.dto.SsoSettings;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.domain.entity.SsoProviderSettings;
@@ -9,15 +10,17 @@ import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.mapper.SsoProviderMapper;
 import com.atlas.auth.service.SsoProviderService;
 import com.atlas.auth.service.SsoProviderSettingsService;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.utils.JsonUtils;
-import com.atlas.common.security.properties.SecurityProperties;
 import com.atlas.common.crypto.key.KeyDerivationService;
+import com.atlas.common.security.properties.SecurityProperties;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 
@@ -65,6 +68,33 @@ public class SsoProviderServiceImpl extends ServiceImpl<SsoProviderMapper, SsoPr
             t = (T) b.applyBaseUrl(securityProperties.getIssuerUrl());
         }
         return t;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends SsoSettings> void saveSettings(String provider, SsoProviderProtocol protocol, T settings){
+        Objects.requireNonNull(provider);
+        Objects.requireNonNull(protocol);
+        SsoProviderSettings ssoProviderSettings = ssoProviderSettingsService.lambdaQuery()
+                .eq(SsoProviderSettings::getProvider, provider)
+                .eq(SsoProviderSettings::getProtocol, protocol)
+                .one();
+        // 加密敏感配置
+        if (settings instanceof Encryptable<?> e) {
+            settings = (T) e.encrypt(keyDerivationService.deriveHex(provider));
+        }
+        Map<String, Object> settingsMap = JsonUtils.convert(settings, Map.class);
+        if (ssoProviderSettings == null) {
+            ssoProviderSettings = new SsoProviderSettings();
+            ssoProviderSettings.setId(IdGen.genId());
+            ssoProviderSettings.setProvider(provider);
+            ssoProviderSettings.setProtocol(protocol);
+            ssoProviderSettings.setSettings(settingsMap);
+            ssoProviderSettingsService.save(ssoProviderSettings);
+        } else {
+            ssoProviderSettings.setSettings(settingsMap);
+            ssoProviderSettingsService.updateById(ssoProviderSettings);
+        }
     }
 
     @Override

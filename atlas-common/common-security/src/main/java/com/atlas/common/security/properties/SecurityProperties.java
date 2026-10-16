@@ -3,8 +3,8 @@ package com.atlas.common.security.properties;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +37,8 @@ public class SecurityProperties {
     private KeyConfig totp = new KeyConfig();
 
     private WebauthnConfig webauthn = new WebauthnConfig();
+
+    private LdapConfig ldap = new LdapConfig();
 
     @Setter
     @Getter
@@ -221,6 +223,59 @@ public class SecurityProperties {
          * 私钥条目别名。
          */
         private String keyAlias;
+    }
+
+
+    @Setter
+    @Getter
+    public static class LdapConfig {
+
+        /**
+         * LDAP 连接池配置
+         */
+        private LdapPoolConfig pool = new LdapPoolConfig();
+
+
+        /**
+         * 是否跟随 LDAP Referral（引用）
+         */
+        private String referral = "follow";
+
+        /**
+         * 是否忽略 LDAP 部分查询结果异常
+         */
+        private boolean ignorePartialResultException = true;
+    }
+
+
+    @Setter
+    @Getter
+    public static class LdapPoolConfig {
+
+        /**
+         * 是否启用 LDAP 连接池
+         */
+        private boolean enabled = true;
+
+        /**
+         * 最大活动连接数
+         */
+        private int maxActive = 20;
+
+        /**
+         * 最大空闲连接数
+         */
+        private int maxIdle = 10;
+
+        /**
+         * 最小空闲连接数
+         */
+        private int minIdle = 2;
+
+        /**
+         * 获取连接最大等待时间
+         */
+        private Duration maxWait = Duration.ofSeconds(3);
     }
 
 }

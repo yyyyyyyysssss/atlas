@@ -2,10 +2,10 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
+import com.atlas.auth.domain.dto.ThirdPartyLoginRequest;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import org.springframework.security.core.Authentication;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ public interface ThirdPartyLoginProvider {
         throw new UnsupportedOperationException("暂不支持");
     }
 
-    ThirdPartyCallbackVO authenticate(Authentication authentication);
+    ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request);
 
     default ThirdPartyAuthorizeUrlVO getAuthorizeVO(ThirdPartyAuthRequestContext requestContext) {
         SsoProviderAuthorizeUrlResponse response = getAuthorizeUrl(requestContext, null);

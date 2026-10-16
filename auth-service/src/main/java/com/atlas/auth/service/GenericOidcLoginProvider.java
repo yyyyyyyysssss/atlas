@@ -1,12 +1,10 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,17 +42,17 @@ public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
-        OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
+    public ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request) {
+        OAuth2LoginRequest oauth2 = (OAuth2LoginRequest)request;
 
         // 校验并销毁 state 状态
-        ThirdPartyStateContext stateContext = validateState(authenticationToken.state());
+        ThirdPartyStateContext stateContext = validateState(oauth2.state());
 
         // 动态获取当前实例绑定的厂商 OIDC 配置
         OidcProviderSettings settings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OIDC);
 
         // 获取用户信息
-        OidcUserInfoResult oidcUserInfo = oidcProviderEngine.fetchUserInfo(getProviderName(), settings, authenticationToken.code(), authenticationToken.codeVerifier());
+        OidcUserInfoResult oidcUserInfo = oidcProviderEngine.fetchUserInfo(getProviderName(), settings, oauth2.code(), oauth2.codeVerifier());
 
         return dispatchFederatedIdentity(oidcUserInfo, stateContext);
     }

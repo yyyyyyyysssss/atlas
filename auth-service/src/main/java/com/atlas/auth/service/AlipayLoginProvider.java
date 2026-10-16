@@ -7,7 +7,6 @@ import com.alipay.v3.model.AlipaySystemOauthTokenModel;
 import com.alipay.v3.model.AlipaySystemOauthTokenResponseModel;
 import com.alipay.v3.model.AlipayUserInfoShareResponseModel;
 import com.alipay.v3.util.model.AlipayConfig;
-import com.atlas.auth.config.security.oauth2.OAuth2ProviderAuthenticationToken;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -61,9 +59,9 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
     }
 
     @Override
-    public ThirdPartyCallbackVO authenticate(Authentication authentication) {
-        OAuth2ProviderAuthenticationToken authenticationToken = (OAuth2ProviderAuthenticationToken) authentication;
-        return processCallback(authenticationToken.code(),authenticationToken.state());
+    public ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request) {
+        OAuth2LoginRequest oauth2 = (OAuth2LoginRequest)request;
+        return processCallback(oauth2.code(),oauth2.state());
     }
 
     public ThirdPartyCallbackVO processCallback(String code,String state) {

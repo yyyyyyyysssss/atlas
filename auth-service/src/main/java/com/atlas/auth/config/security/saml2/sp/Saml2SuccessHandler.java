@@ -1,5 +1,7 @@
 package com.atlas.auth.config.security.saml2.sp;
 
+import com.atlas.auth.domain.dto.Saml2LoginRequest;
+import com.atlas.auth.domain.dto.ThirdPartyLoginRequest;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyCallbackStatus;
@@ -43,7 +45,8 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         Saml2AuthenticatedPrincipal principal = (Saml2AuthenticatedPrincipal) authentication.getPrincipal();
         String registrationId = principal.getRelyingPartyRegistrationId();
-        ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(registrationId, SsoProviderProtocol.SAML2).authenticate(authentication);
+        ThirdPartyLoginRequest thirdPartyLoginRequest = new Saml2LoginRequest(principal);
+        ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(registrationId, SsoProviderProtocol.SAML2).authenticate(thirdPartyLoginRequest);
         if(!thirdPartyCallbackVO.callbackStatus().equals(ThirdPartyCallbackStatus.LOGIN)){
             String errorUrl = String.format("%s/saml2/callback?error=%s",
                     uiUrl, URLEncoder.encode("不支持的操作类型", StandardCharsets.UTF_8));

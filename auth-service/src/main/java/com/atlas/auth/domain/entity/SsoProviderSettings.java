@@ -1,20 +1,18 @@
 package com.atlas.auth.domain.entity;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.time.LocalDateTime;
-import java.util.Map;
-
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.common.mybatis.entity.BaseIdEntity;
 import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.Builder;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Tolerate;
-import com.atlas.common.mybatis.entity.BaseIdEntity;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * (SsoProviderSettings)实体类
@@ -43,10 +41,6 @@ public class SsoProviderSettings extends BaseIdEntity {
     // 协议相关的核心配置 
     @TableField(value = "settings", typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> settings;
-
-    // 是否为该提供商的首选协议: 1-是, 0-否 
-    @TableField("is_primary")
-    private Boolean isPrimary;
 
     @TableField(value = "create_time",fill = FieldFill.INSERT)
     protected LocalDateTime createTime;

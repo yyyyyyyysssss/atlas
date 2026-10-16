@@ -9,9 +9,11 @@ import com.atlas.common.redis.queue.RedissonStreamProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.config.NameMapper;
 import org.redisson.spring.starter.RedissonAutoConfiguration;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -22,12 +24,31 @@ import org.springframework.context.annotation.Bean;
 })
 public class AtlasRedissonAutoConfiguration {
 
+    @Value("${spring.application.name:atlas}")
+    private String applicationName;
 
     @Bean
     public RedissonAutoConfigurationCustomizer codecCustomizer(@Qualifier("redisObjectMapper") ObjectMapper redisObjectMapper) {
         return config -> {
             // 仅仅修改序列化器，保留其他所有配置文件里的 Redis 连接设置
             config.setCodec(new JsonJacksonCodec(redisObjectMapper));
+            config.setNameMapper(new NameMapper() {
+
+                private final String prefix = applicationName + ":";
+
+                @Override
+                public String map(String name) {
+                    return prefix + name;
+                }
+
+                @Override
+                public String unmap(String name) {
+                    if (name.startsWith(prefix)) {
+                        return name.substring(prefix.length());
+                    }
+                    return name;
+                }
+            });
         };
     }
 

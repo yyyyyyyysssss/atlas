@@ -1,9 +1,6 @@
 package com.atlas.auth.enums;
 
-import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
-import com.atlas.auth.domain.dto.OidcProviderSettings;
-import com.atlas.auth.domain.dto.Saml2ProviderSettings;
-import com.atlas.auth.domain.dto.SsoSettings;
+import com.atlas.auth.domain.dto.*;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +11,8 @@ public enum SsoProviderProtocol {
 
     OAUTH2(OAuth2ProviderSettings.class),
     SAML2(Saml2ProviderSettings.class),
-    OIDC(OidcProviderSettings.class)
+    OIDC(OidcProviderSettings.class),
+    LDAP(LdapProviderSettings.class)
 
     ;
 

@@ -14,7 +14,9 @@ public record LdapProviderSettings(
 
         String bindPassword,
 
-        UserSearch userSearch
+        UserSearch userSearch,
+
+        Mapping mappings
 
 ) implements SsoSettings, Decryptable<LdapProviderSettings>, Encryptable<LdapProviderSettings> {
 
@@ -31,7 +33,8 @@ public record LdapProviderSettings(
                 baseDn,
                 bindDn,
                 decrypt,
-                userSearch
+                userSearch,
+                mappings
         );
     }
 
@@ -44,7 +47,8 @@ public record LdapProviderSettings(
                 baseDn,
                 bindDn,
                 encrypt,
-                userSearch
+                userSearch,
+                mappings
         );
     }
 
@@ -52,6 +56,14 @@ public record LdapProviderSettings(
     public record UserSearch(
             String base,
             String filter
+    ) {
+    }
+
+    public record Mapping(
+            String sub,
+            String email,
+            String phone,
+            String fullName
     ) {
     }
 }

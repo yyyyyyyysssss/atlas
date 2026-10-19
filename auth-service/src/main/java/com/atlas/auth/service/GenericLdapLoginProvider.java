@@ -13,16 +13,10 @@ import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.ws.rs.NotSupportedException;
-import java.nio.ByteBuffer;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @Description
@@ -79,92 +73,24 @@ public class GenericLdapLoginProvider extends AbstractThirdPartyLoginProvider {
             }
 
             LdapQuery query = LdapQueryBuilder.query()
-                    .where("objectClass").is("user")
-                    .and("sAMAccountName").is(username);
+                    .filter(filter);
             List<DirContextAdapter> users = ldapTemplateFactory.getQueryTemplate(provider, settings)
                     .search(query, (ContextMapper<DirContextAdapter>) ctx -> (DirContextAdapter) ctx);
-            log.info("LDAP search result count: {}", users.size());
-
-            for (DirContextAdapter user : users) {
-                log.info("LDAP USER DN: {}", user.getDn());
-
-                Attributes attributes = user.getAttributes();
-
-                NamingEnumeration<? extends Attribute> enumeration = attributes.getAll();
-
-                while (enumeration.hasMore()) {
-                    Attribute attribute = enumeration.next();
-                    NamingEnumeration<?> values = attribute.getAll();
-                    while (values.hasMore()) {
-                        Object value = values.next();
-                        if (value instanceof byte[] bytes) {
-                            if ("objectGUID".equalsIgnoreCase(attribute.getID())) {
-                                value = objectGuidToUuid(bytes);
-                            } else if ("objectSid".equalsIgnoreCase(attribute.getID())) {
-                                value = objectSidToString(bytes);
-                            } else {
-                                value = HexFormat.of().formatHex(bytes);
-                            }
-                            log.info("LDAP attribute: {} = {}", attribute.getID(), value);
-                        } else {
-                            log.info("LDAP attribute: {} = {}", attribute.getID(), value);
-                        }
-                    }
-                }
+            if (users.isEmpty()) {
+                throw new BusinessException("LDAP 用户不存在");
             }
+            if (users.size() > 1) {
+                throw new BusinessException("LDAP 用户不唯一，拒绝登录");
+            }
+            Attributes attributes = users.getFirst().getAttributes();
+            LdapUserInfo ldapUserInfo = LdapUserInfo.fromAttributes(attributes, settings.mappings());
+            ldapUserInfo.setProvider(provider);
+
+            return dispatchFederatedIdentity(ldapUserInfo);
         } catch (Exception e) {
             log.error("LDAP authenticate error: ", e);
             throw new BusinessException("LDAP authentication failed");
         }
-        return null;
-    }
-
-
-    private UUID objectGuidToUuid(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-
-        long mostSigBits = ((long) Integer.reverseBytes(buffer.getInt()) << 32)
-                | ((long) Short.toUnsignedInt(Short.reverseBytes(buffer.getShort())) << 16)
-                | Short.toUnsignedInt(Short.reverseBytes(buffer.getShort()));
-
-        long leastSigBits = buffer.getLong();
-
-        return new UUID(mostSigBits, leastSigBits);
-    }
-
-    private String objectSidToString(byte[] sid) {
-        if (sid == null || sid.length < 8) {
-            throw new IllegalArgumentException("Invalid SID");
-        }
-
-        int revision = sid[0] & 0xFF;
-        int subAuthorityCount = sid[1] & 0xFF;
-
-        // IdentifierAuthority 是 6 字节，大端
-        long identifierAuthority = 0;
-        for (int i = 2; i < 8; i++) {
-            identifierAuthority = (identifierAuthority << 8) | (sid[i] & 0xFFL);
-        }
-
-        StringBuilder result = new StringBuilder();
-        result.append("S-")
-                .append(revision)
-                .append("-")
-                .append(identifierAuthority);
-
-        // SubAuthority 是 4 字节，小端
-        for (int i = 0; i < subAuthorityCount; i++) {
-            int offset = 8 + i * 4;
-
-            long subAuthority = (sid[offset] & 0xFFL)
-                            | ((sid[offset + 1] & 0xFFL) << 8)
-                            | ((sid[offset + 2] & 0xFFL) << 16)
-                            | ((sid[offset + 3] & 0xFFL) << 24);
-
-            result.append("-").append(subAuthority);
-        }
-
-        return result.toString();
     }
 
 }

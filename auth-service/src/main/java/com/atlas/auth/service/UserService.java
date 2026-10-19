@@ -118,12 +118,12 @@ public class UserService implements UserDetailsService {
         userProviderService.addUserProvider(userId, provider,sub,userIdentity.getExtraInfo());
         // 创建用户标识
         List<IdentifierSpec> specs = new ArrayList<>();
-        specs.add(new IdentifierSpec(IdentifierType.USERNAME, null, null));
+        specs.add(IdentifierSpec.generatedUsername());
         if(StringUtils.hasText(userIdentity.getEmail())){
-            specs.add(new IdentifierSpec(IdentifierType.EMAIL, userIdentity.getEmail(), userIdentity.getEmailVerified()));
+            specs.add(IdentifierSpec.email(userIdentity.getEmail(), userIdentity.getEmailVerified()));
         }
         if(StringUtils.hasText(userIdentity.getPhone())){
-            specs.add(new IdentifierSpec(IdentifierType.PHONE, userIdentity.getPhone(), userIdentity.getPhoneVerified()));
+            specs.add(IdentifierSpec.phone(userIdentity.getPhone(), userIdentity.getPhoneVerified()));
         }
         userIdentifierService.addIdentifier(userId, specs);
         return userId;

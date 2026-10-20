@@ -1,8 +1,9 @@
 package com.atlas.auth.service;
 
-import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
+import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.security.properties.SecurityProperties;
@@ -10,23 +11,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -96,7 +89,7 @@ public class OAuth2ProviderEngine {
         return spec
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(provider, EndpointType.TOKEN, request, response))
+                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(response.getStatusCode(), EndpointType.TOKEN))
                 .body(responseType);
     }
 
@@ -116,7 +109,7 @@ public class OAuth2ProviderEngine {
                 .header(HttpHeaders.AUTHORIZATION, token.toAuthorizationHeader())
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(provider, EndpointType.USER_INFO, request, response))
+                .onStatus(HttpStatusCode::isError, (request, response) -> handleRemoteError(response.getStatusCode(), EndpointType.USER_INFO))
                 .body(responseType);
     }
 
@@ -200,40 +193,24 @@ public class OAuth2ProviderEngine {
         }
     }
 
-    private void handleRemoteError(String provider, EndpointType endpointType, HttpRequest request, ClientHttpResponse response) throws IOException {
-        String errorBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-        HttpStatusCode statusCode = response.getStatusCode();
-
-        log.error("[{}] 三方 {} 端点请求失败 [URL: {}, Status: {}, Body: {}]",
-                provider, endpointType.getLabel(), request.getURI(), statusCode, errorBody);
-
-        String errorCode;
-        String description;
-
+    private void handleRemoteError(HttpStatusCode statusCode, EndpointType endpointType) {
         if (statusCode.is4xxClientError()) {
-            if (endpointType == EndpointType.TOKEN) {
-                // Token 端点 4xx：Code 无效/过期、Secret 错等
-                errorCode = OAuth2ErrorCodes.INVALID_GRANT;
-                description = String.format("三方授权码校验失败：授权码无效或已过期 (%s)", provider);
-            } else {
-                // UserInfo 端点 4xx：AccessToken 过期/被撤销/权限不足
-                errorCode = OAuth2ErrorCodes.INVALID_TOKEN;
-                description = String.format("三方用户凭证无效或授权已过期 (%s)", provider);
-            }
+            throw new OAuth2ProviderException("OAUTH2 授权码校验失败：授权码无效或已过期");
         } else {
-            // 5xx 服务端故障
-            errorCode = OAuth2ErrorCodes.SERVER_ERROR;
-            description = endpointType == EndpointType.TOKEN
-                    ? String.format("三方身份提供商服务异常，请稍后再试 (%s)", provider)
-                    : String.format("三方身份提供商服务异常，获取用户信息失败 (%s)", provider);
+            throw new OAuth2ProviderException(endpointType == EndpointType.TOKEN ? "OAUTH2 获取Token失败" : "OAUTH2 获取用户信息失败");
         }
 
-        OAuth2Error error = new OAuth2Error(errorCode, description, null);
+    }
 
-        throw new OAuth2AuthenticationException(
-                error,
-                String.format("[%s] 请求三方 %s 失败, Status: %s, Response: %s", provider, endpointType.getLabel(), statusCode, errorBody)
-        );
+    public static class OAuth2ProviderException extends AuthServiceException {
+
+        public OAuth2ProviderException(String message) {
+            super(message);
+        }
+
+        public OAuth2ProviderException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
 

@@ -1,17 +1,21 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.config.security.ldap.LdapTemplateFactory;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.common.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ldap.AuthenticationException;
+import org.springframework.ldap.CommunicationException;
 import org.springframework.ldap.core.ContextMapper;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
+import org.springframework.ldap.support.LdapEncoder;
 
 import javax.naming.directory.Attributes;
 import javax.ws.rs.NotSupportedException;
@@ -51,46 +55,57 @@ public class GenericLdapLoginProvider extends AbstractThirdPartyLoginProvider {
     public ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request) {
         LdapLoginRequest ldapLoginRequest = (LdapLoginRequest) request;
         String provider = getProviderName();
+        SsoProviderProtocol protocol = SsoProviderProtocol.LDAP;
         String username = ldapLoginRequest.username();
         String password = ldapLoginRequest.password();
-        if (username == null || username.isBlank()) {
-            throw new BusinessException("LDAP username must not be blank");
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            throw ThirdPartyAuthException.invalidParameter(provider, protocol);
         }
-        if (password == null || password.isBlank()) {
-            throw new BusinessException("LDAP password must not be blank");
-        }
-        LdapProviderSettings settings = ssoProviderService.getSettings(provider, SsoProviderProtocol.LDAP);
+
+        LdapProviderSettings settings = ssoProviderService.getSettings(provider, protocol);
         if (settings == null) {
-            throw new BusinessException("LDAP Provider configuration not found: " + provider);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, provider, protocol);
         }
         LdapTemplate ldapTemplate = ldapTemplateFactory.getAuthenticationTemplate(provider, settings);
+        LdapTemplate queryTemplate = ldapTemplateFactory.getQueryTemplate(provider, settings);
+        LdapUserInfo ldapUserInfo;
         try {
             LdapProviderSettings.UserSearch userSearch = settings.userSearch();
-            String filter = userSearch.filter().replace("{0}", username);
+            if (userSearch == null || userSearch.filter() == null || userSearch.filter().isBlank() || !userSearch.filter().contains("{0}")) {
+                throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_CONFIG_ERROR, provider, protocol);
+            }
+            String filter = userSearch.filter().replace("{0}", LdapEncoder.filterEncode(username));
+            // 执行认证
             boolean authenticated = ldapTemplate.authenticate("", filter, password);
             if (!authenticated) {
-                throw new BusinessException("LDAP 用户名或密码错误");
+                throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, provider, protocol);
             }
-
+            // 查询用户信息
             LdapQuery query = LdapQueryBuilder.query()
                     .filter(filter);
-            List<DirContextAdapter> users = ldapTemplateFactory.getQueryTemplate(provider, settings)
+            List<DirContextAdapter> users = queryTemplate
                     .search(query, (ContextMapper<DirContextAdapter>) ctx -> (DirContextAdapter) ctx);
             if (users.isEmpty()) {
-                throw new BusinessException("LDAP 用户不存在");
+                throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, provider, protocol, "LDAP user not found", null);
             }
             if (users.size() > 1) {
-                throw new BusinessException("LDAP 用户不唯一，拒绝登录");
+                throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, provider, protocol, "LDAP user search returned multiple results", null);
             }
             Attributes attributes = users.getFirst().getAttributes();
-            LdapUserInfo ldapUserInfo = LdapUserInfo.fromAttributes(attributes, settings.mappings());
+            ldapUserInfo = LdapUserInfo.fromAttributes(attributes, settings.mappings());
             ldapUserInfo.setProvider(provider);
 
-            return dispatchFederatedIdentity(ldapUserInfo);
-        } catch (Exception e) {
-            log.error("LDAP authenticate error: ", e);
-            throw new BusinessException("LDAP authentication failed");
+        } catch (CommunicationException e) {
+            log.error("LDAP communication failed, provider={}", provider, e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_UNAVAILABLE, provider, protocol, e);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("LDAP user attribute mapping failed, provider={}", provider, e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_CONFIG_ERROR, provider, protocol, "LDAP user attribute mapping failed", e);
+        } catch (AuthenticationException e) {
+            log.warn("LDAP authentication failed, provider={}", provider, e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, provider, protocol);
         }
+        return dispatchFederatedIdentity(ldapUserInfo);
     }
 
 }

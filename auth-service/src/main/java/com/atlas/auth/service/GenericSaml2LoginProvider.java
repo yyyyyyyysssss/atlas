@@ -1,5 +1,7 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -39,6 +41,9 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
         Saml2LoginRequest saml2 = (Saml2LoginRequest)request;
         String providerName = getProviderName();
         Saml2ProviderSettings saml2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.SAML2);
+        if (saml2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, providerName, SsoProviderProtocol.SAML2);
+        }
         // 配置的映射对象
         Saml2ProviderSettings.Mapping mappings = saml2ProviderSettings.mappings();
         Saml2AuthenticatedPrincipal principal = saml2.principal();

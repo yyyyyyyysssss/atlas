@@ -7,10 +7,11 @@ import com.alipay.v3.model.AlipaySystemOauthTokenModel;
 import com.alipay.v3.model.AlipaySystemOauthTokenResponseModel;
 import com.alipay.v3.model.AlipayUserInfoShareResponseModel;
 import com.alipay.v3.util.model.AlipayConfig;
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.common.core.exception.BusinessException;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,9 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
         String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
@@ -74,6 +78,10 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
 
         // 获取配置
         OAuth2ProviderSettings settings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
+        if (settings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
+        OAuth2UserInfo oAuth2UserInfo;
         try {
             ApiClient apiClient = new ApiClient(sharedHttpClient);
             apiClient.setAlipayConfig(getAlipayConfig(settings));
@@ -92,19 +100,19 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
             AlipayUserInfoShareResponseModel userInfo = userInfoApi.share(response.getAccessToken());
             log.info("Processing Alipay OAuth2 callback. provider: {} userInfo: {}", providerName, userInfo.toJson());
 
-            OAuth2UserInfo oAuth2UserInfo = new OAuth2UserInfo();
+            oAuth2UserInfo = new OAuth2UserInfo();
             oAuth2UserInfo.setProvider(providerName);
             oAuth2UserInfo.setSub(userInfo.getOpenId());
             oAuth2UserInfo.setFullName(userInfo.getNickName());
             oAuth2UserInfo.setAvatar(userInfo.getAvatar());
-
-            return dispatchFederatedIdentity(oAuth2UserInfo, stateContext);
         }catch (Exception e){
-            throw new BusinessException("支付宝登录失败: " + e.getMessage());
+            log.warn("[{}] OAUTH2 认证失败", getProviderName(), e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, getProviderName(), SsoProviderProtocol.OAUTH2);
         }
+        return dispatchFederatedIdentity(oAuth2UserInfo, stateContext);
     }
 
-    private static AlipayConfig getAlipayConfig(OAuth2ProviderSettings settings) {
+    private AlipayConfig getAlipayConfig(OAuth2ProviderSettings settings) {
         String serverUrl = null;
         if (settings.extraParams() != null && settings.extraParams().token() != null) {
             String configuredUrl = settings.extraParams().token().get("serverUrl");
@@ -114,7 +122,7 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
         }
 
         if (serverUrl == null || serverUrl.isEmpty()) {
-            throw new IllegalArgumentException("支付宝 serverUrl 未在配置中指定！");
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_CONFIG_ERROR, getProviderName(), SsoProviderProtocol.OAUTH2);
         }
 
         String alipayPublicKey = null;
@@ -123,7 +131,7 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
         }
 
         if (alipayPublicKey == null || alipayPublicKey.isEmpty()) {
-            throw new IllegalArgumentException("支付宝公钥 (publicKey) 未在配置中指定！");
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_CONFIG_ERROR, getProviderName(), SsoProviderProtocol.OAUTH2);
         }
         AlipayConfig alipayConfig = new AlipayConfig();
         alipayConfig.setServerUrl(serverUrl);

@@ -1,12 +1,12 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.dto.ThirdPartyLoginDTO;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.event.AuditLogEvent;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.model.TokenResponse;
 import jakarta.annotation.Resource;
@@ -37,10 +37,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     protected final String generateState(ThirdPartyAuthRequestContext requestContext) {
         String state = requestContext.state();
         if(state != null && !state.isEmpty()){
-            ThirdPartyStateContext thirdPartyStateContext = thirdPartyStateService.peekContext(state);
-            if (thirdPartyStateContext == null){
-                throw new BusinessException("授权状态已失效，请重试");
-            }
+            thirdPartyStateService.peekContext(state);
             return state;
         }
         return thirdPartyStateService.generateState(getProviderName(),requestContext,protocol());
@@ -77,7 +74,7 @@ public abstract class AbstractThirdPartyLoginProvider implements ThirdPartyLogin
     private ThirdPartyCallbackVO doBind(ThirdPartyUserIdentity thirdPartyUserIdentity, ThirdPartyStateContext stateContext){
         Long currentUserId = stateContext.getUserId();
         if (currentUserId == null) {
-            throw new BusinessException("账号关联失败：未获取到当前账户登录凭证");
+            throw new AuthServiceException("账号关联失败：未获取到当前账户登录凭证");
         }
         String provider = thirdPartyUserIdentity.getProvider();
         userService.bindThirdPartyProvider(provider,currentUserId, thirdPartyUserIdentity);

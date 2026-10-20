@@ -1,13 +1,13 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
 import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.enums.ThirdPartyAuthAction;
-import com.atlas.common.core.exception.BusinessException;
+import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.model.SecurityUser;
-import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ public class ThirdPartyStateService {
         if(ThirdPartyAuthAction.BIND.equals(requestContext.action())){
             SecurityContext securityContext = SecurityContextHolder.getContext();
             if(securityContext == null || !securityContext.getAuthentication().isAuthenticated()){
-                throw new BusinessException("账户未登录，无法发起第三方账号绑定");
+                throw new AuthServiceException("账户未登录，无法发起第三方账号绑定");
             }
             SecurityUser securityUser = (SecurityUser) securityContext.getAuthentication().getPrincipal();
             currentUserId = securityUser.getId();
@@ -55,7 +55,7 @@ public class ThirdPartyStateService {
         String key = OAUTH2_STATE_PREFIX_KEY + state;
         ThirdPartyStateContext stateContext = redisHelper.getValue(key, new TypeReference<ThirdPartyStateContext>() {});
         if (stateContext == null) {
-            throw new BusinessException("登录超时或非法单点登录请求");
+            throw new AuthServiceException("登录超时或非法单点登录请求");
         }
         return stateContext;
     }
@@ -64,9 +64,12 @@ public class ThirdPartyStateService {
         String key = OAUTH2_STATE_PREFIX_KEY + state;
         try {
             ThirdPartyStateContext stateContext = redisHelper.getValue(key, new TypeReference<ThirdPartyStateContext>() {});
+            if (stateContext == null) {
+                throw new AuthServiceException("登录超时或非法单点登录请求");
+            }
             String providerName = stateContext.getProvider();
             if(!StringUtils.hasText(providerName) || !providerName.equals(expectedProvider)){
-                throw new BusinessException("非法登录请求，State 校验失败");
+                throw new AuthServiceException("非法登录请求，State 校验失败");
             }
             return stateContext;
         }finally {

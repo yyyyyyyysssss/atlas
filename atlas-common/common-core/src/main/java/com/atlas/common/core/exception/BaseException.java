@@ -3,6 +3,8 @@ package com.atlas.common.core.exception;
 import com.atlas.common.core.response.IErrorCode;
 import lombok.Getter;
 
+import java.util.Objects;
+
 /**
  * @Description
  * @Author ys
@@ -23,16 +25,23 @@ public abstract class BaseException extends RuntimeException{
         this(errorCode, detail, null);
     }
 
+    public BaseException(IErrorCode errorCode, Throwable cause) {
+        this(errorCode, null, cause);
+    }
+
     public BaseException(IErrorCode errorCode, String detail, Throwable cause) {
         // 构造父类消息：[错误信息] -> [详细详情]
         super(formatMessage(errorCode, detail), cause);
-        this.errorCode = errorCode;
+        this.errorCode = Objects.requireNonNull(errorCode, "errorCode must not be null");
         this.detail = detail;
     }
 
     private static String formatMessage(IErrorCode errorCode, String detail) {
-        if (errorCode == null) return "Unknown Error";
-        return detail == null ? errorCode.getMessage() : errorCode.getMessage() + " -> " + detail;
+        Objects.requireNonNull(errorCode, "errorCode must not be null");
+        String message = Objects.requireNonNull(errorCode.getMessage(), "errorCode.message must not be null");
+        return detail == null || detail.isBlank()
+                ? message
+                : message + " -> " + detail;
     }
 
 }

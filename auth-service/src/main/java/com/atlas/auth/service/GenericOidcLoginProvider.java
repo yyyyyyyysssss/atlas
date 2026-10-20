@@ -1,5 +1,7 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -35,10 +37,18 @@ public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OidcProviderSettings settings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OIDC);
+        if(settings == null){
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OIDC);
+        }
         String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
-        return oidcProviderEngine.buildAuthorizeUrl(getProviderName(), settings, extraParams);
+        try {
+            return oidcProviderEngine.buildAuthorizeUrl(getProviderName(), settings, extraParams);
+        }catch (OidcProviderEngine.OidcProviderException e){
+            log.warn("[{}] 构建 OIDC 授权地址失败", getProviderName(), e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_CONFIG_ERROR, getProviderName(), SsoProviderProtocol.OIDC);
+        }
     }
 
     @Override
@@ -50,9 +60,18 @@ public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider{
 
         // 动态获取当前实例绑定的厂商 OIDC 配置
         OidcProviderSettings settings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OIDC);
+        if(settings == null){
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OIDC);
+        }
 
-        // 获取用户信息
-        OidcUserInfoResult oidcUserInfo = oidcProviderEngine.fetchUserInfo(getProviderName(), settings, oauth2.code(), oauth2.codeVerifier());
+        // 获取并验证 OIDC 用户信息
+        OidcUserInfoResult oidcUserInfo;
+        try {
+            oidcUserInfo = oidcProviderEngine.fetchUserInfo(getProviderName(), settings, oauth2.code(), oauth2.codeVerifier());
+        }catch (OidcProviderEngine.OidcProviderException e){
+            log.warn("[{}] OIDC 认证失败", getProviderName(), e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, getProviderName(), SsoProviderProtocol.OIDC);
+        }
 
         return dispatchFederatedIdentity(oidcUserInfo, stateContext);
     }

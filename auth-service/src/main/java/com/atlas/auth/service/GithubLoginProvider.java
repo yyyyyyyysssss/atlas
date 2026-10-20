@@ -1,5 +1,7 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -39,6 +41,9 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
         String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
@@ -48,7 +53,7 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     @Override
     public ThirdPartyCallbackVO authenticate(ThirdPartyLoginRequest request) {
         OAuth2LoginRequest oauth2 = (OAuth2LoginRequest) request;
-        return processCallback(oauth2.code(),oauth2.state(),oauth2.codeVerifier());
+        return processCallback(oauth2.code(), oauth2.state(), oauth2.codeVerifier());
     }
 
     public ThirdPartyCallbackVO processCallback(String code, String state, String codeVerifier) {
@@ -61,45 +66,56 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
 
         // 获取配置
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
+        OAuth2UserInfo oAuth2UserInfo;
+        try {
+            // 获取token
+            GitHubTokenResponse gitHubTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, GitHubTokenResponse.class);
+            log.info("GitHubTokenResponse: {}", gitHubTokenResponse);
 
-        // 获取token
-        GitHubTokenResponse gitHubTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, GitHubTokenResponse.class);
-        log.info("GitHubTokenResponse: {}",gitHubTokenResponse);
+            // 根据token获取用户信息
+            OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(gitHubTokenResponse.accessToken, gitHubTokenResponse.tokenType);
+            GitHubUserInfoResponse gitHubUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, GitHubUserInfoResponse.class);
+            log.info("GitHubUserInfoResponse : {}", gitHubUserInfoResponse);
 
-        // 根据token获取用户信息
-        OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(gitHubTokenResponse.accessToken, gitHubTokenResponse.tokenType);
-        GitHubUserInfoResponse gitHubUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, GitHubUserInfoResponse.class);
-        log.info("GitHubUserInfoResponse : {}", gitHubUserInfoResponse);
+            // 根据token获取用户邮箱
+            String url = auth2ProviderSettings.endpoints().userEmail().url();
+            List<GitHubUserEmailResponse> gitHubUserEmailResponses = oAuth2ProviderEngine.getResource(providerName, url, oAuth2ProviderToken, new ParameterizedTypeReference<>() {
+            });
+            log.info("GitHubUserEmailResponses : {}", gitHubUserEmailResponses);
 
-        // 根据token获取用户邮箱
-        String url = auth2ProviderSettings.endpoints().userEmail().url();
-        List<GitHubUserEmailResponse> gitHubUserEmailResponses = oAuth2ProviderEngine.getResource(providerName, url, oAuth2ProviderToken, new ParameterizedTypeReference<>() {});
-        log.info("GitHubUserEmailResponses : {}", gitHubUserEmailResponses);
+            GitHubUserEmailResponse primaryEmail = gitHubUserEmailResponses.stream()
+                    // 核心安全校验：必须是已经验证通过的邮箱
+                    .filter(GitHubUserEmailResponse::verified)
+                    // 优先筛选主邮箱
+                    .filter(GitHubUserEmailResponse::primary)
+                    .findFirst()
+                    // 降级策略：如果没有满足既验证又是primary的，退而求其次，找任何一个已验证的邮箱
+                    .orElseGet(() -> gitHubUserEmailResponses.stream()
+                            .filter(GitHubUserEmailResponse::verified)
+                            .findFirst()
+                            .orElseThrow(() -> new BusinessException("GitHub 账户未绑定任何已验证的邮箱，请先去 GitHub 验证邮件")));
 
-        GitHubUserEmailResponse primaryEmail = gitHubUserEmailResponses.stream()
-                // 核心安全校验：必须是已经验证通过的邮箱
-                .filter(GitHubUserEmailResponse::verified)
-                // 优先筛选主邮箱
-                .filter(GitHubUserEmailResponse::primary)
-                .findFirst()
-                // 降级策略：如果没有满足既验证又是primary的，退而求其次，找任何一个已验证的邮箱
-                .orElseGet(() -> gitHubUserEmailResponses.stream()
-                        .filter(GitHubUserEmailResponse::verified)
-                        .findFirst()
-                        .orElseThrow(() -> new BusinessException("GitHub 账户未绑定任何已验证的邮箱，请先去 GitHub 验证邮件")));
+            Map<String, Object> extraInfo = JsonUtils.convert(gitHubUserInfoResponse, new TypeReference<>() {
+            });
+            oAuth2UserInfo = OAuth2UserInfo
+                    .builder()
+                    .sub(gitHubUserInfoResponse.id.toString())
+                    .provider(providerName)
+                    .fullName(gitHubUserInfoResponse.name)
+                    .avatar(gitHubUserInfoResponse.avatarUrl)
+                    .email(primaryEmail.email)
+                    .emailVerified(primaryEmail.verified)
+                    .extraInfo(extraInfo)
+                    .build();
+        } catch (OAuth2ProviderEngine.OAuth2ProviderException e) {
+            log.warn("[{}] OAUTH2 认证失败", getProviderName(), e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
 
-        Map<String, Object> extraInfo = JsonUtils.convert(gitHubUserInfoResponse, new TypeReference<>() {});
-        OAuth2UserInfo externalIdentityDTO = OAuth2UserInfo
-                .builder()
-                .sub(gitHubUserInfoResponse.id.toString())
-                .provider(providerName)
-                .fullName(gitHubUserInfoResponse.name)
-                .avatar(gitHubUserInfoResponse.avatarUrl)
-                .email(primaryEmail.email)
-                .emailVerified(primaryEmail.verified)
-                .extraInfo(extraInfo)
-                .build();
-        return dispatchFederatedIdentity(externalIdentityDTO, stateContext);
+        return dispatchFederatedIdentity(oAuth2UserInfo, stateContext);
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
@@ -35,6 +37,9 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
         String state = generateState(requestContext);
         extraParams = extraParams == null ? new HashMap<>() : new HashMap<>(extraParams);
         extraParams.put("state", state);
@@ -46,6 +51,9 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
         String state = generateState(requestContext);
         Map<String, String> extraParams = Map.of("state", state);
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(getProviderName(), SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
         return oAuth2ProviderEngine.buildQrScanUrl(auth2ProviderSettings,extraParams);
     }
 
@@ -65,28 +73,37 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
 
         // 获取配置
         OAuth2ProviderSettings auth2ProviderSettings = ssoProviderService.getSettings(providerName, SsoProviderProtocol.OAUTH2);
+        if (auth2ProviderSettings == null) {
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_PROVIDER_NOT_FOUND, providerName, SsoProviderProtocol.OAUTH2);
+        }
+        OAuth2UserInfo oAuth2UserInfo;
+        try {
+            // 获取token
+            AtlasTokenResponse atlasTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, AtlasTokenResponse.class);
+            log.info("AtlasTokenResponse: {}",atlasTokenResponse);
 
-        // 获取token
-        AtlasTokenResponse atlasTokenResponse = oAuth2ProviderEngine.fetchToken(providerName, auth2ProviderSettings, code, codeVerifier, AtlasTokenResponse.class);
-        log.info("AtlasTokenResponse: {}",atlasTokenResponse);
+            // 根据token获取用户信息
+            OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(atlasTokenResponse.accessToken, atlasTokenResponse.tokenType);
+            AtlasUserInfoResponse atlasUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, AtlasUserInfoResponse.class);
+            log.info("AtlasUserInfoResponse : {}", atlasUserInfoResponse);
 
-        // 根据token获取用户信息
-        OAuth2ProviderToken oAuth2ProviderToken = new OAuth2ProviderToken(atlasTokenResponse.accessToken, atlasTokenResponse.tokenType);
-        AtlasUserInfoResponse atlasUserInfoResponse = oAuth2ProviderEngine.fetchUserInfo(providerName, auth2ProviderSettings, oAuth2ProviderToken, AtlasUserInfoResponse.class);
-        log.info("AtlasUserInfoResponse : {}", atlasUserInfoResponse);
+            Map<String, Object> extraInfo = JsonUtils.convert(atlasUserInfoResponse, new TypeReference<>() {});
+            oAuth2UserInfo = OAuth2UserInfo
+                    .builder()
+                    .provider(providerName)
+                    .sub(atlasUserInfoResponse.sub)
+                    .fullName(atlasUserInfoResponse.name)
+                    .avatar(atlasUserInfoResponse.picture)
+                    .email(atlasUserInfoResponse.email)
+                    .emailVerified(atlasUserInfoResponse.emailVerified)
+                    .phone(atlasUserInfoResponse.phoneNumber)
+                    .extraInfo(extraInfo)
+                    .build();
+        } catch (OAuth2ProviderEngine.OAuth2ProviderException e){
+            log.warn("[{}] OAUTH2 认证失败", getProviderName(), e);
+            throw new ThirdPartyAuthException(AuthErrorCode.THIRD_PARTY_AUTH_FAILED, getProviderName(), SsoProviderProtocol.OAUTH2);
+        }
 
-        Map<String, Object> extraInfo = JsonUtils.convert(atlasUserInfoResponse, new TypeReference<>() {});
-        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfo
-                .builder()
-                .provider(providerName)
-                .sub(atlasUserInfoResponse.sub)
-                .fullName(atlasUserInfoResponse.name)
-                .avatar(atlasUserInfoResponse.picture)
-                .email(atlasUserInfoResponse.email)
-                .emailVerified(atlasUserInfoResponse.emailVerified)
-                .phone(atlasUserInfoResponse.phoneNumber)
-                .extraInfo(extraInfo)
-                .build();
         return dispatchFederatedIdentity(oAuth2UserInfo, stateContext);
     }
 

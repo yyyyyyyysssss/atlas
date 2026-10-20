@@ -44,7 +44,11 @@ public class LdapUserInfo implements ThirdPartyUserIdentity {
             throw new IllegalArgumentException("LDAP mappings 不能为空");
         }
         LdapUserInfo ldapUserInfo = new LdapUserInfo();
-        ldapUserInfo.setSub(readString(attributes, mappings.sub(), true));
+        String sub = readString(attributes, mappings.sub(), true);
+        if (sub == null || sub.isBlank()) {
+            throw new IllegalArgumentException("LDAP required identity attribute is missing: " + mappings.sub());
+        }
+        ldapUserInfo.setSub(sub);
         ldapUserInfo.setEmail(readString(attributes, mappings.email(), false));
         ldapUserInfo.setEmailVerified(true);
         ldapUserInfo.setPhone(readString(attributes, mappings.phone(), false));

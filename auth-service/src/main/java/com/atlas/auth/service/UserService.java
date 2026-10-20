@@ -1,5 +1,6 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.IdentifierSpec;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.dto.UserMfaInfo;
@@ -10,7 +11,6 @@ import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.security.model.RequestUrlAuthority;
 import com.atlas.common.security.model.SecurityUser;
@@ -53,7 +53,7 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUserId(Long userId) throws UsernameNotFoundException{
         Result<UserAuthDTO> result = userApi.loadUserByUserId(userId);
         if(!result.isSucceed()){
-            throw new UsernameNotFoundException(result.getMessage());
+            throw new AuthServiceException("加载用户认证信息失败: " + result.getMessage());
         }
         List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
         UserAuthDTO userAuthDTO = result.getData();
@@ -135,7 +135,7 @@ public class UserService implements UserDetailsService {
         UserProviderDTO existingIdentity = userProviderService.getByProvider(provider, sub);
         if(existingIdentity != null){
             if(!existingIdentity.getUserId().equals(currentUserId)){
-                throw new BusinessException("该社交账号已被其他用户绑定，请先解绑或更换账号");
+                throw new AuthServiceException("该社交账号已被其他用户绑定，请先解绑或更换账号");
             }
         }
         userProviderService.addUserProvider(currentUserId, provider,sub,thirdPartyIdentity.getExtraInfo());
@@ -144,10 +144,10 @@ public class UserService implements UserDetailsService {
     private Long invokeCreateUser(CreateUserSpec spec) {
         Result<Long> result = userApi.createUser(spec);
         if (!result.isSucceed()) {
-            throw new BusinessException("用户基础档案创建失败: " + result.getMessage());
+            throw new AuthServiceException("用户基础档案创建失败: " + result.getMessage());
         }
         if (result.getData() == null) {
-            throw new BusinessException("用户基础档案创建失败: 远程服务未返回合法用户ID");
+            throw new AuthServiceException("用户基础档案创建失败: 远程服务未返回合法用户ID");
         }
         return result.getData();
     }

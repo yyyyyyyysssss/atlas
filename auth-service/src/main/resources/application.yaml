@@ -50,7 +50,7 @@ security:
       sso-url: ${security.issuer-url}/saml2/idp/sso
       metadata-url: ${security.issuer-url}/saml2/idp/metadata
       signing:
-        key-store: classpath:saml2/saml-idp-signing.p12
+        key-store: classpath:certs/atlas.p12
         key-store-password: ${ATLAS_SAML_KEYSTORE_PASSWORD}
         key-alias: saml-idp
   ladp:

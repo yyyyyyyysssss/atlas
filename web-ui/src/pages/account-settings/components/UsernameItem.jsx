@@ -8,10 +8,12 @@ import { updateUserInfoPartial } from '../../../redux/slices/userSlice';
 
 const { Text } = Typography;
 
-const UsernameItem = ({ username, isUsernameModified, refresh }) => {
+const UsernameItem = ({ context, refresh }) => {
     const { token } = theme.useToken();
     const { modal, message } = App.useApp();
     const dispatch = useDispatch();
+
+    const { username, isUsernameModified } = context || {}
 
     const { runAsync: changeUsernameAsync, loading: changeUsernameLoading } = useRequest(changeUsername, { manual: true });
 

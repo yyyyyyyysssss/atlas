@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, Flex, Typography, Button, theme, Modal, Tag, Divider, Space, Checkbox, Table, Image, Badge, Drawer, List, Calendar } from 'antd';
 import { ArrowRight, History } from 'lucide-react';
 import { useRequest } from 'ahooks';
-import { fetchAnnouncementUserList, getAnnouncementLatest } from '../../services/NotificationService';
-import { AnnouncementType } from '../../enums/notification';
-import { useSseEvent } from '../../hooks/useSseEvent';
-import AnnouncementDetailModal from '../notification-center/announcement/components/AnnouncementDetailModal';
+import { fetchAnnouncementUserList, getAnnouncementLatest } from '../../../services/NotificationService';
+import { AnnouncementType } from '../../../enums/notification';
+import { useSseEvent } from '../../../hooks/useSseEvent';
+import AnnouncementDetailModal from '../../notification-center/announcement/components/AnnouncementDetailModal';
 
 const { Text } = Typography;
 

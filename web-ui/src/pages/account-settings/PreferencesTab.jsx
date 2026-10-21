@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Form, Typography, theme, Flex, Divider, Select, Segmented, Switch, Space, Tooltip, Skeleton } from 'antd';
 import { MonitorOutlined, CheckOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { COLOR_PRIMARY_OPTIONS, DEFAULT_PRIMARY_COLOR } from '../../../layouts/header/theme-color';
-import { changeUserProfile } from '../../../services/UserProfileService';
+import { COLOR_PRIMARY_OPTIONS, DEFAULT_PRIMARY_COLOR } from '../../layouts/header/theme-color';
+import { changeUserProfile } from '../../services/UserProfileService';
 import { useRequest } from 'ahooks';
-import { switchLanguage, switchTheme, switchColorPrimary, setNotificationSetting } from '../../../redux/slices/userSlice';
+import { switchLanguage, switchTheme, switchColorPrimary, setNotificationSetting } from '../../redux/slices/userSlice';
 import { useTranslation } from 'react-i18next';
-import { fetchDictByCode } from '../../../services/SystemService';
+import { fetchDictByCode } from '../../services/SystemService';
 
 const { Title, Text, Paragraph } = Typography;
 

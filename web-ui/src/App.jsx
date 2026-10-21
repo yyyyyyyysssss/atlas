@@ -58,7 +58,7 @@ const App = () => {
       cssVar: true,
       token: {
         colorText: 'rgba(255, 255, 255, 0.88)', // 白色文本
-        colorTextSecondary: '255, 255, 255, 0.6', //第二梯度的文本色
+        colorTextSecondary: 'rgba(255, 255, 255, 0.6)', //第二梯度的文本色
         colorTextTertiary: 'rgba(255, 255, 255, 0.2)', //第三梯度的文本色
         colorTextQuaternary: 'rgba(255, 255, 255, 0.18)', // 第四梯度的文本色
         colorIcon: 'rgba(255, 255, 255, 0.55)', // 图标
@@ -229,6 +229,10 @@ const App = () => {
         QRCode: {
           colorBgContainer: '#ffffff',
           colorBgMask: 'rgba(255, 255, 255, 0.75)',
+        },
+        Tag: {
+          defaultBg: '#fafafa',
+          defaultColor: 'rgba(0, 0, 0, 0.88)',
         },
       }
     }

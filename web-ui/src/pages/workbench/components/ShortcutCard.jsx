@@ -2,11 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Card, Row, Col, Button, Flex, Typography, Space, theme, Modal, Transfer, List, Tooltip, App } from 'antd';
 import { Zap, Plus, ArrowUp, X } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { findRouteByPath } from '../../router/router';
+import { findRouteByPath } from '../../../router/router';
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
-import { changeUserProfile } from '../../services/UserProfileService';
-import { updateShortcuts } from '../../redux/slices/userSlice';
+import { changeUserProfile } from '../../../services/UserProfileService';
+import { updateShortcuts } from '../../../redux/slices/userSlice';
 
 const { Text } = Typography;
 

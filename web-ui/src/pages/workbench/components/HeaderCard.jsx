@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, Flex, Badge, Avatar, Typography, Statistic, Space, theme, Tag } from 'antd';
 import { Trophy } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useIsSuperAdmin } from '../../components/HasPermission';
+import { useIsSuperAdmin } from '../../../components/HasPermission';
 
 const { Title, Text } = Typography;
 
@@ -76,8 +76,7 @@ const HeaderCard = () => {
           </Flex>
         </Flex>
         <Flex gap={48}>
-          <Statistic title="待处理" value={todayTaskCount} suffix="项" />
-          <Statistic title="未读消息" value={notificationUnreadCount} valueStyle={{ color: token.colorPrimary }} />
+          <Statistic title="未读消息" value={notificationUnreadCount} valueStyle={{ color: token.colorPrimary, textAlign: 'center', }} />
         </Flex>
       </Flex>
     </Card>

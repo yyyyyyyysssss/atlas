@@ -14,10 +14,10 @@ import dayjs from 'dayjs';
 import { Plus } from 'lucide-react';
 import { useRequest } from 'ahooks';
 import { createUserWorkSchedule, getUserWorkSchedule, updateUserWorkSchedule } from '../../services/UserProfileService';
-import Loading from '../../components/loading';
+import Loading from '../../../components/loading';
 import { useDispatch } from 'react-redux';
-import { setTodayTaskCount } from '../../redux/slices/userSlice';
-import IconBox from '../../components/icon-box';
+import { setTodayTaskCount } from '../../../redux/slices/userSlice';
+import IconBox from '../../../components/icon-box';
 
 const { Text, Title } = Typography;
 

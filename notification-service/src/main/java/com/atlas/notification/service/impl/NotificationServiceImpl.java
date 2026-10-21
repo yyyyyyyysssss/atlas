@@ -1,10 +1,13 @@
 package com.atlas.notification.service.impl;
 
 import com.atlas.common.core.api.notification.builder.NotificationDTO;
-import com.atlas.common.core.api.notification.enums.*;
+import com.atlas.common.core.api.notification.enums.ChannelType;
+import com.atlas.common.core.api.notification.enums.ContentType;
+import com.atlas.common.core.api.notification.enums.RenderType;
+import com.atlas.common.core.api.notification.enums.TargetType;
 import com.atlas.common.core.api.notification.exception.NotificationException;
-import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.common.core.idwork.IdGen;
+import com.atlas.notification.adapter.MessageAdapter;
 import com.atlas.notification.domain.entity.Notification;
 import com.atlas.notification.domain.entity.NotificationReceiver;
 import com.atlas.notification.domain.mode.MessagePayload;
@@ -17,10 +20,9 @@ import com.atlas.notification.enums.NotificationStatus;
 import com.atlas.notification.mapper.NotificationMapper;
 import com.atlas.notification.service.AccountResolver;
 import com.atlas.notification.service.NotificationReceiverService;
-import com.atlas.notification.service.NotificationTemplateService;
 import com.atlas.notification.service.NotificationService;
+import com.atlas.notification.service.NotificationTemplateService;
 import com.atlas.notification.service.render.RenderStrategy;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -233,6 +235,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         Long count = notificationReceiverService
                 .lambdaQuery()
                 .eq(NotificationReceiver::getReceiverId, userId)
+                .eq(NotificationReceiver::getTargetType, TargetType.USER_ID)
                 .eq(NotificationReceiver::getIsRead, false)
                 .count();
         return count == null ? 0 : count.intValue();

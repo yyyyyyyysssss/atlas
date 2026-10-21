@@ -4,18 +4,23 @@ import {
   Flex, Layout, theme
 } from 'antd';
 import './index.css'
-import HeaderCard from './HeaderCard';
-import ShortcutCard from './ShortcutCard';
-import NotificationCard from './NotificationCard';
-import TeamCard from './TeamCard';
-import DynamicCard from './DynamicCard';
-import WeeklyScheduleCard from './WeeklyScheduleCard';
+import HeaderCard from './components/HeaderCard';
+import ProjectShortcutCard from './components/ProjectShortcutCard';
+import AccountSecurityCard from './components/AccountSecurityCard';
+import UserActivityCard from './components/UserActivityCard';
+import { useSelector } from 'react-redux';
+import IntegrationGuideCard from './components/IntegrationGuideCard';
+import MyApplicationsCard from './components/MyApplicationsCard';
 
 const { Content } = Layout;
 
 const Workbench = () => {
 
   const { token } = theme.useToken()
+
+  const roles = useSelector((state) => state.auth.authInfo?.roles || [])
+
+  const isDeveloper = useMemo(() => roles.includes('developer'), [roles])
 
   return (
     <Content style={{ padding: token.paddingLG }}>
@@ -25,20 +30,13 @@ const Workbench = () => {
         <Row gutter={[token.marginLG, token.marginLG]}>
           <Col xs={24} lg={16}>
             <Flex vertical gap={token.marginLG}>
-              {/* 快捷开始 */}
-              <ShortcutCard />
-              {/* 工作日程 */}
-              <WeeklyScheduleCard/>
+              {isDeveloper === true ? <ProjectShortcutCard /> : <MyApplicationsCard />}
+              {isDeveloper === true ? <IntegrationGuideCard /> : <AccountSecurityCard />}
             </Flex>
           </Col>
 
-          <Col xs={24} lg={8}>
-            <Flex vertical gap={token.marginLG}>
-              {/* 系统动态 */}
-              <DynamicCard />
-              {/* 我的团队 */}
-              <TeamCard />
-            </Flex>
+          <Col xs={24} lg={8} xl={7}>
+            <UserActivityCard />
           </Col>
         </Row>
       </Flex>

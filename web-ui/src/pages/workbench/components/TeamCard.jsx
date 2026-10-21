@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Flex, Badge, Avatar, Typography, Button, Space, theme } from 'antd';
 import { Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRequest } from 'ahooks';
-import { fetchUserTeamMember } from '../../services/UserProfileService';
+import { fetchUserTeamMember } from '../../../services/UserProfileService';
 
 const { Text } = Typography;
 

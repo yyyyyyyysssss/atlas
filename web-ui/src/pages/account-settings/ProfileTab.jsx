@@ -3,10 +3,10 @@ import { Form, Input, Button, Typography, theme, Flex, Divider, App, Tooltip, Sp
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import AvatarUpload from './AvatarUpload';
-import { changeUserProfile } from '../../../services/UserProfileService';
+import AvatarUpload from './components/AvatarUpload';
+import { changeUserProfile } from '../../services/UserProfileService';
 import { useRequest } from 'ahooks';
-import { updateUserInfoPartial } from '../../../redux/slices/userSlice';
+import { updateUserInfoPartial } from '../../redux/slices/userSlice';
 
 const { Title, Paragraph } = Typography;
 

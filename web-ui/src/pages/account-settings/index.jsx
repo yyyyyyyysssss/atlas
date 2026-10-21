@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, Flex, theme } from 'antd';
 import { UserOutlined, SafetyCertificateOutlined, SettingOutlined } from '@ant-design/icons';
-import ProfileTab from './components/ProfileTab';
-import SecurityTab from './components/SecurityTab';
-import PreferencesTab from './components/PreferencesTab';
+import ProfileTab from './ProfileTab';
+import SecurityTab from './SecurityTab';
+import PreferencesTab from './PreferencesTab';
+import useFullParams from '../../hooks/useFullParams';
 
 const AccountSettings = () => {
     const { token } = theme.useToken();
-    const [activeTab, setActiveTab] = useState('profile')
+
+    const { panel = 'profile' } = useFullParams()
+
+    const [activeTab, setActiveTab] = useState(panel)
+
+    useEffect(() => {
+        setActiveTab(panel)
+    }, [panel])
+
     return (
         <Flex justify="center" style={{ width: '100%', minHeight: '100%' }}>
             <div style={{

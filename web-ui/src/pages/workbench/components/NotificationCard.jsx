@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Space } from 'antd';
 import { Bell } from 'lucide-react';
-import NotificationList from '../../layouts/header/notification/NotificationList';
+import NotificationList from '../../../layouts/header/notification/NotificationList';
 
 
 const NotificationCard = () => {

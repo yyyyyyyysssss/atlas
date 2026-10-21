@@ -124,7 +124,7 @@ const OAuth2ClientApplicationEdit = () => {
     }
 
     return (
-        <Loading spinning={detailApplicationLoading || saveApplicationLoading} full>
+        <Loading spinning={detailApplicationLoading || saveApplicationLoading}>
             <Flex
                 gap={50}
                 style={{

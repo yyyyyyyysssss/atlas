@@ -45,6 +45,10 @@ const OAuth2ClientApplication = lazy(() => import('../pages/project/application/
 const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/oauth2/list'))
 const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/oauth2/edit'))
 
+const Saml2ClientApplication = lazy(() => import('../pages/project/application/saml2'))
+const Saml2ClientApplicationList = lazy(() => import('../pages/project/application/saml2/list'))
+const Saml2ClientApplicationEdit = lazy(() => import('../pages/project/application/saml2/edit'))
+
 
 const Project = lazy(() => import('../pages/project'))
 const ProjectEdit = lazy(() => import('../pages/project/edit'))
@@ -330,6 +334,9 @@ export const routes = [
                         defaultIcon: <Egg size={18} />,
                         protected: true,
                         requiredPermissions: ['project:application'],
+                        handle: {
+                            animationKey: 'application',
+                        },
                         children: [
                             {
                                 index: true,
@@ -355,6 +362,29 @@ export const routes = [
                                     {
                                         path: ':id',
                                         element: <OAuth2ClientApplicationEdit />,
+                                        breadcrumbName: '编辑',
+                                    }
+                                ]
+                            },
+                            {
+                                path: 'saml2',
+                                breadcrumbName: 'Saml2 应用',
+                                element: <Saml2ClientApplication />,
+                                protected: true,
+                                children: [
+                                    {
+                                        index: true,
+                                        breadcrumbName: 'Saml2 应用',
+                                        element: <Saml2ClientApplicationList />
+                                    },
+                                    {
+                                        path: 'create',
+                                        element: <Saml2ClientApplicationEdit />,
+                                        breadcrumbName: '创建',
+                                    },
+                                    {
+                                        path: ':id',
+                                        element: <Saml2ClientApplicationEdit />,
                                         breadcrumbName: '编辑',
                                     }
                                 ]

@@ -2,7 +2,7 @@ import { Affix, App, Avatar, ConfigProvider, Flex, Layout, theme, Typography, Wa
 import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useSelector, useDispatch } from 'react-redux';
-import { useLocation, useNavigate, useOutlet } from 'react-router-dom';
+import { useLocation, useMatches, useNavigate, useOutlet } from 'react-router-dom';
 import Loading from '../components/loading';
 import ServerError from '../pages/ServerError';
 import Header from './header';
@@ -43,6 +43,8 @@ const AppLayout = () => {
 
     const dispatch = useDispatch()
 
+    const matches = useMatches();
+
     useEffect(() => {
         if (redirectTo) {
             navigate(redirectTo)
@@ -75,6 +77,12 @@ const AppLayout = () => {
         navigate('/')
         dispatch(setActiveKey({ path: '/' }))
     }, [navigate, dispatch])
+
+    // 从当前匹配的路由链中，寻找最近的 animationKey
+    const animationKey = [...matches]
+        .reverse()
+        .find(match => match.handle?.animationKey != null)
+        ?.handle.animationKey ?? location.pathname;
 
     return (
         <>
@@ -153,7 +161,7 @@ const AppLayout = () => {
                                                 </Affix>
                                                 <AnimatePresence mode="wait" initial={false}>
                                                     <motion.div
-                                                        key={location.pathname} // 必须绑定 key，否则无法识别“切换”动作
+                                                        key={animationKey} // 必须绑定 key，否则无法识别“切换”动作
 
                                                         initial={{
                                                             opacity: 0,

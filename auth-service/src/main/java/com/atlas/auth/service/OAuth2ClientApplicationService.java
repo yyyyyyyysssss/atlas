@@ -12,11 +12,7 @@ public interface OAuth2ClientApplicationService extends IService<OAuth2ClientApp
 
     OAuth2ClientApplication loadClientByRegisteredClientId(String registeredClientId);
 
-    OAuth2ClientApplication loadClientByClientId(String registeredClientId);
-
     OAuth2ClientApplication findByRegisteredClientId(String registeredClientId);
-
-    OAuth2ClientApplication findByClientId(String clientId);
 
     List<OAuth2ClientApplication> findByProjectId(Long projectId);
 

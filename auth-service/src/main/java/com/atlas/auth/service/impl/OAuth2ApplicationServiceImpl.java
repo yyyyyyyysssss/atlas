@@ -39,24 +39,12 @@ public class OAuth2ApplicationServiceImpl extends ServiceImpl<OAuth2ApplicationM
     }
 
     @Override
-    public OAuth2ClientApplication loadClientByClientId(String clientId) {
-        OAuth2ClientApplication application = findByClientId(clientId);
-        return loadClient(application);
-    }
-
-    @Override
     public OAuth2ClientApplication findByRegisteredClientId(String registeredClientId){
         return this.lambdaQuery()
                 .eq(OAuth2ClientApplication::getRegisteredClientId, registeredClientId)
                 .one();
     }
 
-    @Override
-    public OAuth2ClientApplication findByClientId(String clientId){
-        return this.lambdaQuery()
-                .eq(OAuth2ClientApplication::getClientId, clientId)
-                .one();
-    }
 
     @Override
     public List<OAuth2ClientApplication> findByProjectId(Long projectId) {

@@ -1,11 +1,10 @@
 package com.atlas.auth.domain.entity;
 
-import com.atlas.common.mybatis.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -19,7 +18,10 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Saml2RegisteredClient extends BaseEntity {
+public class Saml2RegisteredClient {
+
+    @TableId(value = "id", type = IdType.INPUT)
+    private String id;
 
     @TableField("client_id")
     private String clientId;
@@ -51,7 +53,22 @@ public class Saml2RegisteredClient extends BaseEntity {
     @TableField("enabled")
     private Boolean enabled;
 
-    @TableField("description")
-    private String description;
+    @TableField(value = "create_time",fill = FieldFill.INSERT)
+    protected LocalDateTime createTime;
+
+    @TableField(value = "creator_id",fill = FieldFill.INSERT)
+    protected Long creatorId;
+
+    @TableField(value = "creator_name",fill = FieldFill.INSERT)
+    protected String creatorName;
+
+    @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
+    protected LocalDateTime updateTime;
+
+    @TableField(value = "updater_id",fill = FieldFill.INSERT_UPDATE)
+    protected Long updaterId;
+
+    @TableField(value = "updater_name",fill = FieldFill.INSERT_UPDATE)
+    protected String updaterName;
 
 }

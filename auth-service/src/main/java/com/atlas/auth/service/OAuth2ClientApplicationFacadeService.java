@@ -8,14 +8,13 @@ import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationCreateVO;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationVO;
 import com.atlas.auth.domain.vo.ProjectVO;
-import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
-import com.atlas.common.mybatis.handler.DataPermissionContext;
 import com.atlas.common.crypto.random.SecureRandomUtils;
+import com.atlas.common.mybatis.handler.DataPermissionContext;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +42,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OAuth2ClientApplicationFacadeService {
+public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicationFacadeService{
 
     private final OAuth2ClientApplicationService oAuth2ClientApplicationService;
 
@@ -54,8 +53,6 @@ public class OAuth2ClientApplicationFacadeService {
     private final OAuth2ClientSecretService oAuth2ClientSecretService;
 
     private final PasswordEncoder passwordEncoder;
-
-    private final ProjectService projectService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -371,36 +368,5 @@ public class OAuth2ClientApplicationFacadeService {
         oAuth2ClientSecretService.save(clientSecretEntity);
     }
 
-    private ProjectVO checkAndEnsureProjectActive(String projectCode) {
-        ProjectVO projectVO = checkAndGetProject(projectCode);
-        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
-            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
-        }
-        return projectVO;
-    }
 
-    private ProjectVO checkAndEnsureProjectActive(String projectCode, Long checkProjectId) {
-        ProjectVO projectVO = checkAndGetProject(projectCode, checkProjectId);
-        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
-            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
-        }
-        return projectVO;
-    }
-
-    private ProjectVO checkAndGetProject(String projectCode, Long checkProjectId) {
-        ProjectVO projectVO = checkAndGetProject(projectCode);
-        if (!Objects.equals(projectVO.id(), checkProjectId)) {
-            throw new BusinessException("项目信息不匹配，请重新刷新页面");
-        }
-        return projectVO;
-    }
-
-    private ProjectVO checkAndGetProject(String projectCode) {
-        Objects.requireNonNull(projectCode, "项目编码不能为空");
-        ProjectVO projectVO = projectService.getByCode(projectCode);
-        if (projectVO == null) {
-            throw new BusinessException("该项目不存在: " + projectCode);
-        }
-        return projectVO;
-    }
 }

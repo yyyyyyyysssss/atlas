@@ -3,7 +3,7 @@ import { Card, Row, Col, Button, Flex, Typography, Modal, Form, Input, theme, Sp
 import { Plus, Folder, Zap, Octagon, Box } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../router/AuthProvider';
-import { getProjectPage } from '../../../services/ProjectService';
+import { getProjectPage } from '../../../services/ProjectSpaceService';
 import { useRequest } from 'ahooks';
 
 

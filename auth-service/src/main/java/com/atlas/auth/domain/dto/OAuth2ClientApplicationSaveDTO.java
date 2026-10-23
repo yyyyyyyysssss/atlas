@@ -10,12 +10,7 @@ public record OAuth2ClientApplicationSaveDTO(
         Long id,
 
         @NotBlank(message = "应用名称不能为空")
-        String applicationName,
-
-        String logoUrl,
-
-        @NotBlank(message = "应用主页不能为空")
-        String homePageUrl,
+        String clientName,
 
         @NotEmpty(message = "请至少配置一个回调地址")
         List<String> redirectUri,
@@ -26,14 +21,6 @@ public record OAuth2ClientApplicationSaveDTO(
         Boolean allowDeviceFlow,
 
         String jwksUri,
-
-        String privacyPolicyUrl,
-
-        String termsServiceUrl,
-
-        String developerName,
-
-        String developerEmail,
 
         String description
 ) {

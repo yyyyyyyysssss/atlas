@@ -12,25 +12,22 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@TableName(value = "oauth2_client_application", autoResultMap = true)
+@TableName(value = "application", autoResultMap = true)
 @Builder
-public class OAuth2ClientApplication extends BaseEntity {
+public class Application extends BaseEntity {
 
     @Tolerate
-    public OAuth2ClientApplication() {
+    public Application() {
     }
 
     @TableField("project_id")
     private Long projectId;
 
-    @TableField("registered_client_id")
-    private String registeredClientId;
-
-    @TableField("client_id")
-    private String clientId;
-
     @TableField("application_name")
     private String applicationName;
+
+    @TableField("enabled")
+    private Boolean enabled;
 
     @TableField("logo_url")
     private String logoUrl;

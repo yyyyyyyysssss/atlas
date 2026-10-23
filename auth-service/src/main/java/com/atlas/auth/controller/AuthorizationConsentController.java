@@ -1,7 +1,7 @@
 package com.atlas.auth.controller;
 
-import com.atlas.auth.domain.entity.OAuth2ClientApplication;
-import com.atlas.auth.service.OAuth2ClientApplicationService;
+import com.atlas.auth.domain.entity.Application;
+import com.atlas.auth.service.ApplicationService;
 import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class AuthorizationConsentController {
     private SecurityProperties securityProperties;
 
     @Resource
-    private OAuth2ClientApplicationService oAuth2ClientApplicationService;
+    private ApplicationService applicationService;
 
     //自定义授权同意页面x
     @GetMapping(value = "/oauth2/consent")
@@ -47,7 +47,7 @@ public class AuthorizationConsentController {
             throw new OAuth2AuthenticationException("invalid_client");
         }
         // 获取该客户端的应用信息
-        OAuth2ClientApplication auth2ClientApplication = oAuth2ClientApplicationService.loadClientByRegisteredClientId(registeredClient.getId());
+        Application auth2ClientApplication = applicationService.loadClientByRegisteredClientId(registeredClient.getId());
         // 构建url
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(securityProperties.getUiUrl())
                 .path("/oauth2/consent")

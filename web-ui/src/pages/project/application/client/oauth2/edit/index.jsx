@@ -4,11 +4,11 @@ import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
-import { useState } from 'react';
-import useFullParams from '../../../../../hooks/useFullParams';
-import SmartUpload from '../../../../../components/smart-upload';
-import { addClientSecret, deleteClientSecret, getApplicationDetail, saveApplication } from '../../../../../services/ApplicationService';
-import Loading from '../../../../../components/loading';
+import { useEffect, useState } from 'react';
+import useFullParams from '../../../../../../hooks/useFullParams';
+import SmartUpload from '../../../../../../components/smart-upload';
+import { addClientSecret, deleteClientSecret, getApplicationDetail, getOAuth2ClientDetail, saveApplication, saveOAuth2Client } from '../../../../../../services/ApplicationService';
+import Loading from '../../../../../../components/loading';
 
 const MAX_CALLBACK_URLS = 5
 
@@ -26,8 +26,10 @@ const OAuth2ClientApplicationEdit = () => {
 
     const { message, modal } = App.useApp()
 
-    const { data: applicationDetail, loading: detailApplicationLoading, refresh: refreshApplicationDetail } = useRequest(
-        () => getApplicationDetail(projectCode, id),
+    const { applicationId } = useFullParams()
+
+    const { data: oauth2ClientDetail, loading: oauth2ClientLoading, refresh: refreshOAuth2ClientDetail } = useRequest(
+        () => getOAuth2ClientDetail(projectCode, applicationId, id),
         {
             ready: !!id,
             refreshDeps: [id],
@@ -41,7 +43,7 @@ const OAuth2ClientApplicationEdit = () => {
         }
     )
 
-    const { runAsync: saveApplicationAsync, loading: saveApplicationLoading } = useRequest(saveApplication, {
+    const { runAsync: saveOAuth2ClientAsync, loading: saveOAuth2ClientLoading } = useRequest(saveOAuth2Client, {
         manual: true
     })
 
@@ -64,19 +66,25 @@ const OAuth2ClientApplicationEdit = () => {
         applicationName: ''
     });
 
+    useEffect(() => {
+        if (mode === 'create') {
+            form.resetFields()
+        }
+    }, [mode, form])
+
     const handleCancel = () => {
         // 返回上一页
         navigate(-1)
     }
 
-    const handleAddSecret = async (applicationDetail) => {
-        const res = await addClientSecretAsync(projectCode, applicationDetail.id)
+    const handleAddSecret = async (oauth2ClientDetail) => {
+        const res = await addClientSecretAsync(projectCode, applicationId, oauth2ClientDetail.id)
         const { id, clientId, clientSecret } = res
         setCredentialData({
             id: id,
             clientId: clientId,
             clientSecret: clientSecret,
-            applicationName: applicationDetail.applicationName
+            clientName: oauth2ClientDetail.clientName
         });
         setModalVisible(true)
     }
@@ -90,15 +98,15 @@ const OAuth2ClientApplicationEdit = () => {
             loading: deleteClientSecretLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteClientSecretAsync(projectCode, applicationDetail.id, clientSecretId)
+                await deleteClientSecretAsync(projectCode, applicationId, oauth2ClientDetail.id, clientSecretId)
                 message.success('密钥删除成功')
-                refreshApplicationDetail()
+                refreshOAuth2ClientDetail()
             }
         });
     }
 
     const onFinish = async (values) => {
-        const res = await saveApplicationAsync(projectCode, values)
+        const res = await saveOAuth2ClientAsync(projectCode, applicationId, values)
         message.success('保存成功');
         if (mode === 'create') {
             const { id, clientId, clientSecret } = res
@@ -116,15 +124,15 @@ const OAuth2ClientApplicationEdit = () => {
         setModalVisible(false);
         if (mode === 'create') {
             if (credentialData.id) {
-                navigate(`/project/${projectCode}/application/oauth2/${credentialData.id}`, { replace: true });
+                navigate(`/project/${projectCode}/application/${applicationId}/client/oauth2/${credentialData.id}`, { replace: true });
             }
         } else {
-            refreshApplicationDetail()
+            refreshOAuth2ClientDetail()
         }
     }
 
     return (
-        <Loading spinning={detailApplicationLoading || saveApplicationLoading}>
+        <Loading spinning={oauth2ClientLoading || saveOAuth2ClientLoading}>
             <Flex
                 gap={50}
                 style={{
@@ -143,34 +151,11 @@ const OAuth2ClientApplicationEdit = () => {
                     >
                         <Form.Item name="id" noStyle />
                         <Form.Item
-                            label="应用名称："
-                            name="applicationName"
+                            label="客户端名称："
+                            name="clientName"
                             rules={[{ required: true, message: '请输入应用名称' }, { max: 40, message: '应用名称最多 40 个字符' }]}
                         >
                             <Input placeholder="请输入应用名称" maxLength={40} showCount />
-                        </Form.Item>
-                        <Form.Item
-                            label="应用图标："
-                            name="logoUrl"
-                            rules={[{ required: true, message: '请上传应用 Logo' }]}
-                            extra="支持 JPG、PNG 格式，建议尺寸为 128x128 像素，大小不超过 2MB"
-                        >
-                            <SmartUpload
-                                accept="image/jpeg,image/png"
-                                maxSize={2 * 1024 * 1024}
-                                maxCount={1}
-                            />
-                        </Form.Item>
-                        <Form.Item
-                            label="应用主页："
-                            name="homePageUrl"
-                            rules={[
-                                { required: true, message: '请输入应用主页 URL' },
-                                { type: 'url', message: '请输入合法的 URL 地址 (需包含 http:// 或 https://)' }
-                            ]}
-                            extra="用户在授权页点击应用名称时跳转的公开主页"
-                        >
-                            <Input placeholder="https://example.com" />
                         </Form.Item>
                         <Form.Item
                             label="回调 URL："
@@ -283,56 +268,14 @@ const OAuth2ClientApplicationEdit = () => {
                             <Switch checkedChildren="开启" unCheckedChildren="关闭" />
                         </Form.Item>
 
-                        <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>法务与合规 (选填)</Divider>
                         <Form.Item
-                            label="隐私政策 URL："
-                            name="privacyPolicyUrl"
-                            rules={[{ type: 'url', message: '请输入合法的 URL 地址' }]}
-                            extra="用户登录授权页时展示的隐私权政策链接"
-                        >
-                            <Input placeholder="https://example.com/privacy" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="服务条款 URL："
-                            name="termsServiceUrl"
-                            rules={[{ type: 'url', message: '请输入合法的 URL 地址' }]}
-                            extra="用户登录授权页时展示的服务条款链接"
-                        >
-                            <Input placeholder="https://example.com/terms" />
-                        </Form.Item>
-
-                        <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>开发者信息 (选填)</Divider>
-
-                        <Form.Item
-                            label="开发者名称："
-                            name="developerName"
-                            rules={[{ max: 64, message: '开发者名称最多 64 个字符' }]}
-                            extra="展示在用户登录授权页，告知用户该应用由谁提供服务"
-                        >
-                            <Input placeholder="请输入个人开发者姓名或公司全称" maxLength={64} />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="开发者联系邮箱："
-                            name="developerEmail"
-                            rules={[
-                                { type: 'email', message: '请输入合法的邮箱地址' },
-                                { max: 128, message: '邮箱长度不能超过 128 个字符' }
-                            ]}
-                            extra="用于合规审计及用户隐私问题申诉联系"
-                        >
-                            <Input placeholder="developer@example.com" maxLength={128} />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="应用描述："
+                            label="描述："
                             name="description"
-                            rules={[{ max: 200, message: '应用描述最多 200 个字符' }]}
+                            rules={[{ max: 200, message: '描述最多 200 个字符' }]}
                         >
                             <Input.TextArea
                                 rows={4}
-                                placeholder="简要描述该应用的功能和用途..."
+                                placeholder="简要描述该客户端的功能和用途..."
                                 maxLength={200}
                                 showCount
                             />
@@ -346,12 +289,12 @@ const OAuth2ClientApplicationEdit = () => {
                                 zIndex: 10,
                             }}
                         >
-                            <Form.Item style={{  marginBottom: 0 }}>
+                            <Form.Item style={{ marginBottom: 0 }}>
                                 <Flex gap={12}>
                                     <Button
                                         type="primary"
                                         htmlType="submit"
-                                        loading={saveApplicationLoading}
+                                        loading={saveOAuth2ClientLoading}
                                     >
                                         保存
                                     </Button>
@@ -365,7 +308,7 @@ const OAuth2ClientApplicationEdit = () => {
                                 </Flex>
                             </Form.Item>
                         </div>
-                    </Form> 
+                    </Form>
                 </Flex>
 
                 <Flex
@@ -395,14 +338,14 @@ const OAuth2ClientApplicationEdit = () => {
                                 >
                                     <Descriptions.Item label="客户端 ID">
                                         <Text>
-                                            {applicationDetail?.clientId || '-'}
+                                            {oauth2ClientDetail?.clientId || '-'}
                                         </Text>
                                     </Descriptions.Item>
 
                                     <Descriptions.Item label="创建日期">
                                         <Space>
                                             <Text>
-                                                {applicationDetail?.createTime || '-'}
+                                                {oauth2ClientDetail?.createTime || '-'}
                                             </Text>
                                         </Space>
                                     </Descriptions.Item>
@@ -410,7 +353,7 @@ const OAuth2ClientApplicationEdit = () => {
                                     <Descriptions.Item label="最后使用日期">
                                         <Space>
                                             <Text>
-                                                {applicationDetail?.lastUsedTime || '-'}
+                                                {oauth2ClientDetail?.lastUsedTime || '-'}
                                             </Text>
                                         </Space>
                                     </Descriptions.Item>
@@ -422,14 +365,14 @@ const OAuth2ClientApplicationEdit = () => {
                                 variant='borderless'
                                 extra={
                                     <Tooltip
-                                        title={applicationDetail?.clientSecrets?.length >= 2 ? "每个应用最多只能同时存在 2 个有效密钥" : ""}
+                                        title={oauth2ClientDetail?.clientSecrets?.length >= 2 ? "每个应用最多只能同时存在 2 个有效密钥" : ""}
                                     >
                                         <Button
                                             type="primary"
                                             icon={<PlusOutlined />}
                                             loading={addClientSecretLoading}
-                                            disabled={applicationDetail?.clientSecrets?.length >= 2}
-                                            onClick={() => handleAddSecret(applicationDetail)}
+                                            disabled={oauth2ClientDetail?.clientSecrets?.length >= 2}
+                                            onClick={() => handleAddSecret(oauth2ClientDetail)}
                                         >
                                             生成新密钥
                                         </Button>
@@ -445,10 +388,10 @@ const OAuth2ClientApplicationEdit = () => {
 
                                     <List
                                         itemLayout="horizontal"
-                                        dataSource={applicationDetail?.clientSecrets || []}
+                                        dataSource={oauth2ClientDetail?.clientSecrets || []}
                                         renderItem={(secret) => {
                                             const isExpired = !!secret.clientSecretExpiresAt;
-                                            const isOnlyOne = applicationDetail?.clientSecrets?.length <= 1;
+                                            const isOnlyOne = oauth2ClientDetail?.clientSecrets?.length <= 1;
 
                                             return (
                                                 <List.Item

@@ -12,7 +12,7 @@ import {
 import { Column, Pie, Tiny } from '@ant-design/plots';
 import './index.css';
 import { useDomain } from '../../../router/DomainProvider';
-import { getChartTrend, getGrantTypeStats, getOverviewAndTrend } from '../../../services/ProjectService';
+import { getChartTrend, getGrantTypeStats, getOverviewAndTrend } from '../../../services/ProjectSpaceService';
 import { useRequest } from 'ahooks';
 import Loading from '../../../components/loading';
 

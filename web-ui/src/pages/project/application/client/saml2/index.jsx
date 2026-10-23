@@ -2,7 +2,8 @@ import { Typography, Button, theme } from "antd";
 import './index.css'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { PlusOutlined } from "@ant-design/icons";
-import { useDomain } from '../../../../router/DomainProvider'
+import { useDomain } from '../../../../../router/DomainProvider'
+import useFullParams from "../../../../../hooks/useFullParams";
 
 const { Title, Text } = Typography
 
@@ -18,10 +19,12 @@ const Saml2ClientApplication = () => {
 
     const location = useLocation();
 
+    const { applicationId } = useFullParams()
+
     const isCreatePage = location.pathname.endsWith("/create");
 
     const createNewApplication = () => {
-        navigate(`/project/${domainId}/application/saml2/create`)
+        navigate(`/project/${domainId}/application/${applicationId}/client/saml2/create`)
     };
 
     return (

@@ -8,5 +8,4 @@ import lombok.Setter;
 @Setter
 public class OAuth2ClientApplicationQueryDTO extends PageQueryDTO {
 
-
 }

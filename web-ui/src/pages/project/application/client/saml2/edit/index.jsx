@@ -4,9 +4,9 @@ import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined
 import { useNavigate } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
-import useFullParams from '../../../../../hooks/useFullParams';
-import Loading from '../../../../../components/loading';
-import SmartUpload from '../../../../../components/smart-upload';
+import useFullParams from '../../../../../../hooks/useFullParams';
+import Loading from '../../../../../../components/loading';
+import SmartUpload from '../../../../../../components/smart-upload';
 
 const { Title, Paragraph, Text } = Typography;
 

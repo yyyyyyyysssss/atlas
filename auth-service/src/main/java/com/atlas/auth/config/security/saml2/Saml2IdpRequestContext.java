@@ -31,7 +31,7 @@ public class Saml2IdpRequestContext {
     /**
      * 注册的SP客户端ID
      */
-    private Long registeredClientId;
+    private String registeredClientId;
 
     /**
      * ACS地址

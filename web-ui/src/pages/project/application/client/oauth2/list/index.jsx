@@ -3,11 +3,11 @@ import './index.css';
 import { List, theme, App, Card, Avatar, Typography, Tooltip, Flex, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteScroll, useRequest } from "ahooks";
-import { deleteApplication, getApplicationPage } from "../../../../../services/ApplicationService";
-import Loading from "../../../../../components/loading";
+import { deleteOAuth2Client, getOAuth2ClientPage } from "../../../../../../services/ApplicationService";
+import Loading from "../../../../../../components/loading";
 import { AppstoreOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
-import { useDomain } from "../../../../../router/DomainProvider";
-import useFullParams from "../../../../../hooks/useFullParams";
+import { useDomain } from "../../../../../../router/DomainProvider";
+import useFullParams from "../../../../../../hooks/useFullParams";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -19,9 +19,9 @@ const OAuth2ClientApplicationList = () => {
     const scrollRef = useRef(null);
     const { message, modal } = App.useApp();
 
-    const { domainId: projectCode } = useFullParams()
+    const { applicationId } = useFullParams()
 
-    const { runAsync: deleteApplicationAsync, loading: deleteApplicationLoading } = useRequest(deleteApplication, {
+    const { runAsync: deleteOAuth2ClientAsync, loading: deleteOAuth2ClientLoading } = useRequest(deleteOAuth2Client, {
         manual: true
     });
 
@@ -36,7 +36,7 @@ const OAuth2ClientApplicationList = () => {
     } = useInfiniteScroll(
         async (d) => {
             const pageNum = d ? d.nextPage : 1;
-            const res = await getApplicationPage(projectCode, pageNum, PAGE_SIZE);
+            const res = await getOAuth2ClientPage(domainId, applicationId, pageNum, PAGE_SIZE);
             const hasMore = pageNum * PAGE_SIZE < res.total;
 
             return {
@@ -54,19 +54,19 @@ const OAuth2ClientApplicationList = () => {
 
     const appList = data?.list || [];
 
-    const handleDeleteApplication = (id, e) => {
+    const handleDeleteOAuth2Client = (id, e) => {
         // 阻止点击删除按钮时触发 List.Item 的 onClick 路由跳转
-        e?.stopPropagation(); 
-        
+        e?.stopPropagation();
+
         modal.confirm({
             title: '确定要删除该 OAuth2 应用吗？',
             content: '删除后，该应用分配的 Client Secret 将全部失效，已颁发的 Token 也会被强制注销，此操作不可逆！',
             okText: '确定删除',
             okType: 'danger',
-            loading: deleteApplicationLoading,
+            loading: deleteOAuth2ClientLoading,
             cancelText: '取消',
             onOk: async () => {
-                await deleteApplicationAsync(projectCode, id);
+                await deleteOAuth2ClientAsync(domainId, applicationId, id);
                 message.success('应用删除成功');
                 if (data) {
                     mutate({
@@ -99,13 +99,13 @@ const OAuth2ClientApplicationList = () => {
                         renderItem={(app) => (
                             <List.Item
                                 key={app.id}
-                                onClick={() => navigate(`/project/${domainId}/application/oauth2/${app.id}`)}
+                                onClick={() => navigate(`/project/${domainId}/application/${applicationId}/client/oauth2/${app.id}`)}
                                 style={{ cursor: "pointer", padding: "12px 0" }}
                             >
                                 <div style={{ width: "100%" }}>
                                     <OAuth2ClientApplicationItem
                                         oauth2App={app}
-                                        onDelete={(id, e) => handleDeleteApplication(id, e)}
+                                        onDelete={(id, e) => handleDeleteOAuth2Client(id, e)}
                                     />
                                 </div>
                             </List.Item>
@@ -188,7 +188,7 @@ const OAuth2ClientApplicationItem = ({ oauth2App, onDelete }) => {
                                     color: token.colorText
                                 }}
                             >
-                                {oauth2App.applicationName}
+                                {oauth2App.clientName}
                             </Text>
                         </Flex>
 

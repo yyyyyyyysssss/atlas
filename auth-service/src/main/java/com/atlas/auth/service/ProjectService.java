@@ -1,10 +1,12 @@
 package com.atlas.auth.service;
 
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.*;
+import com.atlas.auth.enums.ProjectStatus;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
 
@@ -26,6 +28,22 @@ public interface ProjectService extends IService<Project> {
 
     // 根据项目唯一编码获取项目详情
     ProjectVO getByCode(String projectCode);
+
+    default ProjectVO getRequiredByCode(String projectCode){
+        ProjectVO projectVO = getByCode(projectCode);
+        if(projectVO == null){
+            throw new AuthServiceException("该项目不存在: " + projectCode);
+        }
+        return projectVO;
+    }
+
+    default ProjectVO getEnabledRequiredByCode(String projectCode){
+        ProjectVO projectVO = getRequiredByCode(projectCode);
+        if(!ProjectStatus.ACTIVE.equals(projectVO.status())){
+            throw new AuthServiceException("该项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
+        }
+        return projectVO;
+    }
 
     // 分页条件查询项目列表
     PageInfo<ProjectVO> getPage(ProjectQueryDTO queryDTO);

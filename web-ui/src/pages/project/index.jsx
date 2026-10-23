@@ -4,7 +4,7 @@ import { List, theme, App, Card, Avatar, Typography, Tooltip, Flex, Button, Tag,
 import { useNavigate } from "react-router-dom";
 import { useInfiniteScroll, useRequest } from "ahooks";
 import { FolderOutlined, DeleteOutlined, EditOutlined, FolderOpenOutlined, PlusOutlined, UndoOutlined, RightOutlined } from "@ant-design/icons";
-import { deleteProject, getProjectPage, restoreProject } from "../../services/ProjectService";
+import { deleteProject, getProjectPage, restoreProject } from "../../services/ProjectSpaceService";
 import Loading from "../../components/loading";
 import { Box } from "lucide-react";
 

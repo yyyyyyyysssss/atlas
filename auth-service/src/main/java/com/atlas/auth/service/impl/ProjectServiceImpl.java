@@ -2,13 +2,13 @@ package com.atlas.auth.service.impl;
 
 import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
-import com.atlas.auth.domain.entity.OAuth2ClientApplication;
+import com.atlas.auth.domain.entity.Application;
 import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.ProjectStatus;
 import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.auth.mapper.ProjectMapper;
-import com.atlas.auth.service.OAuth2ClientApplicationService;
+import com.atlas.auth.service.ApplicationService;
 import com.atlas.auth.service.ProjectService;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.exception.BusinessException;
@@ -45,7 +45,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
 
     private final ProjectMapper projectMapper;
 
-    private final OAuth2ClientApplicationService oAuth2ClientApplicationService;
+    private final ApplicationService applicationService;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -215,7 +215,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
         if (!StringUtils.hasText(registeredClientId)) {
             return false;
         }
-        OAuth2ClientApplication auth2ClientApplication = oAuth2ClientApplicationService.findByRegisteredClientId(registeredClientId);
+        Application auth2ClientApplication = applicationService.findByRegisteredClientId(registeredClientId);
         if (auth2ClientApplication == null) {
             return false;
         }
@@ -225,7 +225,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     @Override
     public ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode) {
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        List<String> registeredClientIds = applicationService.findRegisteredClientIdByProjectId(projectVO.id());
         if (CollectionUtils.isEmpty(registeredClientIds)) {
             return ProjectDashboardOverviewTrendVO.empty();
         }
@@ -243,7 +243,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     public ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days) {
         int queryDays = (days != null && days > 0) ? days : 30;
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        List<String> registeredClientIds = applicationService.findRegisteredClientIdByProjectId(projectVO.id());
         if (CollectionUtils.isEmpty(registeredClientIds)) {
             return ProjectDashboardChartTrendVO.empty(metricType);
         }
@@ -268,15 +268,15 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project> impl
     @Override
     public List<ProjectDashboardGrantTypeStatsVO> getGrantTypeStats(String projectCode) {
         ProjectVO projectVO = this.getByCode(projectCode);
-        List<String> registeredClientIds = oAuth2ClientApplicationService.findRegisteredClientIdByProjectId(projectVO.id());
+        List<String> registeredClientIds = applicationService.findRegisteredClientIdByProjectId(projectVO.id());
         if (CollectionUtils.isEmpty(registeredClientIds)) {
             return Collections.emptyList();
         }
-        List<OAuth2ClientApplication> applications = oAuth2ClientApplicationService.findByProjectId(projectVO.id());
+        List<Application> applications = applicationService.findByProjectId(projectVO.id());
         if (CollectionUtils.isEmpty(applications)) {
             return Collections.emptyList();
         }
-        List<String> allApplicationNames = applications.stream().map(OAuth2ClientApplication::getApplicationName).toList();
+        List<String> allApplicationNames = applications.stream().map(Application::getApplicationName).toList();
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusDays(30);
         List<ProjectDashboardGrantTypeStatsVO.GrantTypeItem> dbItems = projectMapper.selectGrantTypeStats(registeredClientIds, startDate, endDate);

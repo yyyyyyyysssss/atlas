@@ -155,7 +155,7 @@
                 SELECT #{clientId} AS registered_client_id
             </foreach>
         ) t
-        LEFT JOIN oauth2_client_application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application c ON t.registered_client_id = c.registered_client_id
         LEFT JOIN (
             SELECT
                 a.registered_client_id,
@@ -183,7 +183,7 @@
                 SELECT #{clientId} AS registered_client_id
             </foreach>
         ) t
-        LEFT JOIN oauth2_client_application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application c ON t.registered_client_id = c.registered_client_id
         LEFT JOIN (
             SELECT
                 a.registered_client_id,
@@ -214,7 +214,7 @@
             COUNT(*) AS count
         FROM
             oauth2_authorization a
-        LEFT JOIN oauth2_client_application c ON a.registered_client_id = c.registered_client_id
+        LEFT JOIN application c ON a.registered_client_id = c.registered_client_id
         WHERE
             a.authorization_grant_type IN (
             'authorization_code',

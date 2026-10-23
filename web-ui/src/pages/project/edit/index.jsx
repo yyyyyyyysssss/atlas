@@ -1,7 +1,7 @@
 import { useRequest } from 'ahooks'
 import useFullParams from '../../../hooks/useFullParams'
 import './index.css'
-import { getProjectDetail, saveProject } from '../../../services/ProjectService'
+import { getProjectDetail, saveProject } from '../../../services/ProjectSpaceService'
 import { App, Button, Col, Flex, Form, Input, Row, theme } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import Loading from '../../../components/loading'

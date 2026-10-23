@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.vo;
 
-import com.atlas.auth.domain.entity.OAuth2ClientApplication;
+import com.atlas.auth.domain.entity.ApplicationClient;
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -10,45 +10,33 @@ import java.util.List;
 
 public record OAuth2ClientApplicationVO(
         Long id,
-        String clientId, // 只读，回显给用户看
-        String applicationName,
-        String logoUrl,
-        String homePageUrl,
+        String clientId,
+        String clientName,
         List<String> redirectUri,
         List<String> scopes,
         Boolean allowDeviceFlow,
-        String privacyPolicyUrl,
-        String termsServiceUrl,
-        String developerName,
-        String developerEmail,
         String description,
         LocalDateTime createTime,
         LocalDateTime lastUsedTime,
         List<ClientSecretInfoVO> clientSecrets
 ) {
 
-    public static OAuth2ClientApplicationVO of(OAuth2ClientApplication application){
+    public static OAuth2ClientApplicationVO of(ApplicationClient applicationClient){
         return new OAuth2ClientApplicationVO(
-                application.getId(),
-                application.getClientId(),
-                application.getApplicationName(),
-                application.getLogoUrl(),
-                application.getHomePageUrl(),
+                applicationClient.getId(),
+                applicationClient.getClientId(),
+                applicationClient.getClientName(),
                 null,
                 null,
                 null,
-                application.getPrivacyPolicyUrl(),
-                application.getTermsServiceUrl(),
-                application.getDeveloperName(),
-                application.getDeveloperEmail(),
-                application.getDescription(),
-                application.getCreateTime(),
-                application.getLastUsedTime(),
+                applicationClient.getDescription(),
+                applicationClient.getCreateTime(),
+                applicationClient.getLastUsedTime(),
                 null
         );
     }
 
-    public static OAuth2ClientApplicationVO of(OAuth2ClientApplication application, RegisteredClient registeredClient, List<OAuth2ClientSecret> oAuth2ClientSecrets){
+    public static OAuth2ClientApplicationVO of(ApplicationClient applicationClient, RegisteredClient registeredClient, List<OAuth2ClientSecret> oAuth2ClientSecrets){
         List<ClientSecretInfoVO> secretInfoVOs = null;
         if (oAuth2ClientSecrets != null) {
             secretInfoVOs = oAuth2ClientSecrets.stream()
@@ -56,21 +44,15 @@ public record OAuth2ClientApplicationVO(
                     .toList();
         }
         return new OAuth2ClientApplicationVO(
-                application.getId(),
-                application.getClientId(),
-                application.getApplicationName(),
-                application.getLogoUrl(),
-                application.getHomePageUrl(),
+                applicationClient.getId(),
+                applicationClient.getClientId(),
+                applicationClient.getClientName(),
                 registeredClient.getRedirectUris().stream().toList(),
                 registeredClient.getScopes().stream().toList(),
                 registeredClient.getAuthorizationGrantTypes().contains(AuthorizationGrantType.DEVICE_CODE),
-                application.getPrivacyPolicyUrl(),
-                application.getTermsServiceUrl(),
-                application.getDeveloperName(),
-                application.getDeveloperEmail(),
-                application.getDescription(),
-                application.getCreateTime(),
-                application.getLastUsedTime(),
+                applicationClient.getDescription(),
+                applicationClient.getCreateTime(),
+                applicationClient.getLastUsedTime(),
                 secretInfoVOs
         );
     }

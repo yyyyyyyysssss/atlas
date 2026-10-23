@@ -41,13 +41,15 @@ const OAuth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
 const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 const Saml2IdpSso = lazy(() => import('../pages/login/saml2/idp'))
 
-const OAuth2ClientApplication = lazy(() => import('../pages/project/application/oauth2'))
-const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/oauth2/list'))
-const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/oauth2/edit'))
+const OAuth2ClientApplication = lazy(() => import('../pages/project/application/client/oauth2'))
+const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/client/oauth2/list'))
+const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/client/oauth2/edit'))
 
-const Saml2ClientApplication = lazy(() => import('../pages/project/application/saml2'))
-const Saml2ClientApplicationList = lazy(() => import('../pages/project/application/saml2/list'))
-const Saml2ClientApplicationEdit = lazy(() => import('../pages/project/application/saml2/edit'))
+const ProjectApplicationClient = lazy(() => import('../pages/project/application/client'))
+
+const Saml2ClientApplication = lazy(() => import('../pages/project/application/client/saml2'))
+const Saml2ClientApplicationList = lazy(() => import('../pages/project/application/client/saml2/list'))
+const Saml2ClientApplicationEdit = lazy(() => import('../pages/project/application/client/saml2/edit'))
 
 
 const Project = lazy(() => import('../pages/project'))
@@ -329,66 +331,79 @@ export const routes = [
                     },
                     {
                         path: 'application',
-                        element: <ProjectApplication />,
                         breadcrumbName: '应用',
                         defaultIcon: <Egg size={18} />,
                         protected: true,
+                        element: <Outlet />,
                         requiredPermissions: ['project:application'],
-                        handle: {
-                            animationKey: 'application',
-                        },
                         children: [
                             {
                                 index: true,
                                 breadcrumbName: '应用',
-                                element: <Navigate to="oauth2" />
+                                element: <ProjectApplication />,
                             },
                             {
-                                path: 'oauth2',
-                                breadcrumbName: 'OAuth2 应用',
-                                element: <OAuth2ClientApplication />,
+                                path: ':applicationId/client',
+                                breadcrumbName: '客户端',
+                                element: <ProjectApplicationClient />,
                                 protected: true,
+                                handle: {
+                                    animationKey: 'application-client',
+                                },
                                 children: [
                                     {
                                         index: true,
-                                        breadcrumbName: 'OAuth2 应用',
-                                        element: <OAuth2ClientApplicationList />
+                                        breadcrumbName: 'OAuth2 客户端',
+                                        element: <Navigate to="oauth2" replace />,
                                     },
                                     {
-                                        path: 'create',
-                                        element: <OAuth2ClientApplicationEdit />,
-                                        breadcrumbName: '创建',
+                                        path: 'oauth2',
+                                        breadcrumbName: 'OAuth2 客户端',
+                                        element: <OAuth2ClientApplication />,
+                                        protected: true,
+                                        children: [
+                                            {
+                                                index: true,
+                                                breadcrumbName: 'OAuth2 客户端',
+                                                element: <OAuth2ClientApplicationList />
+                                            },
+                                            {
+                                                path: 'create',
+                                                element: <OAuth2ClientApplicationEdit />,
+                                                breadcrumbName: '创建',
+                                            },
+                                            {
+                                                path: ':id',
+                                                element: <OAuth2ClientApplicationEdit />,
+                                                breadcrumbName: '编辑',
+                                            }
+                                        ]
                                     },
                                     {
-                                        path: ':id',
-                                        element: <OAuth2ClientApplicationEdit />,
-                                        breadcrumbName: '编辑',
+                                        path: 'saml2',
+                                        breadcrumbName: 'Saml2 客户端',
+                                        element: <Saml2ClientApplication />,
+                                        protected: true,
+                                        children: [
+                                            {
+                                                index: true,
+                                                breadcrumbName: 'Saml2 客户端',
+                                                element: <Saml2ClientApplicationList />
+                                            },
+                                            {
+                                                path: 'create',
+                                                element: <Saml2ClientApplicationEdit />,
+                                                breadcrumbName: '创建',
+                                            },
+                                            {
+                                                path: ':id',
+                                                element: <Saml2ClientApplicationEdit />,
+                                                breadcrumbName: '编辑',
+                                            }
+                                        ]
                                     }
                                 ]
                             },
-                            {
-                                path: 'saml2',
-                                breadcrumbName: 'Saml2 应用',
-                                element: <Saml2ClientApplication />,
-                                protected: true,
-                                children: [
-                                    {
-                                        index: true,
-                                        breadcrumbName: 'Saml2 应用',
-                                        element: <Saml2ClientApplicationList />
-                                    },
-                                    {
-                                        path: 'create',
-                                        element: <Saml2ClientApplicationEdit />,
-                                        breadcrumbName: '创建',
-                                    },
-                                    {
-                                        path: ':id',
-                                        element: <Saml2ClientApplicationEdit />,
-                                        breadcrumbName: '编辑',
-                                    }
-                                ]
-                            }
                         ]
                     }
                 ]

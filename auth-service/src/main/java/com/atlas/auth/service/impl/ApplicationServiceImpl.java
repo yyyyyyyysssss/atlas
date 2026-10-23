@@ -1,7 +1,6 @@
 package com.atlas.auth.service.impl;
 
 import com.atlas.auth.config.exception.AuthServiceException;
-import com.atlas.auth.config.security.oauth2.OAuth2ClientAuthorizedEvent;
 import com.atlas.auth.domain.dto.ApplicationQueryDTO;
 import com.atlas.auth.domain.dto.ApplicationSaveDTO;
 import com.atlas.auth.domain.entity.Application;
@@ -13,7 +12,6 @@ import com.atlas.auth.mapping.ApplicationMapping;
 import com.atlas.auth.service.ApplicationClientService;
 import com.atlas.auth.service.ApplicationService;
 import com.atlas.auth.service.ProjectService;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -22,8 +20,6 @@ import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
@@ -31,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -147,6 +142,22 @@ public class ApplicationServiceImpl extends ServiceImpl<ApplicationMapper, Appli
         return ApplicationMapping.INSTANCE.toApplicationVO(application);
     }
 
+    @Override
+    public List<String> findRegisteredClientIdByProjectId(Long projectId) {
+        List<Application> applications = this.findByProjectId(projectId);
+        if (CollectionUtils.isEmpty(applications)) {
+            return Collections.emptyList();
+        }
+        List<Long> applicationIds = applications.stream().map(Application::getId).toList();
+        List<ApplicationClient> applicationClients = applicationClientService.lambdaQuery()
+                .in(ApplicationClient::getApplicationId,applicationIds)
+                .list();
+        if (CollectionUtils.isEmpty(applicationClients)) {
+            return Collections.emptyList();
+        }
+        return applicationClients.stream().map(ApplicationClient::getRegisteredClientId).toList();
+    }
+
     private Application loadClient(Application application) {
         if (application == null) {
             log.warn("OAuth2 客户端认证失败：应用不存在");
@@ -166,24 +177,6 @@ public class ApplicationServiceImpl extends ServiceImpl<ApplicationMapper, Appli
             );
         }
         return application;
-    }
-
-    // 监听客户端授权成功事件
-    @Async
-    @EventListener
-    public void onClientAuthorized(OAuth2ClientAuthorizedEvent event) {
-        String clientId = event.getClientId();
-        LocalDateTime now = LocalDateTime.now();
-        ApplicationClient applicationClient = applicationClientService.findByClientId(clientId);
-        if (applicationClient == null) {
-            log.warn("该客户端关联的应用不存在: {}", clientId);
-            return;
-        }
-        log.info("客户端授权成功，更新最后使用时间。clientId: {}", clientId);
-        this.lambdaUpdate()
-                .eq(Application::getId, applicationClient.getApplicationId())
-                .set(Application::getLastUsedTime, now)
-                .update();
     }
 
 

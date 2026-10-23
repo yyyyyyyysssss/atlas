@@ -50,7 +50,4 @@ public class Application extends BaseEntity {
     @TableField("description")
     private String description;
 
-    @TableField("last_used_time")
-    private LocalDateTime lastUsedTime;
-
 }

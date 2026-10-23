@@ -6,9 +6,7 @@ import com.atlas.auth.domain.entity.Application;
 import com.atlas.auth.domain.vo.ApplicationVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
-import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
 import java.util.List;
 
 public interface ApplicationService extends IService<Application> {
@@ -30,12 +28,6 @@ public interface ApplicationService extends IService<Application> {
 
     ApplicationVO detail(String projectCode, Long applicationId);
 
-    default List<String> findRegisteredClientIdByProjectId(Long projectId){
-        List<Application> registeredClientIds = this.findByProjectId(projectId);
-        if(CollectionUtils.isEmpty(registeredClientIds)){
-            return Collections.emptyList();
-        }
-        return registeredClientIds.stream().map(Application::getRegisteredClientId).toList();
-    }
+    List<String> findRegisteredClientIdByProjectId(Long projectId);
 
 }

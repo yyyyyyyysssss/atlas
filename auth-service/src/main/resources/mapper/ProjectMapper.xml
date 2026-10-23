@@ -148,14 +148,15 @@
 
     <select id="selectApplicationActiveUserRanking" resultType="com.atlas.auth.domain.vo.ProjectDashboardRankingVO">
         SELECT
-            c.application_name AS applicationName,
+            a.application_name AS applicationName,
             IFNULL(stats.score, 0) AS score
         FROM (
             <foreach item="clientId" collection="registeredClientIds" separator=" UNION ALL ">
                 SELECT #{clientId} AS registered_client_id
             </foreach>
         ) t
-        LEFT JOIN application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application_client c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application a ON c.application_id = a.id
         LEFT JOIN (
             SELECT
                 a.registered_client_id,
@@ -176,14 +177,15 @@
 
     <select id="selectApplicationAuthCountRanking" resultType="com.atlas.auth.domain.vo.ProjectDashboardRankingVO">
         SELECT
-            c.application_name AS applicationName,
+            a.application_name AS applicationName,
             IFNULL(stats.score, 0) AS score
         FROM (
             <foreach item="clientId" collection="registeredClientIds" separator=" UNION ALL ">
                 SELECT #{clientId} AS registered_client_id
             </foreach>
         ) t
-        LEFT JOIN application c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application_client c ON t.registered_client_id = c.registered_client_id
+        LEFT JOIN application a ON c.application_id = a.id
         LEFT JOIN (
             SELECT
                 a.registered_client_id,
@@ -204,7 +206,7 @@
 
     <select id="selectGrantTypeStats" resultType="com.atlas.auth.domain.vo.ProjectDashboardGrantTypeStatsVO$GrantTypeItem">
         SELECT
-            c.application_name AS applicationName,
+            an.application_name AS applicationName,
             CASE a.authorization_grant_type
             WHEN 'authorization_code' THEN '授权码模式'
             WHEN 'client_credentials' THEN '客户端模式'
@@ -214,7 +216,8 @@
             COUNT(*) AS count
         FROM
             oauth2_authorization a
-        LEFT JOIN application c ON a.registered_client_id = c.registered_client_id
+        LEFT JOIN application_client c ON a.registered_client_id = c.registered_client_id
+        LEFT JOIN application an ON c.application_id = an.id
         WHERE
             a.authorization_grant_type IN (
             'authorization_code',
@@ -225,7 +228,7 @@
         <![CDATA[ AND a.create_time <= #{endDate} ]]>
         AND <include refid="clientInCondition"/>
         GROUP BY
-            c.application_name,
+            an.application_name,
             a.authorization_grant_type
     </select>
 

@@ -11,10 +11,7 @@ import java.util.List;
 
 public interface ApplicationService extends IService<Application> {
 
-
-    Application loadClientByRegisteredClientId(String registeredClientId);
-
-    Application findByRegisteredClientId(String registeredClientId);
+    Application getActive(Long id);
 
     Application getRequiredByIdAndProjectId(Long id, Long projectId);
 
@@ -27,7 +24,5 @@ public interface ApplicationService extends IService<Application> {
     PageInfo<ApplicationVO> getPage(String projectCode, ApplicationQueryDTO queryDTO);
 
     ApplicationVO detail(String projectCode, Long applicationId);
-
-    List<String> findRegisteredClientIdByProjectId(Long projectId);
 
 }

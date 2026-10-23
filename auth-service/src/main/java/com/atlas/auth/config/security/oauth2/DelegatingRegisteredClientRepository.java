@@ -1,6 +1,9 @@
 package com.atlas.auth.config.security.oauth2;
 
+import com.atlas.auth.domain.entity.ApplicationClient;
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
+import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.service.ApplicationClientService;
 import com.atlas.auth.service.OAuth2ClientSecretService;
 import com.atlas.auth.service.ProjectService;
 import com.atlas.common.security.encoder.MultiSecretPayload;
@@ -26,12 +29,12 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
 
     private final OAuth2ClientSecretService oauth2ClientSecretService;
 
-    private final ProjectService projectService;
+    private final ApplicationClientService applicationClientService;
 
-    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate, OAuth2ClientSecretService oauth2ClientSecretService, ProjectService projectService){
+    public DelegatingRegisteredClientRepository(RegisteredClientRepository delegate, OAuth2ClientSecretService oauth2ClientSecretService, ApplicationClientService applicationClientService){
         this.delegate = delegate;
         this.oauth2ClientSecretService = oauth2ClientSecretService;
-        this.projectService = projectService;
+        this.applicationClientService = applicationClientService;
     }
 
     @Override
@@ -56,7 +59,8 @@ public class DelegatingRegisteredClientRepository implements RegisteredClientRep
         if (client == null) {
             return null;
         }
-        if(!projectService.isProjectActiveByRegisteredClientId(client.getId())){
+        ApplicationClient applicationClient = applicationClientService.getActiveByRegisteredClientId(client.getId(), ClientProtocol.OAUTH2);
+        if(applicationClient == null){
             log.warn("OAuth2 鉴权拦截：客户端 [{}] (RegisteredClientId: {}) 所属项目已被归档、停用或不存在",
                     client.getClientId(), client.getId());
             return null;

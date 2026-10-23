@@ -3,7 +3,7 @@ package com.atlas.auth.controller;
 import com.atlas.auth.domain.vo.ProjectDashboardChartTrendVO;
 import com.atlas.auth.domain.vo.ProjectDashboardGrantTypeStatsVO;
 import com.atlas.auth.domain.vo.ProjectDashboardOverviewTrendVO;
-import com.atlas.auth.service.ProjectService;
+import com.atlas.auth.service.ProjectDashboardService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +21,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectDashboardController {
 
-    private final ProjectService projectService;
+    private final ProjectDashboardService projectDashboardService;
 
     @GetMapping("/overview/trend")
     public Result<ProjectDashboardOverviewTrendVO> overviewAndTrend(@PathVariable("projectCode") String projectCode) {
-        ProjectDashboardOverviewTrendVO trendVO = projectService.getOverviewAndTrend(projectCode);
+        ProjectDashboardOverviewTrendVO trendVO = projectDashboardService.getOverviewAndTrend(projectCode);
         return ResultGenerator.ok(trendVO);
     }
 
@@ -33,14 +33,14 @@ public class ProjectDashboardController {
     public Result<ProjectDashboardChartTrendVO> chartTrend(@PathVariable("projectCode") String projectCode,
                                                               @RequestParam("metricType") String metricType,
                                                               @RequestParam(required = false, name = "days") Integer days) {
-        ProjectDashboardChartTrendVO chartTrend = projectService.getChartTrend(projectCode, metricType, days);
+        ProjectDashboardChartTrendVO chartTrend = projectDashboardService.getChartTrend(projectCode, metricType, days);
         return ResultGenerator.ok(chartTrend);
     }
 
 
     @GetMapping("/grantType/stats")
     public Result<List<ProjectDashboardGrantTypeStatsVO>> grantTypeStats(@PathVariable("projectCode") String projectCode){
-        List<ProjectDashboardGrantTypeStatsVO> grantTypeStats = projectService.getGrantTypeStats(projectCode);
+        List<ProjectDashboardGrantTypeStatsVO> grantTypeStats = projectDashboardService.getGrantTypeStats(projectCode);
         return ResultGenerator.ok(grantTypeStats);
     }
 

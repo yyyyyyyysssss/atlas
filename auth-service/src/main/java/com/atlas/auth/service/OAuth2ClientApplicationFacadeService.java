@@ -2,6 +2,7 @@ package com.atlas.auth.service;
 
 
 import com.atlas.auth.config.exception.AuthServiceException;
+import com.atlas.auth.domain.dto.ApplicationClientSaveDTO;
 import com.atlas.auth.domain.dto.OAuth2ClientApplicationQueryDTO;
 import com.atlas.auth.domain.dto.OAuth2ClientApplicationSaveDTO;
 import com.atlas.auth.domain.entity.Application;
@@ -84,7 +85,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         return clientPageInfo.convert(OAuth2ClientApplicationVO::of);
     }
 
-    public OAuth2ClientApplicationVO getApplicationDetail(String projectCode, Long applicationId, Long id) {
+    public OAuth2ClientApplicationVO getOAuth2ClientDetail(String projectCode, Long applicationId, Long id) {
         // 前置校验
         validateProjectAndApplication(projectCode, applicationId);
 
@@ -99,7 +100,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
     }
 
     @Transactional
-    public void deleteByApplicationId(String projectCode,Long applicationId, Long id) {
+    public void deleteById(String projectCode,Long applicationId, Long id) {
         validateProjectAndApplication(projectCode, applicationId);
 
         log.info("正在删除 OAuth2 客户端，ID: {}", id);
@@ -252,18 +253,9 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         RegisteredClient registeredClient = clientBuilder.build();
         registeredClientRepository.save(registeredClient);
 
-        // 保存 (oauth2_application)
-        ApplicationClient applicationClient = ApplicationClient
-                .builder()
-                .applicationId(applicationId)
-                .registeredClientId(registeredClientId)
-                .clientId(clientId)
-                .clientName(saveDTO.clientName())
-                .protocol(ClientProtocol.OAUTH2)
-                .description(saveDTO.description())
-                .build();
-        applicationClient.setId(IdGen.genId());
-        applicationClientService.save(applicationClient);
+        // 保存 (application_client)
+        ApplicationClientSaveDTO clientSaveDTO = ApplicationClientSaveDTO.of(applicationId, saveDTO, registeredClient);
+        ApplicationClient applicationClient = applicationClientService.saveInfo(clientSaveDTO);
 
         // 保存密钥
         saveClientSecret(applicationClient, rawSecret);
@@ -314,9 +306,8 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         registeredClientRepository.save(updatedClient);
 
         // 同步更新 application_client
-        applicationClient.setClientName(saveDTO.clientName());
-        applicationClient.setDescription(saveDTO.description());
-        applicationClientService.updateById(applicationClient);
+        ApplicationClientSaveDTO clientSaveDTO = ApplicationClientSaveDTO.of(applicationId, saveDTO, registeredClient);
+        applicationClientService.saveInfo(clientSaveDTO);
 
         log.info("OAuth2 客户端配置更新成功, id: {}, clientName: {}", applicationClient.getId(), applicationClient.getClientName());
 

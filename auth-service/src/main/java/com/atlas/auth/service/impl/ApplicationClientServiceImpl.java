@@ -1,22 +1,31 @@
 package com.atlas.auth.service.impl;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.config.security.oauth2.OAuth2ClientAuthorizedEvent;
+import com.atlas.auth.domain.dto.ApplicationClientSaveDTO;
+import com.atlas.auth.domain.entity.Application;
 import com.atlas.auth.domain.entity.ApplicationClient;
 import com.atlas.auth.enums.ClientProtocol;
 import com.atlas.auth.mapper.ApplicationClientMapper;
 import com.atlas.auth.service.ApplicationClientService;
+import com.atlas.auth.service.ApplicationService;
+import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.mybatis.handler.DataPermissionContext;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,16 +39,34 @@ import java.util.Objects;
 @Slf4j
 public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientMapper, ApplicationClient> implements ApplicationClientService {
 
+    @Resource
+    private ApplicationService applicationService;
 
     @Override
-    public List<ApplicationClient> findByApplication(Long applicationId, ClientProtocol protocol) {
-        Objects.requireNonNull(applicationId);
-        Objects.requireNonNull(protocol);
-        return this.lambdaQuery()
-                .eq(ApplicationClient::getApplicationId, applicationId)
-                .eq(ApplicationClient::getProtocol, protocol)
-                .orderByAsc(ApplicationClient::getId)
-                .list();
+    public ApplicationClient saveInfo(ApplicationClientSaveDTO saveDTO) {
+        ApplicationClient applicationClient;
+        if (saveDTO.id() == null) {
+            applicationClient = ApplicationClient
+                    .builder()
+                    .applicationId(saveDTO.applicationId())
+                    .registeredClientId(saveDTO.registeredClientId())
+                    .clientId(saveDTO.clientId())
+                    .clientName(saveDTO.clientName())
+                    .protocol(saveDTO.clientProtocol())
+                    .description(saveDTO.description())
+                    .build();
+            applicationClient.setId(IdGen.genId());
+            this.saveOrUpdate(applicationClient);
+        } else {
+            applicationClient = this.getById(saveDTO.id());
+            if (applicationClient == null) {
+                throw new AuthServiceException("应用客户端不存在");
+            }
+            applicationClient.setClientName(saveDTO.clientName());
+            applicationClient.setDescription(saveDTO.description());
+            this.updateById(applicationClient);
+        }
+        return applicationClient;
     }
 
     @Override
@@ -68,6 +95,22 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
     }
 
     @Override
+    public ApplicationClient getActiveByRegisteredClientId(String registeredClientId, ClientProtocol protocol) {
+        ApplicationClient applicationClient = this.lambdaQuery()
+                .eq(ApplicationClient::getRegisteredClientId, registeredClientId)
+                .eq(ApplicationClient::getProtocol, protocol)
+                .one();
+        if (applicationClient == null) {
+            return null;
+        }
+        Application application = applicationService.getActive(applicationClient.getApplicationId());
+        if (application == null) {
+            return null;
+        }
+        return applicationClient;
+    }
+
+    @Override
     public ApplicationClient findByClientId(String clientId) {
         Objects.requireNonNull(clientId);
         return this.lambdaQuery()
@@ -75,6 +118,16 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
                 .one();
     }
 
+    @Override
+    public List<ApplicationClient> findByApplicationIds(Collection<Long> applicationIds) {
+        List<ApplicationClient> list = this.lambdaQuery()
+                .in(ApplicationClient::getApplicationId, applicationIds)
+                .list();
+        if (CollectionUtils.isEmpty(list)) {
+            return Collections.emptyList();
+        }
+        return list;
+    }
 
     // 监听客户端授权成功事件
     @Async

@@ -4,12 +4,11 @@ import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ApplicationQueryDTO;
 import com.atlas.auth.domain.dto.ApplicationSaveDTO;
 import com.atlas.auth.domain.entity.Application;
-import com.atlas.auth.domain.entity.ApplicationClient;
+import com.atlas.auth.domain.entity.Project;
 import com.atlas.auth.domain.vo.ApplicationVO;
 import com.atlas.auth.domain.vo.ProjectVO;
 import com.atlas.auth.mapper.ApplicationMapper;
 import com.atlas.auth.mapping.ApplicationMapping;
-import com.atlas.auth.service.ApplicationClientService;
 import com.atlas.auth.service.ApplicationService;
 import com.atlas.auth.service.ProjectService;
 import com.atlas.common.core.idwork.IdGen;
@@ -20,9 +19,6 @@ import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -36,25 +32,22 @@ import java.util.List;
 public class ApplicationServiceImpl extends ServiceImpl<ApplicationMapper, Application> implements ApplicationService {
 
     @Resource
-    @Lazy
     private ProjectService projectService;
 
-    @Resource
-    private ApplicationClientService applicationClientService;
-
     @Override
-    public Application loadClientByRegisteredClientId(String registeredClientId) {
-        Application application = findByRegisteredClientId(registeredClientId);
-        return loadClient(application);
-    }
-
-    @Override
-    public Application findByRegisteredClientId(String registeredClientId) {
-        ApplicationClient applicationClient = applicationClientService.findByRegisteredClientId(registeredClientId);
-        if (applicationClient == null) {
-            throw new AuthServiceException("该客户端关联的应用不存在");
+    public Application getActive(Long id) {
+        Application application = this.lambdaQuery()
+                .eq(Application::getId, id)
+                .eq(Application::getEnabled, true)
+                .one();
+        if(application == null){
+            return null;
         }
-        return this.getById(applicationClient.getApplicationId());
+        Project project = projectService.getActive(application.getProjectId());
+        if (project == null) {
+            return null;
+        }
+        return application;
     }
 
     @Override
@@ -140,43 +133,6 @@ public class ApplicationServiceImpl extends ServiceImpl<ApplicationMapper, Appli
                 .eq(Application::getId, applicationId)
                 .one();
         return ApplicationMapping.INSTANCE.toApplicationVO(application);
-    }
-
-    @Override
-    public List<String> findRegisteredClientIdByProjectId(Long projectId) {
-        List<Application> applications = this.findByProjectId(projectId);
-        if (CollectionUtils.isEmpty(applications)) {
-            return Collections.emptyList();
-        }
-        List<Long> applicationIds = applications.stream().map(Application::getId).toList();
-        List<ApplicationClient> applicationClients = applicationClientService.lambdaQuery()
-                .in(ApplicationClient::getApplicationId,applicationIds)
-                .list();
-        if (CollectionUtils.isEmpty(applicationClients)) {
-            return Collections.emptyList();
-        }
-        return applicationClients.stream().map(ApplicationClient::getRegisteredClientId).toList();
-    }
-
-    private Application loadClient(Application application) {
-        if (application == null) {
-            log.warn("OAuth2 客户端认证失败：应用不存在");
-            throw new OAuth2AuthenticationException(
-                    new OAuth2Error(OAuth2ErrorCodes.INVALID_CLIENT, "客户端应用不存在", null)
-            );
-        }
-        Long projectId = application.getProjectId();
-        if (!projectService.isProjectActive(projectId)) {
-            log.warn("OAuth2 客户端认证失败：项目不存在或未激活，projectId: {}", projectId);
-            throw new OAuth2AuthenticationException(
-                    new OAuth2Error(
-                            OAuth2ErrorCodes.INVALID_CLIENT,
-                            "客户端所属项目已被禁用或停用",
-                            null
-                    )
-            );
-        }
-        return application;
     }
 
 

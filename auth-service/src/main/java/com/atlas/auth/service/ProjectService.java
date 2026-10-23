@@ -5,12 +5,11 @@ import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ProjectQueryDTO;
 import com.atlas.auth.domain.dto.ProjectSaveDTO;
 import com.atlas.auth.domain.entity.Project;
-import com.atlas.auth.domain.vo.*;
+import com.atlas.auth.domain.vo.ProjectCreateVO;
+import com.atlas.auth.domain.vo.ProjectVO;
 import com.atlas.auth.enums.ProjectStatus;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.github.pagehelper.PageInfo;
-
-import java.util.List;
 
 /**
  * (Project)表服务接口
@@ -28,6 +27,8 @@ public interface ProjectService extends IService<Project> {
 
     // 根据项目唯一编码获取项目详情
     ProjectVO getByCode(String projectCode);
+
+    Project getActive(Long id);
 
     default ProjectVO getRequiredByCode(String projectCode){
         ProjectVO projectVO = getByCode(projectCode);
@@ -53,17 +54,6 @@ public interface ProjectService extends IService<Project> {
 
     // 根据 ID 逻辑删除/归档项目
     void deleteProject(Long id);
-
-    boolean isProjectActive(Long id);
-
-    // 校验指定客户端所属的项目是否正常启用
-    boolean isProjectActiveByRegisteredClientId(String registeredClientId);
-
-    ProjectDashboardOverviewTrendVO getOverviewAndTrend(String projectCode);
-
-    ProjectDashboardChartTrendVO getChartTrend(String projectCode, String metricType, Integer days);
-
-    List<ProjectDashboardGrantTypeStatsVO> getGrantTypeStats(String projectCode);
 
 }
 

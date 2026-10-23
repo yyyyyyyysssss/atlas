@@ -1,6 +1,9 @@
 package com.atlas.auth.controller;
 
 import com.atlas.auth.domain.entity.Application;
+import com.atlas.auth.domain.entity.ApplicationClient;
+import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.service.ApplicationClientService;
 import com.atlas.auth.service.ApplicationService;
 import com.atlas.common.security.properties.SecurityProperties;
 import jakarta.annotation.Resource;
@@ -33,6 +36,9 @@ public class AuthorizationConsentController {
     @Resource
     private ApplicationService applicationService;
 
+    @Resource
+    private ApplicationClientService applicationClientService;
+
     //自定义授权同意页面x
     @GetMapping(value = "/oauth2/consent")
     public String consent(@RequestParam("type") String type,
@@ -47,7 +53,11 @@ public class AuthorizationConsentController {
             throw new OAuth2AuthenticationException("invalid_client");
         }
         // 获取该客户端的应用信息
-        Application auth2ClientApplication = applicationService.loadClientByRegisteredClientId(registeredClient.getId());
+        ApplicationClient applicationClient = applicationClientService.getActiveByRegisteredClientId(registeredClient.getId(), ClientProtocol.OAUTH2);
+        if(applicationClient == null){
+            throw new OAuth2AuthenticationException("客户端不存在或已停用");
+        }
+        Application auth2ClientApplication = applicationService.getById(applicationClient.getId());
         // 构建url
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(securityProperties.getUiUrl())
                 .path("/oauth2/consent")

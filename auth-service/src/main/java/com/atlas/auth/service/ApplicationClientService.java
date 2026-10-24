@@ -15,11 +15,9 @@ public interface ApplicationClientService extends IService<ApplicationClient> {
 
     PageInfo<ApplicationClient> getPage(Long applicationId, ClientProtocol protocol, Integer pageNum, Integer pageSize);
 
-    ApplicationClient findByRegisteredClientId(String registeredClientId);
-
     ApplicationClient getActiveByRegisteredClientId(String registeredClientId, ClientProtocol protocol);
 
-    ApplicationClient findByClientId(String clientId);
+    ApplicationClient findByClientId(String clientId, ClientProtocol protocol);
 
     List<ApplicationClient> findByApplicationIds(Collection<Long> applicationIds);
 

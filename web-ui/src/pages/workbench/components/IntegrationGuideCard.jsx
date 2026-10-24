@@ -75,7 +75,7 @@ const IntegrationGuideCard = () => {
                 <Button
                     type="link"
                     size="small"
-                    onClick={() => window.open('https://atlas-docs.ys0921.sbs:4443/docs', '_blank')}
+                    onClick={() => window.open('https://atlas-docs.ys0921.sbs:4443/', '_blank')}
                     style={{ padding: 0 }}
                 >
                     完整文档中心 <ExternalLink size={12} />

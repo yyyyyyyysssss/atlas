@@ -1,11 +1,11 @@
 package com.atlas.auth.service.impl;
 
 import com.atlas.auth.config.exception.AuthServiceException;
-import com.atlas.auth.config.security.oauth2.OAuth2ClientAuthorizedEvent;
 import com.atlas.auth.domain.dto.ApplicationClientSaveDTO;
 import com.atlas.auth.domain.entity.Application;
 import com.atlas.auth.domain.entity.ApplicationClient;
 import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.event.ClientAuthorizedEvent;
 import com.atlas.auth.mapper.ApplicationClientMapper;
 import com.atlas.auth.service.ApplicationClientService;
 import com.atlas.auth.service.ApplicationService;
@@ -17,7 +17,6 @@ import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -87,14 +86,6 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
     }
 
     @Override
-    public ApplicationClient findByRegisteredClientId(String registeredClientId) {
-        Objects.requireNonNull(registeredClientId);
-        return this.lambdaQuery()
-                .eq(ApplicationClient::getRegisteredClientId, registeredClientId)
-                .one();
-    }
-
-    @Override
     public ApplicationClient getActiveByRegisteredClientId(String registeredClientId, ClientProtocol protocol) {
         ApplicationClient applicationClient = this.lambdaQuery()
                 .eq(ApplicationClient::getRegisteredClientId, registeredClientId)
@@ -111,10 +102,11 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
     }
 
     @Override
-    public ApplicationClient findByClientId(String clientId) {
+    public ApplicationClient findByClientId(String clientId, ClientProtocol protocol) {
         Objects.requireNonNull(clientId);
         return this.lambdaQuery()
                 .eq(ApplicationClient::getClientId, clientId)
+                .eq(ApplicationClient::getProtocol, protocol)
                 .one();
     }
 
@@ -132,10 +124,11 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
     // 监听客户端授权成功事件
     @Async
     @EventListener
-    public void onClientAuthorized(OAuth2ClientAuthorizedEvent event) {
+    public void onClientAuthorized(ClientAuthorizedEvent event) {
         String clientId = event.getClientId();
+        ClientProtocol protocol = event.getProtocol();
         LocalDateTime now = LocalDateTime.now();
-        ApplicationClient applicationClient = this.findByClientId(clientId);
+        ApplicationClient applicationClient = this.findByClientId(clientId, protocol);
         if (applicationClient == null) {
             log.warn("该客户端关联的应用不存在: {}", clientId);
             return;

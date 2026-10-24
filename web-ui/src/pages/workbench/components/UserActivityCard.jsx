@@ -99,7 +99,7 @@ const UserActivityCard = ({ limit = 10 }) => {
                                                     backgroundColor: token.colorFillQuaternary,
                                                     padding: '1px 8px',
                                                     borderRadius: token.borderRadiusLG,
-                                                    maxWidth: '180px',
+                                                    maxWidth: '200px',
                                                     display: 'inline-block',
                                                 }}
                                                 ellipsis={{ tooltip: log.target }}

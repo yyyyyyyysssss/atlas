@@ -1,6 +1,9 @@
 package com.atlas.auth.config.security.oauth2;
 
+import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.event.ClientAuthorizedEvent;
 import com.atlas.common.core.utils.JsonUtils;
+import com.atlas.common.security.model.SecurityUser;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +22,7 @@ import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * @Description
@@ -27,14 +31,9 @@ import java.nio.charset.StandardCharsets;
  */
 public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final RedirectStrategy redirectStrategy;
+    private RedirectStrategy redirectStrategy;
 
     private final ApplicationEventPublisher eventPublisher;
-
-    public AdapterAuthorizationSuccessHandler(){
-        this.redirectStrategy = new DefaultRedirectStrategy();
-        this.eventPublisher = null;
-    }
 
     public AdapterAuthorizationSuccessHandler(ApplicationEventPublisher eventPublisher) {
         this.redirectStrategy = new DefaultRedirectStrategy();
@@ -42,19 +41,24 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication = (OAuth2AuthorizationCodeRequestAuthenticationToken)authentication;
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+        OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication = (OAuth2AuthorizationCodeRequestAuthenticationToken) authentication;
         // 发布授权成功事件
-        if(eventPublisher != null){
+        if (eventPublisher != null) {
             String clientId = authorizationCodeRequestAuthentication.getClientId();
-            String username = authorizationCodeRequestAuthentication.getName();
-            eventPublisher.publishEvent(new OAuth2ClientAuthorizedEvent(this, clientId, username));
+            SecurityUser securityUser = getSecurityUser(authorizationCodeRequestAuthentication.getPrincipal());
+            eventPublisher.publishEvent(new ClientAuthorizedEvent(this, securityUser.getId(), clientId, ClientProtocol.OAUTH2));
         }
-        if(isJsonRequest(request)){
-            sendAuthorizationJsonResponse(request,response,authorizationCodeRequestAuthentication);
+        if (isJsonRequest(request)) {
+            sendAuthorizationJsonResponse(request, response, authorizationCodeRequestAuthentication);
         } else {
-            sendAuthorizationRedirectResponse(request,response,authorizationCodeRequestAuthentication);
+            sendAuthorizationRedirectResponse(request, response, authorizationCodeRequestAuthentication);
         }
+    }
+
+    public void setRedirectStrategy(RedirectStrategy redirectStrategy) {
+        Objects.requireNonNull(redirectStrategy);
+        this.redirectStrategy = redirectStrategy;
     }
 
     private void sendAuthorizationJsonResponse(HttpServletRequest request, HttpServletResponse response, OAuth2AuthorizationCodeRequestAuthenticationToken authorizationCodeRequestAuthentication) throws IOException {
@@ -81,10 +85,18 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
                 "json".equals(request.getParameter("format"));
     }
 
+    private SecurityUser getSecurityUser(Object principal) {
+        while (principal instanceof Authentication authentication) {
+            principal = authentication.getPrincipal();
+        }
+        return principal instanceof SecurityUser ? (SecurityUser) principal : null;
+    }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record AuthorizationResponse(
             String code,
             String state,
             String message
-    ) {}
+    ) {
+    }
 }

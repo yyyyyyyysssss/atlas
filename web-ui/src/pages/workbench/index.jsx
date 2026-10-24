@@ -28,7 +28,7 @@ const Workbench = () => {
         <HeaderCard />
 
         <Row gutter={[token.marginLG, token.marginLG]}>
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={16} xl={17}>
             <Flex vertical gap={token.marginLG}>
               {isDeveloper === true ? <ProjectShortcutCard /> : <MyApplicationsCard />}
               {isDeveloper === true ? <IntegrationGuideCard /> : <AccountSecurityCard />}

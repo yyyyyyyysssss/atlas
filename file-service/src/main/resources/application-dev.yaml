@@ -35,7 +35,7 @@ atlas:
     server-url: http://localhost:9099
 
 file:
-  access-url: http://localhost:9090
+  access-url: https://atlas.ys0921.sbs:4443
   avatar:
     base-url: https://api.dicebear.com/9.x
     default-type: avataaars

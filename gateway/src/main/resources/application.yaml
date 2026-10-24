@@ -108,6 +108,7 @@ security:
       - /favicon.ico
       - /api/auth/code/**
       - /api/file/temporary/{token}
+      - /file/**
     authenticated:
       - /api/auth/account/**
       - /api/auth/userinfo

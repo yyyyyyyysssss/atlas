@@ -44,7 +44,7 @@ public class FileCookieAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        if (securityContext != null && securityContext.getAuthentication() != null){
+        if (securityContext != null && securityContext.getAuthentication() != null && securityContext.getAuthentication().isAuthenticated()){
             filterChain.doFilter(request,response);
             return;
         }

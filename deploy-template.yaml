@@ -72,6 +72,10 @@ spec:
                 name: atlas-configmap
             - secretRef:
                 name: atlas-secret
+          volumeMounts:
+            - name: atlas-keystore            # 卷名称，必须与 volumes 中定义的 name 一致
+              mountPath: /etc/atlas/keystore  # Secret 文件在容器内的挂载目录
+              readOnly: true                  # 只读挂载，防止容器修改密钥文件
           # 健康检查 (Liveness & Readiness)
           livenessProbe:
             httpGet:
@@ -100,6 +104,12 @@ spec:
             - name: log-path
               mountPath: /var/log
       volumes:
+        - name: atlas-keystore # 必须与 volumeMounts.name 一致
+          secret:
+            secretName: atlas-secret # Kubernetes Secret 资源名称
+            items:
+              - key: atlas-keystore # Secret 内部的 Key 名称
+                path: atlas.p12 # 挂载后生成的文件名
         - name: log-path
           emptyDir: {}
 

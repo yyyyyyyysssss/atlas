@@ -112,7 +112,7 @@ security:
       - /api/auth/account/**
       - /api/auth/userinfo
       - /api/auth/audit/log/**
-      - /file/**
+#      - /file/**
       - /api/file/**
       - /api/user/profile/**
       - /api/user/option/**

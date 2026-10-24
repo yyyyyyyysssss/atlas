@@ -5,12 +5,12 @@ import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.file.component.FileAccessHandler;
 import com.atlas.file.domain.vo.FileInfoVO;
+import com.atlas.file.enums.FileCachePolicy;
 import com.atlas.file.service.FileService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
@@ -39,15 +39,11 @@ public class FileAccessController {
     @GetMapping("/{bucketName}/**")
     public ResponseEntity<StreamingResponseBody> getFile(@PathVariable("bucketName") String bucketName,
                                                          @RequestParam(required = false,value = "type") String type,
-                                                         HttpServletRequest request,
-                                                         @RequestHeader(value = HttpHeaders.RANGE, required = false) String range,
-                                                         @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String etag,
-                                                         @RequestHeader(value = HttpHeaders.IF_MODIFIED_SINCE, required = false) String ifModifiedSince
-    ) {
+                                                         HttpServletRequest request) {
         String objectName = getObjectName(request,bucketName);
         FileInfoVO fileInfo = fileService.getFileInfo(bucketName, objectName);
         boolean isDownload = type != null && (type.equalsIgnoreCase("download") || type.equalsIgnoreCase("d"));
-        return fileAccessHandler.accessFile(fileInfo, isDownload, range, etag, ifModifiedSince);
+        return fileAccessHandler.accessFile(request, fileInfo, isDownload, FileCachePolicy.DEFAULT);
     }
 
     private String getObjectName(HttpServletRequest request,String bucketName){

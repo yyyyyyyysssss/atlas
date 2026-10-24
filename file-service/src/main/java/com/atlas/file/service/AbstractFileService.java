@@ -1,5 +1,6 @@
 package com.atlas.file.service;
 
+import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.lock.LockHandle;
 import com.atlas.common.redis.utils.RedisHelper;
@@ -330,7 +331,7 @@ public abstract class AbstractFileService implements FileService {
                 outputStream.write(buffer, 0, bytesRead);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new FileException(e);
         }
     }
 
@@ -360,4 +361,38 @@ public abstract class AbstractFileService implements FileService {
         }
         return fileProperties.getAccessUrl() + "/file/" + bucketName() + objectName;
     }
+
+    protected ResolvedFileRange resolveRange(FileRangeDTO range, long fileSize) {
+        if (fileSize <= 0) {
+            throw new BusinessException("空文件不支持范围请求");
+        }
+        // 未指定范围，读取整个文件
+        if (range == null) {
+            return new ResolvedFileRange(0, fileSize - 1, fileSize);
+        }
+        long start = range.getStart();
+        long end;
+        // 后缀范围，例如 bytes=-500
+        if (start < 0) {
+            // 防止 Long.MIN_VALUE 取负溢出
+            if (start == Long.MIN_VALUE) {
+                start = 0;
+            } else {
+                long suffixLength = -start;
+                start = Math.max(0, fileSize - suffixLength);
+            }
+            end = fileSize - 1;
+        } else {
+            end = range.getEnd() == -1 ? fileSize - 1 : range.getEnd();
+        }
+        // 校验实际范围
+        if (end < start || end >= fileSize) {
+            throw new BusinessException("Invalid range: The range exceeds the file size.");
+        }
+        return new ResolvedFileRange(start, end, end - start + 1);
+    }
+
+    public record ResolvedFileRange(long start, long end, long length) {
+    }
+
 }

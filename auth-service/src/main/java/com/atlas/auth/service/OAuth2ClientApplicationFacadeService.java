@@ -135,7 +135,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
 
         long countValidSecrets = oAuth2ClientSecretService.countValidSecrets(applicationClient.getRegisteredClientId());
         if (countValidSecrets >= 2) {
-            throw new BusinessException("每个应用最多只能同时存在 2 个有效密钥，请先删除旧密钥后再生成新密钥");
+            throw new BusinessException("最多同时存在 2 个有效密钥，请先删除旧密钥后再生成新密钥");
         }
         RegisteredClient registeredClient = registeredClientRepository.findById(applicationClient.getRegisteredClientId());
         if (registeredClient == null) {
@@ -146,7 +146,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         saveClientSecret(applicationClient, rawSecret);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "新增应用密钥", "project:application:secret"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "新增OAuth2客户端密钥", "project:application:client:oauth2:secret"));
 
         return new OAuth2ClientApplicationCreateVO(applicationClient.getId(), registeredClient.getClientId(), rawSecret);
     }
@@ -167,7 +167,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         String registeredClientId = targetSecret.getRegisteredClientId();
         List<OAuth2ClientSecret> validSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(registeredClientId);
         if (CollectionUtils.isEmpty(validSecrets) || validSecrets.size() == 1) {
-            throw new BusinessException("每个应用必须保留至少 1 个有效密钥，无法继续删除");
+            throw new BusinessException("至少保留 1 个有效密钥，无法继续删除");
         }
         boolean isDeleted = oAuth2ClientSecretService.removeById(clientSecretId);
         if (!isDeleted) {
@@ -186,10 +186,10 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
             registeredClientRepository.save(updatedClient);
         }
 
-        log.info("OAuth2 应用密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
+        log.info("OAuth2 客户端密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除应用密钥", "project:application:secret"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除OAuth2客户端密钥", "project:application:client:oauth2:secret"));
     }
 
     private OAuth2ClientApplicationCreateVO createApplication(Long applicationId, OAuth2ClientApplicationSaveDTO saveDTO) {

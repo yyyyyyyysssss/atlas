@@ -13,7 +13,6 @@ import com.atlas.file.utils.MD5Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -109,7 +108,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
 
     @Override
     public InputStream download(String bucketName, String objectName) {
-        String filePath = buildFilePath(bucketName,objectName);
+        String filePath = buildFilePath(bucketName, objectName);
         try {
             return new FileInputStream(filePath);
         } catch (FileNotFoundException e) {
@@ -121,50 +120,45 @@ public class LocalFileServiceImpl extends AbstractFileService {
     public FileStreamVO getFileStream(FileInfoVO fileInfo, FileRangeDTO range) {
         Map<String, String> headerMap = new HashMap<>();
         try {
-            FileRecord fileUpload = fileRecordService.getByObject(bucketName,fileInfo.getObjectName());
-            headerMap.put(HttpHeaders.ACCEPT_RANGES,"bytes");
-            headerMap.put(HttpHeaders.CONTENT_TYPE, fileUpload.getFileType());
-            headerMap.put(HttpHeaders.ETAG,fileUpload.getEtag());
-            headerMap.put(HttpHeaders.LAST_MODIFIED,fileUpload.getUpdateTime().atZone(ZoneId.systemDefault()).toString());
+            FileRecord fileUpload = fileRecordService.getByObject(bucketName, fileInfo.getObjectName());
+
             File file = new File(fileUpload.getOriginalUrl());
-            long length = file.length();
-            if (range != null) {
-                if (range.getStart() < 0 || (range.getEnd() != -1 && range.getEnd() >= file.length())) {
-                    throw new FileException("Invalid range: The range exceeds the file size.");
-                }
-                if (range.getEnd() == -1) {
-                    length = file.length() - range.getStart();
-                } else {
-                    length = range.getEnd() - range.getStart() + 1;
-                }
-                //设置请求头
-                headerMap.put(HttpHeaders.CONTENT_RANGE, "bytes " + range.getStart() + "-" + (range.getEnd() == -1 ? file.length() - 1 : range.getEnd()) + "/" + file.length());
+            if (!file.isFile() || !file.canRead()) {
+                throw new FileException("文件不存在或不可读取");
             }
-            headerMap.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(length));
+
+            long fileSize = file.length();
+            ResolvedFileRange resolved = resolveRange(range, fileSize);
+
+            headerMap.put(HttpHeaders.ACCEPT_RANGES, "bytes");
+            headerMap.put(HttpHeaders.CONTENT_TYPE, fileUpload.getFileType());
+            headerMap.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(resolved.length()));
+            // 只有 Range 请求才返回 Content-Range
+            if (range != null) {
+                headerMap.put(HttpHeaders.CONTENT_RANGE, "bytes " + resolved.start() + "-" + resolved.end() + "/" + fileSize);
+            }
+
             StreamingResponseBody responseBody = outputStream -> {
-                if (range != null) {
-                    try (RandomAccessFile randomAccessFile = new RandomAccessFile(fileUpload.getOriginalUrl(), "r")) {
-                        long start = range.getStart();
-                        long len;
-                        // 如果 range.getEnd() 为 -1，表示下载到文件末尾
-                        if (range.getEnd() == -1) {
-                            len = file.length() - range.getStart();
-                        } else {
-                            len = range.getEnd() - range.getStart();
+                try (RandomAccessFile randomAccessFile = new RandomAccessFile(fileUpload.getOriginalUrl(), "r")) {
+                    randomAccessFile.seek(resolved.start());
+                    byte[] buffer = new byte[bufferSize];
+                    long remaining = resolved.length();
+                    while (remaining > 0) {
+                        int bytesToRead = (int) Math.min(buffer.length, remaining);
+                        int bytesRead = randomAccessFile.read(buffer, 0, bytesToRead);
+                        if (bytesRead == -1) {
+                            break;
                         }
-                        randomAccessFile.seek(start);
-                        byte[] buffer = new byte[bufferSize];
-                        int bytesRead;
-                        while (len > 0 && (bytesRead = randomAccessFile.read(buffer, 0, (int) Math.min(bufferSize, len))) != -1) {
-                            outputStream.write(buffer, 0, bytesRead);
-                            len -= bytesRead;
-                        }
-                    } catch (IOException e) {
-                        log.error("getFileStream error: ", e);
-                        throw new FileException(e);
+
+                        outputStream.write(buffer, 0, bytesRead);
+                        remaining -= bytesRead;
                     }
-                } else {
-                    streamFile(new FileInputStream(fileUpload.getOriginalUrl()), outputStream);
+                    if (remaining > 0) {
+                        throw new IOException("文件读取未完成，文件可能在读取期间发生变化");
+                    }
+                } catch (IOException e) {
+                    log.error("getFileStream error: ", e);
+                    throw new FileException(e);
                 }
             };
 
@@ -217,17 +211,17 @@ public class LocalFileServiceImpl extends AbstractFileService {
         return bucketName;
     }
 
-    private String buildFilePath(String objectName){
+    private String buildFilePath(String objectName) {
 
-        return buildFilePath(bucketName(),objectName);
+        return buildFilePath(bucketName(), objectName);
     }
 
     private String buildFilePath(String bucketName, String objectName) {
         String pathSeparator = pathSeparator();
-        String basePath = tmpdir + "/" +bucketName;
+        String basePath = tmpdir + "/" + bucketName;
         String parentDirectory = new File(objectName).getParent();
-        if(parentDirectory != null){
-            if(parentDirectory.startsWith(pathSeparator)){
+        if (parentDirectory != null) {
+            if (parentDirectory.startsWith(pathSeparator)) {
                 basePath += parentDirectory + pathSeparator;
             } else {
                 basePath += pathSeparator + parentDirectory + pathSeparator;

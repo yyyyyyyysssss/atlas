@@ -5,10 +5,11 @@ import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.file.component.FileAccessHandler;
 import com.atlas.file.domain.dto.FileTemporaryAccessDTO;
 import com.atlas.file.domain.vo.FileInfoVO;
+import com.atlas.file.enums.FileCachePolicy;
 import com.atlas.file.service.FileTemporaryAccessService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -48,12 +49,10 @@ public class FileTemporaryAccessController {
     @GetMapping("/{token}")
     public ResponseEntity<StreamingResponseBody> access(@PathVariable String token,
                                                         @RequestParam(required = false,value = "type") String type,
-                                                        @RequestHeader(value = HttpHeaders.RANGE, required = false) String range,
-                                                        @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String etag,
-                                                        @RequestHeader(value = HttpHeaders.IF_MODIFIED_SINCE, required = false) String ifModifiedSince){
+                                                        HttpServletRequest request){
         FileInfoVO fileInfo = fileTemporaryAccessService.verifyTemporaryToken(token);
         boolean isDownload = type != null && (type.equalsIgnoreCase("download") || type.equalsIgnoreCase("d"));
-        return fileAccessHandler.accessFile(fileInfo, isDownload, range, etag, ifModifiedSince);
+        return fileAccessHandler.accessFile(request, fileInfo, isDownload, FileCachePolicy.NO_STORE);
     }
 
 }

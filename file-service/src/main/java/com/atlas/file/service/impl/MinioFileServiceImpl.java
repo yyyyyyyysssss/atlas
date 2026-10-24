@@ -1,6 +1,5 @@
 package com.atlas.file.service.impl;
 
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.file.config.minio.MinioHelper;
 import com.atlas.file.domain.dto.FileRangeDTO;
 import com.atlas.file.domain.dto.UploadPart;
@@ -83,47 +82,28 @@ public class MinioFileServiceImpl extends AbstractFileService {
     @Override
     public FileStreamVO getFileStream(FileInfoVO fileInfo, FileRangeDTO range) {
         Map<String, String> headerMap = new HashMap<>();
-        GetObjectResponse objectResponse;
-        // 如果没有指定范围，则直接下载整个文件
-        if (range == null) {
-            objectResponse = minioHelper.download(fileInfo.getBucketName(), fileInfo.getObjectName());
-            objectResponse.headers().forEach(h -> {
-                if(h != null){
-                    headerMap.put(h.getFirst(), h.getSecond());
-                }
-            });
-            return new FileStreamVO(outputStream -> streamFile(objectResponse, outputStream), headerMap);
-        }
+
         //指定范围时 先获取文件信息
-        long size = fileInfo.getFileSize();
-        //验证范围
-        validateRange(range, size);
+        long fileSize = fileInfo.getFileSize();
 
-        //如果范围是 -1 则表示从开始到结束
-        long start = range.getStart();
-        long end = range.getEnd() == -1 ? size - 1 : range.getEnd();
-        long length = end - start + 1;
+        ResolvedFileRange resolved = resolveRange(range, fileSize);
+        long start = resolved.start();
+        long end = resolved.end();
+        long length = resolved.length();
+
         //设置请求头
-        LocalDateTime lastModified = fileInfo.getLastModified();
-        String lastModifiedStr = lastModified
-                        .atZone(ZoneId.systemDefault())
-                        .format(DateTimeFormatter.RFC_1123_DATE_TIME);
-        headerMap.put(HttpHeaders.ACCEPT_RANGES,"bytes");
+        headerMap.put(HttpHeaders.ACCEPT_RANGES, "bytes");
         headerMap.put(HttpHeaders.CONTENT_TYPE, fileInfo.getFileType());
-        headerMap.put(HttpHeaders.ETAG,fileInfo.getEtag());
-        headerMap.put(HttpHeaders.LAST_MODIFIED,lastModifiedStr);
-        headerMap.put(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + size);
         headerMap.put(HttpHeaders.CONTENT_LENGTH, String.valueOf(length));
-        //读取
-        GetObjectResponse rangeObjectResponse = minioHelper.download(fileInfo.getBucketName(), fileInfo.getObjectName(), start, length);
-        return new FileStreamVO(outputStream -> streamFile(rangeObjectResponse, outputStream), headerMap);
-    }
-
-    private void validateRange(FileRangeDTO range, long size) {
-        if (range.getStart() < 0 ||
-                (range.getEnd() != -1 && (range.getEnd() >= size || range.getEnd() < range.getStart()))) {
-            throw new BusinessException("Invalid range: The range exceeds the file size.");
+        if (range != null) {
+            headerMap.put(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize);
         }
+
+        return new FileStreamVO(outputStream -> {
+            // 真正开始写响应体时，才从 MinIO 获取文件流。
+            GetObjectResponse rangeObjectResponse = minioHelper.download(fileInfo.getBucketName(), fileInfo.getObjectName(), start, length);
+            streamFile(rangeObjectResponse, outputStream);
+        }, headerMap);
     }
 
     @Override

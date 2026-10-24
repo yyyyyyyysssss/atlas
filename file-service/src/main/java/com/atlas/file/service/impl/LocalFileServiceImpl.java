@@ -36,7 +36,6 @@ import java.util.UUID;
  * @Author ys
  * @Date 2024/11/16 23:11
  */
-@Primary
 @Service("localFileService")
 @Slf4j
 @RequiredArgsConstructor
@@ -44,7 +43,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
 
     private final String tmpdir = System.getProperty("java.io.tmpdir");
 
-    private final String bucketName = "imtp-bucket";
+    private final String bucketName = "atlas-bucket";
 
 
     @Override
@@ -225,7 +224,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
 
     private String buildFilePath(String bucketName, String objectName) {
         String pathSeparator = pathSeparator();
-        String basePath = tmpdir + bucketName;
+        String basePath = tmpdir + "/" +bucketName;
         String parentDirectory = new File(objectName).getParent();
         if(parentDirectory != null){
             if(parentDirectory.startsWith(pathSeparator)){

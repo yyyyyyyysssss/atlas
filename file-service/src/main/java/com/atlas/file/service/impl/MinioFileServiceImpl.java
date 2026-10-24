@@ -15,6 +15,7 @@ import io.minio.GetObjectResponse;
 import io.minio.messages.Part;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,7 @@ import java.util.Map;
  * @Author ys
  * @Date 2024/8/19 10:19
  */
-//@Primary
+@Primary
 @Service("minioFileService")
 @Slf4j
 @RequiredArgsConstructor

@@ -2,13 +2,14 @@
 import './index.css'
 import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider, Flex, Form, Input, List, Modal, Popconfirm, Space, Switch, Tag, theme, Tooltip, Typography } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import { useEffect, useState } from 'react';
 import useFullParams from '../../../../../../hooks/useFullParams';
 import SmartUpload from '../../../../../../components/smart-upload';
 import { addClientSecret, deleteClientSecret, getApplicationDetail, getOAuth2ClientDetail, saveApplication, saveOAuth2Client } from '../../../../../../services/ApplicationService';
 import Loading from '../../../../../../components/loading';
+import ApplicationCard from '../../../components/ApplicationCard';
 
 const MAX_CALLBACK_URLS = 5
 
@@ -27,6 +28,8 @@ const OAuth2ClientApplicationEdit = () => {
     const { message, modal } = App.useApp()
 
     const { applicationId } = useFullParams()
+
+    const { application, loading: applicationLoading } = useOutletContext() || {}
 
     const { data: oauth2ClientDetail, loading: oauth2ClientLoading, refresh: refreshOAuth2ClientDetail } = useRequest(
         () => getOAuth2ClientDetail(projectCode, applicationId, id),
@@ -316,12 +319,12 @@ const OAuth2ClientApplicationEdit = () => {
                     flex={1}
                     vertical
                 >
+                    <ApplicationCard application={application} />
                     {mode === 'edit' && (
                         <>
                             <Card
                                 title={
                                     <Space>
-                                        <SafetyCertificateOutlined />
                                         客户端信息
                                     </Space>
                                 }

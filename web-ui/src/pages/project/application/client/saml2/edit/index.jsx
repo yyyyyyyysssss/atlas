@@ -1,12 +1,13 @@
 import './index.css'
 import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider, Flex, Form, Input, List, Modal, Popconfirm, Space, Switch, Tag, theme, Tooltip, Typography } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import useFullParams from '../../../../../../hooks/useFullParams';
 import Loading from '../../../../../../components/loading';
 import SmartUpload from '../../../../../../components/smart-upload';
+import ApplicationCard from '../../../components/ApplicationCard';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -21,6 +22,8 @@ const Saml2ClientApplicationEdit = () => {
     const navigate = useNavigate();
 
     const [form] = Form.useForm()
+
+    const { application, loading: applicationLoading } = useOutletContext() || {}
 
     const onFinish = async (values) => {
         console.log('save: ', values)
@@ -65,36 +68,6 @@ const Saml2ClientApplicationEdit = () => {
                         onFinish={onFinish}
                     >
                         <Form.Item name="id" noStyle />
-                        <Form.Item
-                            label="应用名称："
-                            name="applicationName"
-                            rules={[{ required: true, message: '请输入应用名称' }, { max: 40, message: '应用名称最多 40 个字符' }]}
-                        >
-                            <Input placeholder="请输入应用名称" maxLength={40} showCount />
-                        </Form.Item>
-                        <Form.Item
-                            label="应用图标："
-                            name="logoUrl"
-                            rules={[{ required: true, message: '请上传应用 Logo' }]}
-                            extra="支持 JPG、PNG 格式，建议尺寸为 128x128 像素，大小不超过 2MB"
-                        >
-                            <SmartUpload
-                                accept="image/jpeg,image/png"
-                                maxSize={2 * 1024 * 1024}
-                                maxCount={1}
-                            />
-                        </Form.Item>
-                        <Form.Item
-                            label="应用主页："
-                            name="homePageUrl"
-                            rules={[
-                                { required: true, message: '请输入应用主页 URL' },
-                                { type: 'url', message: '请输入合法的 URL 地址 (需包含 http:// 或 https://)' }
-                            ]}
-                        >
-                            <Input placeholder="https://example.com" />
-                        </Form.Item>
-
                         <Form.Item
                             label={
                                 <Flex align="center" gap={4}>
@@ -403,10 +376,10 @@ const Saml2ClientApplicationEdit = () => {
                         <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>其他配置</Divider>
 
                         <Form.Item
-                            label="应用描述："
+                            label="客户端描述："
                             name="description"
                             rules={[
-                                { max: 500, message: '应用描述最多 500 个字符' },
+                                { max: 500, message: '客户端描述最多 500 个字符' },
                             ]}
                         >
                             <TextArea
@@ -448,9 +421,11 @@ const Saml2ClientApplicationEdit = () => {
                     </Form>
                 </Flex>
                 <Flex
+                    gap={30}
                     flex={1}
+                    vertical
                 >
-                    <Title>右侧</Title>
+                    <ApplicationCard application={application} />
                 </Flex>
             </Flex>
         </Loading>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Typography, Button, theme } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useDomain } from "../../../../../router/DomainProvider";
 import useFullParams from "../../../../../hooks/useFullParams";
 
@@ -21,6 +21,8 @@ const OAuth2ClientApplication = () => {
 
     const isCreatePage = location.pathname.endsWith("/create");
 
+    const outletContext = useOutletContext()
+
     const createNewApplication = () => {
         navigate(`/project/${domainId}/application/${applicationId}/client/oauth2/create`)
     };
@@ -38,7 +40,7 @@ const OAuth2ClientApplication = () => {
                     </Button>
                 )}
             </div>
-            <Outlet />
+            <Outlet context={outletContext}/>
         </div>
     );
 };

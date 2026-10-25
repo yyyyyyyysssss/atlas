@@ -31,7 +31,9 @@ public record ApplicationVO(
 
         String description,
 
-        LocalDateTime createTime
+        LocalDateTime createTime,
+
+        LocalDateTime updateTime
 
 ) {
 }

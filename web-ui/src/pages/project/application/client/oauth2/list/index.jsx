@@ -172,11 +172,9 @@ const OAuth2ClientApplicationItem = ({ oauth2App, onDelete }) => {
                     <Avatar
                         size={44}
                         shape="square"
-                        src={oauth2App.logoUrl}
                         icon={<AppstoreOutlined />}
-                        style={{ borderRadius: 10 }}
+                        style={{ borderRadius: token.borderRadius }}
                     />
-
                     <Flex vertical style={{ flex: 1 }} gap={4}>
 
                         {/* title row */}

@@ -435,7 +435,7 @@ const ApplicationItem = ({ application, onEnabled, onEdit }) => {
                             </Text>
 
 
-                            <Tag color={application.enabled ? 'processing' : 'error'} bordered={false} style={{ margin: 0, fontSize: 12 }}>
+                            <Tag color={application.enabled ? 'processing' : 'error'} bordered={false} style={{ margin: 0, fontSize: token.fontSizeSM }}>
                                 {application.enabled ? '启用' : '停用'}
                             </Tag>
 

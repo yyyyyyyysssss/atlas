@@ -5,6 +5,8 @@ import { CodeXml, FileKey, KeyRound } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDomain } from '../../../../router/DomainProvider';
 import useFullParams from '../../../../hooks/useFullParams';
+import { getApplicationDetail } from '../../../../services/ApplicationService';
+import { useRequest } from 'ahooks';
 
 
 const ProjectApplicationClient = () => {
@@ -18,6 +20,18 @@ const ProjectApplicationClient = () => {
     const location = useLocation()
 
     const { domainId } = useDomain()
+
+    const {
+        data: application,
+        loading,
+        error,
+    } = useRequest(
+        () => getApplicationDetail(domainId, applicationId),
+        {
+            refreshDeps: [domainId, applicationId],
+            ready: !!domainId && !!applicationId,
+        }
+    );
 
     const activeKey = location.pathname
         .split('/client/')[1]
@@ -81,7 +95,7 @@ const ProjectApplicationClient = () => {
                         padding: '8px'
                     }}
                 >
-                    <Outlet />
+                    <Outlet context={{ application, loading }} />
                 </div>
             </div>
         </Flex>

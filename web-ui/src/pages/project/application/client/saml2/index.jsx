@@ -1,6 +1,6 @@
 import { Typography, Button, theme } from "antd";
 import './index.css'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import { PlusOutlined } from "@ant-design/icons";
 import { useDomain } from '../../../../../router/DomainProvider'
 import useFullParams from "../../../../../hooks/useFullParams";
@@ -21,6 +21,8 @@ const Saml2ClientApplication = () => {
 
     const { applicationId } = useFullParams()
 
+    const outletContext = useOutletContext()
+
     const isCreatePage = location.pathname.endsWith("/create");
 
     const createNewApplication = () => {
@@ -36,11 +38,11 @@ const Saml2ClientApplication = () => {
                 </div>
                 {!isCreatePage && (
                     <Button type="primary" icon={<PlusOutlined />} onClick={createNewApplication}>
-                        创建应用
+                        创建客户端
                     </Button>
                 )}
             </div>
-            <Outlet />
+            <Outlet context={outletContext} />
         </div>
     )
 }

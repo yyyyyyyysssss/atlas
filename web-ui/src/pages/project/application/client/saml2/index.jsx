@@ -33,7 +33,7 @@ const Saml2ClientApplication = () => {
         <div style={{ padding: `${token.paddingLG}px ${token.paddingXL}px` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: token.marginXL }}>
                 <div>
-                    <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Saml2 应用</Title>
+                    <Title level={4} style={{ margin: 0, fontWeight: 600 }}>Saml2 客户端</Title>
                     <Text type="secondary" style={{ fontSize: 13 }}>管理和配置您的 Saml2 客户端凭证</Text>
                 </div>
                 {!isCreatePage && (

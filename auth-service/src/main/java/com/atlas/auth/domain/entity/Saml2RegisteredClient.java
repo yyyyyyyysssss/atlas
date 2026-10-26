@@ -1,11 +1,17 @@
 package com.atlas.auth.domain.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.atlas.auth.config.exception.AuthServiceException;
+import com.atlas.auth.domain.dto.Saml2ClientSaveDTO;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * @Description
@@ -22,9 +28,6 @@ public class Saml2RegisteredClient {
 
     @TableId(value = "id", type = IdType.INPUT)
     private String id;
-
-    @TableField("client_id")
-    private String clientId;
 
     @TableField("client_name")
     private String clientName;
@@ -50,25 +53,5 @@ public class Saml2RegisteredClient {
     @TableField(value = "attribute_mappings", typeHandler = JacksonTypeHandler.class)
     private Map<String, String> attributeMappings;
 
-    @TableField("enabled")
-    private Boolean enabled;
-
-    @TableField(value = "create_time",fill = FieldFill.INSERT)
-    protected LocalDateTime createTime;
-
-    @TableField(value = "creator_id",fill = FieldFill.INSERT)
-    protected Long creatorId;
-
-    @TableField(value = "creator_name",fill = FieldFill.INSERT)
-    protected String creatorName;
-
-    @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
-    protected LocalDateTime updateTime;
-
-    @TableField(value = "updater_id",fill = FieldFill.INSERT_UPDATE)
-    protected Long updaterId;
-
-    @TableField(value = "updater_name",fill = FieldFill.INSERT_UPDATE)
-    protected String updaterName;
 
 }

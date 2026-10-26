@@ -8,6 +8,7 @@ import Loading from "../../../../../../components/loading";
 import { AppstoreOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDomain } from "../../../../../../router/DomainProvider";
 import useFullParams from "../../../../../../hooks/useFullParams";
+import ClientListItem from "../../../components/ClientListItem";
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -52,7 +53,7 @@ const OAuth2ClientApplicationList = () => {
         }
     );
 
-    const appList = data?.list || [];
+    const clentList = data?.list || [];
 
     const handleDeleteOAuth2Client = (id, e) => {
         // 阻止点击删除按钮时触发 List.Item 的 onClick 路由跳转
@@ -88,23 +89,23 @@ const OAuth2ClientApplicationList = () => {
                 paddingRight: 8
             }}
         >
-            {loading && appList.length === 0 ? (
+            {loading && clentList.length === 0 ? (
                 <div style={{ padding: 20 }}>
                     <Loading spinning />
                 </div>
             ) : (
                 <>
                     <List
-                        dataSource={appList}
-                        renderItem={(app) => (
+                        dataSource={clentList}
+                        renderItem={(client) => (
                             <List.Item
-                                key={app.id}
-                                onClick={() => navigate(`/project/${domainId}/application/${applicationId}/client/oauth2/${app.id}`)}
+                                key={client.id}
+                                onClick={() => navigate(`/project/${domainId}/application/${applicationId}/client/oauth2/${client.id}`)}
                                 style={{ cursor: "pointer", padding: "12px 0" }}
                             >
                                 <div style={{ width: "100%" }}>
-                                    <OAuth2ClientApplicationItem
-                                        oauth2App={app}
+                                    <ClientListItem
+                                        client={client}
                                         onDelete={(id, e) => handleDeleteOAuth2Client(id, e)}
                                     />
                                 </div>
@@ -118,7 +119,7 @@ const OAuth2ClientApplicationList = () => {
                         </div>
                     )}
 
-                    {noMore && appList.length > PAGE_SIZE && (
+                    {noMore && clentList.length > PAGE_SIZE && (
                         <div style={{ textAlign: "center", padding: 12, color: token.colorTextTertiary }}>
                             没有更多数据了
                         </div>
@@ -130,166 +131,3 @@ const OAuth2ClientApplicationList = () => {
 };
 
 export default OAuth2ClientApplicationList;
-
-
-
-const OAuth2ClientApplicationItem = ({ oauth2App, onDelete }) => {
-    const { token } = useToken();
-    const { message } = App.useApp();
-    const [hovered, setHovered] = useState(false);
-
-    const handleCopy = (text) => {
-        navigator.clipboard.writeText(text);
-        message.success("Client ID 已复制");
-    };
-
-    return (
-        <Card
-            size="small"
-            variant="borderless"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            styles={{
-                body: {
-                    padding: 14
-                }
-            }}
-            style={{
-                borderRadius: token.borderRadiusLG,
-                background: hovered
-                    ? token.colorBgTextHover
-                    : token.colorBgContainer,
-
-                transition: "all 0.2s ease",
-                cursor: "pointer"
-            }}
-        >
-            <Flex justify="space-between" align="center">
-
-                {/* LEFT */}
-                <Flex gap={12} align="center" style={{ flex: 1 }}>
-
-                    <Avatar
-                        size={44}
-                        shape="square"
-                        icon={<AppstoreOutlined />}
-                        style={{ borderRadius: token.borderRadius }}
-                    />
-                    <Flex vertical style={{ flex: 1 }} gap={4}>
-
-                        {/* title row */}
-                        <Flex justify="space-between" align="center">
-                            <Text
-                                strong
-                                style={{
-                                    fontSize: token.fontSizeLG,
-                                    color: token.colorText
-                                }}
-                            >
-                                {oauth2App.clientName}
-                            </Text>
-                        </Flex>
-
-                        {/* meta row */}
-                        <Flex gap={10} align="center" wrap="wrap">
-                            <Tooltip title={oauth2App.description || "暂无描述"}>
-                                <Text
-                                    type="secondary"
-                                    style={{
-                                        fontSize: token.fontSizeSM,
-                                        maxWidth: 200,
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                        display: "inline-block"
-                                    }}
-                                >
-                                    {oauth2App.description || "暂无描述"}
-                                </Text>
-                            </Tooltip>
-
-                            <Text
-                                type="secondary"
-                                style={{
-                                    fontSize: token.fontSizeSM,
-                                }}
-                            >
-                                |
-                            </Text>
-
-                            <Text
-                                type="secondary"
-                                style={{
-                                    fontSize: token.fontSizeSM,
-                                }}
-                            >
-                                客户端 ID:
-                            </Text>
-
-                            <Text
-                                style={{
-                                    fontSize: token.fontSizeSM,
-                                    fontFamily: "monospace",
-                                    cursor: "pointer",
-                                    color: token.colorText,
-                                    background: token.colorFillQuaternary,
-                                    padding: "0 6px",
-                                    borderRadius: 4
-                                }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopy(oauth2App.clientId);
-                                }}
-                            >
-                                {oauth2App.clientId}
-                            </Text>
-                        </Flex>
-
-                    </Flex>
-                </Flex>
-
-                {/* RIGHT ACTION */}
-                <div style={{ position: "relative", minWidth: 60 }}>
-                    <Text
-                        type="secondary"
-                        style={{
-                            fontSize: 11,
-                            position: "absolute",
-                            top: -6,
-                            right: 70,
-                            whiteSpace: "nowrap",
-                            opacity: 0.75
-                        }}
-                    >
-                        创建于：{oauth2App.createTime}
-                    </Text>
-
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: 44 }}>
-                        <Tooltip title='编辑 OAuth2 客户端'>
-                            <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                style={{
-                                    opacity: hovered ? 1 : 0.5
-                                }}
-                            />
-                        </Tooltip>
-                        <Tooltip title='删除 OAuth2 客户端'>
-                            <Button
-                                type="text"
-                                icon={<DeleteOutlined />}
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onDelete?.(oauth2App.id)
-                                }}
-                                style={{
-                                    opacity: hovered ? 1 : 0.5
-                                }}
-                            />
-                        </Tooltip>
-                    </div>
-                </div>
-            </Flex>
-        </Card>
-    );
-};

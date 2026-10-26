@@ -1,11 +1,12 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.domain.dto.ApplicationClientQueryDTO;
+import com.atlas.auth.domain.entity.Application;
+import com.atlas.auth.domain.vo.ApplicationClientVO;
 import com.atlas.auth.domain.vo.ProjectVO;
-import com.atlas.auth.enums.ProjectStatus;
-import com.atlas.common.core.exception.BusinessException;
+import com.atlas.auth.enums.ClientProtocol;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
-
-import java.util.Objects;
 
 /**
  * @Description
@@ -17,38 +18,32 @@ public abstract class AbstractClientApplicationFacadeService {
     @Resource
     protected ProjectService projectService;
 
+    @Resource
+    protected ApplicationService applicationService;
 
-    protected ProjectVO checkAndEnsureProjectActive(String projectCode) {
-        ProjectVO projectVO = checkAndGetProject(projectCode);
-        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
-            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
-        }
-        return projectVO;
+    @Resource
+    protected ApplicationClientService applicationClientService;
+
+
+    public PageInfo<ApplicationClientVO> getPage(String projectCode, Long applicationId, ClientProtocol protocol, ApplicationClientQueryDTO queryDTO) {
+        // 前置校验
+        validateProjectAndApplication(projectCode, applicationId);
+
+        Integer pageNum = queryDTO.getPageNum();
+        Integer pageSize = queryDTO.getPageSize();
+
+        return applicationClientService.getPage(applicationId, protocol, pageNum, pageSize);
     }
 
-    protected ProjectVO checkAndEnsureProjectActive(String projectCode, Long checkProjectId) {
-        ProjectVO projectVO = checkAndGetProject(projectCode, checkProjectId);
-        if (!ProjectStatus.ACTIVE.equals(projectVO.status())) {
-            throw new BusinessException("项目处于" + projectVO.status().getDescription() + "状态，无法进行修改操作");
-        }
-        return projectVO;
-    }
-
-    protected ProjectVO checkAndGetProject(String projectCode, Long checkProjectId) {
-        ProjectVO projectVO = checkAndGetProject(projectCode);
-        if (!Objects.equals(projectVO.id(), checkProjectId)) {
-            throw new BusinessException("项目信息不匹配，请重新刷新页面");
-        }
-        return projectVO;
-    }
-
-    protected ProjectVO checkAndGetProject(String projectCode) {
-        Objects.requireNonNull(projectCode, "项目编码不能为空");
-        ProjectVO projectVO = projectService.getByCode(projectCode);
-        if (projectVO == null) {
-            throw new BusinessException("该项目不存在: " + projectCode);
-        }
-        return projectVO;
+    /**
+     * 校验项目是否存在，以及应用是否属于该项目。
+     *
+     * @param projectCode   项目编码
+     * @param applicationId 应用ID
+     */
+    protected Application validateProjectAndApplication(String projectCode, Long applicationId) {
+        ProjectVO project = projectService.getRequiredByCode(projectCode);
+        return applicationService.getRequiredByIdAndProjectId(applicationId, project.id());
     }
 
 }

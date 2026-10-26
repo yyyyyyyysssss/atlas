@@ -3,22 +3,17 @@ package com.atlas.auth.service;
 
 import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ApplicationClientSaveDTO;
-import com.atlas.auth.domain.dto.OAuth2ClientApplicationQueryDTO;
-import com.atlas.auth.domain.dto.OAuth2ClientApplicationSaveDTO;
-import com.atlas.auth.domain.entity.Application;
+import com.atlas.auth.domain.dto.OAuth2ClientSaveDTO;
 import com.atlas.auth.domain.entity.ApplicationClient;
 import com.atlas.auth.domain.entity.OAuth2ClientSecret;
 import com.atlas.auth.domain.vo.OAuth2ClientApplicationCreateVO;
-import com.atlas.auth.domain.vo.OAuth2ClientApplicationVO;
-import com.atlas.auth.domain.vo.ProjectVO;
-import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.domain.vo.OAuth2ClientVO;
 import com.atlas.auth.event.AuditLogEvent;
 import com.atlas.auth.mapper.OAuth2RegisteredClientMapper;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.crypto.random.SecureRandomUtils;
-import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,11 +39,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicationFacadeService {
-
-    private final ApplicationService applicationService;
-
-    private final ApplicationClientService applicationClientService;
+public class OAuth2ClientFacadeService extends AbstractClientApplicationFacadeService {
 
     private final RegisteredClientRepository registeredClientRepository;
 
@@ -60,11 +51,13 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private static final String AUDIT_LOG_TARGET = "project:application:client:oauth2";
+
     /**
      * 保存应用（兼容创建和修改）
      */
     @Transactional(rollbackFor = Exception.class)
-    public OAuth2ClientApplicationCreateVO save(String projectCode, Long applicationId, OAuth2ClientApplicationSaveDTO saveDTO) {
+    public OAuth2ClientApplicationCreateVO save(String projectCode, Long applicationId, OAuth2ClientSaveDTO saveDTO) {
         validateProjectAndApplication(projectCode, applicationId);
         if (saveDTO.id() == null) {
             return createApplication(applicationId, saveDTO);
@@ -74,29 +67,20 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         }
     }
 
-    public PageInfo<OAuth2ClientApplicationVO> getPage(String projectCode, Long applicationId, OAuth2ClientApplicationQueryDTO queryDTO) {
-        // 前置校验
-        validateProjectAndApplication(projectCode, applicationId);
-
-        Integer pageNum = queryDTO.getPageNum();
-        Integer pageSize = queryDTO.getPageSize();
-        PageInfo<ApplicationClient> clientPageInfo = applicationClientService.getPage(applicationId, ClientProtocol.OAUTH2, pageNum, pageSize);
-
-        return clientPageInfo.convert(OAuth2ClientApplicationVO::of);
-    }
-
-    public OAuth2ClientApplicationVO getOAuth2ClientDetail(String projectCode, Long applicationId, Long id) {
+    public OAuth2ClientVO getDetail(String projectCode, Long applicationId, Long id) {
         // 前置校验
         validateProjectAndApplication(projectCode, applicationId);
 
         ApplicationClient applicationClient = applicationClientService.getById(id);
-
+        if (applicationClient == null) {
+            throw new AuthServiceException("oauth2客户端不存在");
+        }
         RegisteredClient registeredClient = registeredClientRepository.findById(applicationClient.getRegisteredClientId());
         if (registeredClient == null) {
-            throw new BusinessException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
+            throw new AuthServiceException("应用关联的oauth2客户端数据丢失，请检查数据一致性");
         }
         List<OAuth2ClientSecret> oAuth2ClientSecrets = oAuth2ClientSecretService.listValidSecretsByRegisteredClientId(registeredClient.getId());
-        return OAuth2ClientApplicationVO.of(applicationClient, registeredClient, oAuth2ClientSecrets);
+        return OAuth2ClientVO.of(applicationClient, registeredClient, oAuth2ClientSecrets);
     }
 
     @Transactional
@@ -122,7 +106,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         log.info("OAuth2 客户端删除成功，ID: {}", id);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除OAuth2客户端", "project:application:client:oauth2"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除OAuth2客户端", AUDIT_LOG_TARGET));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -146,7 +130,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         saveClientSecret(applicationClient, rawSecret);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "新增OAuth2客户端密钥", "project:application:client:oauth2:secret"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "新增OAuth2客户端密钥", AUDIT_LOG_TARGET));
 
         return new OAuth2ClientApplicationCreateVO(applicationClient.getId(), registeredClient.getClientId(), rawSecret);
     }
@@ -189,10 +173,10 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         log.info("OAuth2 客户端密钥删除成功，ID: {}，已同步剩余密钥给核心框架", clientSecretId);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除OAuth2客户端密钥", "project:application:client:oauth2:secret"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "删除OAuth2客户端密钥", AUDIT_LOG_TARGET));
     }
 
-    private OAuth2ClientApplicationCreateVO createApplication(Long applicationId, OAuth2ClientApplicationSaveDTO saveDTO) {
+    private OAuth2ClientApplicationCreateVO createApplication(Long applicationId, OAuth2ClientSaveDTO saveDTO) {
         log.info("正在创建 OAuth2 客户端，名称: {}", saveDTO.clientName());
         // oauth2_registered_client 物理主键
         String registeredClientId = UUID.randomUUID().toString().replace("-", "");
@@ -260,16 +244,16 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         // 保存密钥
         saveClientSecret(applicationClient, rawSecret);
 
-        log.info("OAuth2 应用创建成功, id: {}, clientId: {}", applicationClient.getId(), clientId);
+        log.info("OAuth2 客户端创建成功, id: {}, clientId: {}", applicationClient.getId(), clientId);
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "创建OAuth2客户端", "project:application:client:oauth2"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "创建OAuth2客户端", AUDIT_LOG_TARGET));
 
         return new OAuth2ClientApplicationCreateVO(applicationClient.getId(), clientId, rawSecret);
     }
 
-    private void updateApplication(Long applicationId, OAuth2ClientApplicationSaveDTO saveDTO) {
-        log.info("正在修改 OAuth2 客户端，ID: {}", applicationId);
+    private void updateApplication(Long applicationId, OAuth2ClientSaveDTO saveDTO) {
+        log.info("正在修改 OAuth2 客户端，ID: {}", saveDTO.id());
 
         ApplicationClient applicationClient = applicationClientService.getById(saveDTO.id());
 
@@ -312,7 +296,7 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         log.info("OAuth2 客户端配置更新成功, id: {}, clientName: {}", applicationClient.getId(), applicationClient.getClientName());
 
         // 发布审计日志
-        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "修改OAuth2客户端", "project:application:client:oauth2"));
+        eventPublisher.publishEvent(new AuditLogEvent(UserContext.getRequiredUserId(), "修改OAuth2客户端", AUDIT_LOG_TARGET));
     }
 
     private void saveClientSecret(ApplicationClient applicationClient, String rawSecret) {
@@ -328,17 +312,6 @@ public class OAuth2ClientApplicationFacadeService extends AbstractClientApplicat
         clientSecretEntity.setClientSecretExpiresAt(null);
         clientSecretEntity.setCreateTime(LocalDateTime.now());
         oAuth2ClientSecretService.save(clientSecretEntity);
-    }
-
-    /**
-     * 校验项目是否存在，以及应用是否属于该项目。
-     *
-     * @param projectCode   项目编码
-     * @param applicationId 应用ID
-     */
-    private Application validateProjectAndApplication(String projectCode, Long applicationId) {
-        ProjectVO project = projectService.getRequiredByCode(projectCode);
-        return applicationService.getRequiredByIdAndProjectId(applicationId, project.id());
     }
 
 }

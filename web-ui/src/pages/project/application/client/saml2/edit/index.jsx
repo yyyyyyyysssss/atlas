@@ -3,11 +3,12 @@ import { Affix, Alert, App, Badge, Button, Card, Checkbox, Descriptions, Divider
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, DownloadOutlined, CheckCircleOutlined, CopyOutlined, ClockCircleOutlined, KeyOutlined } from '@ant-design/icons';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useRequest } from 'ahooks';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useFullParams from '../../../../../../hooks/useFullParams';
 import Loading from '../../../../../../components/loading';
 import SmartUpload from '../../../../../../components/smart-upload';
 import ApplicationCard from '../../../components/ApplicationCard';
+import { getSaml2ClientDetail, saveSaml2Client } from '../../../../../../services/ApplicationService';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -15,7 +16,7 @@ const { TextArea } = Input;
 
 const Saml2ClientApplicationEdit = () => {
 
-    const { domainId: projectCode, id } = useFullParams()
+    const { domainId: projectCode, id, applicationId } = useFullParams()
 
     const { token } = theme.useToken()
 
@@ -23,10 +24,55 @@ const Saml2ClientApplicationEdit = () => {
 
     const [form] = Form.useForm()
 
+    const { message } = App.useApp()
+
     const { application, loading: applicationLoading } = useOutletContext() || {}
 
+    const { runAsync: saveSaml2ClientAsync, loading: saveSaml2ClientLoading } = useRequest(saveSaml2Client, {
+        manual: true
+    })
+
+    const { data: saml2ClientDetail, loading: saml2ClientLoading, refresh: refreshSaml2ClientDetail } = useRequest(
+        () => getSaml2ClientDetail(projectCode, applicationId, id),
+        {
+            ready: !!id,
+            refreshDeps: [id],
+            onSuccess: (data) => {
+                if (data) {
+                    form.setFieldsValue({
+                        ...data,
+                        attributeMappings: Object.entries(data.attributeMappings || {}).map(
+                            ([samlAttribute, userAttribute]) => ({
+                                samlAttribute,
+                                userAttribute,
+                            })
+                        )
+                    });
+                }
+            }
+        }
+    )
+
+    const mode = id ? 'edit' : 'create';
+
+    useEffect(() => {
+        if (mode === 'create') {
+            form.resetFields()
+        }
+    }, [mode, form])
+
     const onFinish = async (values) => {
-        console.log('save: ', values)
+        const { attributeMappings = [] } = values
+        const mappings = attributeMappings.reduce((map, item) => {
+            map[item.samlAttribute] = item.userAttribute;
+            return map
+        }, {})
+        const req = {
+            ...values,
+            attributeMappings: mappings
+        }
+        await saveSaml2ClientAsync(projectCode, applicationId, req)
+        message.success('保存成功');
     }
 
     const handleCancel = () => {
@@ -35,7 +81,7 @@ const Saml2ClientApplicationEdit = () => {
     }
 
     return (
-        <Loading spinning={false}>
+        <Loading spinning={saml2ClientLoading || saveSaml2ClientLoading}>
             <Flex
                 gap={50}
                 style={{
@@ -68,6 +114,13 @@ const Saml2ClientApplicationEdit = () => {
                         onFinish={onFinish}
                     >
                         <Form.Item name="id" noStyle />
+                        <Form.Item
+                            label="客户端名称："
+                            name="clientName"
+                            rules={[{ required: true, message: '请输入客户端名称' }, { max: 40, message: '客户端名称最多 40 个字符' }]}
+                        >
+                            <Input placeholder="请输入客户端名称" maxLength={40} showCount />
+                        </Form.Item>
                         <Form.Item
                             label={
                                 <Flex align="center" gap={4}>
@@ -150,11 +203,15 @@ const Saml2ClientApplicationEdit = () => {
 
                                     <Form.Item
                                         name="verificationCertificate"
+                                        dependencies={['requireSignedAuthnRequest']}
                                         rules={[
-                                            {
+                                            ({ getFieldValue }) => ({
                                                 validator: async (_, value) => {
-                                                    if (!value) {
-                                                        return Promise.resolve();
+                                                    if (!getFieldValue('requireSignedAuthnRequest')) {
+                                                        return;
+                                                    }
+                                                    if (!value?.trim()) {
+                                                        throw new Error('请输入 SP 的签名验证证书');
                                                     }
 
                                                     if (
@@ -168,7 +225,7 @@ const Saml2ClientApplicationEdit = () => {
 
                                                     return Promise.resolve();
                                                 },
-                                            },
+                                            }),
                                         ]}
                                         extra="填写 SP 用于签名 AuthnRequest 的 X.509 公钥证书，PEM 格式。"
                                         style={{ marginTop: token.marginSM }}
@@ -181,8 +238,7 @@ const Saml2ClientApplicationEdit = () => {
                                         />
                                     </Form.Item>
                                 </>
-                            )
-                            }
+                            )}
                         </Form.Item>
 
 

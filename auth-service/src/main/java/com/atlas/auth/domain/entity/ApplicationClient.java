@@ -41,6 +41,9 @@ public class ApplicationClient extends BaseEntity {
     @TableField("protocol")
     private ClientProtocol protocol;
 
+    @TableField("enabled")
+    private Boolean enabled;
+
     @TableField("description")
     private String description;
 

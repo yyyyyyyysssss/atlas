@@ -4,6 +4,7 @@ import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ApplicationClientSaveDTO;
 import com.atlas.auth.domain.entity.Application;
 import com.atlas.auth.domain.entity.ApplicationClient;
+import com.atlas.auth.domain.vo.ApplicationClientVO;
 import com.atlas.auth.enums.ClientProtocol;
 import com.atlas.auth.event.ClientAuthorizedEvent;
 import com.atlas.auth.mapper.ApplicationClientMapper;
@@ -21,6 +22,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -61,6 +63,9 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
             if (applicationClient == null) {
                 throw new AuthServiceException("应用客户端不存在");
             }
+            if(saveDTO.clientProtocol().equals(ClientProtocol.SAML2) && StringUtils.hasText(saveDTO.clientId())){
+                applicationClient.setClientId(saveDTO.clientId());
+            }
             applicationClient.setClientName(saveDTO.clientName());
             applicationClient.setDescription(saveDTO.description());
             this.updateById(applicationClient);
@@ -69,7 +74,7 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
     }
 
     @Override
-    public PageInfo<ApplicationClient> getPage(Long applicationId, ClientProtocol protocol, Integer pageNum, Integer pageSize) {
+    public PageInfo<ApplicationClientVO> getPage(Long applicationId, ClientProtocol protocol, Integer pageNum, Integer pageSize) {
         try (DataPermissionContext ctx = DataPermissionContext.open()) {
             PageHelper.startPage(pageNum, pageSize);
             List<ApplicationClient> applicationClients = this.lambdaQuery()
@@ -81,7 +86,7 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
             if (CollectionUtils.isEmpty(applicationClients)) {
                 return PageInfo.emptyPageInfo();
             }
-            return new PageInfo<>(applicationClients);
+            return new PageInfo<>(applicationClients).convert(ApplicationClientVO::of);
         }
     }
 

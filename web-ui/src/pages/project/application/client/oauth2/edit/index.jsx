@@ -17,7 +17,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const OAuth2ClientApplicationEdit = () => {
 
-    const { domainId: projectCode, id } = useFullParams()
+    const { domainId: projectCode, id, applicationId } = useFullParams()
 
     const { token } = theme.useToken()
 
@@ -26,8 +26,6 @@ const OAuth2ClientApplicationEdit = () => {
     const [form] = Form.useForm()
 
     const { message, modal } = App.useApp()
-
-    const { applicationId } = useFullParams()
 
     const { application, loading: applicationLoading } = useOutletContext() || {}
 
@@ -156,9 +154,9 @@ const OAuth2ClientApplicationEdit = () => {
                         <Form.Item
                             label="客户端名称："
                             name="clientName"
-                            rules={[{ required: true, message: '请输入应用名称' }, { max: 40, message: '应用名称最多 40 个字符' }]}
+                            rules={[{ required: true, message: '请输入客户端名称' }, { max: 40, message: '客户端名称最多 40 个字符' }]}
                         >
-                            <Input placeholder="请输入应用名称" maxLength={40} showCount />
+                            <Input placeholder="请输入客户端名称" maxLength={40} showCount />
                         </Form.Item>
                         <Form.Item
                             label="回调 URL："

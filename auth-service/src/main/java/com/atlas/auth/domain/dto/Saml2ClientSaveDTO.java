@@ -4,12 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.util.Map;
 
-public record Saml2ClientApplicationSaveDTO(
+public record Saml2ClientSaveDTO(
 
         Long id,
 
-        @NotBlank(message = "应用名称不能为空")
-        String applicationName,
+        @NotBlank(message = "客户端名称不能为空")
+        String clientName,
 
         @NotBlank(message = "Entity ID不能为空")
         String entityId,

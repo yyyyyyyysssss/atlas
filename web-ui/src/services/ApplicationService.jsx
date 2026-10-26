@@ -43,6 +43,31 @@ export const deleteClientSecret = async (projectCode, applicationId, id, clientS
 
 
 
+// 创建saml2应用
+export const saveSaml2Client = async (projectCode, applicationId, body) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/${projectCode}/${applicationId}/saml2/save`, body))
+}
+
+
+// 获取saml2客户端详情
+export const getSaml2ClientDetail = async (projectCode, applicationId, id) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/${projectCode}/${applicationId}/saml2/${id}`))
+}
+
+// 获取saml2客户端列表
+export const getSaml2ClientPage = async (projectCode, applicationId, page, size) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/${projectCode}/${applicationId}/saml2/page?pageNum=${page}&pageSize=${size}`))
+}
+
+// 删除saml2客户端
+export const deleteSaml2Client = async (projectCode, applicationId, id) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/${projectCode}/${applicationId}/saml2/${id}`))
+}
+
 // 获取应用列表
 export const getApplicationPage = async (projectCode, pageNum, pageSize, applicationName) => {
 

@@ -1,6 +1,6 @@
 package com.atlas.auth.domain.vo;
 
-public record Saml2ClientApplicationCreateVO(
+public record Saml2ClientCreateVO(
 
         Long id,
 

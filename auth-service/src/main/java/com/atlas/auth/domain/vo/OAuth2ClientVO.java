@@ -8,7 +8,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record OAuth2ClientApplicationVO(
+public record OAuth2ClientVO(
         Long id,
         String clientId,
         String clientName,
@@ -21,29 +21,14 @@ public record OAuth2ClientApplicationVO(
         List<ClientSecretInfoVO> clientSecrets
 ) {
 
-    public static OAuth2ClientApplicationVO of(ApplicationClient applicationClient){
-        return new OAuth2ClientApplicationVO(
-                applicationClient.getId(),
-                applicationClient.getClientId(),
-                applicationClient.getClientName(),
-                null,
-                null,
-                null,
-                applicationClient.getDescription(),
-                applicationClient.getCreateTime(),
-                applicationClient.getLastUsedTime(),
-                null
-        );
-    }
-
-    public static OAuth2ClientApplicationVO of(ApplicationClient applicationClient, RegisteredClient registeredClient, List<OAuth2ClientSecret> oAuth2ClientSecrets){
+    public static OAuth2ClientVO of(ApplicationClient applicationClient, RegisteredClient registeredClient, List<OAuth2ClientSecret> oAuth2ClientSecrets){
         List<ClientSecretInfoVO> secretInfoVOs = null;
         if (oAuth2ClientSecrets != null) {
             secretInfoVOs = oAuth2ClientSecrets.stream()
                     .map(s -> new ClientSecretInfoVO(s.getId(), s.getClientSecretHint(), s.getClientSecretExpiresAt(), s.getCreateTime()))
                     .toList();
         }
-        return new OAuth2ClientApplicationVO(
+        return new OAuth2ClientVO(
                 applicationClient.getId(),
                 applicationClient.getClientId(),
                 applicationClient.getClientName(),

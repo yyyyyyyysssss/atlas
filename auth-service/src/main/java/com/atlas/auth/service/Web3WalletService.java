@@ -1,5 +1,6 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.Web3WalletRegisterOptionsVO;
 import com.atlas.auth.enums.Web3WalletType;
@@ -58,8 +59,10 @@ public class Web3WalletService {
         };
         String redisKey = REDIS_KEY_PREFIX + web3Id;
         RegisterOptionsContext registerOptionsContext = new RegisterOptionsContext(challenge, standardizedAddress, message, walletType.name(), web3WalletRegisterOptionsDTO.label(), web3WalletRegisterOptionsDTO.source());
-        redisHelper.setValue(redisKey, registerOptionsContext, Duration.ofSeconds(EXPIRE_SECONDS));
-
+        boolean success = redisHelper.setIfAbsent(redisKey, registerOptionsContext, Duration.ofSeconds(EXPIRE_SECONDS));
+        if (!Boolean.TRUE.equals(success)) {
+            throw new AuthServiceException("创建钱包验证请求失败，请重试");
+        }
         log.info("成功创建 Web3 绑定挑战: web3Id={}, address={}", web3Id, standardizedAddress);
 
         return new Web3WalletRegisterOptionsVO(
@@ -74,9 +77,10 @@ public class Web3WalletService {
         String web3Id = verifySignatureDTO.web3Id();
         String signature = verifySignatureDTO.signature();
         String redisKey = REDIS_KEY_PREFIX + web3Id;
+        // 读取挑战上下文，不删除
         RegisterOptionsContext context = redisHelper.getValue(redisKey, RegisterOptionsContext.class);
         if (context == null) {
-            throw new BusinessException("核验请求已过期或不存在，请重新发起认证");
+            throw new AuthServiceException("核验请求已过期或不存在，请重新发起认证");
         }
         String expectedAddress = context.address();
         String message = context.message();
@@ -89,12 +93,23 @@ public class Web3WalletService {
             };
         } catch (Exception e) {
             log.error("Web3 签名解析异常, web3Id={}", web3Id, e);
-            throw new BusinessException("签名解析失败，请确保钱包连接正确");
+            throw new AuthServiceException("签名解析失败，请确保钱包连接正确");
         }
         if (!recoveredAddress.equalsIgnoreCase(expectedAddress)) {
-            throw new BusinessException("签名核验失败，钱包所有权验证未通过");
+            throw new AuthServiceException("签名核验失败，钱包所有权验证未通过");
         }
-        redisHelper.delete(redisKey);
+        // 原子消费挑战码，防止重复使用
+        RegisterOptionsContext consumed = redisHelper.getValueAndDelete(redisKey, RegisterOptionsContext.class);
+        if (consumed == null) {
+            throw new AuthServiceException("核验请求已使用或过期，请重新发起认证");
+        }
+        // 确保消费的挑战上下文与之前验签的上下文一致
+        if (!context.challenge().equals(consumed.challenge())
+                || !context.address().equalsIgnoreCase(consumed.address())
+                || !context.message().equals(consumed.message())
+                || !context.walletType().equals(consumed.walletType())) {
+            throw new AuthServiceException("核验请求状态异常，请重新发起认证");
+        }
         log.info("Web3 钱包所有权核验通过! 地址: {}", expectedAddress);
         return new Web3WalletVerifySignatureResponse(expectedAddress, walletType, context.label(), context.source());
     }

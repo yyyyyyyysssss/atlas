@@ -148,6 +148,15 @@ public class RedisHelper {
         return redisTemplate.opsForValue().get(key);
     }
 
+    public Object getValueAndDelete(String key) {
+        return redisTemplate.opsForValue().getAndDelete(key);
+    }
+
+    public <T> T getValueAndDelete(String key, Class<T> clazz) {
+        Object obj = getValueAndDelete(key);
+        return deserialize(obj,clazz);
+    }
+
     public <T> T getValue(String key, Class<T> clazz) {
         Object obj = getValue(key);
         return deserialize(obj,clazz);

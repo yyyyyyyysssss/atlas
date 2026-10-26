@@ -39,11 +39,9 @@ public class Web3WalletService {
 
     public Web3WalletRegisterOptionsVO registerOptions(Web3WalletRegisterOptionsDTO web3WalletRegisterOptionsDTO) {
         String address = web3WalletRegisterOptionsDTO.address();
-        if (!WalletUtils.isValidAddress(address)) {
-            throw new BusinessException("无效的 Web3.0 加密钱包地址");
-        }
+
         // 对地址进行“纯小写标准化”
-        String standardizedAddress = address.toLowerCase();
+        String standardizedAddress = normalizeAddress(address);
 
         String challenge = SecureRandomUtils.generate(32);
         String web3Id = SecureRandomUtils.generate(16);
@@ -169,6 +167,13 @@ public class Web3WalletService {
                   }
                 }
                 """.formatted(address, challenge);
+    }
+
+    private String normalizeAddress(String address) {
+        if (!WalletUtils.isValidAddress(address)) {
+            throw new AuthServiceException("无效的 Web3.0 加密钱包地址");
+        }
+        return address.toLowerCase(java.util.Locale.ROOT);
     }
 
 

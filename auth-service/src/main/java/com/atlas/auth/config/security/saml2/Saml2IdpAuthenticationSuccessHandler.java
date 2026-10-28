@@ -1,14 +1,19 @@
 package com.atlas.auth.config.security.saml2;
 
+import com.atlas.auth.enums.ClientProtocol;
+import com.atlas.auth.event.ClientAuthorizedEvent;
 import com.atlas.common.core.utils.JsonUtils;
+import com.atlas.common.security.model.SecurityUser;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @Description
@@ -19,8 +24,11 @@ public class Saml2IdpAuthenticationSuccessHandler implements AuthenticationSucce
 
     private final Saml2IdpService saml2IdpService;
 
-    public Saml2IdpAuthenticationSuccessHandler(Saml2IdpService saml2IdpService){
+    private ApplicationEventPublisher eventPublisher;
+
+    public Saml2IdpAuthenticationSuccessHandler(Saml2IdpService saml2IdpService, ApplicationEventPublisher eventPublisher){
         this.saml2IdpService = saml2IdpService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -36,7 +44,16 @@ public class Saml2IdpAuthenticationSuccessHandler implements AuthenticationSucce
         } else {
             throw new IllegalStateException("Unsupported SAML binding: " + saml2MessageBinding);
         }
+        SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+        if(eventPublisher != null){
+            eventPublisher.publishEvent(new ClientAuthorizedEvent(this, securityUser.getId(), saml2IdpRequestContext.getSpEntityId(), ClientProtocol.SAML2));
+        }
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(JsonUtils.toJson(redirectResponse));
+    }
+
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        Objects.requireNonNull(eventPublisher);
+        this.eventPublisher = eventPublisher;
     }
 }

@@ -18,7 +18,7 @@ public final class RedisSaml2IdpRequestContextRepository implements Saml2IdpRequ
 
     private static final String SAML_REQUEST_CONTEXT_KEY = "saml2:idp:context:";
 
-    private static final Duration REPLAY_TTL = Duration.ofMinutes(5);
+    private static final Duration REPLAY_TTL = Duration.ofMinutes(10);
 
     private static final Duration CONTEXT_TTL = Duration.ofMinutes(5);
 
@@ -29,7 +29,7 @@ public final class RedisSaml2IdpRequestContextRepository implements Saml2IdpRequ
     @Override
     public void save(String issuer, Saml2IdpRequestContext context) {
         String key = buildKey(SAML_REQUEST_CONTEXT_KEY, issuer, context.getRequestId());
-        redisHelper.setValue(key, context, REPLAY_TTL);
+        redisHelper.setValue(key, context, CONTEXT_TTL);
     }
 
     @Override
@@ -47,7 +47,7 @@ public final class RedisSaml2IdpRequestContextRepository implements Saml2IdpRequ
     @Override
     public boolean markAsSeen(String issuer, String requestId) {
         String key = buildKey(SAML_REQUEST_REPLAY_KEY, issuer, requestId);
-        return redisHelper.setIfAbsent(key, "1", CONTEXT_TTL);
+        return redisHelper.setIfAbsent(key, "1", REPLAY_TTL);
     }
 
     private String buildKey(String prefix, String issuer, String requestId) {

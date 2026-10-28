@@ -482,6 +482,48 @@ const Saml2ClientApplicationEdit = () => {
                     vertical
                 >
                     <ApplicationCard application={application} />
+                    {mode === 'edit' && (
+                        <Card
+                            title={
+                                <Space>
+                                    客户端信息
+                                </Space>
+                            }
+                            variant='borderless'
+                        >
+                            <Descriptions
+                                column={1}
+                                size="small"
+                                styles={{
+                                    label: {
+                                        width: 120
+                                    }
+                                }}
+                            >
+                                <Descriptions.Item label="SP Entity ID">
+                                    <Text>
+                                        {saml2ClientDetail?.entityId || '-'}
+                                    </Text>
+                                </Descriptions.Item>
+
+                                <Descriptions.Item label="创建日期">
+                                    <Space>
+                                        <Text>
+                                            {saml2ClientDetail?.createTime || '-'}
+                                        </Text>
+                                    </Space>
+                                </Descriptions.Item>
+
+                                <Descriptions.Item label="最后使用日期">
+                                    <Space>
+                                        <Text>
+                                            {saml2ClientDetail?.lastUsedTime || '-'}
+                                        </Text>
+                                    </Space>
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+                    )}
                 </Flex>
             </Flex>
         </Loading>

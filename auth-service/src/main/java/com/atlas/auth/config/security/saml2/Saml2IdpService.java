@@ -105,7 +105,6 @@ public class Saml2IdpService {
     private static final int MAX_REDIRECT_REQUEST_BYTES = 256 * 1024; // 256 KiB
 
     private static final Map<String, String> REDIRECT_SIGNATURE_ALGORITHMS = Map.of(
-            "http://www.w3.org/2000/09/xmldsig#rsa-sha1", "SHA1withRSA",
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "SHA256withRSA",
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384", "SHA384withRSA",
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA"
@@ -366,12 +365,6 @@ public class Saml2IdpService {
         AuthnRequest authnRequest = exception.getAuthnRequest();
         if (authnRequest != null){
             response.setInResponseTo(authnRequest.getID());
-            String acsUrl = authnRequest.getAssertionConsumerServiceURL();
-            if (acsUrl != null && !acsUrl.isBlank()) {
-                response.setDestination(acsUrl);
-            } else if (authnRequest.getDestination() != null) {
-                response.setDestination(authnRequest.getDestination());
-            }
         }
 
         return serializeResponseXml(response);
@@ -594,7 +587,7 @@ public class Saml2IdpService {
         // SAML 2.0 Protocol
         idpDescriptor.addSupportedProtocol(SAMLConstants.SAML20P_NS);
         // 当前阶段不要求 SP 对 AuthnRequest 签名。 后续如果 Atlas 要求所有 AuthnRequest 必须由 SP 签名，这里改成 true。
-        idpDescriptor.setWantAuthnRequestsSigned(true);
+        idpDescriptor.setWantAuthnRequestsSigned(false);
         // Signing Certificate
         KeyDescriptor keyDescriptor = new KeyDescriptorBuilder().buildObject();
         keyDescriptor.setUse(UsageType.SIGNING);

@@ -10,8 +10,6 @@ public record Saml2ClientVO(
 
         Long id,
 
-        String clientId,
-
         String clientName,
 
         String entityId,
@@ -40,7 +38,6 @@ public record Saml2ClientVO(
 
         return new Saml2ClientVO(
                 applicationClient.getId(),
-                applicationClient.getClientId(),
                 applicationClient.getClientName(),
                 registeredClient.getEntityId(),
                 registeredClient.getAcsUrl(),

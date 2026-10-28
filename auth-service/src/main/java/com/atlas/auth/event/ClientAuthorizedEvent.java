@@ -14,7 +14,6 @@ public class ClientAuthorizedEvent extends ApplicationEvent {
 
     private final ClientProtocol protocol;
 
-
     public ClientAuthorizedEvent(Object source, Long userId, String clientId, ClientProtocol protocol) {
         super(source);
         this.userId = userId;

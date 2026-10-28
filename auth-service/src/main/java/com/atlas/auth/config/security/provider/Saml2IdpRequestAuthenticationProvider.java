@@ -121,10 +121,9 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
         if (registeredAcsUrl == null || registeredAcsUrl.isBlank()) {
             throw invalidRequest("SAML Service Provider ACS URL is not configured", authnRequest);
         }
-        if (acsUrl != null && !acsUrl.isBlank()) {
-            if (!registeredAcsUrl.equals(acsUrl)) {
-                throw invalidRequest("Unregistered AssertionConsumerServiceURL", authnRequest);
-            }
+        // 请求显式指定 ACS 时，必须与已注册地址完全一致
+        if (!registeredAcsUrl.equals(acsUrl)) {
+            throw invalidRequest("Unregistered AssertionConsumerServiceURL", authnRequest);
         }
         // 校验签名策略及证书配置
         boolean requireSignature = Boolean.TRUE.equals(saml2RegisteredClient.getRequireSignedAuthnRequest());
@@ -193,7 +192,7 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
                 .spEntityId(issuer)
                 .registeredClientId(saml2RegisteredClient.getId())
                 .acsUrl(acsUrl)
-                .relayState(Optional.ofNullable(params).map(m -> m.get("RelayState")).orElse(null))
+                .relayState(requestAuthenticationToken.getRelayState())
                 .responseBinding(authnRequest.getProtocolBinding())
                 .nameIdFormat(authnRequest.getNameIDPolicy() != null ? authnRequest.getNameIDPolicy().getFormat() : null)
                 .forceAuthn(Boolean.TRUE.equals(authnRequest.isForceAuthn()))

@@ -33,7 +33,7 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
 
     private RedirectStrategy redirectStrategy;
 
-    private final ApplicationEventPublisher eventPublisher;
+    private ApplicationEventPublisher eventPublisher;
 
     public AdapterAuthorizationSuccessHandler(ApplicationEventPublisher eventPublisher) {
         this.redirectStrategy = new DefaultRedirectStrategy();
@@ -90,6 +90,11 @@ public class AdapterAuthorizationSuccessHandler implements AuthenticationSuccess
             principal = authentication.getPrincipal();
         }
         return principal instanceof SecurityUser ? (SecurityUser) principal : null;
+    }
+
+    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
+        Objects.requireNonNull(eventPublisher);
+        this.eventPublisher = eventPublisher;
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

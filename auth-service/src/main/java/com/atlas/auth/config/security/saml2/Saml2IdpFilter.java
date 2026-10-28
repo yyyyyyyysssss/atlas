@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -49,13 +50,14 @@ public final class Saml2IdpFilter extends OncePerRequestFilter {
     public Saml2IdpFilter(AuthenticationManager authenticationManager,
                           Saml2IdpService saml2IdpService,
                           SecurityProperties securityProperties,
-                          Saml2IdpRequestContextRepository repository) {
+                          Saml2IdpRequestContextRepository repository,
+                          ApplicationEventPublisher eventPublisher) {
         this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(DEFAULT_TOKEN_ENDPOINT_URI);
         this.authenticationManager = authenticationManager;
         this.authenticationDetailsSource = new WebAuthenticationDetailsSource();
         this.authenticationConverter = new DelegatingAuthenticationConverter(Arrays.asList(new Saml2IdpRequestContextAuthenticationConverter(), new Saml2IdpAuthenticationConverter(repository)));
         this.authenticationEntryPoint = new Saml2IdpAuthenticationEntryPoint(securityProperties);
-        this.authenticationSuccessHandler = new Saml2IdpAuthenticationSuccessHandler(saml2IdpService);
+        this.authenticationSuccessHandler = new Saml2IdpAuthenticationSuccessHandler(saml2IdpService, eventPublisher);
         this.authenticationFailureHandler = new Saml2IdpAuthenticationFailureHandler(saml2IdpService);
     }
 

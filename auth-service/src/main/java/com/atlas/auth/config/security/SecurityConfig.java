@@ -21,6 +21,7 @@ import com.atlas.common.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -280,9 +281,13 @@ public class SecurityConfig {
 
     // saml2 idp
     @Bean
-    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager, Saml2IdpService saml2IdpService, SecurityProperties securityProperties, Saml2IdpRequestContextRepository saml2IdpRequestContextRepository) {
+    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager,
+                                         Saml2IdpService saml2IdpService,
+                                         SecurityProperties securityProperties,
+                                         Saml2IdpRequestContextRepository saml2IdpRequestContextRepository,
+                                         ApplicationEventPublisher eventPublisher) {
 
-        return new Saml2IdpFilter(authenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository);
+        return new Saml2IdpFilter(authenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository,eventPublisher);
     }
 
     @Bean

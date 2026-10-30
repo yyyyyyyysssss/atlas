@@ -21,7 +21,8 @@ public record Saml2ProviderSettings(
         String clientName,
         Acs acs,
         AssertingParty assertingparty,
-        Mapping mappings
+        Mapping mappings,
+        Boolean authnRequestsSigned
 ) implements SsoSettings {
 
     public record Acs(

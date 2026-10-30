@@ -26,7 +26,7 @@ public class Saml2IdpAuthenticationConverter implements AuthenticationConverter 
         if(samlIssuer == null || samlIssuer.isBlank() || samlRequestId == null || samlRequestId.isBlank()){
             return null;
         }
-        Saml2IdpRequestContext saml2IdpRequestContext = requestContextRepository.find(samlIssuer, samlRequestId);
+        Saml2IdpRequestContext saml2IdpRequestContext = requestContextRepository.consume(samlIssuer, samlRequestId);
         if(saml2IdpRequestContext == null){
             throw invalidRequest("SAML authentication context expired or invalid");
         }

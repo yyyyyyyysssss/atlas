@@ -1,6 +1,7 @@
 package com.atlas.auth.config.security;
 
 
+import com.atlas.auth.config.security.authentication.AuthenticationManagerDelegator;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
@@ -21,6 +22,7 @@ import com.atlas.common.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -152,8 +154,6 @@ public class SecurityConfig {
                                                        OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider,
                                                        WebauthnAuthenticationProvider webauthnAuthenticationProvider,
                                                        Web3WalletAuthenticationProvider web3WalletAuthenticationProvider,
-                                                       Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider,
-                                                       Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider,
                                                        MfaAuthenticationProvider mfaAuthenticationProvider) throws Exception {
 
         return http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -173,9 +173,6 @@ public class SecurityConfig {
                 .authenticationProvider(webauthnAuthenticationProvider)
                 // web3认证
                 .authenticationProvider(web3WalletAuthenticationProvider)
-                // saml idp
-                .authenticationProvider(saml2IdpRequestAuthenticationProvider)
-                .authenticationProvider(saml2IdpAuthenticationProvider)
                 // mfa双因子认证
                 .authenticationProvider(mfaAuthenticationProvider)
                 .parentAuthenticationManager(null)
@@ -279,17 +276,38 @@ public class SecurityConfig {
         return logoutService;
     }
 
-    // saml2 idp
+
+
+    // saml2
+
+
+    // 认证管理器
     @Bean
-    public Saml2IdpFilter saml2IdpFilter(AuthenticationManager authenticationManager,
+    public AuthenticationManager saml2AuthenticationManager(HttpSecurity http,
+                                                            Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider,
+                                                            Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider) throws Exception {
+        AuthenticationManager manager = http.getSharedObject(AuthenticationManagerBuilder.class)
+                // saml idp
+                .authenticationProvider(saml2IdpRequestAuthenticationProvider)
+                .authenticationProvider(saml2IdpAuthenticationProvider)
+                .parentAuthenticationManager(null)
+                .build();
+
+        return new AuthenticationManagerDelegator(manager);
+    }
+
+    // 过滤器
+    @Bean
+    public Saml2IdpFilter saml2IdpFilter(@Qualifier("saml2AuthenticationManager") AuthenticationManager saml2AuthenticationManager,
                                          Saml2IdpService saml2IdpService,
                                          SecurityProperties securityProperties,
                                          Saml2IdpRequestContextRepository saml2IdpRequestContextRepository,
                                          ApplicationEventPublisher eventPublisher) {
 
-        return new Saml2IdpFilter(authenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository,eventPublisher);
+        return new Saml2IdpFilter(saml2AuthenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository,eventPublisher);
     }
 
+    // 请求认证处理
     @Bean
     public Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider(Saml2IdpService saml2IdpService,
                                                                                 Saml2RegisteredClientService saml2RegisteredClientService,
@@ -299,12 +317,14 @@ public class SecurityConfig {
         return new Saml2IdpRequestAuthenticationProvider(saml2IdpService, saml2RegisteredClientService, securityProperties, saml2IdpRequestContextRepository);
     }
 
+    // 认证处理
     @Bean
-    public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider() {
+    public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider(Saml2IdpRequestContextRepository saml2IdpRequestContextRepository) {
 
-        return new Saml2IdpAuthenticationProvider();
+        return new Saml2IdpAuthenticationProvider(saml2IdpRequestContextRepository);
     }
 
+    // 请求上下文存储
     @Bean
     public Saml2IdpRequestContextRepository saml2IdpRequestContextRepository(RedisHelper redisHelper){
 

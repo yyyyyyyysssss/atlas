@@ -16,6 +16,8 @@ public enum ClientProtocol implements IEnum<String> {
 
     SAML2("SAML2", "SAML 2.0"),
 
+    CAS("CAS", "CAS"),
+
     ;
 
     @EnumValue

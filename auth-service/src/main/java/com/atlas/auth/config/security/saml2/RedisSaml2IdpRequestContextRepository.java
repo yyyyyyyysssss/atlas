@@ -33,15 +33,9 @@ public final class RedisSaml2IdpRequestContextRepository implements Saml2IdpRequ
     }
 
     @Override
-    public Saml2IdpRequestContext find(String issuer, String requestId) {
+    public Saml2IdpRequestContext consume(String issuer, String requestId) {
         String key = buildKey(SAML_REQUEST_CONTEXT_KEY, issuer, requestId);
-        return redisHelper.getValue(key, Saml2IdpRequestContext.class);
-    }
-
-    @Override
-    public void remove(String issuer, String requestId) {
-        String key = buildKey(SAML_REQUEST_CONTEXT_KEY, issuer, requestId);
-        redisHelper.delete(key);
+        return redisHelper.getValueAndDelete(key, Saml2IdpRequestContext.class);
     }
 
     @Override

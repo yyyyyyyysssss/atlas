@@ -93,6 +93,7 @@ public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyR
                 .entityId(settings.entityId())
                 .assertionConsumerServiceLocation(securityProperties.getIssuerUrl() + settings.acs().location())
                 .assertionConsumerServiceBinding(settings.acs().binding())
+                .authnRequestsSigned(settings.authnRequestsSigned())
                 .signingX509Credentials(signingX509Credentials -> signingX509Credentials.add(signingCredential))
                 .build();
     }
@@ -124,6 +125,7 @@ public class DelegateRelyingPartyRegistrationRepository implements RelyingPartyR
                             .wantAuthnRequestsSigned(Objects.requireNonNull(settings.assertingparty()).singlesignon().signRequest())
                             .verificationX509Credentials(c -> c.addAll(credentials));
                 })
+                .authnRequestsSigned(settings.authnRequestsSigned())
                 .signingX509Credentials(signingX509Credentials -> signingX509Credentials.add(signingCredential))
                 .build();
     }

@@ -17,6 +17,13 @@ public enum AuthErrorCode implements IErrorCode {
     THIRD_PARTY_AUTH_CANCELLED(200106, "用户已取消第三方认证"),
 
 
+    // CAS 认证
+    CAS_INVALID_REQUEST(200201, "CAS 请求参数无效"),
+    CAS_INVALID_TICKET(200202, "CAS Service Ticket 无效、已过期或已使用"),
+    CAS_INVALID_SERVICE(200203, "CAS Service 无效或不匹配"),
+    CAS_INTERNAL_ERROR(200204, "CAS 内部处理异常"),
+    CAS_AUTHENTICATION_REQUIRED(200205, "需要进行 CAS 用户认证"),
+
     ;
 
     private final int code;

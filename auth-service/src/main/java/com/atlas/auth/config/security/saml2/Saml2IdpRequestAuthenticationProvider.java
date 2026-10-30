@@ -1,6 +1,5 @@
-package com.atlas.auth.config.security.provider;
+package com.atlas.auth.config.security.saml2;
 
-import com.atlas.auth.config.security.saml2.*;
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
 import com.atlas.auth.service.Saml2RegisteredClientService;
 import com.atlas.common.security.properties.SecurityProperties;
@@ -8,11 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.saml2.core.AuthnRequest;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
@@ -20,7 +17,6 @@ import org.springframework.security.saml2.provider.service.registration.Saml2Mes
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -49,7 +45,7 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        Saml2IdpRequestAuthenticationToken requestAuthenticationToken  = (Saml2IdpRequestAuthenticationToken) authentication;
+        Saml2IdpRequestAuthenticationToken requestAuthenticationToken = (Saml2IdpRequestAuthenticationToken) authentication;
         String samlRequest = requestAuthenticationToken.getSamlRequest();
         Saml2MessageBinding binding = Saml2MessageBinding.valueOf(requestAuthenticationToken.getBinding());
         String rawQueryString = requestAuthenticationToken.getRawQueryString();
@@ -176,13 +172,13 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
                 } else {
                     this.saml2IdpService.verifyPostSignature(authnRequest, saml2RegisteredClient.getVerificationCertificate());
                 }
-            }catch (Saml2IdpAuthenticationException e){
+            } catch (Saml2IdpAuthenticationException e) {
                 throw invalidRequest(e.getMessage(), authnRequest);
             }
             signatureVerified = true;
         }
         // 防重放
-        if (!saml2IdpRequestContextRepository.markAsSeen(issuer, requestId)){
+        if (!saml2IdpRequestContextRepository.markAsSeen(issuer, requestId)) {
             throw invalidRequest("Duplicate AuthnRequest", authnRequest);
         }
         // 创建上下文
@@ -201,27 +197,6 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
                 .build();
 
 
-        // 是否强制重新认证 先不做处理 后续增加重新认证再处理
-        boolean forceAuthn = Boolean.TRUE.equals(authnRequest.isForceAuthn());
-        if (forceAuthn) {
-            log.info("ForceAuthn requested but user already authenticated");
-        }
-        // 判断是否已认证
-        Authentication currentAuthentication  = SecurityContextHolder.getContext().getAuthentication();
-        boolean authenticated = currentAuthentication != null
-                && currentAuthentication.isAuthenticated()
-                && !(currentAuthentication instanceof AnonymousAuthenticationToken);
-        if (!authenticated) {
-            // 是否禁止交互认证 只能使用已有登录态
-            if(Boolean.TRUE.equals(authnRequest.isPassive())){
-                throw invalidRequest("Passive authentication failed", authnRequest);
-            }
-            // 保存上下文
-            saml2IdpRequestContextRepository.save(issuer, context);
-
-            throw new Saml2IdpAuthenticationRequiredException(issuer, requestId);
-        }
-
         log.info("[SAML2 IdP] AuthnRequest validation completed, requestId={}, issuer={}, binding={}, destination={}, acs={} signatureRequired={}, signatureVerified={}",
                 requestId,
                 issuer,
@@ -231,7 +206,8 @@ public class Saml2IdpRequestAuthenticationProvider implements AuthenticationProv
                 requireSignature,
                 signatureVerified
         );
-        return new Saml2IdpAuthenticationToken(currentAuthentication.getPrincipal(), context, currentAuthentication.getAuthorities());
+
+        return new Saml2IdpAuthenticationToken(context);
     }
 
     @Override

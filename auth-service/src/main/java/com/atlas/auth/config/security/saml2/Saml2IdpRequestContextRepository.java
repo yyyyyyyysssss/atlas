@@ -11,13 +11,8 @@ public interface Saml2IdpRequestContextRepository {
     /**
      * 获取请求上下文
      */
-    Saml2IdpRequestContext find(String issuer, String requestId);
+    Saml2IdpRequestContext consume(String issuer, String requestId);
 
-
-    /**
-     * 删除上下文
-     */
-    void remove(String issuer, String requestId);
 
 
     /**

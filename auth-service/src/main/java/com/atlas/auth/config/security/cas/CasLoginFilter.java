@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
@@ -47,12 +48,17 @@ public class CasLoginFilter extends OncePerRequestFilter {
 
     private AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource;
 
-    public CasLoginFilter(AuthenticationManager authenticationManager, SecurityProperties securityProperties) {
+    public CasLoginFilter(AuthenticationManager authenticationManager,
+                          CasRequestContextRepository casRequestContextRepository,
+                          ApplicationEventPublisher eventPublisher,
+                          SecurityProperties securityProperties) {
         this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, DEFAULT_LOGIN_ENDPOINT_URI);
         this.authenticationManager = authenticationManager;
         this.authenticationDetailsSource = new WebAuthenticationDetailsSource();
         this.authenticationEntryPoint = new CasAuthenticationEntryPoint(securityProperties);
-        this.authenticationConverter = new DelegatingAuthenticationConverter(Arrays.asList(new CasRequestContextAuthenticationConverter()));
+        this.authenticationConverter = new DelegatingAuthenticationConverter(Arrays.asList(new CasRequestContextAuthenticationConverter(), new CasAuthenticationConverter(casRequestContextRepository)));
+        this.authenticationSuccessHandler = new CasAuthenticationSuccessHandler(eventPublisher);
+        this.authenticationFailureHandler = new CasAuthenticationFailureHandler();
     }
 
     @Override
@@ -77,20 +83,12 @@ public class CasLoginFilter extends OncePerRequestFilter {
         } catch (CasAuthenticationException e) {
             log.warn("cas authentication failed: {}", e.getMessage());
             // CAS协议异常
-            if (this.authenticationFailureHandler != null) {
-                authenticationFailureHandler.onAuthenticationFailure(request, response, e);
-            } else {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            }
+            authenticationFailureHandler.onAuthenticationFailure(request, response, e);
         } catch (Exception e) {
             // 内部未知异常
             log.error("Unexpected Cas error", e);
             CasAuthenticationException exception = new CasAuthenticationException(AuthErrorCode.CAS_INTERNAL_ERROR, "CAS internal error", e);
-            if (this.authenticationFailureHandler != null) {
-                authenticationFailureHandler.onAuthenticationFailure(request, response, exception);
-            } else {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
+            authenticationFailureHandler.onAuthenticationFailure(request, response, exception);
         }
     }
 

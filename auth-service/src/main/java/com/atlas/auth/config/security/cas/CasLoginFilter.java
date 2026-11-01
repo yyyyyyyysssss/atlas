@@ -70,7 +70,7 @@ public class CasLoginFilter extends OncePerRequestFilter {
         try {
             Authentication authorizationGrantAuthentication = this.authenticationConverter.convert(request);
             if (authorizationGrantAuthentication == null) {
-                throw invalidRequest("Unsupported SAML authentication request");
+                throw invalidRequest("Unsupported CAS authentication request");
             }
             if (authorizationGrantAuthentication instanceof AbstractAuthenticationToken authenticationToken) {
                 authenticationToken.setDetails(this.authenticationDetailsSource.buildDetails(request));

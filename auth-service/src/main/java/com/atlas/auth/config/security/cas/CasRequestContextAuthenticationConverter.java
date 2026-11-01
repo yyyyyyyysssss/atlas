@@ -20,6 +20,12 @@ public class CasRequestContextAuthenticationConverter implements AuthenticationC
     @Override
     public Authentication convert(HttpServletRequest request) {
         String service = getSingleParameter(request, PARAM_SERVICE);
+
+        // 不是CAS请求，让其它Converter处理
+        if (service == null || service.isBlank()) {
+            return null;
+        }
+
         String renew = getSingleParameter(request, PARAM_RENEW);
         String gateway = getSingleParameter(request, PARAM_GATEWAY);
         // renew 和 gateway 只能是 true
@@ -31,9 +37,6 @@ public class CasRequestContextAuthenticationConverter implements AuthenticationC
             throw invalidRequest("renew and gateway cannot be used together");
         }
 
-        if (service != null && !StringUtils.hasText(service)) {
-            throw invalidRequest("Invalid service parameter");
-        }
         return new CasRequestAuthenticationToken(
                 service,
                 renewFlag,

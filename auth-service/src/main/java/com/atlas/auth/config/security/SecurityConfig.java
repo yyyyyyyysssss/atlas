@@ -2,6 +2,7 @@ package com.atlas.auth.config.security;
 
 
 import com.atlas.auth.config.security.authentication.AuthenticationManagerDelegator;
+import com.atlas.auth.config.security.cas.*;
 import com.atlas.auth.config.security.handler.LoginAttemptHandler;
 import com.atlas.auth.config.security.mfa.MfaTicketRepository;
 import com.atlas.auth.config.security.mfa.MfaVerifyStrategyFactory;
@@ -79,9 +80,10 @@ public class SecurityConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
                                                           Saml2IdpFilter saml2IdpFilter,
-                                                          OneTimeTokenService oneTimeTokenService,
                                                           Saml2SuccessHandler saml2SuccessHandler,
                                                           Saml2FailureHandler saml2FailureHandler,
+                                                          OneTimeTokenService oneTimeTokenService,
+                                                          CasLoginFilter casLoginFilter,
                                                           LogoutSuccessHandler logoutSuccessHandler) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -126,6 +128,8 @@ public class SecurityConfig {
                 })
                 // saml2 idp
                 .addFilterBefore(saml2IdpFilter, UsernamePasswordAuthenticationFilter.class)
+                // cas
+                .addFilterBefore(casLoginFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout")
@@ -278,10 +282,9 @@ public class SecurityConfig {
 
 
 
-    // saml2
+    // *********** SAML2 ***********
 
-
-    // 认证管理器
+    // saml2 idp  认证管理器
     @Bean
     public AuthenticationManager saml2AuthenticationManager(HttpSecurity http,
                                                             Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider,
@@ -296,7 +299,7 @@ public class SecurityConfig {
         return new AuthenticationManagerDelegator(manager);
     }
 
-    // 过滤器
+    // saml2 idp  过滤器
     @Bean
     public Saml2IdpFilter saml2IdpFilter(@Qualifier("saml2AuthenticationManager") AuthenticationManager saml2AuthenticationManager,
                                          Saml2IdpService saml2IdpService,
@@ -307,7 +310,7 @@ public class SecurityConfig {
         return new Saml2IdpFilter(saml2AuthenticationManager,saml2IdpService, securityProperties, saml2IdpRequestContextRepository,eventPublisher);
     }
 
-    // 请求认证处理
+    // saml2 idp  请求认证处理
     @Bean
     public Saml2IdpRequestAuthenticationProvider saml2IdpRequestAuthenticationProvider(Saml2IdpService saml2IdpService,
                                                                                 Saml2RegisteredClientService saml2RegisteredClientService,
@@ -317,14 +320,14 @@ public class SecurityConfig {
         return new Saml2IdpRequestAuthenticationProvider(saml2IdpService, saml2RegisteredClientService, securityProperties, saml2IdpRequestContextRepository);
     }
 
-    // 认证处理
+    // saml2 idp  认证处理
     @Bean
     public Saml2IdpAuthenticationProvider saml2IdpAuthenticationProvider(Saml2IdpRequestContextRepository saml2IdpRequestContextRepository) {
 
         return new Saml2IdpAuthenticationProvider(saml2IdpRequestContextRepository);
     }
 
-    // 请求上下文存储
+    // saml2 idp 请求上下文存储
     @Bean
     public Saml2IdpRequestContextRepository saml2IdpRequestContextRepository(RedisHelper redisHelper){
 
@@ -343,6 +346,52 @@ public class SecurityConfig {
     public Saml2FailureHandler saml2FailureHandler(SecurityProperties securityProperties){
 
         return new Saml2FailureHandler(securityProperties.getUiUrl());
+    }
+
+
+    // *********** CAS ***********
+
+    // 认证管理器
+    @Bean
+    public AuthenticationManager casAuthenticationManager(HttpSecurity http,
+                                                          CasRequestAuthenticationProvider casRequestAuthenticationProvider,
+                                                          CasAuthenticationProvider casAuthenticationProvider) throws Exception {
+        AuthenticationManager manager = http.getSharedObject(AuthenticationManagerBuilder.class)
+                .authenticationProvider(casRequestAuthenticationProvider)
+                .authenticationProvider(casAuthenticationProvider)
+                .parentAuthenticationManager(null)
+                .build();
+
+        return new AuthenticationManagerDelegator(manager);
+    }
+
+    // 过滤器
+    @Bean
+    public CasLoginFilter casLoginFilter(@Qualifier("casAuthenticationManager") AuthenticationManager casAuthenticationManager,
+                                         CasRequestContextRepository casRequestContextRepository,
+                                         ApplicationEventPublisher eventPublisher,
+                                         SecurityProperties securityProperties) {
+
+        return new CasLoginFilter(casAuthenticationManager,casRequestContextRepository, eventPublisher, securityProperties);
+    }
+
+
+    @Bean
+    public CasRequestContextRepository casRequestContextRepository(RedisHelper redisHelper){
+
+        return new RedisCasRequestContextRepository(redisHelper);
+    }
+
+    @Bean
+    public CasRequestAuthenticationProvider casRequestAuthenticationProvider(CasRegisteredClientService casRegisteredClientService){
+
+        return new CasRequestAuthenticationProvider(casRegisteredClientService);
+    }
+
+    @Bean
+    public CasAuthenticationProvider casAuthenticationProvider(CasService casService, CasRequestContextRepository casRequestContextRepository){
+
+        return new CasAuthenticationProvider(casService, casRequestContextRepository);
     }
 
 }

@@ -35,9 +35,8 @@ public class CasAuthenticationProvider implements AuthenticationProvider {
             throw new CasAuthenticationException(AuthErrorCode.CAS_INVALID_REQUEST);
         }
 
-        String service = casRequestContext.service();
-        boolean renew = casRequestContext.renew();
-
+        String service = casRequestContext.getService();
+        boolean renew = casRequestContext.isRenew();
         // 判断是否已认证
         Authentication currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
         boolean authenticated = currentAuthentication != null

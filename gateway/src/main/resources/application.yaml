@@ -96,6 +96,7 @@ security:
       - /api/auth/.well-known/openid-configuration
       - /api/auth/oauth2/**
       - /api/auth/saml2/**
+      - /api/auth/cas/**
       - /api/auth/thirdParty/**
       - /api/auth/activated
       - /api/auth/captcha/*

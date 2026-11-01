@@ -10,6 +10,8 @@ import org.springframework.security.web.RedirectStrategy;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Description
@@ -33,12 +35,11 @@ public class CasAuthenticationEntryPoint implements AuthenticationEntryPoint {
             return;
         }
 
-        String loginUrl = UriComponentsBuilder
-                .fromUriString(securityProperties.getUiUrl() + "/login")
-                .queryParam("casRequestId", requiredException.getCasRequestId())
-                .build()
-                .encode()
-                .toUriString();
+        String targetUrl = securityProperties.getIssuerUrl() + "/cas/login?casRequestId=" + URLEncoder.encode(requiredException.getCasRequestId(), StandardCharsets.UTF_8);
+
+        String loginUrl = securityProperties.getUiUrl()
+                + "/login?targetUrl="
+                + URLEncoder.encode(targetUrl, StandardCharsets.UTF_8);
 
         this.redirectStrategy.sendRedirect(request, response, loginUrl);
     }

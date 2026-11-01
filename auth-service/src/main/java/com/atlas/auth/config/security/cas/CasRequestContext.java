@@ -1,12 +1,23 @@
 package com.atlas.auth.config.security.cas;
 
-public record CasRequestContext(
-        String service,
 
-        boolean renew,
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-        boolean gateway,
+@Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CasRequestContext{
 
-        String relayState
-) {
+    private String service;
+
+    private boolean renew;
+
+    private boolean gateway;
+
+    private String relayState;
+
 }

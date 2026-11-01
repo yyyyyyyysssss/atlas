@@ -76,6 +76,7 @@ security:
       - /oauth2/qr/status
       - /saml2/idp/metadata
       - /saml2/idp/sso
+      - /cas/login
       - /thirdParty/**
       - /activated
       - /actuator/**

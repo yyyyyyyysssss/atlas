@@ -37,8 +37,8 @@ public class CasAuthenticationSuccessHandler implements AuthenticationSuccessHan
 
         CasRequestContext casRequestContext = casAuthenticationToken.getCasRequestContext();
         String ticket = casAuthenticationToken.getTicket();
-        String service = casRequestContext.service();
-        String relayState = casRequestContext.relayState();
+        String service = casRequestContext.getService();
+        String relayState = casRequestContext.getRelayState();
 
         // 发布客户端授权事件
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();

@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
             if (isReload) {
                 return
             }
-            authEventBus.emitUnload()
+            authEventBus.emitAuthUnload()
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload)

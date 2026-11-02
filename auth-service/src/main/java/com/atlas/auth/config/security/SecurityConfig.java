@@ -336,10 +336,8 @@ public class SecurityConfig {
 
     // saml2 sp
     @Bean
-    public Saml2SuccessHandler saml2SuccessHandler(SecurityProperties securityProperties,
-                                                   ThirdPartyLoginProviderFactory providerFactory,
-                                                   TicketService ticketService){
-        return new Saml2SuccessHandler(securityProperties.getUiUrl(), providerFactory, ticketService);
+    public Saml2SuccessHandler saml2SuccessHandler(SecurityProperties securityProperties, TicketService ticketService){
+        return new Saml2SuccessHandler(securityProperties.getUiUrl(), ticketService);
     }
 
     @Bean

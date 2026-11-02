@@ -29,12 +29,12 @@ public class Saml2UserInfo implements ThirdPartyUserIdentity{
 
     private Map<String, Object> extraInfo;
 
-    public static Saml2UserInfo fromPrincipal(Saml2AuthenticatedPrincipal principal,
+    public static Saml2UserInfo fromPrincipal(Saml2LoginRequest principal,
                                               Saml2ProviderSettings.Mapping mappings) {
         Saml2UserInfo saml2User = new Saml2UserInfo();
 
         String subMapping = mappings.sub();
-        String sub = (subMapping != null) ? principal.getFirstAttribute(subMapping) : principal.getName();
+        String sub = (subMapping != null) ? principal.getFirstAttribute(subMapping) : principal.name();
         saml2User.setSub(sub);
         // 获取 email
         saml2User.setEmail(principal.getFirstAttribute(mappings.email()));

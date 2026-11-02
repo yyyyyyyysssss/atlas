@@ -2,12 +2,7 @@ package com.atlas.auth.config.security.saml2.sp;
 
 import com.atlas.auth.domain.dto.Saml2LoginRequest;
 import com.atlas.auth.domain.dto.ThirdPartyLoginRequest;
-import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
-import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.enums.ThirdPartyCallbackStatus;
-import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.common.security.service.TicketService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +11,6 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2A
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
@@ -31,29 +24,19 @@ public class Saml2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final String uiUrl;
 
-    private final ThirdPartyLoginProviderFactory providerFactory;
-
     private final TicketService ticketService;
 
-    public Saml2SuccessHandler(String uiUrl, ThirdPartyLoginProviderFactory providerFactory, TicketService ticketService) {
+    public Saml2SuccessHandler(String uiUrl, TicketService ticketService) {
         this.uiUrl = uiUrl;
-        this.providerFactory = providerFactory;
         this.ticketService = ticketService;
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         Saml2AuthenticatedPrincipal principal = (Saml2AuthenticatedPrincipal) authentication.getPrincipal();
         String registrationId = principal.getRelyingPartyRegistrationId();
-        ThirdPartyLoginRequest thirdPartyLoginRequest = new Saml2LoginRequest(principal);
-        ThirdPartyCallbackVO thirdPartyCallbackVO = providerFactory.getProvider(registrationId, SsoProviderProtocol.SAML2).authenticate(thirdPartyLoginRequest);
-        if(!thirdPartyCallbackVO.callbackStatus().equals(ThirdPartyCallbackStatus.LOGIN)){
-            String errorUrl = String.format("%s/saml2/callback?error=%s",
-                    uiUrl, URLEncoder.encode("不支持的操作类型", StandardCharsets.UTF_8));
-            response.sendRedirect(errorUrl);
-            return;
-        }
-        String ticket = ticketService.create(thirdPartyCallbackVO, Duration.ofMinutes(5));
+        ThirdPartyLoginRequest thirdPartyLoginRequest = Saml2LoginRequest.from(principal);
+        String ticket = ticketService.create(thirdPartyLoginRequest, Duration.ofMinutes(5));
         String targetUrl = String.format(
                 "%s/saml2/callback/%s?ticket=%s",
                 uiUrl,

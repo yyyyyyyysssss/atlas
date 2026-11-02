@@ -17,16 +17,6 @@ export const LoginRoute = ({ children }) => {
   }
 
   if (isLoginIn) {
-    const targetUrl = searchParams.get('targetUrl')
-    if (targetUrl) {
-      if (targetUrl.startsWith('http')) {
-        const separator = targetUrl.includes('?') ? '&' : '?';
-        const finalUrl = `${targetUrl}${separator}access_token=${encodeURIComponent(accessToken)}`;
-        window.location.replace(finalUrl)
-        return null
-      }
-      return <Navigate to={targetUrl} replace />
-    }
     return <Navigate to="/" replace />
   }
 

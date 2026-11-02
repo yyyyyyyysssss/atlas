@@ -105,10 +105,10 @@ export const tokenValid = (token, tokenType = 'ACCESS_TOKEN') => {
     )
 }
 
-export const restoreThirdPartyCallback = (ticket) => {
+export const restoreThirdPartyCallback = (clientName, protocol, ticket) => {
 
     return apiRequestWrapper(() =>
-        httpWrapper.get('/api/auth/thirdParty/callback/ticket', {
+        httpWrapper.get(`/api/auth/thirdParty/${protocol}/callback/${clientName}/ticket`, {
             params: {
                 ticket: ticket,
             }

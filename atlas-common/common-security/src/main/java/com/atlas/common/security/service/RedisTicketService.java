@@ -3,6 +3,7 @@ package com.atlas.common.security.service;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.atlas.common.redis.utils.RedisHelper;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 
@@ -15,7 +16,7 @@ public class RedisTicketService implements TicketService{
 
     private final RedisHelper redisHelper;
 
-    private static final String PREFIX = "security:ticket:";
+    private static final String PREFIX = "security:operation-ticket:";
 
     public RedisTicketService(RedisHelper redisHelper){
         this.redisHelper = redisHelper;
@@ -23,24 +24,31 @@ public class RedisTicketService implements TicketService{
 
     @Override
     public String create(Object value, Duration timeout) {
-        String ticket = SecureRandomUtils.generate();
+        String ticket = "AT-" + SecureRandomUtils.generate();
         redisHelper.setValue(PREFIX + ticket, value, timeout);
         return ticket;
     }
 
     @Override
     public <T> T get(String ticket, Class<T> type) {
-        return redisHelper.getValue(PREFIX + ticket, type);
+        String key = buildKey(ticket);
+        return redisHelper.getValue(key, type);
     }
 
     @Override
     public <T> T consume(String ticket, Class<T> type) {
-        String key = PREFIX + ticket;
-        T value = redisHelper.getValue(key, type);
+        String key = buildKey(ticket);
+        T value = redisHelper.getValueAndDelete(key, type);
         if (value == null) {
             throw new BusinessException("ticket已失效");
         }
-        redisHelper.delete(key);
         return value;
+    }
+
+    private String buildKey(String ticket) {
+        if (!StringUtils.hasText(ticket) || !ticket.startsWith("AT-")) {
+            throw new BusinessException("无效的ticket");
+        }
+        return PREFIX + ticket;
     }
 }

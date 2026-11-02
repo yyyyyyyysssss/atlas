@@ -15,6 +15,7 @@ public enum AuthErrorCode implements IErrorCode {
     THIRD_PARTY_PROVIDER_UNAVAILABLE(200104, "第三方认证服务暂时不可用"),
     THIRD_PARTY_PROTOCOL_ERROR(200105, "第三方认证协议校验失败"),
     THIRD_PARTY_AUTH_CANCELLED(200106, "用户已取消第三方认证"),
+    THIRD_PARTY_TICKET_CALLBACK_UNSUPPORTED(200107, "第三方认证协议暂不支持Ticket回调"),
 
 
     // CAS 认证

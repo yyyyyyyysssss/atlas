@@ -1,5 +1,7 @@
 package com.atlas.auth.controller;
 
+import com.atlas.auth.config.exception.AuthErrorCode;
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyAuthorizeUrlVO;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
@@ -62,9 +64,16 @@ public class ThirdPartyLoginController {
         return ResultGenerator.ok(thirdPartyCallbackVO);
     }
 
-    @GetMapping("/callback/ticket")
-    public Result<ThirdPartyCallbackVO> callbackTicket(@RequestParam("ticket") String ticket) {
-        ThirdPartyCallbackVO callbackVO = ticketService.consume(ticket, ThirdPartyCallbackVO.class);
+    @GetMapping("/{protocol}/callback/{clientName}/ticket")
+    public Result<ThirdPartyCallbackVO> callbackTicket(@PathVariable("protocol") String protocol,
+                                                       @PathVariable("clientName") String clientName,
+                                                       @RequestParam("ticket") String ticket) {
+        SsoProviderProtocol ssoProviderProtocol = SsoProviderProtocol.fromString(protocol);
+        ThirdPartyLoginRequest request = switch (ssoProviderProtocol){
+            case SAML2 -> ticketService.consume(ticket, Saml2LoginRequest.class);
+            default -> throw new AuthServiceException(AuthErrorCode.THIRD_PARTY_TICKET_CALLBACK_UNSUPPORTED);
+        };
+        ThirdPartyCallbackVO callbackVO = providerFactory.getProvider(clientName, ssoProviderProtocol).authenticate(request);
         return ResultGenerator.ok(callbackVO);
     }
 

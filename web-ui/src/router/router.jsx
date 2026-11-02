@@ -41,6 +41,8 @@ const OAuth2Callback = lazy(() => import('../pages/login/oauth2/callback'))
 const Saml2Callback = lazy(() => import('../pages/login/saml2/callback'))
 const Saml2IdpSso = lazy(() => import('../pages/login/saml2/idp'))
 
+const CasCallback = lazy(() => import('../pages/login/cas/callback'))
+
 const OAuth2ClientApplication = lazy(() => import('../pages/project/application/client/oauth2'))
 const OAuth2ClientApplicationList = lazy(() => import('../pages/project/application/client/oauth2/list'))
 const OAuth2ClientApplicationEdit = lazy(() => import('../pages/project/application/client/oauth2/edit'))
@@ -105,7 +107,7 @@ export const routes = [
         protected: false,
     },
     {
-        path: 'saml2/callback/:providerName?',
+        path: 'saml2/callback/:clientName?',
         element: <Saml2Callback />,
         protected: false,
     },
@@ -113,6 +115,11 @@ export const routes = [
         path: 'saml2/idp/sso',
         element: <Saml2IdpSso />,
         protected: true,
+    },
+    {
+        path: 'cas/callback/:clientName?',
+        element: <CasCallback />,
+        protected: false,
     },
     {
         path: '',

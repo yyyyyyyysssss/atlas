@@ -46,8 +46,7 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider{
         }
         // 配置的映射对象
         Saml2ProviderSettings.Mapping mappings = saml2ProviderSettings.mappings();
-        Saml2AuthenticatedPrincipal principal = saml2.principal();
-        Saml2UserInfo saml2User = Saml2UserInfo.fromPrincipal(principal, mappings);
+        Saml2UserInfo saml2User = Saml2UserInfo.fromPrincipal(saml2, mappings);
         saml2User.setProvider(providerName);
 
         return dispatchFederatedIdentity(saml2User);

@@ -15,6 +15,8 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @Description
@@ -27,6 +29,8 @@ public class Saml2SigningCredentialLoader {
 
     private final ResourceLoader resourceLoader;
 
+    private final ConcurrentMap<CredentialCacheKey, Saml2SigningCredential> credentialCache = new ConcurrentHashMap<>();
+
     public Saml2SigningCredentialLoader(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
@@ -35,6 +39,19 @@ public class Saml2SigningCredentialLoader {
         requireText(keyStoreLocation, "SAML 签名密钥库路径未配置");
         requireText(keyStorePassword, "SAML 签名密钥库密码未配置");
         requireText(keyAlias, "SAML 签名密钥别名未配置");
+
+        CredentialCacheKey cacheKey = new CredentialCacheKey(keyStoreLocation, keyStorePassword, keyAlias);
+
+        return credentialCache.computeIfAbsent(
+                cacheKey,
+                this::loadInternal
+        );
+    }
+
+    private Saml2SigningCredential loadInternal(CredentialCacheKey cacheKey) {
+        String keyStoreLocation = cacheKey.keyStoreLocation;
+        String keyStorePassword = cacheKey.keyStorePassword;
+        String keyAlias = cacheKey.keyAlias;
         try {
             Resource resource = resourceLoader.getResource(keyStoreLocation);
 
@@ -86,6 +103,12 @@ public class Saml2SigningCredentialLoader {
         public Saml2X509Credential toSpringCredential() {
             return Saml2X509Credential.signing(privateKey, certificate);
         }
+    }
+
+    private record CredentialCacheKey(
+            String keyStoreLocation,
+            String keyStorePassword,
+            String keyAlias) {
     }
 
 }

@@ -10,7 +10,7 @@ import useLoginHandler from "../../../../hooks/useLoginHandler";
 
 const Saml2Callback = () => {
 
-    const { providerName, ticket, error, error_description } = useFullParams()
+    const { clientName, ticket, error, error_description } = useFullParams()
 
     const navigate = useNavigate()
 
@@ -37,7 +37,7 @@ const Saml2Callback = () => {
         }
 
         const handleSignin = async (ticket) => {
-            const res = await runAsync(ticket)
+            const res = await runAsync(clientName, 'SAML2', ticket)
             if (res.callbackStatus === 'LOGIN') {
                 const tokenResponse = res.tokenResponse
                 processLoginSuccess(tokenResponse, res.targetUrl)

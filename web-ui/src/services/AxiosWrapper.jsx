@@ -29,9 +29,20 @@ const stopProgress = () => {
     }
 }
 
+// 根据请求配置结束进度条
+const finishProgress = (config) => {
+    if (config?.showProgress !== false) {
+        stopProgress()
+    }
+}
+
 httpWrapper.interceptors.request.use(
     (req) => {
-        startProgress()
+        // 默认开启进度条，只有明确设置 false 才关闭
+        if (req.showProgress !== false) {
+            startProgress()
+        }
+
         const token = Cookies.get("accessToken");
         if (token) {
             req.headers['Authorization'] = `Bearer ${token}`
@@ -39,7 +50,6 @@ httpWrapper.interceptors.request.use(
         return req;
     },
     (error) => {
-        stopProgress()
         return Promise.reject(error);
     }
 )
@@ -47,7 +57,7 @@ httpWrapper.interceptors.request.use(
 
 httpWrapper.interceptors.response.use(
     (res) => {
-        stopProgress()
+        finishProgress(res.config)
         const contentType = res.headers['content-type'] || ''
         if (contentType.includes('application/json')) {
             const result = res.data
@@ -60,7 +70,7 @@ httpWrapper.interceptors.response.use(
         return res
     },
     (error) => {
-        stopProgress()
+        finishProgress(error.config)
         if (!error.response) {
             getMessageApi().error(error.message || '网络错误，请检查您的网络');
             return Promise.reject(error);
@@ -101,7 +111,7 @@ httpWrapper.interceptors.response.use(
                 if (isCritical) {
                     router.navigate('/500', { state: { title: status, subTitle: errorMessage || '抱歉，发生未知错误，请稍后重试。' } })
                 } else {
-                    message.error(errorMessage || '发生未知错误，请稍后重试')
+                    getMessageApi().error(errorMessage || '发生未知错误，请稍后重试')
                 }
                 break
         }

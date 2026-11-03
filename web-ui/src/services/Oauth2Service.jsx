@@ -44,7 +44,9 @@ export const fetchQrScanUrl = async (clientName, targetUrl) => {
 
 export const qrTicket = async (qrScanUrl) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(qrScanUrl))
+    return apiRequestWrapper(() => httpWrapper.get(qrScanUrl, {
+        showProgress: false
+    }))
 }
 
 export const qrScan = async (sceneId) => {
@@ -59,5 +61,7 @@ export const qrConfirm = async (sceneId) => {
 
 export const qrStatus = async (sceneId) => {
 
-    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/oauth2/qr/status?sceneId=${sceneId}`))
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/oauth2/qr/status?sceneId=${sceneId}`, {
+        showProgress: false
+    }))
 }

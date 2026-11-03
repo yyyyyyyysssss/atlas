@@ -1,7 +1,9 @@
 package com.atlas.auth.config.security.saml2;
 
+import com.atlas.auth.domain.dto.UserInfo;
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
 import com.atlas.auth.service.Saml2RegisteredClientService;
+import com.atlas.auth.service.UserInfoService;
 import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.properties.SecurityProperties;
@@ -86,6 +88,8 @@ public class Saml2IdpService {
 
     private final Saml2RegisteredClientService saml2RegisteredClientService;
 
+    private final UserInfoService userInfoService;
+
     /**
      * IdP 签名证书。
      */
@@ -110,9 +114,10 @@ public class Saml2IdpService {
             "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "SHA512withRSA"
     );
 
-    public Saml2IdpService(SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader, Saml2RegisteredClientService saml2RegisteredClientService) {
+    public Saml2IdpService(SecurityProperties securityProperties, Saml2SigningCredentialLoader saml2SigningCredentialLoader, Saml2RegisteredClientService saml2RegisteredClientService, UserInfoService userInfoService) {
         this.securityProperties = securityProperties;
         this.saml2RegisteredClientService = saml2RegisteredClientService;
+        this.userInfoService = userInfoService;
         SecurityProperties.SigningConfig config = securityProperties.getSaml2().getIdp().getSigning();
         String keyStoreLocation = config.getKeyStore();
         String keyStorePassword = config.getKeyStorePassword();
@@ -229,7 +234,8 @@ public class Saml2IdpService {
 
 
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
-        Long userId = securityUser.getId();
+        UserInfo userInfo = userInfoService.build(securityUser);
+        String sub = userInfo.sub();
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(RESPONSE_VALIDITY_SECONDS);
 
@@ -270,7 +276,7 @@ public class Saml2IdpService {
         }
         nameID.setFormat(nameIdFormat);
         nameID.setFormat(requestContext.getNameIdFormat());
-        nameID.setValue(userId.toString());
+        nameID.setValue(sub);
         subject.setNameID(nameID);
 
         // SubjectConfirmation：限制接收方、请求 ID 和有效期
@@ -285,12 +291,8 @@ public class Saml2IdpService {
         assertion.setSubject(subject);
 
         // 设置用户信息
-        Map<String, Object> attributes = new LinkedHashMap<>();
-        attributes.put("sub", userId);
-        attributes.put("email", securityUser.getEmail());
-        attributes.put("avatar", securityUser.getAvatar());
-        attributes.put("fullName", securityUser.getFullName());
-        attributes.put("emailVerified", true);
+        Map<String, Object> attributes = userInfo.attributes();
+
         AttributeStatement attributeStatement = build(AttributeStatement.DEFAULT_ELEMENT_NAME);
         Map<String,String> mappings = Optional.ofNullable(registeredClient.getAttributeMappings()).orElse(Collections.emptyMap());
         attributes.forEach((key, value) -> {

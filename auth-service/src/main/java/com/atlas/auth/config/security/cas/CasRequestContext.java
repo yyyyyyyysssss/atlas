@@ -14,6 +14,8 @@ public class CasRequestContext{
 
     private String service;
 
+    private String serviceHash;
+
     private boolean renew;
 
     private boolean gateway;

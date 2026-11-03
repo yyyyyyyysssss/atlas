@@ -44,7 +44,7 @@ public class CasAuthenticationSuccessHandler implements AuthenticationSuccessHan
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
 
         if(eventPublisher != null){
-            eventPublisher.publishEvent(new ClientAuthorizedEvent(this, securityUser.getId(), service, ClientProtocol.CAS));
+            eventPublisher.publishEvent(new ClientAuthorizedEvent(this, securityUser.getId(), casRequestContext.getServiceHash(), ClientProtocol.CAS));
         }
 
         // 构建客户端回调地址

@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
+
+import java.util.Map;
 
 /**
  * @Description
@@ -32,5 +35,8 @@ public class CasRegisteredClient {
 
     @TableField("service_hash")
     private String serviceHash;
+
+    @TableField(value = "attribute_mappings", typeHandler = JacksonTypeHandler.class)
+    private Map<String, String> attributeMappings;
 
 }

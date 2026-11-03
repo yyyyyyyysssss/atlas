@@ -84,6 +84,7 @@ public class SecurityConfig {
                                                           Saml2FailureHandler saml2FailureHandler,
                                                           OneTimeTokenService oneTimeTokenService,
                                                           CasLoginFilter casLoginFilter,
+                                                          CasTicketValidationFilter casTicketValidationFilter,
                                                           LogoutSuccessHandler logoutSuccessHandler) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -130,6 +131,7 @@ public class SecurityConfig {
                 .addFilterBefore(saml2IdpFilter, UsernamePasswordAuthenticationFilter.class)
                 // cas
                 .addFilterBefore(casLoginFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(casTicketValidationFilter, CasLoginFilter.class)
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout")
@@ -373,6 +375,11 @@ public class SecurityConfig {
         return new CasLoginFilter(casAuthenticationManager,casRequestContextRepository, eventPublisher, securityProperties);
     }
 
+    @Bean
+    public CasTicketValidationFilter casTicketValidationFilter(CasService casService) {
+
+        return new CasTicketValidationFilter(casService);
+    }
 
     @Bean
     public CasRequestContextRepository casRequestContextRepository(RedisHelper redisHelper){

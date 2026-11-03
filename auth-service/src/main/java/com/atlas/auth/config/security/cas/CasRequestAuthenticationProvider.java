@@ -41,7 +41,7 @@ public class CasRequestAuthenticationProvider implements AuthenticationProvider 
             throw new CasAuthenticationException(AuthErrorCode.CAS_INVALID_SERVICE, service);
         }
 
-        CasRequestContext casRequestContext = new CasRequestContext(service, renew, gateway, relayState);
+        CasRequestContext casRequestContext = new CasRequestContext(service, registeredClient.getServiceHash(),  renew, gateway, relayState);
 
         return new CasAuthenticationToken(casRequestContext);
     }

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
@@ -52,7 +53,7 @@ public class CasLoginFilter extends OncePerRequestFilter {
                           CasRequestContextRepository casRequestContextRepository,
                           ApplicationEventPublisher eventPublisher,
                           SecurityProperties securityProperties) {
-        this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.GET, DEFAULT_LOGIN_ENDPOINT_URI);
+        this.requestMatcher = PathPatternRequestMatcher.withDefaults().matcher(DEFAULT_LOGIN_ENDPOINT_URI);
         this.authenticationManager = authenticationManager;
         this.authenticationDetailsSource = new WebAuthenticationDetailsSource();
         this.authenticationEntryPoint = new CasAuthenticationEntryPoint(securityProperties);
@@ -65,6 +66,11 @@ public class CasLoginFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         if (!this.requestMatcher.matches(request)) {
             filterChain.doFilter(request, response);
+            return;
+        }
+        if (!HttpMethod.GET.matches(request.getMethod())) {
+            response.setHeader(HttpHeaders.ALLOW, HttpMethod.GET.name());
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
         try {

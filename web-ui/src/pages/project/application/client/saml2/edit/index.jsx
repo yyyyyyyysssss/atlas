@@ -102,10 +102,11 @@ const Saml2ClientApplicationEdit = () => {
                             enabled: true,
                             attributeMappings: [
                                 { samlAttribute: 'sub', userAttribute: 'sub' },
+                                { samlAttribute: 'preferred_username', userAttribute: 'preferredUsername' },
+                                { samlAttribute: 'name', userAttribute: 'fullName' },
+                                { samlAttribute: 'picture', userAttribute: 'avatar' },
                                 { samlAttribute: 'email', userAttribute: 'email' },
-                                { samlAttribute: 'emailVerified', userAttribute: 'emailVerified' },
-                                { samlAttribute: 'avatar', userAttribute: 'avatar' },
-                                { samlAttribute: 'fullName', userAttribute: 'fullName' },
+                                { samlAttribute: 'email_verified', userAttribute: 'emailVerified' }
                             ],
                         }}
                         style={{

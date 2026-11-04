@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
@@ -13,9 +13,7 @@ public interface ThirdPartyLoginProvider {
 
     String getProviderName();
 
-    default SsoProviderProtocol protocol() {
-        return SsoProviderProtocol.OAUTH2;
-    }
+    SsoProviderProtocol protocol();
 
     default SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext) {
 

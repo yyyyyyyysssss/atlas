@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthErrorCode;
 import com.atlas.auth.config.exception.ThirdPartyAuthException;
@@ -24,7 +24,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
+public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider {
 
     @Resource
     protected OAuth2ProviderEngine oAuth2ProviderEngine;
@@ -32,6 +32,11 @@ public class AtlasLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public String getProviderName() {
         return "atlas";
+    }
+
+    @Override
+    public SsoProviderProtocol protocol() {
+        return SsoProviderProtocol.OAUTH2;
     }
 
     @Override

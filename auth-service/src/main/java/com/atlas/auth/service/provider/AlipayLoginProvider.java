@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.alipay.v3.ApiClient;
 import com.alipay.v3.api.AlipaySystemOauthApi;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
+public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider {
 
     @Resource
     protected OAuth2ProviderEngine oAuth2ProviderEngine;
@@ -40,6 +40,11 @@ public class AlipayLoginProvider extends AbstractThirdPartyLoginProvider{
     @Override
     public String getProviderName() {
         return "alipay";
+    }
+
+    @Override
+    public SsoProviderProtocol protocol() {
+        return SsoProviderProtocol.OAUTH2;
     }
 
     private final OkHttpClient sharedHttpClient = new OkHttpClient.Builder()

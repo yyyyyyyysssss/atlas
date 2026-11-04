@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthErrorCode;
 import com.atlas.auth.config.exception.ThirdPartyAuthException;
@@ -36,6 +36,11 @@ public class GithubLoginProvider extends AbstractThirdPartyLoginProvider {
     @Override
     public String getProviderName() {
         return "github";
+    }
+
+    @Override
+    public SsoProviderProtocol protocol() {
+        return SsoProviderProtocol.OAUTH2;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthErrorCode;
 import com.atlas.auth.config.exception.ThirdPartyAuthException;
@@ -6,6 +6,7 @@ import com.atlas.auth.config.security.ldap.LdapTemplateFactory;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
+import com.atlas.auth.service.provider.AbstractThirdPartyLoginProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ldap.AuthenticationException;

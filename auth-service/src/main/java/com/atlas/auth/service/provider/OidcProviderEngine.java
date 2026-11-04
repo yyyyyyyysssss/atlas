@@ -1,10 +1,9 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.OidcProviderSettings;
 import com.atlas.auth.domain.dto.OidcUserInfoResult;
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,7 +28,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.InputStream;
@@ -47,13 +45,7 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class OidcProviderEngine {
-
-    private final RestClient proxyRestClient;
-
-    private final RestClient defaultRestClient;
-
-    private final SsoProviderService ssoProviderService;
+public class OidcProviderEngine extends AbstractProviderEngine{
 
     private final SecurityProperties securityProperties;
 
@@ -184,14 +176,6 @@ public class OidcProviderEngine {
             log.warn("[{}] OIDC 用户身份认证处理失败", provider, e);
             throw new OidcProviderException("OIDC 用户身份认证处理失败: " + provider, e);
         }
-    }
-
-    private RestClient getClient(String provider) {
-        SsoProvider ssoProvider = ssoProviderService.getProvider(provider);
-        if (ssoProvider == null) {
-            log.warn("未找到提供商配置: {}, 使用默认客户端", provider);
-        }
-        return (ssoProvider != null && ssoProvider.getUseProxy()) ? proxyRestClient : defaultRestClient;
     }
 
     private NimbusJwtDecoder buildJwtDecoder(String provider, OidcMetadata metadata) {

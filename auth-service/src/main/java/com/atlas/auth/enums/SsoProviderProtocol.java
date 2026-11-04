@@ -12,7 +12,8 @@ public enum SsoProviderProtocol {
     OAUTH2(OAuth2ProviderSettings.class),
     SAML2(Saml2ProviderSettings.class),
     OIDC(OidcProviderSettings.class),
-    LDAP(LdapProviderSettings.class)
+    LDAP(LdapProviderSettings.class),
+    CAS(CasProviderSettings.class)
 
     ;
 

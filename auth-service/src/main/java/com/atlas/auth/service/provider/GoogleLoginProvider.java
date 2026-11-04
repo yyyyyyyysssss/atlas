@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthErrorCode;
 import com.atlas.auth.config.exception.ThirdPartyAuthException;
@@ -35,6 +35,11 @@ public class GoogleLoginProvider extends AbstractThirdPartyLoginProvider {
     public String getProviderName() {
 
         return "google";
+    }
+
+    @Override
+    public SsoProviderProtocol protocol() {
+        return SsoProviderProtocol.OAUTH2;
     }
 
     @Override

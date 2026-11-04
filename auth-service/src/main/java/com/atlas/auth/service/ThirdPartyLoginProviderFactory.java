@@ -1,9 +1,10 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.config.security.ldap.LdapTemplateFactory;
 import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.common.core.exception.BusinessException;
+import com.atlas.auth.service.provider.*;
 import com.atlas.common.security.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,8 @@ public class ThirdPartyLoginProviderFactory {
 
     private final LdapTemplateFactory ldapTemplateFactory;
 
+    private final CasProviderEngine casProviderEngine;
+
     public ThirdPartyLoginProvider getProvider(String providerName) {
 
         return getProvider(providerName, SsoProviderProtocol.OAUTH2);
@@ -69,14 +72,15 @@ public class ThirdPartyLoginProviderFactory {
     public ThirdPartyLoginProvider createProvider(String providerName, SsoProviderProtocol protocol){
         SsoProvider ssoProvider = ssoProviderService.getProvider(providerName);
         if (ssoProvider == null || !ssoProvider.getEnabled()) {
-            throw new BusinessException("系统未启用或不支持该三方登录: [" + providerName + "] 协议: [" + protocol.name() + "]");
+            throw new AuthServiceException("系统未启用或不支持该三方登录: [" + providerName + "] 协议: [" + protocol.name() + "]");
         }
         ThirdPartyLoginProvider provider;
         switch (protocol){
             case OIDC ->  provider = new GenericOidcLoginProvider(providerName, oidcProviderEngine);
             case SAML2 -> provider = new GenericSaml2LoginProvider(providerName, securityProperties.getSaml2().getSp().getAuthenticateUrl());
             case LDAP -> provider = new GenericLdapLoginProvider(providerName, ldapTemplateFactory);
-            default -> throw new BusinessException("不支持动态创建的登录协议: " + protocol.name());
+            case CAS -> provider = new GenericCasLoginProvider(providerName, casProviderEngine);
+            default -> throw new AuthServiceException("不支持动态创建的登录协议: " + protocol.name());
         }
         beanFactory.autowireBean(provider);
         return provider;

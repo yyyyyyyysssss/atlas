@@ -71,6 +71,7 @@ public class ThirdPartyLoginController {
         SsoProviderProtocol ssoProviderProtocol = SsoProviderProtocol.fromString(protocol);
         ThirdPartyLoginRequest request = switch (ssoProviderProtocol){
             case SAML2 -> ticketService.consume(ticket, Saml2LoginRequest.class);
+            case CAS -> new CasLoginRequest(ticket);
             default -> throw new AuthServiceException(AuthErrorCode.THIRD_PARTY_TICKET_CALLBACK_UNSUPPORTED);
         };
         ThirdPartyCallbackVO callbackVO = providerFactory.getProvider(clientName, ssoProviderProtocol).authenticate(request);

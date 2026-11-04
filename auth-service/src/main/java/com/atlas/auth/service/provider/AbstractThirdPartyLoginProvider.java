@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.ThirdPartyAuthRequestContext;
@@ -7,6 +7,11 @@ import com.atlas.auth.domain.dto.ThirdPartyStateContext;
 import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.event.AuditLogEvent;
+import com.atlas.auth.service.LoginService;
+import com.atlas.auth.service.SsoProviderService;
+import com.atlas.auth.service.ThirdPartyStateService;
+import com.atlas.auth.service.UserService;
+import com.atlas.auth.service.provider.ThirdPartyLoginProvider;
 import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.model.TokenResponse;
 import jakarta.annotation.Resource;

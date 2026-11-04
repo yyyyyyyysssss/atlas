@@ -1,4 +1,4 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthErrorCode;
 import com.atlas.auth.config.exception.ThirdPartyAuthException;
@@ -18,7 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider{
+public class GenericOidcLoginProvider extends AbstractThirdPartyLoginProvider {
 
     private final String providerName;
 

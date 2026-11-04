@@ -1,10 +1,9 @@
-package com.atlas.auth.service;
+package com.atlas.auth.service.provider;
 
 import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.OAuth2ProviderSettings;
 import com.atlas.auth.domain.dto.OAuth2ProviderToken;
 import com.atlas.auth.domain.dto.SsoProviderAuthorizeUrlResponse;
-import com.atlas.auth.domain.entity.SsoProvider;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.security.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +29,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class OAuth2ProviderEngine {
-
-    private final RestClient proxyRestClient;
-
-    private final RestClient defaultRestClient;
-
-    private final SsoProviderService ssoProviderService;
+public class OAuth2ProviderEngine extends AbstractProviderEngine{
 
     private final SecurityProperties securityProperties;
 
@@ -148,14 +141,6 @@ public class OAuth2ProviderEngine {
                 .body(body)
                 .retrieve()
                 .body(responseType);
-    }
-
-    private RestClient getClient(String provider) {
-        SsoProvider ssoProvider = ssoProviderService.getProvider(provider);
-        if (ssoProvider == null) {
-            log.warn("未找到提供商配置: {}, 使用默认客户端", provider);
-        }
-        return (ssoProvider != null && ssoProvider.getUseProxy()) ? proxyRestClient : defaultRestClient;
     }
 
     private SsoProviderAuthorizeUrlResponse appendBaseParams(UriComponentsBuilder builder, OAuth2ProviderSettings settings, Map<String, String> params) {

@@ -13,6 +13,7 @@ import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.security.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -79,7 +80,7 @@ public class ThirdPartyLoginController {
     }
 
     @PostMapping("/ldap/login/{clientName}")
-    public Result<ThirdPartyCallbackVO> ldapLogin(@PathVariable("clientName") String clientName, @RequestBody LdapLoginRequest request) {
+    public Result<ThirdPartyCallbackVO> ldapLogin(@PathVariable("clientName") String clientName, @RequestBody @Validated LdapLoginRequest request) {
         ThirdPartyCallbackVO callbackVO = providerFactory.getProvider(clientName, SsoProviderProtocol.LDAP).authenticate(request);
         return ResultGenerator.ok(callbackVO);
     }

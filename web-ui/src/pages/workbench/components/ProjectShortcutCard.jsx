@@ -64,10 +64,10 @@ const ProjectShortcutCard = ({ limit = 3 }) => {
                             }}
                         >
                             <Flex align="center" gap={12} style={{ width: '100%', padding: '0 8px' }}>
-                                <Box size={30} color={token.colorPrimary} />
-                                <Flex vertical align="start" gap={2}>
-                                    <Text style={{ fontSize: token.fontSizeLG }} strong>{item.projectName}</Text>
-                                    <Text type="secondary" style={{ fontSize: token.fontSizeSM }}>项目标识：{item.projectCode}</Text>
+                                <Box size={30} color={token.colorPrimary} style={{ flexShrink: 0 }} />
+                                <Flex vertical align="start" gap={2} style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                                    <Text ellipsis style={{ fontSize: token.fontSizeLG }} strong>{item.projectName}</Text>
+                                    <Text ellipsis type="secondary" style={{ fontSize: token.fontSizeSM }}>项目标识：{item.projectCode}</Text>
                                 </Flex>
                             </Flex>
                         </Button>

@@ -40,6 +40,8 @@ public class SecurityProperties {
 
     private LdapConfig ldap = new LdapConfig();
 
+    private CasConfig cas = new CasConfig();
+
     @Setter
     @Getter
     public static class KeyConfig {
@@ -276,6 +278,14 @@ public class SecurityProperties {
          * 获取连接最大等待时间
          */
         private Duration maxWait = Duration.ofSeconds(3);
+    }
+
+    @Getter
+    @Setter
+    public static class CasConfig {
+
+        private String pgtUrl;
+
     }
 
 }

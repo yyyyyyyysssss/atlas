@@ -5,7 +5,7 @@ import com.atlas.auth.config.exception.ThirdPartyAuthException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
-import com.atlas.auth.service.provider.AbstractThirdPartyLoginProvider;
+import com.atlas.common.security.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +17,7 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider {
 
     private final String providerName;
 
-    private final String saml2AuthUrl;
+    private final SecurityProperties.SpConfig spConfig;
 
     @Override
     public String getProviderName() {
@@ -32,7 +32,7 @@ public class GenericSaml2LoginProvider extends AbstractThirdPartyLoginProvider {
     @Override
     public SsoProviderAuthorizeUrlResponse getAuthorizeUrl(ThirdPartyAuthRequestContext requestContext, Map<String, String> extraParams) {
         // 动态替换注册 ID
-        String finalSaml2AuthUrl = saml2AuthUrl.replace("{registrationId}", getProviderName());
+        String finalSaml2AuthUrl = spConfig.getAuthenticateUrl().replace("{registrationId}", getProviderName());
         return SsoProviderAuthorizeUrlResponse.of(finalSaml2AuthUrl, false);
     }
 

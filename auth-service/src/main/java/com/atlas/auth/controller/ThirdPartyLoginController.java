@@ -8,6 +8,7 @@ import com.atlas.auth.domain.vo.ThirdPartyCallbackVO;
 import com.atlas.auth.enums.SsoProviderProtocol;
 import com.atlas.auth.service.ThirdPartyLoginProviderFactory;
 import com.atlas.auth.service.ThirdPartyStateService;
+import com.atlas.auth.service.provider.CasProviderEngine;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.security.service.TicketService;
@@ -31,6 +32,8 @@ public class ThirdPartyLoginController {
     private final ThirdPartyStateService thirdPartyStateService;
 
     private final TicketService ticketService;
+
+    private final CasProviderEngine casProviderEngine;
 
     @GetMapping("/authorizeUrl/{clientName}")
     public Result<ThirdPartyAuthorizeUrlVO> authorizeUrl(@PathVariable("clientName") String clientName,
@@ -77,6 +80,14 @@ public class ThirdPartyLoginController {
         };
         ThirdPartyCallbackVO callbackVO = providerFactory.getProvider(clientName, ssoProviderProtocol).authenticate(request);
         return ResultGenerator.ok(callbackVO);
+    }
+
+    // 外部 CAS Server 回调 PGT
+    @GetMapping("/cas/callback/pgt")
+    public Result<Void> callbackPgt(@RequestParam("pgtId") String pgtId, @RequestParam("pgtIou") String pgtIou) {
+        // 仅处理 CAS PGT 回调
+        casProviderEngine.pgtCallback(pgtId, pgtIou);
+        return ResultGenerator.ok();
     }
 
     @PostMapping("/ldap/login/{clientName}")

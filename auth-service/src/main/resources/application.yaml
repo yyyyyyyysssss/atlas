@@ -65,6 +65,8 @@ security:
     referral: follow
     # 是否忽略 LDAP 部分查询结果异常（Active Directory 常见）
     ignore-partial-result-exception: true
+  cas:
+    pgt-url: ${security.issuer-url}/thirdParty/cas/callback/pgt
   authorize:
     permit:
       - /login/*

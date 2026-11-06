@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,6 +36,12 @@ public class CasRegisteredClient {
 
     @TableField("service_hash")
     private String serviceHash;
+
+    @TableField("proxy_enabled")
+    private Boolean proxyEnabled;
+
+    @TableField(value = "proxy_callback_urls", typeHandler = JacksonTypeHandler.class)
+    private List<String> proxyCallbackUrls;
 
     @TableField(value = "attribute_mappings", typeHandler = JacksonTypeHandler.class)
     private Map<String, String> attributeMappings;

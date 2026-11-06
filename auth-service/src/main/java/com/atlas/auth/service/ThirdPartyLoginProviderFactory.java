@@ -77,9 +77,9 @@ public class ThirdPartyLoginProviderFactory {
         ThirdPartyLoginProvider provider;
         switch (protocol){
             case OIDC ->  provider = new GenericOidcLoginProvider(providerName, oidcProviderEngine);
-            case SAML2 -> provider = new GenericSaml2LoginProvider(providerName, securityProperties.getSaml2().getSp().getAuthenticateUrl());
+            case SAML2 -> provider = new GenericSaml2LoginProvider(providerName, securityProperties.getSaml2().getSp());
             case LDAP -> provider = new GenericLdapLoginProvider(providerName, ldapTemplateFactory);
-            case CAS -> provider = new GenericCasLoginProvider(providerName, casProviderEngine);
+            case CAS -> provider = new GenericCasLoginProvider(providerName, casProviderEngine, securityProperties.getCas());
             default -> throw new AuthServiceException("不支持动态创建的登录协议: " + protocol.name());
         }
         beanFactory.autowireBean(provider);

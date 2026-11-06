@@ -85,6 +85,8 @@ public class SecurityConfig {
                                                           OneTimeTokenService oneTimeTokenService,
                                                           CasLoginFilter casLoginFilter,
                                                           CasTicketValidationFilter casTicketValidationFilter,
+                                                          CasProxyFilter casProxyFilter,
+                                                          CasProxyTicketValidationFilter casProxyTicketValidationFilter,
                                                           LogoutSuccessHandler logoutSuccessHandler) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -132,6 +134,8 @@ public class SecurityConfig {
                 // cas
                 .addFilterBefore(casLoginFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(casTicketValidationFilter, CasLoginFilter.class)
+                .addFilterAfter(casProxyFilter, CasLoginFilter.class)
+                .addFilterAfter(casProxyTicketValidationFilter, CasLoginFilter.class)
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout")
@@ -382,9 +386,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CasRequestContextRepository casRequestContextRepository(RedisHelper redisHelper){
+    public CasProxyFilter casProxyFilter(CasService casService) {
 
-        return new RedisCasRequestContextRepository(redisHelper);
+        return new CasProxyFilter(casService);
+    }
+
+    @Bean
+    public CasProxyTicketValidationFilter casProxyTicketValidationFilter(CasService casService) {
+
+        return new CasProxyTicketValidationFilter(casService);
     }
 
     @Bean

@@ -30,7 +30,7 @@ public class CasTicketValidationFilter extends OncePerRequestFilter {
 
     private final RequestMatcher requestMatcher;
 
-    public CasTicketValidationFilter(CasService casService){
+    public CasTicketValidationFilter(CasService casService) {
         this.casService = casService;
         this.requestMatcher = new OrRequestMatcher(
                 PathPatternRequestMatcher.withDefaults().matcher(CAS_2_VALIDATE_PATH),
@@ -49,15 +49,24 @@ public class CasTicketValidationFilter extends OncePerRequestFilter {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
-        // 根据请求路径确定 CAS 协议版本
-        CasProtocolVersion version = resolveProtocolVersion(request);
-        // 获取请求参数
-        String ticket = request.getParameter("ticket");
-        String service = request.getParameter("service");
-        // 校验 Ticket 并生成 CAS XML
-        String xml = casService.validateServiceTicket(ticket, service, version);
-        // 返回 CAS XML
-        writeXmlResponse(response, xml);
+        try {
+            // 根据请求路径确定 CAS 协议版本
+            CasProtocolVersion version = resolveProtocolVersion(request);
+            // 获取请求参数
+            String ticket = request.getParameter("ticket");
+            String service = request.getParameter("service");
+            String pgtUrl = request.getParameter("pgtUrl");
+            // 校验 Ticket 并生成 CAS XML
+            CasTicketValidationRequest validationRequest = CasTicketValidationRequest.service(ticket, service, pgtUrl, version);
+            String xml = casService.validateServiceTicket(validationRequest);
+            // 返回 CAS XML
+            writeXmlResponse(response, xml);
+        } catch (CasAuthenticationException e) {
+            String failureResponseXml = casService.createAuthenticationFailureResponse(e);
+            // 返回 CAS XML
+            writeXmlResponse(response, failureResponseXml);
+        }
+
     }
 
     /**

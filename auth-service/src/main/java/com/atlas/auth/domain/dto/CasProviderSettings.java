@@ -10,6 +10,10 @@ public record CasProviderSettings(
         // 当前 CAS Client 注册的 Service 地址
         String serviceUrl,
 
+        String proxyUrl,
+
+        String proxyValidateUrl,
+
         Mapping mappings
 ) implements SsoSettings {
 

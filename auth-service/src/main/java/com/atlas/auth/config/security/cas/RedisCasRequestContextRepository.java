@@ -1,6 +1,9 @@
 package com.atlas.auth.config.security.cas;
 
 import com.atlas.common.redis.utils.RedisHelper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -10,6 +13,9 @@ import java.util.UUID;
  * @Author ys
  * @Date 2026/10/30 9:55
  */
+@Slf4j
+@RequiredArgsConstructor
+@Repository
 public class RedisCasRequestContextRepository implements CasRequestContextRepository{
 
     private static final String KEY_PREFIX = "cas:request:";
@@ -20,10 +26,6 @@ public class RedisCasRequestContextRepository implements CasRequestContextReposi
     private static final Duration CONTEXT_TTL = Duration.ofMinutes(5);
 
     private final RedisHelper redisHelper;
-
-    public RedisCasRequestContextRepository(RedisHelper redisHelper){
-        this.redisHelper = redisHelper;
-    }
 
     @Override
     public String save(CasRequestContext context) {

@@ -1,12 +1,17 @@
 import { useAuth } from "./AuthProvider"
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import Loading from "../components/loading";
 import { useEffect } from "react";
+import useFullParams from "../hooks/useFullParams";
+import { useRedirect } from "../hooks/useRedirect";
 
 
 export const LoginRoute = ({ children }) => {
   const { isLoginIn, accessToken, checkAuth } = useAuth()
-  const [searchParams] = useSearchParams()
+
+  const { targetUrl } = useFullParams()
+
+  const redirect = useRedirect()
 
   useEffect(() => {
     checkAuth()
@@ -17,6 +22,10 @@ export const LoginRoute = ({ children }) => {
   }
 
   if (isLoginIn) {
+    if(targetUrl){
+      redirect(targetUrl, accessToken)
+      return <Loading tip="正在加载..." full />
+    }
     return <Navigate to="/" replace />
   }
 

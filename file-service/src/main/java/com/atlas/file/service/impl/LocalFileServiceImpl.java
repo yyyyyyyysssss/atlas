@@ -1,6 +1,6 @@
 package com.atlas.file.service.impl;
 
-import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.exception.FileServiceException;
 import com.atlas.file.domain.dto.FileRangeDTO;
 import com.atlas.file.domain.dto.UploadPart;
 import com.atlas.file.domain.dto.UploadResult;
@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +101,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
             return new UploadResult(etag, filePath);
         } catch (IOException e) {
             log.error("upload  Files.move error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -112,7 +111,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
         try {
             return new FileInputStream(filePath);
         } catch (FileNotFoundException e) {
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -124,7 +123,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
 
             File file = new File(fileUpload.getOriginalUrl());
             if (!file.isFile() || !file.canRead()) {
-                throw new FileException("文件不存在或不可读取");
+                throw new FileServiceException("文件不存在或不可读取");
             }
 
             long fileSize = file.length();
@@ -158,14 +157,14 @@ public class LocalFileServiceImpl extends AbstractFileService {
                     }
                 } catch (IOException e) {
                     log.error("getFileStream error: ", e);
-                    throw new FileException(e);
+                    throw new FileServiceException(e);
                 }
             };
 
             return new FileStreamVO(responseBody, headerMap);
         } catch (Exception e) {
             log.error("getFileStream error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -187,7 +186,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
             return new UploadResult(etag, filePath);
         } catch (Exception e) {
             log.error("simpleUpload error: ", e);
-            throw new FileException("simpleUpload error: " + e.getMessage());
+            throw new FileServiceException("simpleUpload error: " + e.getMessage());
         } finally {
             if (fileOutputStream != null) {
                 try {
@@ -233,7 +232,7 @@ public class LocalFileServiceImpl extends AbstractFileService {
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (!created) {
-                throw new FileException("Failed to create directory: " + basePath);
+                throw new FileServiceException("Failed to create directory: " + basePath);
             }
         }
         return basePath + new File(objectName).getName();

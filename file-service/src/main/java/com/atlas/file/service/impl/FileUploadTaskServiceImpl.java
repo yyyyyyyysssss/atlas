@@ -2,7 +2,7 @@ package com.atlas.file.service.impl;
 
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.exception.FileServiceException;
 import com.atlas.file.domain.dto.FileChunkDTO;
 import com.atlas.file.domain.dto.FileInfoDTO;
 import com.atlas.file.domain.dto.UploadPartResult;
@@ -58,7 +58,7 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
                 .build();
         fileUploadTask.setId(IdGen.genId());
         if (!this.save(fileUploadTask)) {
-            throw new FileException("添加上传任务失败: " + uploadId);
+            throw new FileServiceException("添加上传任务失败: " + uploadId);
         }
         String key = UPLOAD_PREFIX + uploadId;
         redisHelper.setValue(key, fileUploadTask, Duration.ofHours(24));
@@ -170,7 +170,7 @@ public class FileUploadTaskServiceImpl extends ServiceImpl<FileUploadTaskMapper,
         taskPart.setId(IdGen.genId());
         boolean save = fileUploadTaskPartService.save(taskPart);
         if (!save) {
-            throw new FileException("记录分片异常: " + uploadId);
+            throw new FileServiceException("记录分片异常: " + uploadId);
         }
 
         String partsKey = UPLOAD_PART_PREFIX + uploadId;

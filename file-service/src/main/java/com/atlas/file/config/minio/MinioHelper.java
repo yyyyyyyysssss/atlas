@@ -1,11 +1,10 @@
 package com.atlas.file.config.minio;
 
-import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.exception.FileServiceException;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import groovy.lang.Tuple2;
 import io.minio.*;
-import io.minio.errors.MinioException;
 import io.minio.http.Method;
 import io.minio.messages.Part;
 import jakarta.annotation.Resource;
@@ -56,7 +55,7 @@ public class MinioHelper extends MinioAsyncClient {
             return multipartUploadAsync.get().result().uploadId();
         } catch (Exception e) {
             log.error("获取minio uploadId异常: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -78,7 +77,7 @@ public class MinioHelper extends MinioAsyncClient {
         } catch (Exception e) {
             //取消上传
             abortUpload(uploadId,objectName);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -100,7 +99,7 @@ public class MinioHelper extends MinioAsyncClient {
         } catch (Exception e) {
             //取消上传
             abortUpload(uploadId,objectName);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -119,7 +118,7 @@ public class MinioHelper extends MinioAsyncClient {
             ListPartsResponse listPartsResponse = completableFuture.get();
             return listPartsResponse.result().partList();
         } catch (Exception e) {
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -133,7 +132,7 @@ public class MinioHelper extends MinioAsyncClient {
             return minioClient.statObject(statObjectArgs);
         } catch (Exception e) {
             log.error("statObject error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -152,7 +151,7 @@ public class MinioHelper extends MinioAsyncClient {
             return new Tuple2<>(etag, accessUrl);
         } catch (Exception e) {
             log.error("uploadMinio error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -171,7 +170,7 @@ public class MinioHelper extends MinioAsyncClient {
             return new Tuple2<>(etag, accessUrl);
         } catch (Exception e) {
             log.error("uploadMinio error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -193,7 +192,7 @@ public class MinioHelper extends MinioAsyncClient {
             return minioClient.getObject(getObjectArgs);
         } catch (Exception e) {
             log.error("download error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -209,7 +208,7 @@ public class MinioHelper extends MinioAsyncClient {
             return minioClient.getPresignedObjectUrl(args);
         } catch (Exception e) {
             log.error("getTemporaryAccessUrl error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -227,7 +226,7 @@ public class MinioHelper extends MinioAsyncClient {
             return minioClient.getPresignedObjectUrl(args);
         } catch (Exception e) {
             log.error("getTemporaryDownloadUrl error: ", e);
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
@@ -252,7 +251,7 @@ public class MinioHelper extends MinioAsyncClient {
                     null
             );
         } catch (Exception e) {
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 

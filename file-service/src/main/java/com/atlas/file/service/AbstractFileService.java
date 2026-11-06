@@ -4,7 +4,7 @@ import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.redis.lock.DistributedLock;
 import com.atlas.common.redis.lock.LockHandle;
 import com.atlas.common.redis.utils.RedisHelper;
-import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.exception.FileServiceException;
 import com.atlas.file.config.properties.FileProperties;
 import com.atlas.file.domain.dto.*;
 import com.atlas.file.domain.entity.FileRecord;
@@ -109,7 +109,7 @@ public abstract class AbstractFileService implements FileService {
         // 获取上传任务
         FileUploadTask fileUploadTask = fileUploadTaskService.findByUploadId(uploadId);
         if (fileUploadTask == null) {
-            throw new FileException("上传任务不存在或已过期: " + uploadId);
+            throw new FileServiceException("上传任务不存在或已过期: " + uploadId);
         }
         // 开始上传
         if (fileUploadTask.getStatus().equals(FileUploadTaskStatus.PENDING)
@@ -127,7 +127,7 @@ public abstract class AbstractFileService implements FileService {
             chunkEtag = uploadPart(uploadId, inputStream, objectName, chunkIndex, offset, file.getSize());
         } catch (Exception e) {
             fileUploadTaskService.markFailed(uploadId);
-            throw new FileException("分片上传异常 uploadId:" + uploadId);
+            throw new FileServiceException("分片上传异常 uploadId:" + uploadId);
         }
         // 单独事务记录分片
         UploadPartResult result = transactionTemplate.execute(status ->
@@ -155,7 +155,7 @@ public abstract class AbstractFileService implements FileService {
             }
             FileUploadTask fileUploadTask = fileUploadTaskService.findByUploadId(uploadId);
             if (fileUploadTask == null) {
-                throw new FileException("上传任务不存在: " + uploadId);
+                throw new FileServiceException("上传任务不存在: " + uploadId);
             }
             if (FileUploadTaskStatus.COMPLETED.equals(fileUploadTask.getStatus())) {
                 String accessUrl = getAccessUrl(uploadId);
@@ -204,7 +204,7 @@ public abstract class AbstractFileService implements FileService {
                 // 上传完成修改任务表
                 boolean completed = fileUploadTaskService.completeTask(uploadId, fileRecord.getId());
                 if (!completed) {
-                    throw new FileException("任务完成状态更新失败 uploadId=" + uploadId);
+                    throw new FileServiceException("任务完成状态更新失败 uploadId=" + uploadId);
                 }
                 return fileRecord;
             });
@@ -224,7 +224,7 @@ public abstract class AbstractFileService implements FileService {
         // 获取上传任务
         FileUploadTask fileUploadTask = fileUploadTaskService.findByUploadId(uploadId);
         if (fileUploadTask == null) {
-            throw new FileException("上传任务不存在: " + uploadId);
+            throw new FileServiceException("上传任务不存在: " + uploadId);
         }
         List<FileUploadTaskPart> parts = fileUploadTaskService.listParts(uploadId);
         List<Integer> uploadedParts = parts.stream()
@@ -248,15 +248,15 @@ public abstract class AbstractFileService implements FileService {
         }
         FileUploadTask fileUploadTask = fileUploadTaskService.findByUploadId(uploadId);
         if (fileUploadTask == null) {
-            throw new FileException("上传任务不存在: " + uploadId);
+            throw new FileServiceException("上传任务不存在: " + uploadId);
         }
         if (!fileUploadTask.getStatus().equals(FileUploadTaskStatus.COMPLETED)) {
-            throw new FileException("上传任务未完成: " + uploadId);
+            throw new FileServiceException("上传任务未完成: " + uploadId);
         }
         Long fileId = fileUploadTask.getFileId();
         FileRecord fileRecord = fileRecordService.getById(fileId);
         if (fileRecord == null) {
-            throw new FileException("文件不存在: " + uploadId);
+            throw new FileServiceException("文件不存在: " + uploadId);
         }
         redisHelper.setValue(FILE_ACCESS_URL_PREFIX + uploadId, fileRecord.getAccessUrl(), Duration.ofMinutes(30));
         return fileRecord.getAccessUrl();
@@ -268,7 +268,7 @@ public abstract class AbstractFileService implements FileService {
         try {
             inputStream = file.getInputStream();
         } catch (IOException e) {
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
         return uploadSingleFile(inputStream, file.getOriginalFilename(), file.getContentType(), file.getSize());
     }
@@ -300,7 +300,7 @@ public abstract class AbstractFileService implements FileService {
             return accessUrl;
         } catch (IOException e) {
             log.error("upload error: ", e);
-            throw new FileException("文件上传失败: " + e.getMessage());
+            throw new FileServiceException("文件上传失败: " + e.getMessage());
         }
     }
 
@@ -308,7 +308,7 @@ public abstract class AbstractFileService implements FileService {
     public FileInfoVO getFileInfo(String bucketName, String objectName) {
         FileRecord fileRecord = fileRecordService.getByObject(bucketName, objectName);
         if (fileRecord == null) {
-            throw new FileException("文件不存在或已被删除: " + objectName);
+            throw new FileServiceException("文件不存在或已被删除: " + objectName);
         }
         return fileRecord.toFileInfo();
     }
@@ -331,13 +331,13 @@ public abstract class AbstractFileService implements FileService {
                 outputStream.write(buffer, 0, bytesRead);
             }
         } catch (IOException e) {
-            throw new FileException(e);
+            throw new FileServiceException(e);
         }
     }
 
     protected String createObjectName(String originFilename) {
         if (StringUtils.isBlank(originFilename)) {
-            throw new FileException("文件名称不可为空");
+            throw new FileServiceException("文件名称不可为空");
         }
         String suffix = "";
         int index = originFilename.lastIndexOf(".");
@@ -352,7 +352,7 @@ public abstract class AbstractFileService implements FileService {
 
     protected String createAccessUrl(String objectName) {
         if (StringUtils.isEmpty(objectName)) {
-            throw new FileException("objectName cannot be empty");
+            throw new FileServiceException("objectName cannot be empty");
         }
         String pathSeparator = pathSeparator();
         objectName = objectName.replace(pathSeparator, "/");

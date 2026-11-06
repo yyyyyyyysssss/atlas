@@ -1,6 +1,6 @@
 package com.atlas.file.service;
 
-import com.atlas.file.config.exception.FileException;
+import com.atlas.file.config.exception.FileServiceException;
 import com.atlas.file.config.properties.FileProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class AvatarService {
                 .retrieve()
                 .body(byte[].class);
         if (avatarBytes.length == 0) {
-            throw new FileException("下载的头像数据为空");
+            throw new FileServiceException("下载的头像数据为空");
         }
         String fileName = String.format("avatar_%s.%s", seed, avatarConfig.getDefaultFormat());
         String fileType = "svg".equalsIgnoreCase(avatarConfig.getDefaultFormat())
@@ -45,7 +45,7 @@ public class AvatarService {
         try (InputStream inputStream = new ByteArrayInputStream(avatarBytes)){
             return fileService.uploadSingleFile(inputStream, fileName, fileType, (long) avatarBytes.length);
         } catch (IOException e) {
-            throw new FileException("头像上传过程中流处理异常");
+            throw new FileServiceException("头像上传过程中流处理异常");
         }
     }
 

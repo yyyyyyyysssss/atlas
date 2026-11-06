@@ -8,13 +8,13 @@ import com.atlas.common.core.response.ResultCode;
  * @Author ys
  * @Date 2026/2/26 13:00
  */
-public class FileException extends BaseException {
+public class FileServiceException extends BaseException {
 
-    public FileException(String message) {
+    public FileServiceException(String message) {
         super(ResultCode.FILE_SERVICE_ERROR, message);
     }
 
-    public FileException(Throwable throwable) {
+    public FileServiceException(Throwable throwable) {
         super(ResultCode.FILE_SERVICE_ERROR, throwable.getMessage());
     }
 }

@@ -51,10 +51,9 @@ const LoginMfa = () => {
     };
 
     const loginSuccess = async (loginResponse) => {
-        const { token } = loginResponse;
-        await signin(token);
-        redirect('/', token.access.value);
-    };
+        await signin()
+        redirect('/')
+    }
 
     const handleBackToLogin = () => {
         navigate('/login', { replace: true });

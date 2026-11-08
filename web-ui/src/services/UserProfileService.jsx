@@ -2,6 +2,12 @@
 import { apiRequestWrapper } from "./ApiRequestWrapper"
 import httpWrapper from "./AxiosWrapper"
 
+
+export const checkCurrentUser = async () => {
+
+    return apiRequestWrapper(() => httpWrapper.get('/api/auth/me'), { raw: true })
+}
+
 export const fetchUserInfo = async () => {
 
     return apiRequestWrapper(() => httpWrapper.get('/api/user/profile'))

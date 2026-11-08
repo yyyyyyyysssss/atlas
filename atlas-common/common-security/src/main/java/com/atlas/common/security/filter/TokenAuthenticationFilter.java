@@ -11,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,9 +38,16 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        //已授权的接口直接放行
+        //已授权的接口直接放行 或已设置tokenId的直接放行
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        if (securityContext != null && securityContext.getAuthentication() != null && securityContext.getAuthentication().isAuthenticated()) {
+        if (securityContext != null && securityContext.getAuthentication() != null
+                && securityContext.getAuthentication().isAuthenticated()
+                && !(securityContext.getAuthentication() instanceof AnonymousAuthenticationToken)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // 已加载过tokenId的不再重复加载
+        if (request.getAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME) != null) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,13 +59,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         try {
             //设置请求属性  由RedisSecurityContextRepository加载SecurityContext
             PayloadInfo payloadInfo = tokenService.verify(token, TokenType.ACCESS_TOKEN);
-            if (payloadInfo != null) {
-                String tokenId = payloadInfo.getId();
-                request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, tokenId);
+            if (payloadInfo != null && payloadInfo.getId() != null) {
+                request.setAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME, payloadInfo.getId());
             }
-            filterChain.doFilter(request, response);
         } catch (AuthenticationException e) {
             log.debug("Token authentication failed: {}", e.getMessage());
+        }
+
+        try {
             filterChain.doFilter(request, response);
         } finally {
             request.removeAttribute(RedisSecurityContextRepository.DEFAULT_REQUEST_ATTR_NAME);

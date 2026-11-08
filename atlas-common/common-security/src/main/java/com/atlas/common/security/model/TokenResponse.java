@@ -20,6 +20,10 @@ public record TokenResponse(
         return new TokenResponse(AuthStatus.SUCCESS, token, null,null, null);
     }
 
+    public static TokenResponse success() {
+        return new TokenResponse(AuthStatus.SUCCESS, null, null,null, null);
+    }
+
     /**
      * 快捷构建：需要 MFA 验证响应
      */

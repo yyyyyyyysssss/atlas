@@ -115,25 +115,3 @@ export const restoreThirdPartyCallback = (clientName, protocol, ticket) => {
         })
     )
 }
-
-
-export const saveToken = (tokenInfo) => {
-    Cookies.set('accessToken', tokenInfo.access.value)
-    Cookies.set('refreshToken', tokenInfo?.refresh?.value)
-    if (tokenInfo.rememberMe) {
-        localStorage.setItem('rememberMeToken', tokenInfo.rememberMe.value)
-    }
-}
-
-export const clearToken = () => {
-    Cookies.remove('accessToken')
-    Cookies.remove('refreshToken')
-    localStorage.clear()
-}
-
-export const checkTokenValid = async () => {
-    const token = Cookies.get("accessToken")
-    if (!token) return false
-    const result = await tokenValid(token)
-    return result.active
-}

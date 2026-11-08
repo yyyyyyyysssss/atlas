@@ -42,11 +42,6 @@ httpWrapper.interceptors.request.use(
         if (req.showProgress !== false) {
             startProgress()
         }
-
-        const token = Cookies.get("accessToken");
-        if (token) {
-            req.headers['Authorization'] = `Bearer ${token}`
-        }
         return req;
     },
     (error) => {

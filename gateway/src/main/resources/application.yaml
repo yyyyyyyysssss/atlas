@@ -114,7 +114,7 @@ security:
       - /api/auth/account/**
       - /api/auth/userinfo
       - /api/auth/audit/log/**
-#      - /file/**
+      - /api/auth/me
       - /api/file/**
       - /api/user/profile/**
       - /api/user/option/**

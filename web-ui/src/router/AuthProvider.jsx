@@ -1,6 +1,5 @@
 import { Flex } from 'antd';
 import { createContext, startTransition, useContext, useEffect, useState } from 'react';
-import { checkTokenValid, clearToken, saveToken } from '../services/LoginService';
 import { setGlobalSignout } from './auth';
 import reduxStore from '../redux/store';
 import { loadMenuItems, reset as resetLayout } from '../redux/slices/layoutSlice';
@@ -8,7 +7,7 @@ import { reset as resetUser, setUserInfo } from '../redux/slices/userSlice';
 import { reset as resetAuth, setAuthInfo } from '../redux/slices/authSlice';
 import Loading from '../components/loading';
 import Cookies from 'js-cookie'
-import { fetchUserPermissions, fetchUserInfo } from '../services/UserProfileService';
+import { fetchUserPermissions, fetchUserInfo, checkCurrentUser } from '../services/UserProfileService';
 import { useDispatch, useSelector } from 'react-redux';
 import { authEventBus } from '../events/AuthEventBus';
 
@@ -54,43 +53,38 @@ export const AuthProvider = ({ children }) => {
         if (isLoginIn !== null) {
             return isLoginIn
         }
-        try {
-            const isValid = await checkTokenValid()
-            if (isValid) {
-                await signin()
-                return true
-            }
-        } catch (error) {
-            console.error("Token 校验失败:", error)
-        }
-        setIsLoginIn(false)
-        return false
+        await checkCurrentUser()
+        setIsLoginIn(true)
+        await signin()
+        return true;
     }
 
-    const signin = async (tokenInfo) => {
-        let token
-        if (tokenInfo) {
-            saveToken(tokenInfo)
-            token = tokenInfo.access.value
-        } else {
-            token = Cookies.get("accessToken")
-        }
-        setAccessToken(token)
+    const signin = async () => {
+        setIsLoginIn(true)
         const userInfo = await fetchUserInfo()
         dispatch(setUserInfo({ userInfo }))
-        setIsLoginIn(true)
     }
 
     const signout = async () => {
         authEventBus.emitSignout()
-        // 清理持久化存储
-        clearToken()
-        // 清理内存状态 (Redux)
-        reduxStore.dispatch(resetLayout())
-        reduxStore.dispatch(resetUser())
-        reduxStore.dispatch(resetAuth())
+        // 清理持久化数据
+        clearAuthStorage();
+        // 清理 Redux 状态
+        clearAuthState();
         // 最后切换 Context 状态，触发 UI 跳转
         setIsLoginIn(false)
+    }
+
+    // 清理前端认证及用户状态
+    const clearAuthState = () => {
+        reduxStore.dispatch(resetLayout());
+        reduxStore.dispatch(resetUser());
+        reduxStore.dispatch(resetAuth());
+    }
+
+    // 理认证相关持久化数据
+    const clearAuthStorage = () => {
+        localStorage.clear()
     }
 
     return (

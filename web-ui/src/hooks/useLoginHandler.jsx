@@ -20,9 +20,8 @@ const useLoginHandler = () => {
         const finalTargetUrl = externalTargetUrl || targetUrl || '/'
 
         if (tokenResponse.status === 'SUCCESS') {
-            const { token } = tokenResponse
-            await signin(token)
-            redirect(finalTargetUrl, token.access.value)
+            await signin()
+            redirect(finalTargetUrl)
             return
         }
 

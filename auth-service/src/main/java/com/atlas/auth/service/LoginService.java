@@ -4,6 +4,7 @@ package com.atlas.auth.service;
 import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.common.core.utils.JsonUtils;
+import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.model.SecurityUser;
@@ -12,10 +13,12 @@ import com.atlas.common.security.model.TokenResponse;
 import com.atlas.common.security.repository.SecurityContextStore;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.*;
-import com.atlas.common.crypto.random.SecureRandomUtils;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +27,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Service
 @RequiredArgsConstructor
@@ -137,7 +142,7 @@ public class LoginService {
         // 会话控制
         sessionControlService.kickOutExcessiveSessions(securityUser.getId(), clientType);
 
-        return createToken(authenticate, clientType);
+        return issueLoginToken(authenticate, clientType);
     }
 
     /**
@@ -156,10 +161,10 @@ public class LoginService {
         String oldTokenId = ((RefreshAuthenticationToken) authenticate).getOldTokenId();
         sessionControlService.removeSession(securityUser.getId(), oldTokenId, refreshTokenDTO.clientType());
 
-        return createToken(authenticate, refreshTokenDTO.clientType());
+        return issueLoginToken(authenticate, refreshTokenDTO.clientType());
     }
 
-    private TokenResponse createToken(Authentication authenticate, ClientType clientType) {
+    private TokenResponse issueLoginToken(Authentication authenticate, ClientType clientType) {
         if (!authenticate.isAuthenticated()) {
             throw new BadCredentialsException("Unauthenticated");
         }
@@ -173,13 +178,37 @@ public class LoginService {
 
         // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authenticate);
+        securityContext.setAuthentication(authenticate );
         securityContextStore.saveContext(securityContext, tokenId);
         SecurityContextHolder.setContext(securityContext);
 
         // 注册会话
         sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
+
+        if(ClientType.WEB.equals(clientType)){
+            setCookie(token.access().value());
+            return TokenResponse.success();
+        }
+
         return TokenResponse.success(token);
+    }
+
+    private void setCookie(String accessToken) {
+        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
+            return;
+        }
+        HttpServletResponse response = attributes.getResponse();
+        if (response == null) {
+            return;
+        }
+        ResponseCookie cookie = ResponseCookie
+                .from("access_token", accessToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
 }

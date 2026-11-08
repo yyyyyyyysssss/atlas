@@ -1,11 +1,5 @@
 package com.atlas.gateway.config.security;
 
-import com.atlas.gateway.config.security.authentication.apikey.ApikeyAuthenticationProvider;
-import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathRequestMatcher;
-import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
-import com.atlas.gateway.config.security.filter.ApikeyAuthenticationFilter;
-import com.atlas.gateway.config.security.filter.FileCookieAuthenticationFilter;
-import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
 import com.atlas.common.security.filter.TokenAuthenticationFilter;
 import com.atlas.common.security.handler.ForbiddenAccessHandler;
 import com.atlas.common.security.handler.UnauthorizedEntryPoint;
@@ -13,6 +7,12 @@ import com.atlas.common.security.oauth2.OAuth2BearerTokenResolver;
 import com.atlas.common.security.properties.SecurityProperties;
 import com.atlas.common.security.resolver.NormalBearerTokenResolver;
 import com.atlas.common.security.service.TokenService;
+import com.atlas.gateway.config.security.authentication.apikey.ApikeyAuthenticationProvider;
+import com.atlas.gateway.config.security.authentication.apikey.SeparatorAntPathRequestMatcher;
+import com.atlas.gateway.config.security.authorization.RequestPathAuthorizationManager;
+import com.atlas.gateway.config.security.filter.ApikeyAuthenticationFilter;
+import com.atlas.gateway.config.security.filter.CookieAuthenticationFilter;
+import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
@@ -67,7 +67,12 @@ public class GatewaySecurityConfig {
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
+                                                          TokenAuthenticationFilter tokenAuthenticationFilter,
+                                                          CookieAuthenticationFilter cookieAuthenticationFilter,
+                                                          RequestHeaderAuthenticationFilter apikeyAuthenticationFilter,
+                                                          GatewayHeaderHeaderPropagationFilter gatewayHeaderHeaderPropagationFilter,
+                                                          RequestPathAuthorizationManager requestPathAuthorizationManager) throws Exception {
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -108,16 +113,16 @@ public class GatewaySecurityConfig {
                         }
                     }
                     // 兜底策略
-                    authorize.anyRequest().access(requestPathAuthorizationManager());
+                    authorize.anyRequest().access(requestPathAuthorizationManager);
                 })
-                // 该过滤器解析token并校验通过后由SecurityContextHolderFilter过滤器加载SecurityContext
-                .addFilterBefore(tokenAuthenticationFilter(), SecurityContextHolderFilter.class)
-                // 用于文件访问的过滤器
-                .addFilterBefore(fileCookieAuthenticationFilter(), SecurityContextHolderFilter.class)
+                // 基于 Authorization 请求头提取 TokenId
+                .addFilterBefore(tokenAuthenticationFilter, SecurityContextHolderFilter.class)
+                // 基于 HttpOnly Cookie 提取 TokenId
+                .addFilterBefore(cookieAuthenticationFilter, SecurityContextHolderFilter.class)
                 // 基于请求头apikey认证的过滤器
-                .addFilterBefore(apikeyAuthenticationFilter(authenticationManager(http)), HeaderWriterFilter.class)
+                .addFilterBefore(apikeyAuthenticationFilter, HeaderWriterFilter.class)
                 // 设置用户信息到请求头
-                .addFilterAfter(gatewayHeaderHeaderPropagationFilter(), AuthenticationFilter.class)
+                .addFilterAfter(gatewayHeaderHeaderPropagationFilter, AuthenticationFilter.class)
                 // oauth2资源服务器
                 .oauth2ResourceServer((resourceServer) -> {
                     resourceServer.jwt(jwt -> {
@@ -147,9 +152,9 @@ public class GatewaySecurityConfig {
     }
 
     @Bean
-    public FileCookieAuthenticationFilter fileCookieAuthenticationFilter() {
+    public CookieAuthenticationFilter cookieAuthenticationFilter() {
 
-        return new FileCookieAuthenticationFilter(tokenService);
+        return new CookieAuthenticationFilter(tokenService);
     }
 
     @Bean

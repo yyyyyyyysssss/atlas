@@ -14,7 +14,7 @@ import org.hibernate.validator.constraints.URL;
  */
 @Getter
 @Setter
-public class UserProfileDTO {
+public class ChangeUserProfileDTO {
 
     @Size(max = 20, message = "姓名长度不能超过20个字符")
     private String fullName;

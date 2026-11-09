@@ -4,8 +4,7 @@ import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.common.core.utils.JsonUtils;
 import com.atlas.common.security.enums.ClientType;
-import com.atlas.common.security.model.PayloadInfo;
-import com.atlas.common.security.resolver.NormalBearerTokenResolver;
+import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.service.TokenService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,29 +27,28 @@ import java.time.Duration;
 public class LogoutService implements LogoutSuccessHandler {
 
     @Resource
-    private NormalBearerTokenResolver normalBearerTokenResolver;
-
-    @Resource
     private TokenService tokenService;
 
     @Resource
     private SessionControlService sessionControlService;
 
+    @Resource
+    private CookieService cookieService;
+
     @Override
     public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
 
-        String token = normalBearerTokenResolver.resolve(request);
-        if (token != null) {
-            String tokenId = tokenService.extractInfo(token, PayloadInfo::getId);
-            String userId = tokenService.extractInfo(token, PayloadInfo::getSubject);
-            ClientType clientType = tokenService.extractInfo(token, PayloadInfo::getClientType);
-            if(ClientType.WEB.equals(clientType)){
-                clearCookie(response);
-            }
+
+        if(authentication.getPrincipal() instanceof SecurityUser securityUser){
+            ClientType clientType = securityUser.getClientType();
             // 撤销 Token
-            tokenService.revoke(token);
+            tokenService.revoke(securityUser.getTokenId());
             // 移除会话
-            sessionControlService.removeSession(Long.parseLong(userId),tokenId,clientType);
+            sessionControlService.removeSession(securityUser.getId(),securityUser.getTokenId(),clientType);
+            // 清除cookie
+            if(ClientType.WEB.equals(clientType)){
+                cookieService.clearAuthCookies(response);
+            }
         }
 
         // 清理本地上下文

@@ -94,13 +94,15 @@ public class DefaultTokenService implements TokenService {
     }
 
     @Override
-    public void revoke(String token) {
-        if (StringUtils.isEmpty(token)) {
+    public void revoke(String tokenId) {
+        if (StringUtils.isEmpty(tokenId)) {
             return;
         }
-        String tokenId = extractInfo(token, PayloadInfo::getId);
-        Long expiration = extractInfo(token, PayloadInfo::getExpiration);
-        revoke(tokenId,expiration);
+        long maxExpiration = Math.max(
+                securityProperties.getJwt().getRefreshExpiration(),
+                securityProperties.getRememberMe().getExpiration()
+        );
+        revoke(tokenId,System.currentTimeMillis() + maxExpiration);
     }
 
     @Override

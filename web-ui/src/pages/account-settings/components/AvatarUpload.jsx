@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Avatar, Upload, Button, Modal, Flex, Typography, App, Image, theme } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { Pencil } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import { useTranslation } from 'react-i18next';
@@ -69,7 +70,7 @@ const AvatarUpload = ({ avatar, onAvatarChange }) => {
 
     return (
         <div style={{ position: 'relative', display: 'inline-block' }}>
-            <Avatar size={120} src={avatar} style={{ cursor: 'pointer' }} onClick={() => setAvatarPreviewVisible(true)} />
+            <Avatar size={120} src={avatar} style={{ cursor: 'pointer', border: `1px solid ${token.colorBorder}` }} onClick={() => setAvatarPreviewVisible(true)} />
             <Image preview={{ visible: avatarPreviewVisible, src: avatar, onVisibleChange: setAvatarPreviewVisible }} style={{ display: 'none' }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0 }}>
                 <Upload showUploadList={false} accept='image/*' beforeUpload={handleBeforeUpload}>

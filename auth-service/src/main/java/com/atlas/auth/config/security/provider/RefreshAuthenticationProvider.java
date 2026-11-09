@@ -47,7 +47,7 @@ public class RefreshAuthenticationProvider implements AuthenticationProvider {
                 userDetails.getAuthorities()
         );
         authenticated.setDetails(authentication.getDetails());
-        tokenService.revoke(token);
+        tokenService.revoke(payloadInfo.getId(), payloadInfo.getExpiration());
         return authenticated;
     }
 

@@ -4,6 +4,7 @@ package com.atlas.common.core.api.user;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.response.Result;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,9 @@ public interface UserApi {
 
     @PostExchange("/create")
     Result<Long> createUser(@RequestBody CreateUserSpec createUserSpec);
+
+    @GetExchange("/profile")
+    Result<UserProfileDTO> userProfile(@RequestParam("userId") Long userId);
 
     @GetExchange("/all")
     Result<List<UserDTO>> findAll();

@@ -1,5 +1,6 @@
 package com.atlas.common.security.model;
 
+import com.atlas.common.security.enums.ClientType;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.CredentialsContainer;
@@ -7,7 +8,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -26,15 +26,11 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private boolean enabled;
 
+    private ClientType clientType;
+
     private Set<Integer> dataScopes;
 
     private Long orgId;
-
-    private String avatar;
-
-    private String email;
-
-    private String phone;
 
     private boolean mfaEnabled;
 
@@ -42,7 +38,7 @@ public class SecurityUser implements UserDetails, CredentialsContainer {
 
     private Set<MfaType> activeMfaStrategies;
 
-    private List<? extends GrantedAuthority> authorities;
+    private Collection<? extends GrantedAuthority> authorities;
 
     private boolean accountNonExpired;
 

@@ -234,7 +234,7 @@ public class Saml2IdpService {
 
 
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
-        UserInfo userInfo = userInfoService.build(securityUser);
+        UserInfo userInfo = userInfoService.loadByUserId(securityUser.getId());
         String sub = userInfo.sub();
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(RESPONSE_VALIDITY_SECONDS);

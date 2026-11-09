@@ -1,8 +1,10 @@
 package com.atlas.user.service.impl;
 
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.utils.TreeUtils;
-import com.atlas.user.domain.dto.UserProfileDTO;
+import com.atlas.user.config.exception.UserServiceException;
+import com.atlas.user.domain.dto.ChangeUserProfileDTO;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.*;
 import com.atlas.user.enums.AuthorityDomain;
@@ -39,14 +41,22 @@ public class ProfileServiceImpl implements ProfileService {
     private final OrganizationService organizationService;
 
     @Override
-    public UserVO userInfo(Long userId) {
+    public UserProfileDTO userProfile(Long userId) {
         User user = userService.findByUserId(userId);
-        return UserMapping.INSTANCE.toUserVO(user);
+        if(user == null){
+             throw new UserServiceException("该用户不存在");
+        }
+        UserProfileDTO userProfileDTO = UserMapping.INSTANCE.toUserProfileDTO(user);
+        UserOrg userOrgMain = userOrgService.findUserOrgMain(userId);
+        if(userOrgMain != null){
+            userProfileDTO.setOrgId(userOrgMain.getOrgId());
+        }
+        return userProfileDTO;
     }
 
     @Override
-    public AuthInfoVO getPermissions(Long userId, AuthorityDomain domain) {
-        AuthInfoVO authInfoVO = new AuthInfoVO();
+    public PermissionsInfoVO getPermissions(Long userId, AuthorityDomain domain) {
+        PermissionsInfoVO authInfoVO = new PermissionsInfoVO();
         // 用户角色
         List<RoleVO> roles = roleService.findByUserId(userId);
         if (!CollectionUtils.isEmpty(roles)) {
@@ -84,7 +94,7 @@ public class ProfileServiceImpl implements ProfileService {
 
 
     @Override
-    public void changeUserProfile(Long userId, UserProfileDTO userProfileDTO) {
+    public void changeUserProfile(Long userId, ChangeUserProfileDTO userProfileDTO) {
         User user = userService.getById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");

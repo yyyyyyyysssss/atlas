@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../../router/AuthProvider';
-import { App, Avatar, Button, Divider, Drawer, Dropdown, Flex, Form, Image, Input, Modal, Tooltip, Typography, Upload } from 'antd';
+import { App, Avatar, Button, Divider, Drawer, Dropdown, Flex, Form, Image, Input, Modal, theme, Tooltip, Typography, Upload } from 'antd';
 import { Lock, LogOut, Pencil, UserPen } from 'lucide-react';
 import { logout } from '../../../services/LoginService';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,6 +16,8 @@ const UserProfile = () => {
     const { signout } = useAuth()
 
     const navigate = useNavigate()
+
+    const { token } = theme.useToken();
 
     const { fullName, avatar } = useSelector(state => state.user.userInfo)
 
@@ -79,7 +81,7 @@ const UserProfile = () => {
                     onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--ant-control-item-bg-hover)'}
                     onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                 >
-                    <Avatar src={avatar} />
+                    <Avatar src={avatar} style={{ border: `1px solid ${token.colorBorder}` }}  />
                     <Typography.Text type='secondary'>
                         {fullName}
                     </Typography.Text>

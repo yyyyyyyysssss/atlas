@@ -1,16 +1,14 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.config.exception.AuthServiceException;
-import com.atlas.auth.domain.dto.IdentifierSpec;
-import com.atlas.auth.domain.dto.ThirdPartyUserIdentity;
-import com.atlas.auth.domain.dto.UserMfaInfo;
-import com.atlas.auth.domain.dto.UserProviderDTO;
+import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.UserIdentifier;
 import com.atlas.auth.enums.IdentifierType;
 import com.atlas.common.core.api.user.UserApi;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.RoleAuthDTO;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.security.model.RequestUrlAuthority;
 import com.atlas.common.security.model.SecurityUser;
@@ -23,8 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service("userService")
 @RequiredArgsConstructor
@@ -55,10 +53,11 @@ public class UserService implements UserDetailsService {
         if(!result.isSucceed()){
             throw new AuthServiceException("加载用户认证信息失败: " + result.getMessage());
         }
-        List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
-        UserAuthDTO userAuthDTO = result.getData();
 
-        SecurityUser securityUser = securityUser(userAuthDTO, userIdentifiers);
+        UserAuthDTO userAuthDTO = result.getData();
+        SecurityUser securityUser = toSecurityUser(userAuthDTO);
+        String username = userIdentifierService.findValueByUserIdAndType(userId, IdentifierType.USERNAME);
+        securityUser.setUsername(username);
 
         // mfa
         UserMfaInfo userMfaInfo = userMfaService.getUserMfaInfo(userId);
@@ -67,6 +66,16 @@ public class UserService implements UserDetailsService {
         securityUser.setPreferredMfaType(userMfaInfo.preferredMfaType());
 
         return securityUser;
+    }
+
+    public UserProfile userProfile(Long userId){
+        Result<UserProfileDTO> result = userApi.userProfile(userId);
+        if(!result.isSucceed()){
+            throw new AuthServiceException("加载用户认证信息失败: " + result.getMessage());
+        }
+        UserProfileDTO userProfileDTO = result.getData();
+        List<UserIdentifier> userIdentifiers = userIdentifierService.listByUserId(userId);
+        return UserProfile.of(userProfileDTO, userIdentifiers);
     }
 
     @Transactional
@@ -152,21 +161,10 @@ public class UserService implements UserDetailsService {
         return result.getData();
     }
 
-    public SecurityUser securityUser(UserAuthDTO userAuthDTO,List<UserIdentifier> userIdentifiers){
-        Map<IdentifierType, String> identifierTypeMap = Optional.ofNullable(userIdentifiers)
-                .orElse(Collections.emptyList())
-                .stream()
-                .filter(ui -> ui.getIdentifierType() != null)
-                .collect(Collectors.toMap(
-                        UserIdentifier::getIdentifierType,
-                        ui -> ui.getIdentifierValue() == null ? "" : ui.getIdentifierValue(),
-                        (oldVal, newVal) -> newVal
-                ));
+    private SecurityUser toSecurityUser(UserAuthDTO userAuthDTO){
+
         SecurityUser securityUser = new SecurityUser();
         securityUser.setId(userAuthDTO.getId());
-        securityUser.setUsername(identifierTypeMap.get(IdentifierType.USERNAME));
-        securityUser.setEmail(identifierTypeMap.get(IdentifierType.EMAIL));
-        securityUser.setPhone(identifierTypeMap.get(IdentifierType.PHONE));
 
         String password = userPasswordCredentialsService.getPasswordHashByUserId(userAuthDTO.getId());
 
@@ -181,7 +179,6 @@ public class UserService implements UserDetailsService {
         securityUser.setEnabled(userAuthDTO.isEnabled());
         securityUser.setDataScopes(userAuthDTO.getDataScopes());
         securityUser.setOrgId(userAuthDTO.getOrgId());
-        securityUser.setAvatar(userAuthDTO.getAvatar());
         List<RoleAuthDTO> authorities = userAuthDTO.getAuthorities();
         List<RequestUrlAuthority> authorityList = new ArrayList<>();
         for (RoleAuthDTO roleAuthDTO : authorities) {

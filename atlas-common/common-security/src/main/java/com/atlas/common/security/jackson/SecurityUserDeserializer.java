@@ -1,5 +1,6 @@
 package com.atlas.common.security.jackson;
 
+import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.model.MfaType;
 import com.atlas.common.security.model.SecurityUser;
 import com.atlas.common.security.utils.JsonNodeUtils;
@@ -33,11 +34,14 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         String password = JsonNodeUtils.findStringValue(root, "password");
         String fullName = JsonNodeUtils.findStringValue(root, "fullName");
         String tokenId = JsonNodeUtils.findStringValue(root, "tokenId");
+
+        String clientTypeStr = JsonNodeUtils.findStringValue(root, "clientType");
+        ClientType clientType = (clientTypeStr != null && !clientTypeStr.isEmpty())
+                ? ClientType.fromString(clientTypeStr)
+                : null;
+
         Set<Integer> dataScopes = (Set<Integer>) mapper.readValue(this.readJsonNode(root, "dataScopes").traverse(mapper), new TypeReference<>() {});
         String orgId = JsonNodeUtils.findNumberValue(root, "orgId");
-        String avatar = JsonNodeUtils.findStringValue(root, "avatar");
-        String email = JsonNodeUtils.findStringValue(root, "email");
-        String phone = JsonNodeUtils.findStringValue(root, "phone");
         Boolean mfaEnabled = JsonNodeUtils.findBooleanValue(root, "mfaEnabled");
 
         String preferredMfaStr = JsonNodeUtils.findStringValue(root, "preferredMfaType");
@@ -56,9 +60,7 @@ public class SecurityUserDeserializer extends JsonDeserializer<SecurityUser> {
         securityUser.setPassword(password);
         securityUser.setFullName(fullName);
         securityUser.setTokenId(tokenId);
-        securityUser.setAvatar(avatar);
-        securityUser.setEmail(email);
-        securityUser.setPhone(phone);
+        securityUser.setClientType(clientType);
         securityUser.setMfaEnabled(mfaEnabled);
         securityUser.setPreferredMfaType(preferredMfaType);
         securityUser.setActiveMfaStrategies(activeMfaStrategies);

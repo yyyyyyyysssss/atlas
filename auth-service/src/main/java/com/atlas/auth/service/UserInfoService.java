@@ -1,15 +1,16 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.dto.UserInfo;
-import com.atlas.common.security.model.SecurityUser;
+import com.atlas.auth.domain.dto.UserProfile;
+import com.atlas.auth.enums.IdentifierType;
 import jakarta.annotation.Resource;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Description
@@ -22,38 +23,38 @@ public class UserInfoService {
     @Resource
     private UserService userService;
 
-    public UserInfo loadByUserId(Long userId) {
-        SecurityUser securityUser = (SecurityUser) userService.loadUserByUserId(userId);
-        if (securityUser == null) {
-            throw new UsernameNotFoundException("User not found");
-        }
-        return build(securityUser);
-    }
+    @Resource
+    private UserIdentifierService userIdentifierService;
 
     public UserInfo loadByUsername(String username) {
-        SecurityUser securityUser = (SecurityUser) userService.loadUserByUsername(username);
-
-        if (securityUser == null) {
-            throw new UsernameNotFoundException("User not found");
-        }
-
-        return build(securityUser);
+        Long userId = userIdentifierService.findUserIdByValueAndType(username, IdentifierType.USERNAME);
+        return loadByUserId(userId);
     }
 
-    public UserInfo build(SecurityUser securityUser) {
+    public UserInfo loadByUserId(Long userId) {
+        Objects.requireNonNull(userId);
+        UserProfile userProfile = userService.userProfile(userId);
+        if (userProfile == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return build(userProfile);
+    }
+
+
+    private UserInfo build(UserProfile userProfile) {
         Map<String, Object> attributes = new LinkedHashMap<>();
         // 自定义扩展属性
 
 
         return new UserInfo(
-                String.valueOf(securityUser.getId()),
-                securityUser.getUsername(),
-                securityUser.getFullName(),
-                securityUser.getAvatar(),
-                securityUser.getEmail(),
-                StringUtils.hasText(securityUser.getEmail()) ? true : null,
-                securityUser.getPhone(),
-                StringUtils.hasText(securityUser.getPhone()) ? true : null,
+                String.valueOf(userProfile.id()),
+                userProfile.username(),
+                userProfile.fullName(),
+                userProfile.avatar(),
+                userProfile.email(),
+                userProfile.emailVerified(),
+                userProfile.phone(),
+                userProfile.phoneVerified(),
                 Collections.unmodifiableMap(attributes)
         );
     }

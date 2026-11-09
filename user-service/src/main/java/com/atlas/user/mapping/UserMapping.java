@@ -3,6 +3,7 @@ package com.atlas.user.mapping;
 
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.mapping.LocalDateMapper;
 import com.atlas.common.core.mapping.LocalDateTimeMapper;
 import com.atlas.user.domain.dto.UserCreateDTO;
@@ -39,6 +40,8 @@ public interface UserMapping {
     UserAuthDTO toUserAuthDTO(User user);
 
     UserDTO toUserDTO(User user);
+
+    UserProfileDTO toUserProfileDTO(User user);
 
     @IterableMapping(elementTargetType = UserVO.class)
     List<UserVO> toUserVO(List<User> users);

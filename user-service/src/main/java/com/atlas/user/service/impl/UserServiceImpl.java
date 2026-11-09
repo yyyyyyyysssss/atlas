@@ -13,7 +13,6 @@ import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
 import com.atlas.common.core.response.Result;
-import com.atlas.common.mybatis.enums.DataScope;
 import com.atlas.user.domain.dto.*;
 import com.atlas.user.domain.entity.*;
 import com.atlas.user.domain.vo.AuthorityVO;
@@ -62,8 +61,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final UserOrgService userOrgService;
 
     private final OrganizationService organizationService;
-
-    private final RoleAuthorityService roleAuthorityService;
 
     private final PositionService positionService;
 

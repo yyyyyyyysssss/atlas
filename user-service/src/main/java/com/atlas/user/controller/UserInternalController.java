@@ -7,10 +7,12 @@ import com.atlas.common.core.api.auth.dto.UserIdentifierQueryDTO;
 import com.atlas.common.core.api.user.dto.CreateUserSpec;
 import com.atlas.common.core.api.user.dto.UserAuthDTO;
 import com.atlas.common.core.api.user.dto.UserDTO;
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import com.atlas.user.domain.entity.User;
 import com.atlas.user.mapping.UserMapping;
+import com.atlas.user.service.ProfileService;
 import com.atlas.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +39,20 @@ public class UserInternalController {
 
     private final UserService userService;
 
+    private final ProfileService profileService;
+
     private final AuthApi authApi;
 
     @GetMapping("/auth")
     public Result<UserAuthDTO> loadUserByUserId(@RequestParam("userId") Long userId) {
         UserAuthDTO userAuthDTO = userService.loadUserByUserId(userId);
         return ResultGenerator.ok(userAuthDTO);
+    }
+
+    @GetMapping("/profile")
+    public Result<UserProfileDTO> userProfile(@RequestParam("userId") Long userId) {
+        UserProfileDTO userProfileDTO = profileService.userProfile(userId);
+        return ResultGenerator.ok(userProfileDTO);
     }
 
     @PostMapping("/create")

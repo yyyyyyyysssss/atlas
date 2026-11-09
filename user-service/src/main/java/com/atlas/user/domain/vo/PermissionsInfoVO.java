@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class AuthInfoVO {
+public class PermissionsInfoVO {
 
     private List<MenuVO> menus;
 

@@ -53,6 +53,10 @@ export const AuthProvider = ({ children }) => {
         if (isLoginIn !== null) {
             return isLoginIn
         }
+        if (Cookies.get('authenticated') !== 'true') {
+            setIsLoginIn(false)
+            return false
+        }
         await checkCurrentUser()
         setIsLoginIn(true)
         await signin()

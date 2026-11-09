@@ -14,11 +14,8 @@ import com.atlas.common.security.repository.SecurityContextStore;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,8 +24,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +41,8 @@ public class LoginService {
     private final SessionControlService sessionControlService;
 
     private final MfaTicketRepository mfaTicketRepository;
+
+    private final CookieService cookieService;
 
     // 验证码/手机号登录
     public TokenResponse loginCaptcha(CaptchaLoginDTO captchaLoginDTO) {
@@ -171,6 +170,7 @@ public class LoginService {
         if (!(authenticate.getPrincipal() instanceof SecurityUser securityUser)) {
             throw new BadCredentialsException("Unsupported principal");
         }
+        securityUser.setClientType(clientType);
         // 发证
         TokenInfo token = tokenService.createToken(securityUser, clientType, true);
         String tokenId = token.id();
@@ -178,7 +178,7 @@ public class LoginService {
 
         // 存储 (Context)
         SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-        securityContext.setAuthentication(authenticate );
+        securityContext.setAuthentication(authenticate);
         securityContextStore.saveContext(securityContext, tokenId);
         SecurityContextHolder.setContext(securityContext);
 
@@ -186,29 +186,11 @@ public class LoginService {
         sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
 
         if(ClientType.WEB.equals(clientType)){
-            setCookie(token.access().value());
+            cookieService.setAccessToken(token.access().value(), Duration.ofMillis(token.access().expiresIn()));
             return TokenResponse.success();
         }
 
         return TokenResponse.success(token);
-    }
-
-    private void setCookie(String accessToken) {
-        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
-            return;
-        }
-        HttpServletResponse response = attributes.getResponse();
-        if (response == null) {
-            return;
-        }
-        ResponseCookie cookie = ResponseCookie
-                .from("access_token", accessToken)
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .sameSite("Lax")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
 }

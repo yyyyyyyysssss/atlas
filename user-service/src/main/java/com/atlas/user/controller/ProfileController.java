@@ -1,13 +1,13 @@
 package com.atlas.user.controller;
 
 
+import com.atlas.common.core.api.user.dto.UserProfileDTO;
 import com.atlas.common.core.context.UserContext;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
-import com.atlas.user.domain.dto.UserProfileDTO;
-import com.atlas.user.domain.vo.AuthInfoVO;
+import com.atlas.user.domain.dto.ChangeUserProfileDTO;
 import com.atlas.user.domain.vo.OrgMemberVO;
-import com.atlas.user.domain.vo.UserVO;
+import com.atlas.user.domain.vo.PermissionsInfoVO;
 import com.atlas.user.enums.AuthorityDomain;
 import com.atlas.user.service.ProfileService;
 import jakarta.annotation.Resource;
@@ -32,17 +32,17 @@ public class ProfileController {
     private ProfileService profileService;
 
     @GetMapping
-    public Result<UserVO> userInfo() {
+    public Result<UserProfileDTO> userProfile() {
         Long userId = UserContext.getRequiredUserId();
-        UserVO userVO = profileService.userInfo(userId);
-        return ResultGenerator.ok(userVO);
+        UserProfileDTO userProfile = profileService.userProfile(userId);
+        return ResultGenerator.ok(userProfile);
     }
 
     @GetMapping("/permissions")
-    public Result<AuthInfoVO> getPermissions(@RequestParam(name = "domain", required = false) String domain) {
+    public Result<PermissionsInfoVO> getPermissions(@RequestParam(name = "domain", required = false) String domain) {
         Long userId = UserContext.getRequiredUserId();
         AuthorityDomain authorityDomain = StringUtils.hasText(domain) ? AuthorityDomain.fromString(domain) : AuthorityDomain.GLOBAL;
-        AuthInfoVO authInfo = profileService.getPermissions(userId, authorityDomain);
+        PermissionsInfoVO authInfo = profileService.getPermissions(userId, authorityDomain);
         return ResultGenerator.ok(authInfo);
     }
 
@@ -55,7 +55,7 @@ public class ProfileController {
     }
 
     @PatchMapping
-    public Result<?> profile(@RequestBody @Validated UserProfileDTO userProfileDTO) {
+    public Result<?> changeProfile(@RequestBody @Validated ChangeUserProfileDTO userProfileDTO) {
         Long userId = UserContext.getRequiredUserId();
         profileService.changeUserProfile(userId,userProfileDTO);
         return ResultGenerator.ok();

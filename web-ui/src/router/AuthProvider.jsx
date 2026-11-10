@@ -10,6 +10,7 @@ import Cookies from 'js-cookie'
 import { fetchUserPermissions, fetchUserInfo, checkCurrentUser } from '../services/UserProfileService';
 import { useDispatch, useSelector } from 'react-redux';
 import { authEventBus } from '../events/AuthEventBus';
+import { useDisconnect } from 'wagmi';
 
 const AuthContext = createContext({
     isLoginIn: null,
@@ -24,6 +25,8 @@ export const AuthProvider = ({ children }) => {
     const [isLoginIn, setIsLoginIn] = useState(null)
 
     const [accessToken, setAccessToken] = useState(null)
+
+    const { disconnect } = useDisconnect();
 
     const dispatch = useDispatch()
 
@@ -70,6 +73,9 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signout = async () => {
+        // 断开 Web3 钱包连接
+        disconnect()
+        // 发送登出事件
         authEventBus.emitSignout()
         // 清理持久化数据
         clearAuthStorage();

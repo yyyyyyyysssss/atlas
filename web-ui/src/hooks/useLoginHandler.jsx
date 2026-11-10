@@ -26,7 +26,7 @@ const useLoginHandler = () => {
         }
 
         if (tokenResponse.status === 'MFA_REQUIRED') {
-            const { mfaTicket, mfaType, activeMfaStrategies } = tokenResponse
+            const { mfaTicket, preferredMfaType, availableMfaTypes } = tokenResponse
             let mfaPath = '/login/mfa'
             if (finalTargetUrl && finalTargetUrl !== '/') {
                 mfaPath += `?targetUrl=${encodeURIComponent(finalTargetUrl)}`;
@@ -34,8 +34,8 @@ const useLoginHandler = () => {
             navigate(mfaPath, {
                 state: {
                     ticket: mfaTicket,
-                    mfaType: mfaType,
-                    activeMfaStrategies: activeMfaStrategies
+                    preferredMfaType: preferredMfaType,
+                    availableMfaTypes: availableMfaTypes
                 }
             })
             return

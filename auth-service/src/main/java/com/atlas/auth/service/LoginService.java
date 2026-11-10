@@ -44,6 +44,8 @@ public class LoginService {
 
     private final CookieService cookieService;
 
+    private final AuthAssurancePolicyService authAssurancePolicyService;
+
     // 验证码/手机号登录
     public TokenResponse loginCaptcha(CaptchaLoginDTO captchaLoginDTO) {
         CaptchaAuthenticationToken captchaAuthenticationToken = new CaptchaAuthenticationToken(
@@ -118,14 +120,14 @@ public class LoginService {
         }
         SecurityUser securityUser = (SecurityUser) authenticate.getPrincipal();
 
-        // 确定当前用户账号被期望的安全信任等级：开启了 MFA 就是 MEDIUM，没开启则是 LOW
-        AuthAssuranceLevel requiredLevel = securityUser.isMfaEnabled() ? AuthAssuranceLevel.MEDIUM : AuthAssuranceLevel.LOW;
+        // 确定当前用户账号被期望的安全信任等级
+        AuthAssuranceLevel requiredLevel = authAssurancePolicyService.determineRequiredLevel(securityUser);
         // 获取当前登录方式实际能够提供的安全信任等级
         AuthAssuranceLevel currentLevel = AuthAssuranceLevel.LOW; // 默认给最低，防止未实现接口的自定义Token钻空子
         if (authenticate instanceof AssuranceLevelAware awareToken) {
             currentLevel = awareToken.getAssuranceLevel();
         }
-        // 如果当前登录方式的等级低于用户期望的等级，才触发 MFA 拦截
+        // 如果当前登录方式的等级低于用户期望的等级，触发 MFA 拦截
         if (currentLevel.getRank() < requiredLevel.getRank()) {
             String ticket = SecureRandomUtils.generate();
             MfaChallenge mfaChallenge = MfaChallenge.builder()
@@ -135,7 +137,7 @@ public class LoginService {
                     .requiredLevel(requiredLevel)
                     .build();
             mfaTicketRepository.save(mfaChallenge);
-            return TokenResponse.mfaRequired(ticket, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
+            return TokenResponse.mfaRequired(ticket, requiredLevel, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
         }
 
         // 会话控制

@@ -425,10 +425,6 @@ export const WalletConnectionCapsule = ({ isConnected, address, displayName, onC
 
     const { disconnect } = useDisconnect()
 
-    useAuthEvent({
-        onSignout: () => disconnect()
-    });
-
     const sizeMap = {
         small: {
             height: '28px',

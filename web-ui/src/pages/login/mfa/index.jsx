@@ -21,7 +21,7 @@ const { Title, Paragraph } = Typography;
 
 const LoginMfa = () => {
     const { t } = useTranslation();
-    const { ticket, mfaType: initialMfaType, activeMfaStrategies = [] } = useFullParams()
+    const { ticket, preferredMfaType: initialMfaType, availableMfaTypes = [] } = useFullParams()
     const navigate = useNavigate();
     const { signin } = useAuth();
     const redirect = useRedirect();
@@ -61,7 +61,7 @@ const LoginMfa = () => {
 
     const mfaStrategies = useMemo(() => {
 
-        const hasBackupCode = activeMfaStrategies.includes('BACKUP_CODE')
+        const hasBackupCode = availableMfaTypes.includes('BACKUP_CODE')
 
         const allPool = {
             TOTP: {
@@ -135,13 +135,13 @@ const LoginMfa = () => {
         }
         // 根据后端返回的可用列表，对策略表进行动态裁剪
         const filteredStrategies = {}
-        activeMfaStrategies.forEach(key => {
+        availableMfaTypes.forEach(key => {
             if (allPool[key]) {
                 filteredStrategies[key] = allPool[key]
             }
         })
         return filteredStrategies
-    }, [activeMfaStrategies, initialMfaType, t])
+    }, [availableMfaTypes, initialMfaType, t])
 
     // 获取当前处于激活状态的策略元数据，提供兜底保护
     const currentStrategy = mfaStrategies[activeMfaType] || mfaStrategies['TOTP'];

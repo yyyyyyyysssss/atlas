@@ -12,6 +12,7 @@ import com.atlas.auth.config.security.saml2.sp.Saml2FailureHandler;
 import com.atlas.auth.config.security.saml2.sp.Saml2SuccessHandler;
 import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
+import com.atlas.auth.service.WebauthnService;
 import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.handler.ForbiddenAccessHandler;

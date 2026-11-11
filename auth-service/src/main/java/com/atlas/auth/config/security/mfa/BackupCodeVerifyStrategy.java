@@ -1,6 +1,7 @@
 package com.atlas.auth.config.security.mfa;
 
 import com.atlas.auth.service.UserMfaBackupCodeService;
+import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.model.MfaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
@@ -20,18 +21,24 @@ public class BackupCodeVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
+    public Long verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         BackupCodeMfaCredential backupCodeMfaCredential = (BackupCodeMfaCredential) credential;
         Long userId = mfaChallenge.getUserId();
         boolean valid = userMfaBackupCodeService.verifyAndConsume(userId, backupCodeMfaCredential.code());
         if (!valid) {
             throw new BadCredentialsException("备份码无效或已被使用");
         }
+        return userId;
     }
 
     @Override
     public MfaType getMfaType() {
 
         return MfaType.BACKUP_CODE;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.MEDIUM;
     }
 }

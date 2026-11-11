@@ -3,6 +3,7 @@ package com.atlas.auth.config.security.mfa;
 import com.atlas.auth.domain.entity.UserTotpCredentials;
 import com.atlas.auth.service.TotpService;
 import com.atlas.auth.service.UserTotpCredentialsService;
+import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.model.MfaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
  */
 
 @Component
-public class TotpVerifyStrategy implements MfaVerifyStrategy{
+public class TotpVerifyStrategy implements MfaVerifyStrategy {
 
     private final UserTotpCredentialsService userTotpCredentialsService;
 
@@ -26,12 +27,12 @@ public class TotpVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
+    public Long verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         TotpMfaCredential mfaCredential = (TotpMfaCredential) credential;
         Long userId = mfaChallenge.getUserId();
         // 获取用户绑定的 TOTP 密钥
         UserTotpCredentials userTotpCredentials = userTotpCredentialsService.getActivatedByUserId(userId);
-        if(userTotpCredentials == null){
+        if (userTotpCredentials == null) {
             throw new BadCredentialsException("验证码错误或已失效");
         }
         boolean verify;
@@ -41,14 +42,20 @@ public class TotpVerifyStrategy implements MfaVerifyStrategy{
         } catch (NumberFormatException e) {
             verify = false;
         }
-        if(!verify){
+        if (!verify) {
             throw new BadCredentialsException("验证码错误或已失效");
         }
+        return userId;
     }
 
     @Override
     public MfaType getMfaType() {
 
         return MfaType.TOTP;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.MEDIUM;
     }
 }

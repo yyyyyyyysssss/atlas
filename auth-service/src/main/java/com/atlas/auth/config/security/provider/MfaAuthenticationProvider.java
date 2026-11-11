@@ -2,6 +2,7 @@ package com.atlas.auth.config.security.provider;
 
 import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.service.UserService;
+import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.model.MfaType;
 import com.atlas.common.security.token.MfaAuthenticationToken;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
@@ -46,19 +47,17 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         // 获取对应验证器
         MfaVerifyStrategy strategy = mfaVerifyStrategyFactory.getStrategy(mfaType);
         // 如果失败，策略内部会抛出异常
-        strategy.verify(mfaChallenge, credential);
+        Long userId = strategy.verify(mfaChallenge, credential);
         // 立刻销毁 Ticket，防止重放轰炸
         mfaTicketRepository.remove(ticket);
-        // 加载用户
-        Long userId = mfaChallenge.getUserId();
         // 加载用户核心主体并校验状态
         UserDetails userDetails = userService.loadUserByUserId(userId);
         userDetailsChecker.check(userDetails);
         // 构建已认证的令牌
         MfaAuthenticationToken authenticated = MfaAuthenticationToken.authenticated(
                 userDetails,
-                null,
                 mfaType,
+                strategy.getAssuranceLevel(),
                 userDetails.getAuthorities()
         );
         authenticated.setDetails(mfaChallenge.getClientType());

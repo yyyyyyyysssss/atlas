@@ -134,6 +134,7 @@ public class LoginService {
                     .ticket(ticket)
                     .userId(securityUser.getId())
                     .clientType(clientType)
+                    .currentLevel(currentLevel)
                     .requiredLevel(requiredLevel)
                     .build();
             mfaTicketRepository.save(mfaChallenge);

@@ -1,6 +1,7 @@
 package com.atlas.auth.config.security.mfa;
 
 import com.atlas.auth.service.UserGestureCredentialsService;
+import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.model.MfaType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,7 +19,7 @@ public class GestureVerifyStrategy implements MfaVerifyStrategy{
     }
 
     @Override
-    public void verify(MfaChallenge mfaChallenge, MfaCredential credential) {
+    public Long verify(MfaChallenge mfaChallenge, MfaCredential credential) {
         GestureMfaCredential mfaCredential = (GestureMfaCredential) credential;
         Long userId = mfaChallenge.getUserId();
         boolean valid;
@@ -31,10 +32,16 @@ public class GestureVerifyStrategy implements MfaVerifyStrategy{
         if(!valid){
             throw new BadCredentialsException("手势错误");
         }
+        return userId;
     }
 
     @Override
     public MfaType getMfaType() {
         return MfaType.GESTURE;
+    }
+
+    @Override
+    public AuthAssuranceLevel getAssuranceLevel() {
+        return AuthAssuranceLevel.MEDIUM;
     }
 }

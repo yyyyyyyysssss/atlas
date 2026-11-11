@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -24,11 +25,14 @@ import java.util.List;
  * @Author ys
  * @Date 2024/8/6 9:29
  */
+@Getter
 public class MfaAuthenticationToken extends AbstractAuthenticationToken implements AssuranceLevelAware {
 
     private final Object principal;
     private Object credentials;
     private MfaType mfaType;
+
+    private AuthAssuranceLevel authAssuranceLevel;
 
     public MfaAuthenticationToken(Object principal, Object credentials, MfaType mfaType) {
         super(null);
@@ -38,20 +42,21 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken implemen
         this.setAuthenticated(false);
     }
 
-    public MfaAuthenticationToken(Object principal, Object credentials,MfaType mfaType, Collection<? extends GrantedAuthority> authorities) {
+    public MfaAuthenticationToken(Object principal, MfaType mfaType, AuthAssuranceLevel authAssuranceLevel, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
         this.principal = principal;
-        this.credentials = credentials;
+        this.credentials = null;
         this.mfaType = mfaType;
+        this.authAssuranceLevel = authAssuranceLevel;
         super.setAuthenticated(true);
     }
 
     public static MfaAuthenticationToken unauthenticated(Object principal, Object credentials, MfaType mfaType) {
-        return new MfaAuthenticationToken(principal, credentials,mfaType);
+        return new MfaAuthenticationToken(principal, credentials, mfaType);
     }
 
-    public static MfaAuthenticationToken authenticated(Object principal, Object credentials,MfaType mfaType, Collection<? extends GrantedAuthority> authorities) {
-        return new MfaAuthenticationToken(principal, credentials,mfaType, authorities);
+    public static MfaAuthenticationToken authenticated(Object principal, MfaType mfaType, AuthAssuranceLevel authAssuranceLevel, Collection<? extends GrantedAuthority> authorities) {
+        return new MfaAuthenticationToken(principal, mfaType, authAssuranceLevel, authorities);
     }
 
     @Override
@@ -64,13 +69,10 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken implemen
         return this.principal;
     }
 
-    public MfaType getMfaType() {
-        return mfaType;
-    }
-
     @Override
     public AuthAssuranceLevel getAssuranceLevel() {
-        return AuthAssuranceLevel.MEDIUM;
+
+        return authAssuranceLevel;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
@@ -83,11 +85,11 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken implemen
     public abstract static class MfaAuthenticationTokenMixin {
     }
 
-    static class MfaAuthenticationTokenDeserializer extends JsonDeserializer<MfaAuthenticationToken>{
+    static class MfaAuthenticationTokenDeserializer extends JsonDeserializer<MfaAuthenticationToken> {
 
         @Override
         public MfaAuthenticationToken deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-            ObjectMapper mapper = (ObjectMapper)jsonParser.getCodec();
+            ObjectMapper mapper = (ObjectMapper) jsonParser.getCodec();
             JsonNode jsonNode = mapper.readTree(jsonParser);
 
             Object principal = JsonNodeUtils.getPrincipal(jsonNode, mapper);
@@ -98,13 +100,21 @@ public class MfaAuthenticationToken extends AbstractAuthenticationToken implemen
 
             String mfaTypeStr = JsonNodeUtils.findStringValue(jsonNode, "mfaType");
 
-            MfaType mfaType = MfaType.valueOf(mfaTypeStr);
+            MfaType mfaType = mfaTypeStr == null ? null : MfaType.valueOf(mfaTypeStr);
 
-            List<GrantedAuthority> authorities =JsonNodeUtils.getAuthorities(jsonNode, mapper);
+            String assuranceLevelStr = JsonNodeUtils.findStringValue(jsonNode, "authAssuranceLevel");
 
-            MfaAuthenticationToken token = !authenticated ? MfaAuthenticationToken.unauthenticated(principal, credentials,mfaType) : MfaAuthenticationToken.authenticated(principal, credentials,mfaType, authorities);
+            AuthAssuranceLevel assuranceLevel = assuranceLevelStr == null ? null : AuthAssuranceLevel.valueOf(assuranceLevelStr);
 
-            Object details = JsonNodeUtils.getDetails(jsonNode,mapper);
+            List<GrantedAuthority> authorities = JsonNodeUtils.getAuthorities(jsonNode, mapper);
+
+            MfaAuthenticationToken token = !authenticated
+                    ?
+                    MfaAuthenticationToken.unauthenticated(principal, credentials, mfaType)
+                    :
+                    MfaAuthenticationToken.authenticated(principal, mfaType, assuranceLevel, authorities);
+
+            Object details = JsonNodeUtils.getDetails(jsonNode, mapper);
 
             token.setDetails(details);
 

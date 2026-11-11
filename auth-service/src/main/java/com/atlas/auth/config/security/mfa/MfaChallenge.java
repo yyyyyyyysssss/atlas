@@ -22,9 +22,10 @@ public class MfaChallenge {
 
     private ClientType clientType;
 
-    /**
-     * 本次认证要求达到的等级
-     */
+    // 当前认证的等级
+    private AuthAssuranceLevel currentLevel;
+
+    // 本次认证要求达到的等级
     private AuthAssuranceLevel requiredLevel;
 
 }

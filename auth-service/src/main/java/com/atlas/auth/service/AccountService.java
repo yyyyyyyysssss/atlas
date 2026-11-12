@@ -1,11 +1,11 @@
 package com.atlas.auth.service;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.entity.*;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.*;
 import com.atlas.auth.event.AuditLogEvent;
-import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.security.service.TicketService;
 import com.atlas.common.security.token.WebauthnAuthenticationRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -159,12 +159,12 @@ public class AccountService {
     public void changeUsername(Long userId, ChangeUsernameDTO changeUsernameDTO) {
         UserIdentifier userIdentifier = userIdentifierService.findByUserIdAndType(userId, IdentifierType.USERNAME);
         if (isUsernameModified(userIdentifier)) {
-            throw new BusinessException("账号名一年内仅允许修改一次，上次修改时间：" + userIdentifier.getUpdateTime().toLocalDate());
+            throw new AuthServiceException("账号名一年内仅允许修改一次，上次修改时间：" + userIdentifier.getUpdateTime().toLocalDate());
         }
         String newUsername = changeUsernameDTO.newUsername();
         Long existsUserId = userIdentifierService.findUserIdByValueAndType(newUsername, IdentifierType.USERNAME);
         if (existsUserId != null) {
-            throw new BusinessException("该账号名已被占用，请换一个试试");
+            throw new AuthServiceException("该账号名已被占用，请换一个试试");
         }
         userIdentifierService.updateIdentifier(userId, IdentifierType.USERNAME, newUsername, true);
 
@@ -174,7 +174,7 @@ public class AccountService {
 
     public void initPassword(Long userId, InitPasswordDTO initPasswordDTO) {
         if (!Objects.equals(initPasswordDTO.password(), initPasswordDTO.confirmPassword())) {
-            throw new BusinessException("两次输入的新密码不一致");
+            throw new AuthServiceException("两次输入的新密码不一致");
         }
         userPasswordCredentialsService.setPassword(userId, initPasswordDTO.password());
 
@@ -184,11 +184,11 @@ public class AccountService {
 
     public void changePassword(Long userId, ChangePasswordDTO changePasswordDTO) {
         if (!Objects.equals(changePasswordDTO.newPassword(), changePasswordDTO.confirmPassword())) {
-            throw new BusinessException("两次输入的新密码不一致");
+            throw new AuthServiceException("两次输入的新密码不一致");
         }
         boolean verify = userPasswordCredentialsService.verifyPassword(userId, changePasswordDTO.newPassword());
         if (verify) {
-            throw new BusinessException("新密码不能与原密码相同");
+            throw new AuthServiceException("新密码不能与原密码相同");
         }
         // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
         validTicket(userId, changePasswordDTO.ticket());
@@ -201,13 +201,13 @@ public class AccountService {
     public void initEmail(Long userId, InitEmailDTO initEmailDTO) {
         Long exist = userIdentifierService.findUserIdByValueAndType(initEmailDTO.email(), IdentifierType.EMAIL);
         if (exist != null) {
-            throw new BusinessException("该邮箱已被其他账号占用");
+            throw new AuthServiceException("该邮箱已被其他账号占用");
         }
         validTicket(userId, initEmailDTO.ticket());
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
                 .verify(initEmailDTO.email(), initEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
         if (!verify) {
-            throw new BusinessException("验证码错误或已过期");
+            throw new AuthServiceException("验证码错误或已过期");
         }
         userIdentifierService.addIdentifier(userId, new IdentifierSpec(IdentifierType.EMAIL, initEmailDTO.email(), true));
 
@@ -218,12 +218,12 @@ public class AccountService {
     public void changeEmail(Long userId, ChangeEmailDTO changeEmailDTO) {
         Long exist = userIdentifierService.findUserIdByValueAndType(changeEmailDTO.newEmail(), IdentifierType.EMAIL);
         if (exist != null) {
-            throw new BusinessException("该邮箱已被其他账号占用");
+            throw new AuthServiceException("该邮箱已被其他账号占用");
         }
         boolean verify = captchaFactory.getService(CaptchaType.EMAIL)
                 .verify(changeEmailDTO.newEmail(), changeEmailDTO.code(), CaptchaScene.MODIFY_EMAIL);
         if (!verify) {
-            throw new BusinessException("验证码错误或已过期");
+            throw new AuthServiceException("验证码错误或已过期");
         }
         // 所有外部校验全部通过后，最后核验并销毁第一步的凭证
         validTicket(userId, changeEmailDTO.ticket());
@@ -287,12 +287,12 @@ public class AccountService {
             credentialId = Bytes.fromBase64(unbindWebauthnDTO.credentialId());
         } catch (Exception e) {
             log.warn("用户 {} 尝试使用非法的 Base64 凭证 ID 进行解绑", userId);
-            throw new BusinessException("设备凭证无效");
+            throw new AuthServiceException("设备凭证无效");
         }
         // 查找凭证
         CredentialRecord credentialRecord = userWebauthnCredentialsService.findByCredentialId(credentialId);
         if (credentialRecord == null) {
-            throw new BusinessException("设备凭证不存在");
+            throw new AuthServiceException("设备凭证不存在");
         }
 
         Bytes userEntityUserId = credentialRecord.getUserEntityUserId();
@@ -301,12 +301,12 @@ public class AccountService {
             expectedUserId = Long.parseLong(new String(userEntityUserId.getBytes(), StandardCharsets.UTF_8));
         } catch (NumberFormatException e) {
             log.error("WebAuthn 凭证用户ID解析失败，原始字节转字符串为: {}", new String(userEntityUserId.getBytes()));
-            throw new BusinessException("凭证用户数据不匹配");
+            throw new AuthServiceException("凭证用户数据不匹配");
         }
         // 越权校验
         if (!userId.equals(expectedUserId)) {
             log.warn("用户 {} 尝试越权解绑用户 {} 的凭证", userId, expectedUserId);
-            throw new BusinessException("设备凭证不存在"); // 防枚举，保持模糊提示
+            throw new AuthServiceException("设备凭证不存在"); // 防枚举，保持模糊提示
         }
         // 风控验证码/Ticket 校验
         validTicket(userId, unbindWebauthnDTO.ticket());
@@ -324,7 +324,7 @@ public class AccountService {
         UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
         if (credential == null || !UserTotpStatus.ACTIVATED.equals(credential.getStatus())) {
             log.warn("用户 {} 尝试校验未激活或不存在的 TOTP 资源", userId);
-            throw new BusinessException("当前账户尚未开启双因子认证保护");
+            throw new AuthServiceException("当前账户尚未开启双因子认证保护");
         }
         boolean verified = false;
         boolean isMatched = totpService.verify(credential.getSecretKey(), totpVerifyDTO.code());
@@ -362,17 +362,17 @@ public class AccountService {
         log.info("用户 {} 提交首组验证码尝试激活 TOTP", userId);
         UserTotpCredentials credential = userTotpCredentialsService.getByUserId(userId);
         if (credential == null) {
-            throw new BusinessException("未找到处于待激活状态的 TOTP 配置，请先发起初始化");
+            throw new AuthServiceException("未找到处于待激活状态的 TOTP 配置，请先发起初始化");
         }
         if (UserTotpStatus.ACTIVATED.equals(credential.getStatus())) {
             log.warn("用户 {} 尝试重复激活已开启的 TOTP 2FA", userId);
-            throw new BusinessException("双因子认证已处于激活状态，请勿重复操作");
+            throw new AuthServiceException("双因子认证已处于激活状态，请勿重复操作");
         }
         String secretKey = credential.getSecretKey();
         boolean isMatched = totpService.verify(secretKey, totpActivateDTO.code());
         if (!isMatched) {
             log.warn("用户 {} 激活 TOTP 失败：验证码错误或已过期", userId);
-            throw new BusinessException("验证码不正确或已过期，请重新输入");
+            throw new AuthServiceException("验证码不正确或已过期，请重新输入");
         }
         userTotpCredentialsService.updateStatus(userId, UserTotpStatus.ACTIVATED);
         // 生成备份码
@@ -413,7 +413,7 @@ public class AccountService {
 
     public void bindGesture(Long userId, GestureBindDTO gestureBindDTO) {
         if (!Objects.equals(gestureBindDTO.gesture(), gestureBindDTO.confirmGesture())) {
-            throw new BusinessException("两次输入的手势密码不一致");
+            throw new AuthServiceException("两次输入的手势密码不一致");
         }
         validTicket(userId, gestureBindDTO.ticket());
         userGestureCredentialsService.saveOrUpdateGesture(userId, gestureBindDTO.gesture());
@@ -460,11 +460,11 @@ public class AccountService {
                 return; // 幂等处理，直接返回成功，不重复落库
             }
             // 这个钱包已经被系统的【其他用户】给强占了
-            throw new BusinessException("该加密钱包已被其他账号绑定，请先在原账号执行解绑");
+            throw new AuthServiceException("该加密钱包已被其他账号绑定，请先在原账号执行解绑");
         }
         boolean success = userWeb3CredentialsService.saveCredential(userId, address, walletType, label, source);
         if (!success) {
-            throw new BusinessException("钱包绑定失败，数据写入异常");
+            throw new AuthServiceException("钱包绑定失败，数据写入异常");
         }
         log.info("【Web3 钱包核验成功】当前登录用户 userId: {}, 事务 web3Id: {}, " +
                         "反解出安全的钱包地址 address: {}, 钱包协议 walletType: {}, 请求来源 source: {}",
@@ -503,19 +503,19 @@ public class AccountService {
         validTicket(userId, ticket);
         UserWeb3Credentials credential = userWeb3CredentialsService.getById(credentialId);
         if (credential == null) {
-            throw new BusinessException("未找到该钱包绑定记录");
+            throw new AuthServiceException("未找到该钱包绑定记录");
         }
         if (!credential.getUserId().equals(userId)) {
             log.warn("【Web3 钱包解绑越权警告】用户 {} 尝试解绑不属于自己的凭证 ID: {}, 凭证实际所属用户: {}",
                     userId, credentialId, credential.getUserId());
-            throw new BusinessException("操作非法，您无权解绑该钱包凭证");
+            throw new AuthServiceException("操作非法，您无权解绑该钱包凭证");
         }
         // 防止孤儿账号
         ensureIdentityNotOrphaned(userId, CredentialType.WEB3, credentialId);
         // 执行解绑
         boolean success = userWeb3CredentialsService.removeCredential(userId, credential.getAddress());
         if (!success) {
-            throw new BusinessException("钱包解绑失败，数据写入异常");
+            throw new AuthServiceException("钱包解绑失败，数据写入异常");
         }
         log.info("【Web3 钱包解绑成功】用户 userId: {}, 成功解除钱包地址: {} [协议: {}, 标签: {}] 的绑定关系",
                 userId, credential.getAddress(), credential.getWalletType(), credential.getLabel());
@@ -539,7 +539,7 @@ public class AccountService {
         Long providerId = thirdPartyProviderUnbindDTO.providerId();
         UserProvider userProvider = userProviderService.getById(providerId);
         if (userProvider == null || !userProvider.getUserId().equals(userId)) {
-            throw new BusinessException("未找到该三方账号的绑定记录");
+            throw new AuthServiceException("未找到该三方账号的绑定记录");
         }
         // 防止孤儿账号
         ensureIdentityNotOrphaned(userId, CredentialType.THIRD_PARTY, providerId);
@@ -570,7 +570,7 @@ public class AccountService {
 
         if (!canLoginAfterRemoval) {
             log.warn("【安全拦截】用户 {} 尝试解绑唯一的 {} 凭证(ID: {}), 已被系统拒绝", userId, credentialType, targetId);
-            throw new BusinessException("操作失败：为了您的账号安全，请至少保留一种登录方式（密码、Passkey、钱包或其他社交绑定）");
+            throw new AuthServiceException("操作失败：为了您的账号安全，请至少保留一种登录方式（密码、Passkey、钱包或其他社交绑定）");
         }
     }
 
@@ -582,7 +582,7 @@ public class AccountService {
     private Long validTicket(Long userId, String ticket) {
         Long ticketUserId = ticketService.consume(ticket, Long.class);
         if (!ticketUserId.equals(userId)) {
-            throw new BusinessException("安全校验未通过，请重新进行身份验证");
+            throw new AuthServiceException("安全校验未通过，请重新进行身份验证");
         }
         return ticketUserId;
     }

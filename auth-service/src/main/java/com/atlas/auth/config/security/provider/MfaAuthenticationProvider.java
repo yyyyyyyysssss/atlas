@@ -2,7 +2,6 @@ package com.atlas.auth.config.security.provider;
 
 import com.atlas.auth.config.security.mfa.*;
 import com.atlas.auth.service.UserService;
-import com.atlas.common.security.enums.AuthAssuranceLevel;
 import com.atlas.common.security.model.MfaType;
 import com.atlas.common.security.token.MfaAuthenticationToken;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
@@ -34,9 +33,9 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         MfaAuthenticationToken mfaAuthenticationToken = (MfaAuthenticationToken) authentication;
-        String ticket = (String)mfaAuthenticationToken.getPrincipal();
+        String challengeId = (String)mfaAuthenticationToken.getPrincipal();
         // 校验凭证是否存在或过期
-        MfaChallenge mfaChallenge = mfaTicketRepository.load(ticket);
+        MfaChallenge mfaChallenge = mfaTicketRepository.load(challengeId);
         if(mfaChallenge == null){
             throw new BadCredentialsException("MFA认证已失效，请重新登录");
         }
@@ -49,7 +48,7 @@ public class MfaAuthenticationProvider implements AuthenticationProvider {
         // 如果失败，策略内部会抛出异常
         Long userId = strategy.verify(mfaChallenge, credential);
         // 立刻销毁 Ticket，防止重放轰炸
-        mfaTicketRepository.remove(ticket);
+        mfaTicketRepository.remove(challengeId);
         // 加载用户核心主体并校验状态
         UserDetails userDetails = userService.loadUserByUserId(userId);
         userDetailsChecker.check(userDetails);

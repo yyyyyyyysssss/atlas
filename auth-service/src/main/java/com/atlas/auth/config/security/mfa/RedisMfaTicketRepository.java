@@ -6,7 +6,7 @@ import java.time.Duration;
 
 public class RedisMfaTicketRepository implements MfaTicketRepository{
 
-    private static final String TICKET_KEY_PREFIX = "security:mfa:ticket:";
+    private static final String TICKET_KEY_PREFIX = "security:mfa:challenge:";
 
     private final RedisTemplate<String,Object> redisTemplate;
 
@@ -16,13 +16,13 @@ public class RedisMfaTicketRepository implements MfaTicketRepository{
 
     @Override
     public void save(MfaChallenge mfaChallenge){
-        String key = redisKey(mfaChallenge.getTicket());
+        String key = redisKey(mfaChallenge.getChallengeId());
         redisTemplate.opsForValue().set(key, mfaChallenge, Duration.ofMinutes(5));
     }
 
     @Override
-    public MfaChallenge load(String ticket) {
-        String key = redisKey(ticket);
+    public MfaChallenge load(String challengeId) {
+        String key = redisKey(challengeId);
         Object value = redisTemplate.opsForValue().get(key);
         if (value instanceof MfaChallenge mfaChallenge) {
             return mfaChallenge;

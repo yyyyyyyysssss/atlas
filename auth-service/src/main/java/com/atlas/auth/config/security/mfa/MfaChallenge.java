@@ -16,7 +16,7 @@ import lombok.*;
 @Builder
 public class MfaChallenge {
 
-    private String ticket;
+    private String challengeId;
 
     private Long userId;
 

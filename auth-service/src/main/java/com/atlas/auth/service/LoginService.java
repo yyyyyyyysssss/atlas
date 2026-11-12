@@ -127,18 +127,11 @@ public class LoginService {
         if (authenticate instanceof AssuranceLevelAware awareToken) {
             currentLevel = awareToken.getAssuranceLevel();
         }
+
         // 如果当前登录方式的等级低于用户期望的等级，触发 MFA 拦截
         if (currentLevel.getRank() < requiredLevel.getRank()) {
-            String ticket = SecureRandomUtils.generate();
-            MfaChallenge mfaChallenge = MfaChallenge.builder()
-                    .ticket(ticket)
-                    .userId(securityUser.getId())
-                    .clientType(clientType)
-                    .currentLevel(currentLevel)
-                    .requiredLevel(requiredLevel)
-                    .build();
-            mfaTicketRepository.save(mfaChallenge);
-            return TokenResponse.mfaRequired(ticket, requiredLevel, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
+            MfaChallenge mfaChallenge = createMfaChallenge(securityUser.getId(), clientType, currentLevel, requiredLevel);
+            return TokenResponse.mfaRequired(mfaChallenge.getChallengeId(), requiredLevel, securityUser.getPreferredMfaType(), securityUser.getActiveMfaStrategies());
         }
 
         // 会话控制
@@ -194,6 +187,22 @@ public class LoginService {
         }
 
         return TokenResponse.success(token);
+    }
+
+    private MfaChallenge createMfaChallenge(Long userId,
+                                            ClientType clientType,
+                                            AuthAssuranceLevel currentLevel,
+                                            AuthAssuranceLevel requiredLevel){
+        String challengeId = SecureRandomUtils.generate();
+        MfaChallenge mfaChallenge = MfaChallenge.builder()
+                .challengeId(challengeId)
+                .userId(userId)
+                .clientType(clientType)
+                .currentLevel(currentLevel)
+                .requiredLevel(requiredLevel)
+                .build();
+        mfaTicketRepository.save(mfaChallenge);
+        return mfaChallenge;
     }
 
 }

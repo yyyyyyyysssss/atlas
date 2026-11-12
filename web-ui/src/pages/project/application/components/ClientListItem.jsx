@@ -6,7 +6,7 @@ import { AppstoreOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icon
 const { Text } = Typography;
 const { useToken } = theme;
 
-const ClientListItem = ({ client, onEdit, onDelete, clientIdLabel = ' 客户端 ID' }) => {
+const ClientListItem = ({ client, onEdit, onDelete, identifierLabel = '客户端标识' }) => {
 
 
     const { token } = useToken();
@@ -15,7 +15,7 @@ const ClientListItem = ({ client, onEdit, onDelete, clientIdLabel = ' 客户端 
 
     const handleCopy = (text) => {
         navigator.clipboard.writeText(text);
-        message.success("Client ID 已复制");
+        message.success(`${identifierLabel} 已复制`);
     };
 
     return (
@@ -98,7 +98,7 @@ const ClientListItem = ({ client, onEdit, onDelete, clientIdLabel = ' 客户端 
                                     fontSize: token.fontSizeSM,
                                 }}
                             >
-                                {clientIdLabel} :
+                                {identifierLabel} :
                             </Text>
 
                             <Text

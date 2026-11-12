@@ -54,6 +54,10 @@ const Saml2ClientApplicationList = lazy(() => import('../pages/project/applicati
 const Saml2ClientApplicationEdit = lazy(() => import('../pages/project/application/client/saml2/edit'))
 
 
+const CasClientApplication = lazy(() => import('../pages/project/application/client/cas'))
+const CasClientApplicationList = lazy(() => import('../pages/project/application/client/cas/list'))
+const CasClientApplicationEdit = lazy(() => import('../pages/project/application/client/cas/edit'))
+
 const Project = lazy(() => import('../pages/project'))
 const ProjectEdit = lazy(() => import('../pages/project/edit'))
 const ProjectOverview = lazy(() => import('../pages/project/overview'))
@@ -405,6 +409,29 @@ export const routes = [
                                             {
                                                 path: ':id',
                                                 element: <Saml2ClientApplicationEdit />,
+                                                breadcrumbName: '编辑',
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        path: 'cas',
+                                        breadcrumbName: 'Cas 客户端',
+                                        element: <CasClientApplication />,
+                                        protected: true,
+                                        children: [
+                                            {
+                                                index: true,
+                                                breadcrumbName: 'Cas 客户端',
+                                                element: <CasClientApplicationList />
+                                            },
+                                            {
+                                                path: 'create',
+                                                element: <CasClientApplicationEdit />,
+                                                breadcrumbName: '创建',
+                                            },
+                                            {
+                                                path: ':id',
+                                                element: <CasClientApplicationEdit />,
                                                 breadcrumbName: '编辑',
                                             }
                                         ]

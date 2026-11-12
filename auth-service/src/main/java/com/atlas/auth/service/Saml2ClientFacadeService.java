@@ -81,6 +81,9 @@ public class Saml2ClientFacadeService extends AbstractClientApplicationFacadeSer
             throw new AuthServiceException("删除Saml2 客户端失败，请稍后重试");
         }
 
+        // 删除客户端注册信息
+        saml2RegisteredClientService.removeById(applicationClient.getRegisteredClientId());
+
         log.info("Saml2 客户端删除成功，ID: {}", id);
 
         // 发布审计日志
@@ -90,10 +93,10 @@ public class Saml2ClientFacadeService extends AbstractClientApplicationFacadeSer
     private Saml2ClientCreateVO createClient(Long applicationId, Saml2ClientSaveDTO saveDTO) {
         log.info("正在创建 Saml2 应用，名称: {}", saveDTO.clientName());
 
-        String registeredClientId = UUID.randomUUID().toString().replace("-", "");
         if (Boolean.TRUE.equals(saveDTO.requireSignedAuthnRequest()) && !StringUtils.hasText(saveDTO.verificationCertificate())) {
             throw new AuthServiceException("AuthnRequest 必须签名时, 请求签名验证证书不能为空");
         }
+        String registeredClientId = UUID.randomUUID().toString().replace("-", "");
         boolean requireSignedAuthnRequest = saveDTO.requireSignedAuthnRequest() != null ? saveDTO.requireSignedAuthnRequest() : false;
         if (StringUtils.hasText(saveDTO.verificationCertificate())) {
             requireSignedAuthnRequest = true;

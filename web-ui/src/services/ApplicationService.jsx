@@ -68,6 +68,34 @@ export const deleteSaml2Client = async (projectCode, applicationId, id) => {
     return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/${projectCode}/${applicationId}/saml2/${id}`))
 }
 
+
+
+// 创建cas应用
+export const saveCasClient = async (projectCode, applicationId, body) => {
+
+    return apiRequestWrapper(() => httpWrapper.post(`/api/auth/${projectCode}/${applicationId}/cas/save`, body))
+}
+
+
+// 获取cas客户端详情
+export const getCasClientDetail = async (projectCode, applicationId, id) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/${projectCode}/${applicationId}/cas/${id}`))
+}
+
+// 获取cas客户端列表
+export const getCasClientPage = async (projectCode, applicationId, page, size) => {
+
+    return apiRequestWrapper(() => httpWrapper.get(`/api/auth/${projectCode}/${applicationId}/cas/page?pageNum=${page}&pageSize=${size}`))
+}
+
+// 删除cas客户端
+export const deleteCasClient = async (projectCode, applicationId, id) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete(`/api/auth/${projectCode}/${applicationId}/cas/${id}`))
+}
+
+
 // 获取应用列表
 export const getApplicationPage = async (projectCode, pageNum, pageSize, applicationName) => {
 

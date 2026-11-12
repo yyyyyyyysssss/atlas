@@ -110,7 +110,6 @@ const Saml2ClientApplicationList = () => {
                                     <ClientListItem
                                         client={client}
                                         onDelete={(id, e) => handleDeleteClient(id, e)}
-                                        clientIdLabel='SP Entity ID'
                                     />
                                 </div>
                             </List.Item>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './index.css';
 import { Flex, Tabs, theme } from "antd";
-import { CodeXml, FileKey, KeyRound } from 'lucide-react';
+import { CodeXml, FileKey, KeyRound, Ticket } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDomain } from '../../../../router/DomainProvider';
 import useFullParams from '../../../../hooks/useFullParams';
@@ -71,7 +71,7 @@ const ProjectApplicationClient = () => {
                             label: (
                                 <Flex align="center" gap={12} style={{ padding: '4px 8px' }}>
                                     <KeyRound size={16} />
-                                    <span style={{ fontSize: 15 }}>OAuth2 客户端</span>
+                                    <span style={{ fontSize: 15 }}>OAuth2</span>
                                 </Flex>
                             ),
                         },
@@ -80,7 +80,16 @@ const ProjectApplicationClient = () => {
                             label: (
                                 <Flex align="center" gap={12} style={{ padding: '4px 8px' }}>
                                     <FileKey size={16} />
-                                    <span style={{ fontSize: 15 }}>Saml2 客户端</span>
+                                    <span style={{ fontSize: 15 }}>SAML2</span>
+                                </Flex>
+                            ),
+                        },
+                        {
+                            key: 'cas',
+                            label: (
+                                <Flex align="center" gap={12} style={{ padding: '4px 8px' }}>
+                                    <Ticket size={16} />
+                                    <span style={{ fontSize: 15 }}>CAS</span>
                                 </Flex>
                             ),
                         }

@@ -66,6 +66,9 @@ public class ApplicationClientServiceImpl extends ServiceImpl<ApplicationClientM
             if(saveDTO.clientProtocol().equals(ClientProtocol.SAML2) && StringUtils.hasText(saveDTO.clientId())){
                 applicationClient.setClientId(saveDTO.clientId());
             }
+            if(saveDTO.clientProtocol().equals(ClientProtocol.CAS) && StringUtils.hasText(saveDTO.clientId())){
+                applicationClient.setClientId(saveDTO.clientId());
+            }
             applicationClient.setClientName(saveDTO.clientName());
             applicationClient.setDescription(saveDTO.description());
             this.updateById(applicationClient);

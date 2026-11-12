@@ -1,5 +1,6 @@
 package com.atlas.auth.domain.dto;
 
+import com.atlas.auth.domain.entity.CasRegisteredClient;
 import com.atlas.auth.domain.entity.Saml2RegisteredClient;
 import com.atlas.auth.enums.ClientProtocol;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -42,6 +43,19 @@ public record ApplicationClientSaveDTO(
                 registeredClient.getEntityId(),
                 saveDTO.clientName(),
                 ClientProtocol.SAML2,
+                saveDTO.description()
+        );
+    }
+
+    public static ApplicationClientSaveDTO of(Long applicationId, CasClientSaveDTO saveDTO, CasRegisteredClient casRegisteredClient){
+
+        return new ApplicationClientSaveDTO(
+                saveDTO.id(),
+                applicationId,
+                casRegisteredClient.getId(),
+                casRegisteredClient.getServiceHash(),
+                saveDTO.clientName(),
+                ClientProtocol.CAS,
                 saveDTO.description()
         );
     }

@@ -6,9 +6,9 @@ import { useRequest } from 'ahooks';
 import { useEffect, useState } from 'react';
 import useFullParams from '../../../../../../hooks/useFullParams';
 import Loading from '../../../../../../components/loading';
-import SmartUpload from '../../../../../../components/smart-upload';
 import ApplicationCard from '../../../components/ApplicationCard';
 import { getSaml2ClientDetail, saveSaml2Client } from '../../../../../../services/ApplicationService';
+import AttributeMappingForm from '../../../components/AttributeMappingForm';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -312,123 +312,13 @@ const Saml2ClientApplicationEdit = () => {
                             SAML 属性映射
                         </Divider>
 
-                        <Form.Item
-                            label="属性映射："
+                        <AttributeMappingForm
+                            sourceField="samlAttribute"
+                            sourceLabel="SAML 属性"
+                            sourcePlaceholder="例如 email"
+                            sourceRequiredMessage="请输入 SAML 属性名称"
                             extra="将 Atlas 用户属性映射为 SP 接收的 SAML Attribute 名称。"
-                        >
-                            <Form.List
-                                name="attributeMappings"
-                                rules={[
-                                    {
-                                        validator: async (_, mappings) => {
-                                            if (!mappings || mappings.length === 0) {
-                                                return Promise.reject(
-                                                    new Error('请至少添加一条属性映射'),
-                                                );
-                                            }
-
-                                            const names = mappings
-                                                .map((item) =>
-                                                    item?.samlAttribute?.trim(),
-                                                )
-                                                .filter(Boolean);
-
-                                            if (
-                                                new Set(names).size !== names.length
-                                            ) {
-                                                return Promise.reject(
-                                                    new Error(
-                                                        'SAML 属性名称不能重复',
-                                                    ),
-                                                );
-                                            }
-                                        },
-                                    },
-                                ]}
-                            >
-                                {(fields, { add, remove }, { errors }) => (
-                                    <Flex vertical gap={12}>
-                                        {fields.map((field) => (
-                                            <Flex
-                                                key={field.key}
-                                                gap={8}
-                                                align="start"
-                                                className="saml2-client-edit__mapping-row"
-                                            >
-                                                <Form.Item
-                                                    name={[
-                                                        field.name,
-                                                        'samlAttribute',
-                                                    ]}
-                                                    rules={[
-                                                        {
-                                                            required: true,
-                                                            whitespace: true,
-                                                            message:
-                                                                '请输入 SAML 属性名称',
-                                                        },
-                                                    ]}
-                                                    style={{
-                                                        flex: 1,
-                                                        minWidth: 0,
-                                                        marginBottom: 0,
-                                                    }}
-                                                >
-                                                    <Input placeholder="SAML 属性名称，例如 email" />
-                                                </Form.Item>
-
-                                                <Form.Item
-                                                    name={[
-                                                        field.name,
-                                                        'userAttribute',
-                                                    ]}
-                                                    rules={[
-                                                        {
-                                                            required: true,
-                                                            whitespace: true,
-                                                            message:
-                                                                '请输入 Atlas 用户属性',
-                                                        },
-                                                    ]}
-                                                    style={{
-                                                        flex: 1,
-                                                        minWidth: 0,
-                                                        marginBottom: 0,
-                                                    }}
-                                                >
-                                                    <Input placeholder="Atlas 用户属性，例如 email" />
-                                                </Form.Item>
-
-                                                <Button
-                                                    type="text"
-                                                    danger
-                                                    icon={<DeleteOutlined />}
-                                                    onClick={() =>
-                                                        remove(field.name)
-                                                    }
-                                                />
-                                            </Flex>
-                                        ))}
-
-                                        <Form.ErrorList errors={errors} />
-
-                                        <Button
-                                            type="dashed"
-                                            icon={<PlusOutlined />}
-                                            onClick={() =>
-                                                add({
-                                                    samlAttribute: '',
-                                                    userAttribute: '',
-                                                })
-                                            }
-                                            block
-                                        >
-                                            添加属性映射
-                                        </Button>
-                                    </Flex>
-                                )}
-                            </Form.List>
-                        </Form.Item>
+                        />
 
                         <Divider style={{ fontSize: 14, color: token.colorTextSecondary }}>其他配置</Divider>
 

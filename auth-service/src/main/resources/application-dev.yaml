@@ -33,6 +33,11 @@ security:
     origins:
       - http://localhost:9090
       - http://localhost:3000
+  certificate:
+    # CA PKCS12 文件
+    key-store: file:D:/workspace/temp/atlas-ca.p12
+    key-store-password: ${ATLAS_CA_KEYSTORE_PASSWORD}
+    key-alias: atlas-client-ca
 
 atlas:
   user:

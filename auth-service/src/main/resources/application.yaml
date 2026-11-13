@@ -67,6 +67,21 @@ security:
     ignore-partial-result-exception: true
   cas:
     pgt-url: ${security.issuer-url}/thirdParty/cas/callback/pgt
+  certificate:
+    enabled: true
+    # CA PKCS12 文件
+    key-store: file:/etc/atlas/certificates/atlas-ca.p12
+    key-store-password: ${ATLAS_CA_KEYSTORE_PASSWORD}
+    key-alias: atlas-client-ca
+    profiles:
+      tls-client-rsa:
+        key-algorithm: RSA
+        key-size: 2048
+        validity-days: 365
+      tls-client-ec:
+        key-algorithm: EC
+        ec-curve: secp256r1
+        validity-days: 365
   authorize:
     permit:
       - /login/*

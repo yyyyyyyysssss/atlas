@@ -64,6 +64,13 @@ security:
   issuerUrl: https://localhost:9090
   uiUrl: https://localhost:3000
 
+  # 本地ssl配置
+  local-https:
+    port: 8443
+    key-store: classpath:certs/atlas-local.p12
+    key-store-password: ${ATLAS_LOCAL_KEYSTORE_PASSWORD}
+    key-alias: atlas-local
+
 rate-limit:
   services:
     - serviceId: auth-service

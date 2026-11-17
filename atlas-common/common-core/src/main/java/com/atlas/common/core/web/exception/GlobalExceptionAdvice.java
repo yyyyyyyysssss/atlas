@@ -13,14 +13,24 @@ import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableExcept
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
@@ -49,6 +59,61 @@ public class GlobalExceptionAdvice {
         return ResultGenerator.failed(ResultCode.SERVICE_UNAVAILABLE, "系统暂时无法处理此请求，请稍后再试");
     }
 
+    // HTTP 请求体无法读取：400
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.debug("HTTP message not readable: {}", e.getMessage());
+        return ResponseEntity.badRequest().build();
+    }
+
+    // HTTP 请求参数类型转换失败：400
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        log.debug("HTTP parameter type mismatch: {}", e.getMessage());
+        return ResponseEntity.badRequest().build();
+    }
+
+    // 请求资源不存在：404
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.debug("Resource not found: {}", e.getResourcePath());
+        return ResponseEntity.notFound().build();
+    }
+
+    // 请求接口不存在：404
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
+        log.debug("No handler found: {}", e.getRequestURL());
+        return ResponseEntity.notFound().build();
+    }
+
+    // 请求方法不支持：405
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Void> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        log.debug("Request method not supported: {}", e.getMethod());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
+    }
+
+    // 请求媒体类型不支持：415
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Void> handleMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
+        log.debug("Media type not supported: {}", e.getContentType());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+    }
+
+    // 响应媒体类型不可接受：406
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<Void> handleMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException e) {
+        log.debug("Media type not acceptable: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+    }
+
+    // 上传文件超过限制：413
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.warn("Upload size exceeded: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+    }
 
     @ResponseStatus(HttpStatus.OK)
     @ExceptionHandler(BaseException.class)

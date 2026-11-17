@@ -19,11 +19,11 @@ import org.springframework.core.io.Resource;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.stream.Stream;
 
 /**
  * @Description
@@ -48,6 +48,7 @@ public class ControllerLogAspect {
         module.addSerializer(MultipartFile.class, new ControllerLogAspect.LogTypeSerializer());
         module.addSerializer(InputStream.class, new ControllerLogAspect.LogTypeSerializer());
         module.addSerializer(Resource.class, new LogTypeSerializer());
+        module.addSerializer(StreamingResponseBody.class, new LogTypeSerializer());
         module.addSerializer(OutputStream.class, new LogTypeSerializer());
         module.addSerializer(Part.class, new LogTypeSerializer());
         module.addSerializer(byte[].class, new JsonSerializer<byte[]>() {
@@ -71,7 +72,7 @@ public class ControllerLogAspect {
         HttpServletRequest request = servletRequestAttributes.getRequest();
         logBuilder.append(String.format("Request: [%s] %s", request.getMethod(), request.getRequestURI()));
         Object[] args = joinPoint.getArgs();
-        logBuilder.append(String.format("   ,Args: %s",  logObjectMapper.writeValueAsString(toLogValue(args))));
+        logBuilder.append(String.format("   ,Args: %s",  logObjectMapper.writeValueAsString(args)));
         Object result = null;
         Throwable exception = null;
         try {
@@ -87,7 +88,7 @@ public class ControllerLogAspect {
                 logBuilder.append(String.format("   ,Exception: %s", exception.getMessage()));
                 log.error(logBuilder.toString());
             } else {
-                logBuilder.append(String.format("   ,Return: %s", logObjectMapper.writeValueAsString(toLogValue(result))));
+                logBuilder.append(String.format("   ,Return: %s", logObjectMapper.writeValueAsString(result)));
                 log.info(logBuilder.toString());
             }
         }
@@ -100,20 +101,5 @@ public class ControllerLogAspect {
             jsonGenerator.writeString("[Object: " + object.getClass().getSimpleName() + "]");
         }
     }
-
-    private Object toLogValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        String className = value.getClass().getName();
-
-        if (className.equals("org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody")) {
-            return "[StreamingResponseBody]";
-        }
-
-        return value;
-    }
-
 
 }

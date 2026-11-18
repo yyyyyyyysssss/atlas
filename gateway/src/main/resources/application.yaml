@@ -43,6 +43,18 @@ spring:
               filters:
                 - StripPrefix=2 # 转发前剥离 2 层路径
 
+            - id: auth_certificate_route
+              uri: http://auth-service
+              predicates:
+                - Path=/api/auth/login/certificate
+              filters:
+                - StripPrefix=2
+                - name: forwardClientCertificate
+                  args:
+                    headerName: X-Client-Certificate
+                    required: true
+                    mode: FORWARDED
+
             # 认证服务
             - id: auth_route
               uri: http://auth-service

@@ -104,43 +104,37 @@ public class CertificateConfig {
         return new CertificateConverter();
     }
 
+    @Bean
+    public CertificateValidator certificateValidator(CaMaterial caMaterial) {
+
+        return new CertificateValidator(caMaterial);
+    }
+
 
     private void validateCa(X509Certificate certificate, PrivateKey privateKey) throws Exception {
 
         certificate.checkValidity();
 
-        if (!privateKey.getAlgorithm().equalsIgnoreCase(
-                certificate.getPublicKey().getAlgorithm())) {
-            throw new IllegalStateException(
-                    "CA private key algorithm does not match CA certificate"
-            );
+        if (!privateKey.getAlgorithm().equalsIgnoreCase(certificate.getPublicKey().getAlgorithm())) {
+            throw new IllegalStateException("CA private key algorithm does not match CA certificate");
         }
 
         if (certificate.getBasicConstraints() < 0) {
-            throw new IllegalStateException(
-                    "Configured certificate is not a CA certificate"
-            );
+            throw new IllegalStateException("Configured certificate is not a CA certificate");
         }
 
         boolean[] keyUsage = certificate.getKeyUsage();
 
-        if (keyUsage == null
-                || keyUsage.length <= 5
-                || !keyUsage[5]) {
-            throw new IllegalStateException(
-                    "CA certificate does not permit keyCertSign"
-            );
+        if (keyUsage == null || keyUsage.length <= 5 || !keyUsage[5]) {
+            throw new IllegalStateException("CA certificate does not permit keyCertSign");
         }
 
-        String signatureAlgorithm = switch (
-                privateKey.getAlgorithm().toUpperCase()
-                ) {
-            case "RSA" -> "SHA256WITHRSA";
-            case "EC" -> "SHA256WITHECDSA";
-            default -> throw new IllegalStateException(
-                    "Unsupported CA private key algorithm"
-            );
-        };
+        String signatureAlgorithm =
+                switch (privateKey.getAlgorithm().toUpperCase()) {
+                    case "RSA" -> "SHA256WITHRSA";
+                    case "EC" -> "SHA256WITHECDSA";
+                    default -> throw new IllegalStateException("Unsupported CA private key algorithm");
+                };
 
         byte[] challenge = new byte[32];
         new java.security.SecureRandom().nextBytes(challenge);
@@ -155,9 +149,7 @@ public class CertificateConfig {
         signature.update(challenge);
 
         if (!signature.verify(signed)) {
-            throw new IllegalStateException(
-                    "CA private key does not match CA certificate"
-            );
+            throw new IllegalStateException("CA private key does not match CA certificate");
         }
     }
 

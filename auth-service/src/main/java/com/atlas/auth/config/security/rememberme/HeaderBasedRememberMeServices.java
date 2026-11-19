@@ -1,4 +1,4 @@
-package com.atlas.auth.config.security.service;
+package com.atlas.auth.config.security.rememberme;
 
 import com.atlas.common.security.enums.TokenType;
 import com.atlas.common.security.model.PayloadInfo;

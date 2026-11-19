@@ -51,7 +51,6 @@ spring:
                 - StripPrefix=2
                 - name: forwardClientCertificate
                   args:
-                    headerName: X-Client-Certificate
                     required: true
                     mode: FORWARDED
 

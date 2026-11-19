@@ -58,6 +58,9 @@ public class UserWeb3Credentials extends BaseIdEntity {
     @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
+    @TableField("enabled")
+    private Boolean enabled;
+
 
 }
 

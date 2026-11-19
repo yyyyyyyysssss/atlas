@@ -50,8 +50,14 @@ public class UserWebauthnCredentialsServiceImpl extends ServiceImpl<UserWebauthn
 
     @Override
     public CredentialRecord findByCredentialId(Bytes credentialId) {
-        UserWebauthnCredentials entity = userWebauthnCredentialsMapper.selectById(credentialId.toBase64UrlString());
-        return entity == null ? null : toDomain(entity);
+        UserWebauthnCredentials userWebauthnCredentials = findByCredentialId(credentialId.toBase64UrlString());
+        return toDomain(userWebauthnCredentials);
+    }
+
+    @Override
+    public UserWebauthnCredentials findByCredentialId(String credentialId) {
+        UserWebauthnCredentials entity = userWebauthnCredentialsMapper.selectById(credentialId);
+        return userWebauthnCredentialsMapper.selectById(credentialId);
     }
 
     @Override
@@ -80,11 +86,11 @@ public class UserWebauthnCredentialsServiceImpl extends ServiceImpl<UserWebauthn
     @Override
     public boolean hasCredential(Long userId) {
         Objects.requireNonNull(userId, "用户id不能为空");
-        Long count = this.lambdaQuery()
-                .eq(UserWebauthnCredentials::getUserId, userId)
-                .count();
 
-        return count != null && count > 0;
+        return this.lambdaQuery()
+                .eq(UserWebauthnCredentials::getUserId, userId)
+                .eq(UserWebauthnCredentials::getEnabled, Boolean.TRUE)
+                .exists();
     }
 
     @Override
@@ -96,11 +102,11 @@ public class UserWebauthnCredentialsServiceImpl extends ServiceImpl<UserWebauthn
         if (targetCredentialId.isBlank()) {
             return false;
         }
-        Long count = this.lambdaQuery()
+        return this.lambdaQuery()
                 .eq(UserWebauthnCredentials::getUserId, userId)
+                .eq(UserWebauthnCredentials::getEnabled, Boolean.TRUE)
                 .ne(UserWebauthnCredentials::getCredentialId, targetCredentialId)
-                .count();
-        return count != null && count > 0;
+                .exists();
     }
 
 
@@ -130,6 +136,9 @@ public class UserWebauthnCredentialsServiceImpl extends ServiceImpl<UserWebauthn
     }
 
     private CredentialRecord toDomain(UserWebauthnCredentials entity) {
+        if (entity == null){
+            return null;
+        }
         Set<AuthenticatorTransport> transports = new HashSet<>();
         if (entity.getAuthenticatorTransports() != null && !entity.getAuthenticatorTransports().isBlank()) {
             for (String t : entity.getAuthenticatorTransports().split(",")) {

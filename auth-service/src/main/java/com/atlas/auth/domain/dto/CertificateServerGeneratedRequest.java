@@ -16,7 +16,7 @@ public record CertificateServerGeneratedRequest (
          */
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         @NotBlank
-        @Size(min = 12, max = 128)
+        @Size(min = 8, max = 128)
         String p12Password
 ){
 }

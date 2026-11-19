@@ -5,13 +5,12 @@ import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.service.LoginService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
+import com.atlas.common.security.enums.ClientType;
 import com.atlas.common.security.model.TokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -50,6 +49,14 @@ public class LoginController {
     @PostMapping("/login/web3")
     public Result<TokenResponse> loginWeb3(@RequestBody @Validated Web3LoginDTO web3LoginDTO) {
         TokenResponse tokenResponse = loginService.loginWeb3(web3LoginDTO);
+        return ResultGenerator.ok(tokenResponse);
+    }
+
+    @GetMapping("/login/certificate")
+    public Result<TokenResponse> loginCertificate(@RequestParam ClientType clientType,
+                                                  @RequestHeader(name = "Client-Cert", required = true) String clientCertificate,
+                                                  @RequestHeader(name = "Client-Cert-Chain", required = false) String clientCertificateChain) {
+        TokenResponse tokenResponse = loginService.loginCertificate(new CertificateLoginDTO(clientType, clientCertificate, clientCertificateChain));
         return ResultGenerator.ok(tokenResponse);
     }
 

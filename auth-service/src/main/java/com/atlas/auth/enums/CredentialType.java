@@ -13,6 +13,7 @@ public enum CredentialType {
     PASSWORD("PASSWORD", "传统密码"),
     WEBAUTHN("WEBAUTHN", "Passkey生物识别"),
     WEB3("WEB3", "Web3区块链钱包"),
+    CERTIFICATE("CERTIFICATE", "证书"),
     THIRD_PARTY("THIRD_PARTY", "第三方社交账号");
     ;
 

@@ -20,7 +20,7 @@ public enum ResultCode implements IErrorCode{
     UNAUTHORIZED(2001, "请先登录系统"),
     AUTH_TOKEN_EXPIRED(2002, "登录状态已过期"),
     AUTH_TOKEN_INVALID(2003, "无效的访问令牌"),
-    AUTH_LOGIN_FAILED(2004, "账号或密码错误"),
+    AUTH_LOGIN_FAILED(2004, "认证失败"),
 
     // 21xx: 授权
     FORBIDDEN(2101, "无操作权限，请联系管理员"),

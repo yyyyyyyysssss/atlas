@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -51,8 +50,8 @@ public class Web3WalletAuthenticationProvider implements AuthenticationProvider 
         try {
             verifySignatureResponse = web3WalletService.verifySignature(new Web3WalletVerifySignatureDTO(web3Id, signature));
         } catch (Exception e) {
-            log.warn("Web3 钱包签名验证未通过, web3Id: {}, 原因: {}", web3Id, e.getMessage());
-            throw new BadCredentialsException("Bad Credentials");
+            log.warn("【Web3钱包认证】该凭证签名验证未通过, web3Id: {}, 原因: {}", web3Id, e.getMessage());
+            throw new BadCredentialsException("Web3Wallet authentication failed");
         }
         String address = verifySignatureResponse.address();
         Optional<UserWeb3Credentials> userWeb3Credentials = userWeb3CredentialsService.getByAddress(address);
@@ -69,16 +68,19 @@ public class Web3WalletAuthenticationProvider implements AuthenticationProvider 
                     verifySignatureResponse.source()
             );
             if (!created) {
-                log.warn("Web3 凭证创建关联失败,userId: {} address: {}", userId, address);
-                throw new BadCredentialsException("Bad Credentials");
+                log.warn("【Web3钱包认证】凭证创建关联失败, address: {}", address);
+                throw new BadCredentialsException("Web3Wallet authentication failed");
             }
         } else {
-            userId = userWeb3Credentials.get().getUserId();
+            UserWeb3Credentials web3Credentials = userWeb3Credentials.get();
+            if(Boolean.FALSE.equals(web3Credentials.getEnabled())){
+                log.warn("【Web3钱包认证】凭证已禁用, address: {}", address);
+                throw new BadCredentialsException("Web3Wallet authentication failed");
+            }
+            userId = web3Credentials.getUserId();
         }
         UserDetails userDetails = userService.loadUserByUserId(userId);
-        if (userDetails == null) {
-            throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
-        }
+
         // 校验用户状态（是否被禁用、锁定等）
         userDetailsChecker.check(userDetails);
         // 构建已认证的 Token

@@ -90,11 +90,11 @@ public class UserWeb3CredentialsServiceImpl extends ServiceImpl<UserWeb3Credenti
     @Override
     public boolean hasCredential(Long userId) {
         Objects.requireNonNull(userId, "用户id不能为空");
-        Long count = this.lambdaQuery()
-                .eq(UserWeb3Credentials::getUserId, userId)
-                .count();
 
-        return count != null && count > 0;
+        return this.lambdaQuery()
+                .eq(UserWeb3Credentials::getUserId, userId)
+                .eq(UserWeb3Credentials::getEnabled, Boolean.TRUE)
+                .exists();
     }
 
     @Override
@@ -104,12 +104,11 @@ public class UserWeb3CredentialsServiceImpl extends ServiceImpl<UserWeb3Credenti
         try {
             Long targetId = Long.valueOf(String.valueOf(credentialId));
 
-            Long count = this.lambdaQuery()
+            return this.lambdaQuery()
                     .eq(UserWeb3Credentials::getUserId, userId)
+                    .eq(UserWeb3Credentials::getEnabled, Boolean.TRUE)
                     .ne(UserWeb3Credentials::getId, targetId)
-                    .count();
-
-            return count != null && count > 0;
+                    .exists();
         }catch (NumberFormatException e){
             log.error("【Web3凭证检查】解析凭证ID失败, userId: {}, credentialId: {}", userId, credentialId, e);
             return false;

@@ -55,4 +55,7 @@ public class UserWebauthnCredentials {
     @TableField("label")
     private String label;
 
+    @TableField("enabled")
+    private Boolean enabled;
+
 }

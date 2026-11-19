@@ -570,7 +570,7 @@ public class AccountService {
 
         if (!canLoginAfterRemoval) {
             log.warn("【安全拦截】用户 {} 尝试解绑唯一的 {} 凭证(ID: {}), 已被系统拒绝", userId, credentialType, targetId);
-            throw new AuthServiceException("操作失败：为了您的账号安全，请至少保留一种登录方式（密码、Passkey、钱包或其他社交绑定）");
+            throw new AuthServiceException("操作失败：为了您的账号安全，请至少保留一种登录方式（密码、Passkey、证书、钱包或其他社交绑定）");
         }
     }
 

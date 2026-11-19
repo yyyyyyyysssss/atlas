@@ -84,6 +84,12 @@ public class LoginService {
         return login(web3WalletAuthenticationToken, web3LoginDTO.clientType());
     }
 
+    // 证书认证
+    public TokenResponse loginCertificate(CertificateLoginDTO certificateLoginDTO) {
+        CertificateAuthenticationToken certificateAuthenticationToken = new CertificateAuthenticationToken(certificateLoginDTO.clientCertificate(), certificateLoginDTO.clientCertificateChain());
+        return login(certificateAuthenticationToken, certificateLoginDTO.clientType());
+    }
+
     // 第三方 OAuth2 / 外部身份源导入登录
     public TokenResponse loginThirdParty(ThirdPartyLoginDTO thirdPartyLoginDTO) {
         ThirdPartyAuthenticationToken thirdPartyAuthenticationToken = new ThirdPartyAuthenticationToken(thirdPartyLoginDTO.userId(), null);

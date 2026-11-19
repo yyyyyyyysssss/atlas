@@ -7,7 +7,6 @@ import com.atlas.auth.enums.CredentialType;
 import com.atlas.auth.enums.ProviderType;
 import com.atlas.auth.mapper.UserProviderMapper;
 import com.atlas.auth.mapping.UserProviderMapping;
-import com.atlas.auth.service.AuthCredentialChecker;
 import com.atlas.auth.service.UserProviderService;
 import com.atlas.common.core.exception.BusinessException;
 import com.atlas.common.core.idwork.IdGen;
@@ -169,9 +168,10 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
     @Override
     public boolean hasCredential(Long userId) {
         Objects.requireNonNull(userId, "用户id不能为空");
-        Long count = this.userProviderMapper.selectCount(new LambdaQueryWrapper<UserProvider>()
-                .eq(UserProvider::getUserId, userId));
-        return count != null && count > 0;
+
+        return this.lambdaQuery()
+                .eq(UserProvider::getUserId, userId)
+                .exists();
     }
 
     @Override
@@ -180,10 +180,10 @@ public class UserProviderServiceImpl extends ServiceImpl<UserProviderMapper, Use
         Objects.requireNonNull(credentialId, "凭证id不能为空");
         try {
             Long targetProviderId = Long.valueOf(String.valueOf(credentialId));
-            Long count = this.userProviderMapper.selectCount(new LambdaQueryWrapper<UserProvider>()
+            return this.lambdaQuery()
                     .eq(UserProvider::getUserId, userId)
-                    .ne(UserProvider::getId, targetProviderId));
-            return count != null && count > 0;
+                    .ne(UserProvider::getId, targetProviderId)
+                    .exists();
         }catch (NumberFormatException e){
             log.error("【三方凭证检查】解析凭证ID失败, userId: {}, credentialId: {}", userId, credentialId, e);
             return false;

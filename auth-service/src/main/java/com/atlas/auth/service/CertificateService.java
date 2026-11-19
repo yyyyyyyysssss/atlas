@@ -4,12 +4,15 @@ import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.config.security.certificate.CertificateConverter;
 import com.atlas.auth.config.security.certificate.CertificateIssueService;
 import com.atlas.auth.config.security.certificate.CertificateProperties;
+import com.atlas.auth.config.security.certificate.CertificateValidator;
 import com.atlas.auth.config.security.certificate.model.CertificateProfile;
 import com.atlas.auth.config.security.certificate.model.CertificateSubject;
 import com.atlas.auth.config.security.certificate.model.IssuedCertificate;
+import com.atlas.auth.domain.dto.CertificateAuthenticateResponse;
 import com.atlas.auth.domain.dto.CertificateClientGeneratedRequest;
 import com.atlas.auth.domain.dto.CertificateServerGeneratedRequest;
 import com.atlas.auth.enums.CertificateIdentityType;
+import com.atlas.common.crypto.digest.DigestUtils;
 import com.atlas.common.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +21,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 /**
  *@Description
@@ -37,7 +46,44 @@ public class CertificateService {
 
     private final CertificateProperties certificateProperties;
 
+    private final CertificateValidator certificateValidator;
+
     private static final String DEFAULT_PROFILE = "tls-client-rsa";
+
+    private static final String ORGANIZATION = "Atlas";
+
+    private static final String ORGANIZATION_UNIT = "Users";
+
+    // 客户端证书认证
+    public CertificateAuthenticateResponse authenticate(String clientCertificate, String clientCertificateChain) throws CertificateException {
+        try {
+            // 解析客户端证书
+            X509Certificate certificate = certificateConverter.fromClientCert(clientCertificate);
+
+            // 解析客户端证书链
+            List<X509Certificate> certificateChain = certificateConverter.chainFromClientCert(clientCertificateChain);
+
+            // 校验证书及证书链
+            certificateValidator.validate(certificate, certificateChain);
+
+            // 解析证书 Subject
+            CertificateSubject subject = getCertificateSubject(certificate);
+
+            // 校验 Subject 并提取用户 ID
+            if (!ORGANIZATION.equals(subject.organization()) || !ORGANIZATION_UNIT.equals(subject.organizationalUnit())) {
+                throw new CertificateException("Certificate authentication failed");
+            }
+            Long userId = Long.valueOf(subject.commonName());
+
+            // 计算证书指纹
+            String fingerprint = DigestUtils.sha256(certificate.getEncoded());
+
+            return new CertificateAuthenticateResponse(userId, fingerprint);
+        }catch (Exception e) {
+            log.warn("Certificate authentication failed", e);
+            throw new CertificateException("Certificate authentication failed", e);
+        }
+    }
 
     // Atlas 生成密钥对并签发证书，返回 PKCS#12。
     public byte[] serverGenerated(CertificateServerGeneratedRequest request, CertificateIdentityType certificateIdentityType) {
@@ -126,9 +172,33 @@ public class CertificateService {
         }
         return new CertificateSubject(
                 securityUser.getId().toString(),
-                "Atlas",
-                "Users"
+                ORGANIZATION,
+                ORGANIZATION_UNIT
         );
+    }
+
+    // 从客户端证书中解析 Subject。
+    private CertificateSubject getCertificateSubject(X509Certificate certificate) {
+        try {
+            LdapName ldapName = new LdapName(certificate.getSubjectX500Principal().getName());
+
+            String commonName = null;
+            String organization = null;
+            String organizationalUnit = null;
+
+            for (Rdn rdn : ldapName.getRdns()) {
+                switch (rdn.getType().toUpperCase(Locale.ROOT)) {
+                    case "CN" -> commonName = rdn.getValue().toString();
+                    case "O" -> organization = rdn.getValue().toString();
+                    case "OU" -> organizationalUnit = rdn.getValue().toString();
+                }
+            }
+
+            return new CertificateSubject(commonName, organization, organizationalUnit);
+
+        } catch (Exception e) {
+            throw new AuthServiceException("Failed to parse certificate subject", e);
+        }
     }
 
     // 获取服务端配置的证书 Profile。

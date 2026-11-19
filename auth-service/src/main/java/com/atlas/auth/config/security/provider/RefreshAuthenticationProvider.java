@@ -5,11 +5,13 @@ import com.atlas.common.security.enums.TokenType;
 import com.atlas.common.security.model.PayloadInfo;
 import com.atlas.common.security.service.TokenService;
 import com.atlas.common.security.token.RefreshAuthenticationToken;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 
 /**
  * @Description 用于提供三方登录的身份认证
@@ -21,6 +23,8 @@ public class RefreshAuthenticationProvider implements AuthenticationProvider {
     private final UserService userService;
 
     private final TokenService tokenService;
+
+    private final UserDetailsChecker userDetailsChecker = new AccountStatusUserDetailsChecker();
 
     public RefreshAuthenticationProvider(UserService userService,TokenService tokenService){
         this.userService = userService;
@@ -37,9 +41,10 @@ public class RefreshAuthenticationProvider implements AuthenticationProvider {
         PayloadInfo payloadInfo = tokenService.verify(token, TokenType.REFRESH_TOKEN);
         String userId = payloadInfo.getSubject();
         UserDetails userDetails = userService.loadUserByUserId(Long.parseLong(userId));
-        if (userDetails == null) {
-            throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
-        }
+
+        // 校验用户状态（是否被禁用、锁定等）
+        userDetailsChecker.check(userDetails);
+
         RefreshAuthenticationToken authenticated = RefreshAuthenticationToken.authenticated(
                 userDetails,
                 null,

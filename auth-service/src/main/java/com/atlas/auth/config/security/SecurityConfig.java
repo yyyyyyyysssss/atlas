@@ -10,9 +10,8 @@ import com.atlas.auth.config.security.provider.*;
 import com.atlas.auth.config.security.saml2.*;
 import com.atlas.auth.config.security.saml2.sp.Saml2FailureHandler;
 import com.atlas.auth.config.security.saml2.sp.Saml2SuccessHandler;
-import com.atlas.auth.config.security.service.HeaderBasedRememberMeServices;
+import com.atlas.auth.config.security.rememberme.HeaderBasedRememberMeServices;
 import com.atlas.auth.config.security.webauthn.AtlasPublicKeyCredentialUserEntityRepository;
-import com.atlas.auth.service.WebauthnService;
 import com.atlas.auth.service.*;
 import com.atlas.common.redis.utils.RedisHelper;
 import com.atlas.common.security.handler.ForbiddenAccessHandler;
@@ -165,6 +164,7 @@ public class SecurityConfig {
                                                        OneTimeTokenAuthenticationProvider oneTimeTokenAuthenticationProvider,
                                                        WebauthnAuthenticationProvider webauthnAuthenticationProvider,
                                                        Web3WalletAuthenticationProvider web3WalletAuthenticationProvider,
+                                                       CertificateAuthenticationProvider certificateAuthenticationProvider,
                                                        MfaAuthenticationProvider mfaAuthenticationProvider) throws Exception {
 
         return http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -184,6 +184,8 @@ public class SecurityConfig {
                 .authenticationProvider(webauthnAuthenticationProvider)
                 // web3认证
                 .authenticationProvider(web3WalletAuthenticationProvider)
+                // 证书认证
+                .authenticationProvider(certificateAuthenticationProvider)
                 // mfa双因子认证
                 .authenticationProvider(mfaAuthenticationProvider)
                 .parentAuthenticationManager(null)
@@ -246,9 +248,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public WebauthnAuthenticationProvider webauthnAuthenticationProvider(WebauthnService webauthnService, UserService userService) {
+    public WebauthnAuthenticationProvider webauthnAuthenticationProvider(WebauthnService webauthnService, UserService userService, UserWebauthnCredentialsService userWebauthnCredentialsService) {
 
-        return new WebauthnAuthenticationProvider(webauthnService, userService);
+        return new WebauthnAuthenticationProvider(webauthnService, userService, userWebauthnCredentialsService);
     }
 
     // web3凭证
@@ -256,6 +258,13 @@ public class SecurityConfig {
     public Web3WalletAuthenticationProvider web3WalletAuthenticationProvider(UserService userService, Web3WalletService web3WalletService, UserWeb3CredentialsService userWeb3CredentialsService) {
 
         return new Web3WalletAuthenticationProvider(userService, web3WalletService, userWeb3CredentialsService);
+    }
+
+    // 证书认证
+    @Bean
+    public CertificateAuthenticationProvider certificateAuthenticationProvider(CertificateService certificateService, UserService userService, UserCertificateCredentialsService userCertificateCredentialsService){
+
+        return new CertificateAuthenticationProvider(certificateService, userService, userCertificateCredentialsService);
     }
 
     //三方登录认证

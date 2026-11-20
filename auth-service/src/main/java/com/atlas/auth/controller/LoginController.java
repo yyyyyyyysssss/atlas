@@ -52,7 +52,7 @@ public class LoginController {
         return ResultGenerator.ok(tokenResponse);
     }
 
-    @GetMapping("/login/certificate")
+    @PostMapping("/login/certificate")
     public Result<TokenResponse> loginCertificate(@RequestParam ClientType clientType,
                                                   @RequestHeader(name = "Client-Cert", required = true) String clientCertificate,
                                                   @RequestHeader(name = "Client-Cert-Chain", required = false) String clientCertificateChain) {

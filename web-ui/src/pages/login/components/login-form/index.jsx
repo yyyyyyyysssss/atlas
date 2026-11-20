@@ -18,6 +18,7 @@ import PasskeyLogin from './PasskeyLogin';
 import Web3WalletLogin from './Web3WalletLogin';
 import { AtlasLogo, Auth0Icon } from '../../../../components/icons';
 import ThirdPartyLogin from './ThirdPartyLogin';
+import CertificateLogin from './CertificateLogin';
 
 const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
     const { t } = useTranslation();
@@ -93,6 +94,7 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                     {loginMethod === '3' && <MagicLinkLogin onSuccess={loginSuccessHandler} />}
                     {loginMethod === '4' && <PasskeyLogin onSuccess={loginSuccessHandler} />}
                     {loginMethod === '5' && <Web3WalletLogin onSuccess={loginSuccessHandler} />}
+                    {loginMethod === '6' && <CertificateLogin onSuccess={loginSuccessHandler} />}
                 </AnimatePresence>
             </div>
 
@@ -137,11 +139,16 @@ const LoginForm = ({ loginPanel, setLoginPanel, loginSuccessHandler }) => {
                                         key: '3',
                                         label: t('免密链登录'),
                                         onClick: () => setLoginMethod('3')
+                                    },
+                                    {
+                                        key: '4',
+                                        label: t('证书登录'),
+                                        onClick: () => setLoginMethod('6')
                                     }
                                 ]
                             }}
                             placement="bottomRight"
-                            trigger={['click']}
+                            trigger={['hover']}
                         >
                             <Typography.Link style={{ fontSize: 13, color: '#6b7280' }}>
                                 {t('更多方式 ▾')}

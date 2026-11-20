@@ -73,8 +73,8 @@ spring:
 
 
 security:
-  issuerUrl: https://localhost:9090
-  uiUrl: https://localhost:3000
+  issuerUrl: http://localhost:9090
+  uiUrl: http://localhost:3000
 
   # 本地ssl配置
   local-https:

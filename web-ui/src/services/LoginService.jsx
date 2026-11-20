@@ -37,7 +37,6 @@ export const web3WalletLogin = async (req) => {
     return apiRequestWrapper(() => httpWrapper.post('/api/auth/login/web3', req))
 }
 
-
 // 手势登录
 export const gestureLogin = async (req) => {
 

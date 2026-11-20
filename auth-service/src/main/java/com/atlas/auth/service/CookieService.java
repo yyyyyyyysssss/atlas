@@ -1,6 +1,8 @@
 package com.atlas.auth.service;
 
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ public class CookieService {
 
     private static final String AUTHENTICATED = "authenticated";
 
+    @Resource
+    private Environment environment;
+
     public void setAccessToken(String accessToken, Duration expiration) {
         addCookie(ACCESS_TOKEN, accessToken, true, expiration);
         addCookie(AUTHENTICATED, "true", false, expiration);
@@ -32,18 +37,18 @@ public class CookieService {
         addCookie(response, AUTHENTICATED, "false", false, Duration.ofDays(30));
     }
 
-    private void addCookie(String name, String value, boolean httpOnly, Duration maxAge){
+    private void addCookie(String name, String value, boolean httpOnly, Duration maxAge) {
 
         addCookie(getResponse(), name, value, httpOnly, maxAge);
     }
 
-    private void addCookie(HttpServletResponse response,String name, String value, boolean httpOnly, Duration maxAge) {
+    private void addCookie(HttpServletResponse response, String name, String value, boolean httpOnly, Duration maxAge) {
         if (response == null) {
             return;
         }
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(httpOnly)
-                .secure(true)
+                .secure(!isDev())
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(maxAge)
@@ -64,7 +69,7 @@ public class CookieService {
 
         ResponseCookie cookie = ResponseCookie.from(name, "")
                 .httpOnly(httpOnly)
-                .secure(true)
+                .secure(!isDev())
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ZERO)
@@ -79,6 +84,10 @@ public class CookieService {
             return null;
         }
         return attributes.getResponse();
+    }
+
+    private boolean isDev() {
+        return environment.matchesProfiles("dev");
     }
 
 }

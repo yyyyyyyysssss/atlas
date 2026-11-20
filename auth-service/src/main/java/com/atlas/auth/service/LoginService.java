@@ -188,7 +188,8 @@ public class LoginService {
         sessionControlService.registerSession(securityUser.getId(), tokenId, token.access().expiresIn(), clientType);
 
         if(ClientType.WEB.equals(clientType)){
-            cookieService.setAccessToken(token.access().value(), Duration.ofMillis(token.access().expiresIn()));
+            long remainingSeconds = Math.max((token.access().expiresIn() - System.currentTimeMillis()) / 1000, 0);
+            cookieService.setAccessToken(token.access().value(), Duration.ofSeconds(remainingSeconds));
             return TokenResponse.success();
         }
 

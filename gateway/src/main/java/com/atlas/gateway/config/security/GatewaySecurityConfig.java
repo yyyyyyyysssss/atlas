@@ -15,6 +15,7 @@ import com.atlas.gateway.config.security.filter.CookieAuthenticationFilter;
 import com.atlas.gateway.config.security.filter.GatewayHeaderHeaderPropagationFilter;
 import jakarta.annotation.Resource;
 import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -65,6 +66,9 @@ public class GatewaySecurityConfig {
     @Resource
     private OAuth2BearerTokenResolver oAuth2BearerTokenResolver;
 
+    @Value("${security.uiUrl}")
+    private String uiUrl;
+
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 1)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
@@ -79,9 +83,10 @@ public class GatewaySecurityConfig {
                 //跨域支持
                 .cors(cors -> cors.configurationSource(cs -> {
                     CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(List.of("*"));
-                    configuration.setAllowedMethods(List.of("*"));
+                    configuration.setAllowedOrigins(List.of(uiUrl));
+                    configuration.setAllowedMethods(List.of("GET","POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                     configuration.setAllowedHeaders(List.of("*"));
+                    configuration.setAllowCredentials(true);
                     return configuration;
                 }))
                 .anonymous(Customizer.withDefaults())

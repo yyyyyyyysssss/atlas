@@ -83,7 +83,9 @@ security:
     key-store: classpath:certs/atlas-local.p12
     key-store-password: ${ATLAS_LOCAL_KEYSTORE_PASSWORD}
     key-alias: atlas-local
-    # Atlas CA 客户端证书信任库
+
+  # Atlas CA 客户端证书信任库
+  client-certificate:
     trust-store: file:D:/workspace/temp/atlas-client-truststore.p12
     trust-store-password: ${ATLAS_CA_KEYSTORE_PASSWORD}
     trust-store-type: PKCS12

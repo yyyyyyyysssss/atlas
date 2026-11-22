@@ -46,9 +46,9 @@ public class TomcatConfig {
 
 
         // Atlas CA 客户端证书信任库配置
-        String trustStore = environment.getProperty("security.local-https.trust-store");
-        String trustStorePassword = environment.getProperty("security.local-https.trust-store-password");
-        String trustStoreType = environment.getProperty("security.local-https.trust-store-type", "PKCS12");
+        String trustStore = environment.getProperty("security.client-certificate.trust-store");
+        String trustStorePassword = environment.getProperty("security.client-certificate.trust-store-password");
+        String trustStoreType = environment.getProperty("security.client-certificate.trust-store-type", "PKCS12");
 
 
         // 配置不完整时，不注册 HTTPS Connector。

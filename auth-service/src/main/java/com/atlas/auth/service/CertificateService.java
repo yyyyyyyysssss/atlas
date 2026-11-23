@@ -29,9 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.PrivateKey;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -95,35 +93,23 @@ public class CertificateService {
     // Atlas 生成密钥对并签发证书，返回 PKCS#12。
     public byte[] serverGenerated(CertificateServerGeneratedRequest request, CertificateIdentityType certificateIdentityType) {
 
-        long start = System.nanoTime();
-
         CertificateProfile profile = getProfile(DEFAULT_PROFILE);
 
         CertificateSubject subject = getSubject(certificateIdentityType);
 
-        long issueStart = System.nanoTime();
         IssuedCertificate issuedCertificate = certificateIssueService.issueGenerated(profile, subject);
-        long issueEnd = System.nanoTime();
 
         char[] password = request.p12Password().toCharArray();
 
         try {
-            byte[] pkcs12 = certificateConverter.toPkcs12(
+
+            return certificateConverter.toPkcs12(
                     "atlas-client",
                     issuedCertificate.privateKey(),
                     issuedCertificate.certificate(),
                     issuedCertificate.certificateChain(),
                     password
             );
-            long end = System.nanoTime();
-
-            log.info(
-                    "Certificate generation completed: issue={}ms, pkcs12={}ms, total={}ms",
-                    (issueEnd - issueStart) / 1_000_000,
-                    (end - issueEnd) / 1_000_000,
-                    (end - start) / 1_000_000
-            );
-            return pkcs12;
         } catch (Exception e) {
             log.error("Failed to generate client PKCS12 certificate", e);
             throw new AuthServiceException("Failed to generate PKCS12 certificate", e);
@@ -161,10 +147,17 @@ public class CertificateService {
     }
 
     public CertificateInspectResponse inspect(MultipartFile file, String password) {
-
         if (file == null || file.isEmpty()) {
             throw new AuthServiceException("Certificate file is required");
         }
+        try (InputStream inputStream = file.getInputStream()) {
+            return inspect(inputStream, password);
+        } catch (IOException e) {
+            throw new AuthServiceException("Failed to load PKCS12, password may be incorrect or file is invalid", e);
+        }
+    }
+
+    public CertificateInspectResponse inspect(InputStream inputStream, String password) {
 
         char[] passwordChars = password == null ? new char[0] : password.toCharArray();
 
@@ -172,7 +165,7 @@ public class CertificateService {
             // 加载 PKCS#12。
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
 
-            try (InputStream inputStream = file.getInputStream()) {
+            try {
                 keyStore.load(inputStream, passwordChars);
             } catch (IOException e) {
                 throw new AuthServiceException("Failed to load PKCS12, password may be incorrect or file is invalid", e);
@@ -235,11 +228,11 @@ public class CertificateService {
                 }
             }
 
-            // 检查证书有效期。
+            // 验证私钥与证书公钥是否匹配。
             try {
-                certificate.checkValidity();
-            } catch (CertificateException e) {
-                throw new AuthServiceException("Certificate is expired or not yet valid", e);
+                validatePrivateKey(privateKey, certificate);
+            } catch (GeneralSecurityException e) {
+                throw new AuthServiceException("Private key does not match certificate", e);
             }
 
             // 验证 Atlas CA 证书链。
@@ -312,6 +305,37 @@ public class CertificateService {
             throw new AuthServiceException("Failed to inspect PKCS12 certificate", e);
         } finally {
             Arrays.fill(passwordChars, '\0');
+        }
+    }
+
+    private void validatePrivateKey(PrivateKey privateKey, X509Certificate certificate) throws GeneralSecurityException {
+
+        String algorithm = privateKey.getAlgorithm().toUpperCase(Locale.ROOT);
+
+        String signatureAlgorithm = switch (algorithm) {
+            case "RSA" -> "SHA256withRSA";
+            case "EC" -> "SHA256withECDSA";
+            case "ED25519", "EDDSA" -> "Ed25519";
+            case "DSA" -> "SHA256withDSA";
+            default -> throw new GeneralSecurityException("Unsupported private key algorithm: " + algorithm);
+        };
+
+        // 使用私钥对随机数据签名。
+        byte[] challenge = new byte[32];
+        new SecureRandom().nextBytes(challenge);
+
+        Signature signer = Signature.getInstance(signatureAlgorithm);
+        signer.initSign(privateKey);
+        signer.update(challenge);
+        byte[] signedData = signer.sign();
+
+        // 使用证书中的公钥验证签名。
+        Signature verifier = Signature.getInstance(signatureAlgorithm);
+        verifier.initVerify(certificate.getPublicKey());
+        verifier.update(challenge);
+
+        if (!verifier.verify(signedData)) {
+            throw new GeneralSecurityException("Private key does not match certificate public key");
         }
     }
 

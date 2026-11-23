@@ -63,7 +63,7 @@ public class CertificateController {
     }
 
     @PostMapping(value = "/inspect", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<CertificateInspectResponse> inspect(@RequestPart("file") MultipartFile file, @RequestParam("password") String password) {
+    public Result<CertificateInspectResponse> inspect(@RequestPart("file") MultipartFile file, @RequestParam(value = "password", required = false) String password) {
         CertificateInspectResponse response = certificateService.inspect(file, password);
         return ResultGenerator.ok(response);
     }

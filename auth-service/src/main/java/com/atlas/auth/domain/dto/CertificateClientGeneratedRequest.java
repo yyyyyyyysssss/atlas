@@ -9,7 +9,10 @@ public record CertificateClientGeneratedRequest(
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         @NotBlank
         @Size(max = 16384)
-        String csr
+        String csr,
+
+        @NotBlank
+        String identity
 
 ) {
 }

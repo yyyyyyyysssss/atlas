@@ -14,12 +14,8 @@ import com.atlas.auth.domain.dto.CertificateInspectResponse;
 import com.atlas.auth.domain.dto.CertificateServerGeneratedRequest;
 import com.atlas.auth.enums.CertificateIdentityType;
 import com.atlas.common.crypto.digest.DigestUtils;
-import com.atlas.common.security.model.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -95,7 +91,7 @@ public class CertificateService {
 
         CertificateProfile profile = getProfile(DEFAULT_PROFILE);
 
-        CertificateSubject subject = getSubject(certificateIdentityType);
+        CertificateSubject subject = getSubject(certificateIdentityType, request.identity());
 
         IssuedCertificate issuedCertificate = certificateIssueService.issueGenerated(profile, subject);
 
@@ -122,7 +118,7 @@ public class CertificateService {
     public byte[] clientGenerated(CertificateClientGeneratedRequest request, CertificateIdentityType certificateIdentityType) {
         CertificateProfile profile = getProfile(DEFAULT_PROFILE);
 
-        CertificateSubject subject = getSubject(certificateIdentityType);
+        CertificateSubject subject = getSubject(certificateIdentityType, request.identity());
 
         IssuedCertificate issuedCertificate = certificateIssueService.issueFromCsr(request.csr(), profile, subject);
 
@@ -368,27 +364,15 @@ public class CertificateService {
     }
 
     // 根据证书身份类型生成 Subject。
-    private CertificateSubject getSubject(CertificateIdentityType identityType) {
+    private CertificateSubject getSubject(CertificateIdentityType identityType, String identity) {
         return switch (identityType) {
-            case USER -> getUserSubject();
+            case USER -> new CertificateSubject(
+                    identity,
+                    ORGANIZATION,
+                    ORGANIZATION_UNIT
+            );
             case DEVICE -> throw new AuthServiceException("Device certificate issuance is not supported");
         };
-    }
-
-    // 获取当前登录用户的 Subject。
-    private CertificateSubject getUserSubject() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            throw new AuthServiceException("User authentication is required");
-        }
-        if (!(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
-            throw new AuthServiceException("Invalid authenticated user");
-        }
-        return new CertificateSubject(
-                securityUser.getId().toString(),
-                ORGANIZATION,
-                ORGANIZATION_UNIT
-        );
     }
 
     // 从客户端证书中解析 Subject。

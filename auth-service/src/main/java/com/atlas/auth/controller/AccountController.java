@@ -1,5 +1,6 @@
 package com.atlas.auth.controller;
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.atlas.auth.domain.dto.*;
 import com.atlas.auth.domain.vo.*;
 import com.atlas.auth.enums.SecurityScene;
@@ -11,12 +12,17 @@ import com.atlas.common.security.token.WebauthnAuthenticationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Description
@@ -192,6 +198,21 @@ public class AccountController {
         accountService.unbindWeb3Wallet(securityUser.getId(), web3WalletUnbindDTO);
         return ResultGenerator.ok();
     }
+
+
+    @PostMapping(value = "/certificate/csr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<Void> bindCertificateCsr(@AuthenticationPrincipal SecurityUser securityUser, @RequestPart("file") MultipartFile file,
+                                           @RequestParam("ticket") String ticket){
+        String csr;
+        try {
+            csr = new String(file.getBytes(), StandardCharsets.US_ASCII);
+        } catch (IOException e) {
+            throw new AuthServiceException("Failed to read CSR file", e);
+        }
+        accountService.bindCertificateCsr(securityUser.getId(), csr, ticket);
+        return ResultGenerator.ok();
+    }
+
 
     @PostMapping("/thirdParty/provider")
     public Result<ThirdPartyProviderBindVO> bindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderBindDTO thirdPartyProviderBindDTO){

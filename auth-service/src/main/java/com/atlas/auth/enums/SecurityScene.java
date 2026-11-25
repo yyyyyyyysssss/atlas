@@ -1,6 +1,7 @@
 package com.atlas.auth.enums;
 
 
+import com.atlas.auth.config.exception.AuthServiceException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,6 +17,9 @@ public enum SecurityScene {
 
     BIND_WEBAUTHN("bind_webauthn", "绑定通行密钥"),
     UNBIND_WEBAUTHN("unbind_webauthn", "解绑通行密钥"),
+
+    BIND_CERTIFICATE("bind_certificate", "绑定数字证书"),
+    UNBIND_CERTIFICATE("unbind_certificate", "解绑数字证书"),
 
     BIND_TOTP("bind_totp", "解绑TOTP"),
     UNBIND_TOTP("unbind_totp", "解绑TOTP"),
@@ -52,7 +56,7 @@ public enum SecurityScene {
             return SecurityScene.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             // 可选：如果匹配不上，可以返回 null 让后面的 @NotNull 校验去挡住，或者直接抛出友好异常
-            throw new IllegalArgumentException("不支持的验证码场景: " + value);
+            throw new AuthServiceException("不支持的验证码场景: " + value);
         }
     }
 

@@ -48,7 +48,8 @@ public class CertificateController {
     }
 
     @PostMapping(value = "/clientGenerated/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<byte[]> clientGeneratedUpload(@RequestPart("file") MultipartFile file) {
+    public ResponseEntity<byte[]> clientGeneratedUpload(@RequestPart("file") MultipartFile file,
+                                                        @RequestParam("identity") String identity) {
         if (file == null || file.isEmpty()) {
             throw new AuthServiceException("CSR file is required");
         }
@@ -58,7 +59,7 @@ public class CertificateController {
         } catch (IOException e) {
             throw new AuthServiceException("Failed to read CSR file", e);
         }
-        byte[] bytes = certificateService.clientGenerated(new CertificateClientGeneratedRequest(csr), CertificateIdentityType.USER);
+        byte[] bytes = certificateService.clientGenerated(new CertificateClientGeneratedRequest(csr, identity), CertificateIdentityType.USER);
         return fileResponse(bytes, "atlas-client.crt", MediaType.parseMediaType("application/x-pem-file"));
     }
 

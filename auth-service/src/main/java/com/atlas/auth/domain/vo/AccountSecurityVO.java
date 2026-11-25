@@ -45,8 +45,10 @@ public class AccountSecurityVO {
 
 
     private List<UserPasskeyVO> passkeys;
-
     private Boolean passkeyEnabled;
+
+    private List<UserCertificateVO> certificates;
+    private Boolean certificateEnabled;
 
     /**
      * 第三方账号

@@ -20,6 +20,7 @@ import BackupCodeSecurityItem from './components/BackupCodeSecurityItem';
 import GestureItem from './components/GestureItem';
 import WalletItem from './components/WalletItem';
 import useFullParams from '../../hooks/useFullParams';
+import CertificateItem from './components/CertificateItem';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -81,6 +82,14 @@ const SecurityTab = () => {
                 {/* 通行密钥 */}
                 <div ref={setSectionRef('passkey')} style={{ scrollMarginTop: 80 }}>
                     <PasskeyItem
+                        context={data}
+                        refresh={refresh}
+                    />
+                </div>
+
+                {/* 数字证书 */}
+                <div ref={setSectionRef('certificate')} style={{ scrollMarginTop: 80 }}>
+                    <CertificateItem
                         context={data}
                         refresh={refresh}
                     />

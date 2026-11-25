@@ -57,6 +57,8 @@ public class AccountService {
 
     private final Web3WalletService web3WalletService;
 
+    private final UserCertificateCredentialsService userCertificateCredentialsService;
+
     private final ThirdPartyLoginProviderFactory thirdPartyLoginProviderFactory;
 
     private final List<AuthCredentialChecker> credentialCheckers;
@@ -64,6 +66,8 @@ public class AccountService {
     private final TicketService ticketService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final CertificateService certificateService;
 
     public AccountSecurityVO getAccountSecurity(Long userId) {
         // 账号标识
@@ -99,6 +103,9 @@ public class AccountService {
                     .toList();
         }
 
+        // 数字证书
+        List<UserCertificateVO> userCertificateCredentials = userCertificateCredentialsService.listByUserId(userId);
+
         // 手势凭证
         UserGestureCredentials userGestureCredentials = userGestureCredentialsService.getByUserId(userId).orElse(null);
 
@@ -130,6 +137,10 @@ public class AccountService {
                 // 通行密钥
                 .passkeys(passkeyVOs)
                 .passkeyEnabled(!passkeyVOs.isEmpty())
+
+                // 数字证书
+                .certificates(userCertificateCredentials)
+                .certificateEnabled(!userCertificateCredentials.isEmpty())
 
                 // 手势凭证
                 .gestureEnabled(userGestureCredentials != null)
@@ -523,6 +534,15 @@ public class AccountService {
         // 发布审计日志事件
         eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑 Web3 钱包", "user-web3"));
     }
+
+    public void bindCertificateCsr(Long userId, String csr, String ticket){
+        // 安全风控凭证核验
+        validTicket(userId, ticket);
+
+        CertificateClientGeneratedRequest request = new CertificateClientGeneratedRequest(csr, userId.toString());
+        byte[] bytes = certificateService.clientGenerated(request, CertificateIdentityType.USER);
+    }
+
 
     public ThirdPartyProviderBindVO bindThirdPartyProvider(Long userId, ThirdPartyProviderBindDTO thirdPartyProviderBindDTO) {
         // 校验ticket

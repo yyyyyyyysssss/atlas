@@ -1,6 +1,7 @@
 package com.atlas.auth.service;
 
 import com.atlas.auth.domain.entity.UserCertificateCredentials;
+import com.atlas.auth.domain.vo.UserCertificateVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -9,6 +10,6 @@ public interface UserCertificateCredentialsService extends IService<UserCertific
 
     UserCertificateCredentials findByFingerprint(String fingerprint);
 
-    List<UserCertificateCredentials> listByUserId(Long userId);
+    List<UserCertificateVO> listByUserId(Long userId);
 
 }

@@ -30,6 +30,9 @@ public class UserCertificateCredentials extends BaseIdEntity {
     @TableField("user_id")
     private Long userId;
 
+    @TableField("label")
+    private String label;
+
     @TableField("fingerprint")
     private String fingerprint;
 

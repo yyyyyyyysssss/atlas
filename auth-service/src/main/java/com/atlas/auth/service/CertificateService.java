@@ -26,9 +26,8 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.*;
 
 /**
@@ -147,13 +146,13 @@ public class CertificateService {
             throw new AuthServiceException("Certificate file is required");
         }
         try (InputStream inputStream = file.getInputStream()) {
-            return inspect(inputStream, password);
+            return inspectPkcs12(inputStream, password);
         } catch (IOException e) {
             throw new AuthServiceException("Failed to load PKCS12, password may be incorrect or file is invalid", e);
         }
     }
 
-    public CertificateInspectResponse inspect(InputStream inputStream, String password) {
+    public CertificateInspectResponse inspectPkcs12(InputStream inputStream, String password) {
 
         char[] passwordChars = password == null ? new char[0] : password.toCharArray();
 
@@ -248,40 +247,7 @@ public class CertificateService {
             String fingerprint = DigestUtils.sha256(certificate.getEncoded());
 
             // 提取 SAN。
-            List<String> subjectAlternativeNames = new ArrayList<>();
-
-            Collection<List<?>> sans = certificate.getSubjectAlternativeNames();
-
-            if (sans != null) {
-                for (List<?> san : sans) {
-
-                    if (san.size() < 2 || san.get(1) == null) {
-                        continue;
-                    }
-
-                    if (!(san.get(0) instanceof Integer type)) {
-                        continue;
-                    }
-
-                    // DNS(2)。
-                    if (type == 2) {
-                        subjectAlternativeNames.add(san.get(1).toString());
-                    }
-
-                    // IP(7)。
-                    else if (type == 7) {
-
-                        Object value = san.get(1);
-
-                        if (value instanceof byte[] address) {
-                            subjectAlternativeNames.add(InetAddress.getByAddress(address).getHostAddress()
-                            );
-                        } else {
-                            subjectAlternativeNames.add(value.toString());
-                        }
-                    }
-                }
-            }
+            List<String> subjectAlternativeNames = extractSubjectAlternativeNames(certificate);
 
             return new CertificateInspectResponse(
                     identityType,
@@ -302,6 +268,107 @@ public class CertificateService {
         } finally {
             Arrays.fill(passwordChars, '\0');
         }
+    }
+
+    public CertificateInspectResponse inspectX509(InputStream inputStream) {
+        try {
+            CertificateFactory factory = CertificateFactory.getInstance("X.509");
+
+            Collection<? extends Certificate> certificates = factory.generateCertificates(inputStream);
+
+            if (certificates.isEmpty()) {
+                throw new AuthServiceException("Certificate file is empty");
+            }
+
+            List<X509Certificate> certificateChain = new ArrayList<>();
+
+            for (Certificate certificate : certificates) {
+                if (!(certificate instanceof X509Certificate x509Certificate)) {
+                    throw new AuthServiceException("Invalid X509 certificate");
+                }
+
+                certificateChain.add(x509Certificate);
+            }
+
+            // 第一张证书作为客户端证书，后续作为 CA 证书。
+            X509Certificate certificate = certificateChain.getFirst();
+
+            List<X509Certificate> caCertificates = certificateChain.size() > 1
+                    ? certificateChain.subList(1, certificateChain.size())
+                    : Collections.emptyList();
+
+            // 验证 Atlas CA 证书链。
+            try {
+                certificateValidator.validate(certificate, caCertificates);
+            } catch (Exception e) {
+                throw new AuthServiceException("Certificate validation failed", e);
+            }
+
+            CertificateSubject subject = getCertificateSubject(certificate);
+
+            CertificateIdentityType identityType = resolveIdentityType(subject);
+
+            String fingerprint = DigestUtils.sha256(certificate.getEncoded());
+
+            List<String> subjectAlternativeNames = extractSubjectAlternativeNames(certificate);
+
+            return new CertificateInspectResponse(
+                    identityType,
+                    fingerprint,
+                    certificate.getSerialNumber().toString(16).toUpperCase(Locale.ROOT),
+                    certificate.getSubjectX500Principal().getName(),
+                    certificate.getIssuerX500Principal().getName(),
+                    certificate.getNotBefore().toInstant(),
+                    certificate.getNotAfter().toInstant(),
+                    subjectAlternativeNames
+            );
+
+        } catch (AuthServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Failed to inspect X509 certificate", e);
+            throw new AuthServiceException("Failed to inspect X509 certificate", e);
+        }
+    }
+
+
+    public List<String> extractSubjectAlternativeNames(X509Certificate certificate) throws Exception {
+        // 提取 SAN。
+        List<String> subjectAlternativeNames = new ArrayList<>();
+
+        Collection<List<?>> sans = certificate.getSubjectAlternativeNames();
+
+        if (sans != null) {
+            for (List<?> san : sans) {
+
+                if (san.size() < 2 || san.get(1) == null) {
+                    continue;
+                }
+
+                if (!(san.get(0) instanceof Integer type)) {
+                    continue;
+                }
+
+                // DNS(2)。
+                if (type == 2) {
+                    subjectAlternativeNames.add(san.get(1).toString());
+                }
+
+                // IP(7)。
+                else if (type == 7) {
+
+                    Object value = san.get(1);
+
+                    if (value instanceof byte[] address) {
+                        subjectAlternativeNames.add(InetAddress.getByAddress(address).getHostAddress()
+                        );
+                    } else {
+                        subjectAlternativeNames.add(value.toString());
+                    }
+                }
+            }
+        }
+        return subjectAlternativeNames;
     }
 
     private void validatePrivateKey(PrivateKey privateKey, X509Certificate certificate) throws GeneralSecurityException {

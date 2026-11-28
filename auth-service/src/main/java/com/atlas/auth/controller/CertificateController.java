@@ -9,13 +9,16 @@ import com.atlas.auth.service.CertificateService;
 import com.atlas.common.core.response.Result;
 import com.atlas.common.core.response.ResultGenerator;
 import lombok.RequiredArgsConstructor;
+import org.apache.velocity.shaded.commons.io.FilenameUtils;
 import org.springframework.http.*;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * @Description
@@ -65,8 +68,22 @@ public class CertificateController {
 
     @PostMapping(value = "/inspect", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<CertificateInspectResponse> inspect(@RequestPart("file") MultipartFile file, @RequestParam(value = "password", required = false) String password) {
-        CertificateInspectResponse response = certificateService.inspect(file, password);
-        return ResultGenerator.ok(response);
+        if (file == null || file.isEmpty()) {
+            throw new AuthServiceException("CSR file is required");
+        }
+        String filename = file.getOriginalFilename();
+        String extension = FilenameUtils.getExtension(filename).toLowerCase(Locale.ROOT);
+        try (InputStream inputStream = file.getInputStream()) {
+            CertificateInspectResponse response;
+            switch (extension) {
+                case "crt", "cer", "pem" -> response = certificateService.inspectX509(inputStream);
+                case "p12", "pfx" -> response = certificateService.inspectPkcs12(inputStream, password);
+                default -> throw new AuthServiceException("Unsupported certificate file type");
+            }
+            return ResultGenerator.ok(response);
+        } catch (Exception e) {
+            throw new AuthServiceException("Failed to read CSR file", e);
+        }
     }
 
     private ResponseEntity<byte[]> fileResponse(byte[] bytes, String filename, MediaType mediaType) {

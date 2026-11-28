@@ -81,6 +81,22 @@ export const unbindWebauthn = async (req) => {
     return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/webauthn/unbind', { data: req }))
 }
 
+export const bindCertificate = async (file, ticket, label) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('ticket', ticket)
+    formData.append('label', label)
+    return apiRequestWrapper(() => httpWrapper.post('/api/auth/account/certificate/csr', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    }))
+}
+
+export const unbindCertificate = async (req) => {
+
+    return apiRequestWrapper(() => httpWrapper.delete('/api/auth/account/certificate', { data: req }))
+}
 
 export const initTotp = async (req) => {
 

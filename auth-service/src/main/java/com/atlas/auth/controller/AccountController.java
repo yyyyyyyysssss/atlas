@@ -12,7 +12,9 @@ import com.atlas.common.security.token.WebauthnAuthenticationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
@@ -106,8 +108,8 @@ public class AccountController {
     }
 
     @PostMapping("/webauthn/register")
-    public Result<WebauthnRegistrationResponse> registerWebauthn(HttpServletRequest request,  @AuthenticationPrincipal SecurityUser securityUser, @RequestBody WebAuthnRegistrationRequest webAuthnRegistrationRequest){
-        WebauthnRegistrationResponse response = accountService.registerWebauthn(request, securityUser.getId(),webAuthnRegistrationRequest);
+    public Result<WebauthnRegistrationResponse> registerWebauthn(HttpServletRequest request, @AuthenticationPrincipal SecurityUser securityUser, @RequestBody WebAuthnRegistrationRequest webAuthnRegistrationRequest) {
+        WebauthnRegistrationResponse response = accountService.registerWebauthn(request, securityUser.getId(), webAuthnRegistrationRequest);
         return ResultGenerator.ok(response);
     }
 
@@ -135,7 +137,7 @@ public class AccountController {
     // 申请绑定/重置 TOTP 凭证
     @PostMapping("/totp")
     public Result<TotpInitVO> initTotp(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated TotpInitDTO totpInitDTO) {
-        TotpInitVO totpInitVO = accountService.initTotp(securityUser.getId(),totpInitDTO);
+        TotpInitVO totpInitVO = accountService.initTotp(securityUser.getId(), totpInitDTO);
         return ResultGenerator.ok(totpInitVO);
     }
 
@@ -161,15 +163,15 @@ public class AccountController {
 
     // 绑定或修改（重置）手势凭证
     @PostMapping("/gesture")
-    public Result<Void> bindGesture(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated GestureBindDTO gestureBindDTO) {
-        accountService.bindGesture(securityUser.getId(),gestureBindDTO);
+    public Result<Void> bindGesture(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated GestureBindDTO gestureBindDTO) {
+        accountService.bindGesture(securityUser.getId(), gestureBindDTO);
         return ResultGenerator.ok();
     }
 
     // 解绑手势凭证
     @DeleteMapping("/gesture")
-    public Result<Void> unbindGesture(@AuthenticationPrincipal SecurityUser securityUser,@RequestBody @Validated GestureUnbindDTO gestureUnbindDTO) {
-        accountService.unbindGesture(securityUser.getId(),gestureUnbindDTO);
+    public Result<Void> unbindGesture(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated GestureUnbindDTO gestureUnbindDTO) {
+        accountService.unbindGesture(securityUser.getId(), gestureUnbindDTO);
         return ResultGenerator.ok();
     }
 
@@ -182,46 +184,59 @@ public class AccountController {
 
 
     @PostMapping("/web3/wallet")
-    public Result<Void> bindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletBindDTO web3WalletBindDTO){
+    public Result<Void> bindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletBindDTO web3WalletBindDTO) {
         accountService.bindWeb3Wallet(securityUser.getId(), web3WalletBindDTO);
         return ResultGenerator.ok();
     }
 
     @PostMapping("/web3/wallet/verify")
-    public Result<Web3WalletVerifyVO> verifyWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletVerifyDTO web3WalletVerifyDTO){
+    public Result<Web3WalletVerifyVO> verifyWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletVerifyDTO web3WalletVerifyDTO) {
         Web3WalletVerifyVO web3WalletVerifyVO = accountService.verifyWeb3Wallet(securityUser.getId(), web3WalletVerifyDTO);
         return ResultGenerator.ok(web3WalletVerifyVO);
     }
 
     @DeleteMapping("/web3/wallet")
-    public Result<Void> unbindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletUnbindDTO web3WalletUnbindDTO){
+    public Result<Void> unbindWeb3Wallet(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated Web3WalletUnbindDTO web3WalletUnbindDTO) {
         accountService.unbindWeb3Wallet(securityUser.getId(), web3WalletUnbindDTO);
         return ResultGenerator.ok();
     }
 
 
     @PostMapping(value = "/certificate/csr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result<Void> bindCertificateCsr(@AuthenticationPrincipal SecurityUser securityUser, @RequestPart("file") MultipartFile file,
-                                           @RequestParam("ticket") String ticket){
+    public ResponseEntity<byte[]> bindCertificateCsr(@AuthenticationPrincipal SecurityUser securityUser,
+                                                     @RequestPart("file") MultipartFile file,
+                                                     @RequestParam("ticket") String ticket,
+                                                     @RequestParam(value = "label", required = false) String label) {
         String csr;
         try {
             csr = new String(file.getBytes(), StandardCharsets.US_ASCII);
         } catch (IOException e) {
             throw new AuthServiceException("Failed to read CSR file", e);
         }
-        accountService.bindCertificateCsr(securityUser.getId(), csr, ticket);
+        byte[] certificateBytes = accountService.bindCertificateCsr(securityUser.getId(), new CertificateBindDTO(label, csr, ticket));
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/x-pem-file"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"atlas-client.crt\"")
+                .body(certificateBytes);
+    }
+
+    @DeleteMapping("/certificate")
+    public Result<Void> unbindCertificate(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated CertificateUnbindDTO certificateUnbindDTO) {
+        accountService.unbindCertificate(securityUser.getId(), certificateUnbindDTO);
         return ResultGenerator.ok();
     }
 
 
+
     @PostMapping("/thirdParty/provider")
-    public Result<ThirdPartyProviderBindVO> bindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderBindDTO thirdPartyProviderBindDTO){
+    public Result<ThirdPartyProviderBindVO> bindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderBindDTO thirdPartyProviderBindDTO) {
         ThirdPartyProviderBindVO thirdPartyProviderBindVO = accountService.bindThirdPartyProvider(securityUser.getId(), thirdPartyProviderBindDTO);
         return ResultGenerator.ok(thirdPartyProviderBindVO);
     }
 
     @DeleteMapping("/thirdParty/provider")
-    public Result<Void> unbindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderUnbindDTO thirdPartyProviderUnbindDTO){
+    public Result<Void> unbindThirdPartyProvider(@AuthenticationPrincipal SecurityUser securityUser, @RequestBody @Validated ThirdPartyProviderUnbindDTO thirdPartyProviderUnbindDTO) {
         accountService.unbindThirdPartyProvider(securityUser.getId(), thirdPartyProviderUnbindDTO);
         return ResultGenerator.ok();
     }

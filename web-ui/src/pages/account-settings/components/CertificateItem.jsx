@@ -15,7 +15,8 @@ import {
     Space,
     Radio,
     Card,
-    Upload
+    Upload,
+    Input
 } from 'antd';
 import {
     Plus,
@@ -31,8 +32,48 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SecurityStepVerify from './verifiers/SecurityStepVerify';
+import { useRequest } from 'ahooks';
+import { bindCertificate, unbindCertificate } from '../../../services/AccountService';
+import { downloadFileBySource } from '../../../utils/Download';
+import { t } from 'i18next';
 
 const { Text, Title, Paragraph } = Typography;
+
+
+const getDefaultCertificateLabel = () => {
+    const ua = navigator.userAgent;
+
+    let os = '未知设备';
+    let browser = '';
+
+    // 操作系统
+    if (/Windows/i.test(ua)) {
+        os = 'Windows';
+    } else if (/Macintosh|Mac OS X/i.test(ua)) {
+        os = 'macOS';
+    } else if (/Android/i.test(ua)) {
+        os = 'Android';
+    } else if (/iPhone|iPad|iPod/i.test(ua)) {
+        os = 'iOS';
+    } else if (/Linux/i.test(ua)) {
+        os = 'Linux';
+    }
+
+    // 浏览器，注意 Edge 必须在 Chrome 前面判断
+    if (/Edg\//i.test(ua)) {
+        browser = 'Edge';
+    } else if (/Firefox\//i.test(ua)) {
+        browser = 'Firefox';
+    } else if (/Chrome\//i.test(ua)) {
+        browser = 'Chrome';
+    } else if (/Safari\//i.test(ua)) {
+        browser = 'Safari';
+    }
+
+    return browser
+        ? `${os} · ${browser} 证书`
+        : `${os} 数字证书`;
+};
 
 /**
  * 证书状态展示
@@ -85,6 +126,14 @@ const CertificateItem = ({ context, refresh }) => {
 
     const [targetItem, setTargetItem] = useState(null)
 
+    const [certificateLabel, setCertificateLabel] = useState(
+        getDefaultCertificateLabel
+    );
+
+    const { runAsync: bindCertificateAsync, loading: bindCertificateLoading } = useRequest(bindCertificate, { manual: true });
+
+    const { runAsync: unbindCertificateAsync, loading: unbindCertificateLoading } = useRequest(unbindCertificate, { manual: true });
+
     // 后端返回的 UserCertificateVO 列表
     const certificates = context?.certificates ?? [];
 
@@ -98,8 +147,24 @@ const CertificateItem = ({ context, refresh }) => {
         setModalMode('bind');
     };
 
-    const handleBindSubmit = () => {
-
+    const handleBindSubmit = async (ticket) => {
+        if (bindMode === 'CSR') {
+            if (!csrFile) {
+                message.warning('请先上传 CSR 文件')
+                return
+            }
+            console.log('提交 CSR 文件进行证书签发', csrFile)
+            const response = await bindCertificateAsync(csrFile, ticket, certificateLabel.trim())
+            const blob = response.data instanceof Blob
+                ? response.data
+                : response
+            downloadFileBySource(blob, 'atlas-client.crt')
+        } else {
+            // TODO: Atlas 生成密钥并签发证书
+        }
+        message.success('证书签发成功')
+        handleCloseModal()
+        refresh?.()
     }
 
     /**
@@ -111,16 +176,43 @@ const CertificateItem = ({ context, refresh }) => {
         setModalMode('unbind');
     };
 
-    const handleUnbindSubmit = () => {
-
+    const handleUnbindSubmit = async (ticket) => {
+        await unbindCertificateAsync({
+            ticket: ticket,
+            credentialId: targetItem.id
+        })
+        message.success('证书移除成功')
+        handleCloseModal()
+        refresh?.()
     }
 
     const handleCloseModal = () => {
         setModalMode(null);
-        setTargetItem(null);
-    };
+        resetModalState()
+    }
 
-    const isBindLoading = false
+    const resetModalState = () => {
+        setTargetItem(null)
+        setCsrFile(null)
+        setBindMode('CSR')
+        setCertificateLabel(getDefaultCertificateLabel())
+    }
+
+    const handleCsrFile = (file) => {
+        if (!file) return false;
+
+        const allowedExtensions = /\.(csr|pem|txt)$/i;
+
+        if (!allowedExtensions.test(file.name)) {
+            message.warning('仅支持 CSR、PEM、TXT 格式文件');
+            return false;
+        }
+
+        setCsrFile(file);
+        return false;
+    }
+
+    const isBindLoading = bindCertificateLoading || unbindCertificateLoading
 
     return (
         <Flex
@@ -356,6 +448,7 @@ const CertificateItem = ({ context, refresh }) => {
                 width={460}
                 centered
                 destroyOnHidden
+                afterClose={resetModalState}
                 footer={null}
             >
                 {modalMode === 'bind' && (
@@ -370,6 +463,26 @@ const CertificateItem = ({ context, refresh }) => {
                         onConfirm={handleBindSubmit}
                     >
                         <Flex vertical gap={12} style={{ padding: '4px 0 16px 0' }}>
+                            <Flex vertical gap={6}>
+                                <Flex align="center" justify="space-between">
+                                    <Text strong>证书名称</Text>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                        可修改
+                                    </Text>
+                                </Flex>
+
+                                <Input
+                                    value={certificateLabel}
+                                    onChange={(e) => setCertificateLabel(e.target.value)}
+                                    placeholder="请输入证书名称"
+                                    maxLength={50}
+                                    showCount
+                                />
+
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    用于区分和管理已绑定的数字证书。
+                                </Text>
+                            </Flex>
                             {bindMode === 'CSR' ? (
                                 <>
                                     <Flex align="center" gap={8}>
@@ -381,26 +494,59 @@ const CertificateItem = ({ context, refresh }) => {
                                     <Paragraph type="secondary" style={{ fontSize: 13, margin: 0 }}>
                                         在本地生成密钥对和证书签名请求（CSR），上传后由 Atlas CA 为您签发数字证书。
                                     </Paragraph>
+                                    {!csrFile ? (
+                                        <Upload.Dragger
+                                            accept=".csr,.pem,.txt"
+                                            maxCount={1}
+                                            showUploadList={false}
+                                            beforeUpload={handleCsrFile}
+                                            pastable
+                                            tabIndex={0}
+                                            style={{ padding: '12px 0' }}
+                                        >
+                                            <Flex vertical align="center" gap={10}>
+                                                <FileKey size={32} color={token.colorPrimary} />
 
-                                    <Upload
-                                        accept=".csr,.pem,.txt"
-                                        maxCount={1}
-                                        beforeUpload={(file) => {
-                                            setCsrFile(file);
-                                            return false;
-                                        }}
-                                        onRemove={() => setCsrFile(null)}
-                                        fileList={csrFile ? [{
-                                            uid: csrFile.uid,
-                                            name: csrFile.name,
-                                            status: 'done'
-                                        }] : []}
-                                    >
-                                        <Button icon={<UploadIcon size={15} />} block>
-                                            上传 CSR 文件
-                                        </Button>
-                                    </Upload>
+                                                <Text strong>拖拽 CSR 文件到这里</Text>
 
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    或点击选择文件，也可以粘贴 PEM 格式的 CSR 内容
+                                                </Text>
+
+                                                <Tag>.csr / .pem / .txt</Tag>
+                                            </Flex>
+                                        </Upload.Dragger>
+                                    ) : (
+                                        <Flex
+                                            align="center"
+                                            gap={12}
+                                            style={{
+                                                padding: 14,
+                                                borderRadius: 8,
+                                                border: `1px solid ${token.colorBorder}`,
+                                                background: token.colorFillAlter
+                                            }}
+                                        >
+                                            <FileKey size={26} color={token.colorSuccess} />
+
+                                            <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                                                <Text strong ellipsis>{csrFile.name}</Text>
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    {(csrFile.size / 1024).toFixed(2)} KB · 已就绪
+                                                </Text>
+                                            </Flex>
+
+                                            <Button
+                                                type="text"
+                                                danger
+                                                size="small"
+                                                icon={<Trash2 size={15} />}
+                                                onClick={() => setCsrFile(null)}
+                                            >
+                                                移除
+                                            </Button>
+                                        </Flex>
+                                    )}
                                     <Text type="secondary" style={{ fontSize: 12 }}>
                                         支持 PEM 格式的 CSR 文件，请确保对应私钥由您自行保管。
                                     </Text>
@@ -454,7 +600,7 @@ const CertificateItem = ({ context, refresh }) => {
                         stepTitle="风险确认"
                         confirmText="确定移除"
                         confirmDanger={true}
-                        confirmLoading={false}
+                        confirmLoading={isBindLoading}
                         onCancel={handleCloseModal}
                         onConfirm={handleUnbindSubmit}
                     >

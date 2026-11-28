@@ -11,6 +11,9 @@ public record CertificateInspectResponse(
         // SHA-256 证书指纹
         String fingerprint,
 
+        // 证书公钥指纹
+        String publicKeyFingerprint,
+
         // 证书序列号
         String serialNumber,
 

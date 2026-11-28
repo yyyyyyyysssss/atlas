@@ -17,7 +17,6 @@ import com.atlas.common.crypto.digest.DigestUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -26,8 +25,10 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.cert.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 /**
@@ -141,17 +142,6 @@ public class CertificateService {
         }
     }
 
-    public CertificateInspectResponse inspect(MultipartFile file, String password) {
-        if (file == null || file.isEmpty()) {
-            throw new AuthServiceException("Certificate file is required");
-        }
-        try (InputStream inputStream = file.getInputStream()) {
-            return inspectPkcs12(inputStream, password);
-        } catch (IOException e) {
-            throw new AuthServiceException("Failed to load PKCS12, password may be incorrect or file is invalid", e);
-        }
-    }
-
     public CertificateInspectResponse inspectPkcs12(InputStream inputStream, String password) {
 
         char[] passwordChars = password == null ? new char[0] : password.toCharArray();
@@ -246,12 +236,16 @@ public class CertificateService {
             // 计算证书指纹。
             String fingerprint = DigestUtils.sha256(certificate.getEncoded());
 
+            // 计算公钥指纹。
+            String publicKeyFingerprint = getPublicKeyFingerprint(certificate);
+
             // 提取 SAN。
             List<String> subjectAlternativeNames = extractSubjectAlternativeNames(certificate);
 
             return new CertificateInspectResponse(
                     identityType,
                     fingerprint,
+                    publicKeyFingerprint,
                     certificate.getSerialNumber().toString(16).toUpperCase(Locale.ROOT),
                     certificate.getSubjectX500Principal().getName(),
                     certificate.getIssuerX500Principal().getName(),
@@ -310,11 +304,15 @@ public class CertificateService {
 
             String fingerprint = DigestUtils.sha256(certificate.getEncoded());
 
+            // 计算公钥指纹。
+            String publicKeyFingerprint = getPublicKeyFingerprint(certificate);
+
             List<String> subjectAlternativeNames = extractSubjectAlternativeNames(certificate);
 
             return new CertificateInspectResponse(
                     identityType,
                     fingerprint,
+                    publicKeyFingerprint,
                     certificate.getSerialNumber().toString(16).toUpperCase(Locale.ROOT),
                     certificate.getSubjectX500Principal().getName(),
                     certificate.getIssuerX500Principal().getName(),
@@ -329,6 +327,14 @@ public class CertificateService {
             log.warn("Failed to inspect X509 certificate", e);
             throw new AuthServiceException("Failed to inspect X509 certificate", e);
         }
+    }
+
+    /**
+     * 计算 X.509 证书公钥 SHA-256 指纹。
+     */
+    private String getPublicKeyFingerprint(X509Certificate certificate) {
+
+        return DigestUtils.sha256(certificate.getPublicKey().getEncoded());
     }
 
 

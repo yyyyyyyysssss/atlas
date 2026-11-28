@@ -60,6 +60,9 @@ public class UserCertificateCredentials extends BaseIdEntity {
     @TableField("revoke_reason")
     private String revokeReason;
 
+    @TableField("public_key_fingerprint")
+    private String publicKeyFingerprint;
+
     @TableField(value = "create_time",fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

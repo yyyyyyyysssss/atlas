@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -535,12 +536,46 @@ public class AccountService {
         eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑 Web3 钱包", "user-web3"));
     }
 
-    public void bindCertificateCsr(Long userId, String csr, String ticket){
+    public byte[] bindCertificateCsr(Long userId, CertificateBindDTO dto) {
+        // 安全风控凭证核验
+        validTicket(userId, dto.ticket());
+
+        CertificateClientGeneratedRequest request = new CertificateClientGeneratedRequest(dto.csr(), userId.toString());
+        byte[] certificateBytes = certificateService.clientGenerated(request, CertificateIdentityType.USER);
+
+        CertificateInspectResponse response = certificateService.inspectX509(new ByteArrayInputStream(certificateBytes));
+
+        UserCertificateCredentials credentials = userCertificateCredentialsService.findByPublicKeyFingerprint(response.publicKeyFingerprint());
+        if (credentials != null) {
+            throw new AuthServiceException("证书已存在，请勿重复绑定");
+        }
+        userCertificateCredentialsService.create(userId, dto.label(), response);
+
+        return certificateBytes;
+
+    }
+
+    public void unbindCertificate(Long userId, CertificateUnbindDTO certificateUnbindDTO) {
+        String ticket = certificateUnbindDTO.ticket();
         // 安全风控凭证核验
         validTicket(userId, ticket);
 
-        CertificateClientGeneratedRequest request = new CertificateClientGeneratedRequest(csr, userId.toString());
-        byte[] bytes = certificateService.clientGenerated(request, CertificateIdentityType.USER);
+        UserCertificateCredentials credentials = userCertificateCredentialsService.getById(certificateUnbindDTO.credentialId());
+        if (credentials == null || !credentials.getUserId().equals(userId)) {
+            throw new AuthServiceException("未找到该证书绑定记录");
+        }
+        // 防止孤儿账号
+        ensureIdentityNotOrphaned(userId, CredentialType.CERTIFICATE, certificateUnbindDTO.credentialId());
+        // 执行解绑
+        boolean success = userCertificateCredentialsService.removeById(certificateUnbindDTO.credentialId());
+        if (!success) {
+            throw new AuthServiceException("证书解绑失败，数据写入异常");
+        }
+        log.info("【证书解绑成功】用户 userId: {}, 成功解除证书。指纹: {} , 标签: {} 的绑定关系",
+                userId, credentials.getFingerprint(), credentials.getLabel());
+
+        // 发布审计日志事件
+        eventPublisher.publishEvent(new AuditLogEvent(userId, "解绑证书", "user-certificate"));
     }
 
 

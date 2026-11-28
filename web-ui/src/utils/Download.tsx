@@ -59,6 +59,10 @@ export const downloadFileBySource = (source: Blob | string, filename: string): v
 
     // 2. 调用你现有的触发器
     triggerDownload(url, filename);
+
+    if(isBlob){
+        URL.revokeObjectURL(url)
+    }
 }
 
 const triggerDownload = (url: string, filename: string) => {
